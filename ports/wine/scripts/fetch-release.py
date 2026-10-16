@@ -18,7 +18,11 @@ MANIFEST = PACKAGE / "prefix-template.json"
 SHA256 = "0afba21234d620558a4e579b7436c1c18453936356241b851c61d6477ead7193"
 
 # Configurar cuando el archivo esté publicado en GitHub Releases.
-URL = os.environ.get("BLES_WINE_URL", "")
+URL = os.environ.get(
+    "BLES_WINE_URL",
+    "https://github.com/luqui10alcaraz-prog/BlesKernOS/releases/download/"
+    "wine-11.0-runtime/wine-11.0-i386-current.tar.gz",
+)
 
 REQUIRED = (
     "prefix-template.json",

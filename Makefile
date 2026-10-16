@@ -837,6 +837,21 @@ WINE_GALLIUM_FILES := $(WINE_GALLIUM_LIB) \
 	$(addprefix $(WINE_PACKAGE)/rootfs/WINEGATE/lib/,libstdc++.so.6 libgcc_s.so.1 libexpat.so.1 libz.so.1) \
 	$(addprefix $(WINE_PACKAGE)/licenses/,MESA-GALLIUM-LICENSE.rst libstdc++6-COPYRIGHT libgcc-s1-COPYRIGHT libexpat1-COPYRIGHT zlib1g-COPYRIGHT GALLIUM-RUNTIME-GPL-3 GALLIUM-RUNTIME-LGPL-3 GALLIUM-RUNTIME-LGPL-2.1 GALLIUM-RUNTIME-GPL-2)
 WINE_RETRO_ICONS := build/wine/BLESICONS.DLL
+
+# Wine: comprobar dependencias antes de evaluar las reglas.
+# Evitar descargas en tareas de limpieza e inspección.
+WINE_SKIP_GOALS := clean distclean help
+WINE_ACTIVE_GOALS := $(if $(MAKECMDGOALS),$(filter-out $(WINE_SKIP_GOALS),$(MAKECMDGOALS)),all)
+
+ifneq ($(strip $(WINE_ACTIVE_GOALS)),)
+ifeq ($(wildcard ports/wine/package/wine-11.0-i386/rootfs/opt/wine/bin/wine),)
+WINE_FETCH_STATUS := $(shell $(PYTHON) ports/wine/scripts/fetch-release.py >&2; echo $$?)
+ifneq ($(WINE_FETCH_STATUS),0)
+$(error No se pudo preparar Wine. Revisá BLES_WINE_URL o el paquete local)
+endif
+endif
+endif
+
 WINE_RUNTIME_FILES := $(shell find ports/wine/package/wine-11.0-i386/rootfs/opt/wine ports/wine/package/wine-11.0-i386/rootfs/WINEGATE -path '*/WINEGATE/prefix' -prune -o -type f -print 2>/dev/null)
 WINE_PREFIX_MANIFEST := ports/wine/package/wine-11.0-i386/prefix-template.json
 WINE_LICENSE_FILES := $(wildcard ports/wine/package/wine-11.0-i386/licenses/*) ports/tinyx/upstream/tinycorelinux-tinyx/COPYING
@@ -1818,7 +1833,6 @@ $(ISO_IMAGE): $(ATA_IMG) $(ISO_BOOT_IMG) $(SETUP_OBJ) $(MBR_BIN) tools/build_cd_
 iso: $(ISO_IMAGE)
 
 iso-user:
-	@$(PYTHON) ports/wine/scripts/fetch-release.py
 	@$(MAKE) iso
 
 installer-target: $(INSTALL_TARGET)
