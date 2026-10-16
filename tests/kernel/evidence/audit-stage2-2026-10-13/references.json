@@ -1,0 +1,47 @@
+[
+  {
+    "repository": "SerenityOS/serenity",
+    "path": "Kernel/Memory/MemoryManager.cpp",
+    "commit": "fb23f3c90282f916a74a062ba6a6d4e8c9e884c0",
+    "url": "https://raw.githubusercontent.com/SerenityOS/serenity/fb23f3c90282f916a74a062ba6a6d4e8c9e884c0/Kernel/Memory/MemoryManager.cpp",
+    "sha256": "8c434b0ae6a7004d52f5f0eab9eb8ce6e2c36e70e636c8ccf4cab2ea6acdcf85",
+    "local": "tests/kernel/evidence/audit-stage2-2026-10-13/upstream/SerenityOS-serenity/Kernel/Memory/MemoryManager.cpp",
+    "bytes": 82945
+  },
+  {
+    "repository": "torvalds/linux",
+    "path": "mm/mmu_gather.c",
+    "commit": "1fb3d8c20bfadbbe2d9e5de18074de9282a52b5f",
+    "url": "https://raw.githubusercontent.com/torvalds/linux/1fb3d8c20bfadbbe2d9e5de18074de9282a52b5f/mm/mmu_gather.c",
+    "sha256": "5a99f17a45e20e889a110577c2040fe1e0a7c1c21559163aff33531f6bd7aef5",
+    "local": "tests/kernel/evidence/audit-stage2-2026-10-13/upstream/torvalds-linux/mm/mmu_gather.c",
+    "bytes": 15176
+  },
+  {
+    "repository": "haiku/haiku",
+    "path": "src/system/kernel/vm/vm.cpp",
+    "commit": "d0bea294e76bb48c10753b199faf0ec2683f0cc4",
+    "url": "https://raw.githubusercontent.com/haiku/haiku/d0bea294e76bb48c10753b199faf0ec2683f0cc4/src/system/kernel/vm/vm.cpp",
+    "sha256": "2cb0a7c85d230e6ebccd0c1fe4cea0901a979d26962fabce1159361a3aef2c37",
+    "local": "tests/kernel/evidence/audit-stage2-2026-10-13/upstream/haiku-haiku/src/system/kernel/vm/vm.cpp",
+    "bytes": 186113
+  },
+  {
+    "repository": "freebsd/freebsd-src",
+    "path": "sys/vm/vm_map.c",
+    "commit": "8eef59db254283eaaee47be94d4ea9f2fef4f2ad",
+    "url": "https://raw.githubusercontent.com/freebsd/freebsd-src/8eef59db254283eaaee47be94d4ea9f2fef4f2ad/sys/vm/vm_map.c",
+    "sha256": "2c1c373420b03a36eb46db4eea54a5710653f622ed0cdd2dc06788decd823f89",
+    "local": "tests/kernel/evidence/audit-stage2-2026-10-13/upstream/freebsd-freebsd-src/sys/vm/vm_map.c",
+    "bytes": 155425
+  },
+  {
+    "repository": "torvalds/linux",
+    "path": "include/linux/jiffies.h",
+    "commit": "f6472b17933f9adb825e7c7da31f7b7b2edb1950",
+    "url": "https://raw.githubusercontent.com/torvalds/linux/f6472b17933f9adb825e7c7da31f7b7b2edb1950/include/linux/jiffies.h",
+    "sha256": "71daf643d8911ef1e9eddd08deef497055a75699905336c59d59c77e2f27a650",
+    "local": "tests/kernel/evidence/audit-stage2-2026-10-13/upstream/torvalds-linux/include/linux/jiffies.h",
+    "bytes": 21834
+  }
+]

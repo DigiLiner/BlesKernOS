@@ -8,6 +8,6 @@ void nsbk_plot_fill(nsbk_plotter_t *, bk_gui_rect_t, uint32_t);
 void nsbk_plot_rect(nsbk_plotter_t *, bk_gui_rect_t, uint32_t);
 void nsbk_plot_line(nsbk_plotter_t *, int, int, int, int, uint32_t);
 void nsbk_plot_text(nsbk_plotter_t *, int, int, const char *, uint32_t,
-                    uint32_t, uint8_t, bool, bool, bool);
+                    uint32_t, uint16_t, uint8_t, bool, bool, bool);
 void nsbk_plot_bitmap(nsbk_plotter_t *, bk_gui_rect_t, const bk_gui_image_t *);
 #endif

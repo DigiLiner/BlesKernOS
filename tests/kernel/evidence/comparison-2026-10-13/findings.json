@@ -1,0 +1,283 @@
+[
+  {
+    "id": "API-01",
+    "priority": "P0",
+    "severity": "critical",
+    "status": "controlled-host-reproduction",
+    "description": "Valid token reaches trusted copy without pointed-to object ownership checks; guest exploit not reproduced",
+    "evidence": [
+      {
+        "file": "kernel/exec/elf_loader.c",
+        "line": 1700,
+        "symbol_or_text": "uint64_t elf_user_api_dispatch("
+      },
+      {
+        "file": "kernel/exec/elf_loader.c",
+        "line": 1309,
+        "symbol_or_text": "EXPORT(kmemcpy);"
+      },
+      {
+        "file": "kernel/api/syscall.c",
+        "line": 3463,
+        "symbol_or_text": "case SYS_API_CALL: {"
+      },
+      {
+        "file": "kernel/mm/memory.c",
+        "line": 704,
+        "symbol_or_text": "void *kmemcpy("
+      }
+    ]
+  },
+  {
+    "id": "META-01",
+    "priority": "P0",
+    "severity": "critical",
+    "status": "static-placement",
+    "description": "Kernel control objects still allocated in legacy heap; per-object guest write rejection needs verification",
+    "evidence": [
+      {
+        "file": "kernel/api/syscall.c",
+        "line": 2301,
+        "symbol_or_text": "static int32_t sys_linux_modify_ldt("
+      },
+      {
+        "file": "kernel/api/syscall.c",
+        "line": 327,
+        "symbol_or_text": "syscall_fd_table_t *table = kmalloc("
+      },
+      {
+        "file": "kernel/drivers/storage/bfs4.c",
+        "line": 547,
+        "symbol_or_text": "v->block_bitmap = kmalloc("
+      },
+      {
+        "file": "kernel/mm/pager.c",
+        "line": 273,
+        "symbol_or_text": "static pager_region_t *region_allocate("
+      },
+      {
+        "file": "kernel/sched/task.c",
+        "line": 283,
+        "symbol_or_text": "static bool task_fpu_alloc_buffer("
+      }
+    ]
+  },
+  {
+    "id": "VM-02",
+    "priority": "P0/P1",
+    "severity": "critical-potential",
+    "status": "static-plus-pending-SMP",
+    "description": "Ignored unmap failure and non-refcounted borrowers need lifetime/retirement proof; reaper has existing guards",
+    "evidence": [
+      {
+        "file": "kernel/api/syscall.c",
+        "line": 344,
+        "symbol_or_text": "void syscall_process_cleanup("
+      },
+      {
+        "file": "kernel/mm/paging.c",
+        "line": 1247,
+        "symbol_or_text": "void paging_process_destroy("
+      },
+      {
+        "file": "kernel/mm/pager.c",
+        "line": 539,
+        "symbol_or_text": "void pager_destroy("
+      },
+      {
+        "file": "kernel/sched/task.c",
+        "line": 427,
+        "symbol_or_text": "static bool task_process_can_release("
+      },
+      {
+        "file": "kernel/mm/paging.c",
+        "line": 162,
+        "symbol_or_text": "bool paging_process_borrow("
+      }
+    ]
+  },
+  {
+    "id": "COPY-01",
+    "priority": "P1",
+    "severity": "high-potential",
+    "status": "static-plus-pending-race",
+    "description": "Pin/check/memcpy needs fault recovery and lifetime for legacy mappings",
+    "evidence": [
+      {
+        "file": "kernel/mm/usercopy.c",
+        "line": 11,
+        "symbol_or_text": "bool copy_from_user("
+      },
+      {
+        "file": "kernel/mm/usercopy.c",
+        "line": 21,
+        "symbol_or_text": "bool copy_to_user("
+      }
+    ]
+  },
+  {
+    "id": "SMP-01",
+    "priority": "P1",
+    "severity": "high-potential",
+    "status": "static-plus-pending-stress",
+    "description": "Affinity and domain logging do not prove full SMP/IRQ correctness",
+    "evidence": [
+      {
+        "file": "kernel/sched/scheduler_smp.c",
+        "line": 53,
+        "symbol_or_text": "bool scheduler_smp_cpu_allowed("
+      },
+      {
+        "file": "kernel/sched/kernel_domains.c",
+        "line": 41,
+        "symbol_or_text": "static void domain_check_order("
+      },
+      {
+        "file": "kernel/sched/task.c",
+        "line": 1791,
+        "symbol_or_text": "static uint32_t task_quantum_limit("
+      }
+    ]
+  },
+  {
+    "id": "AUTH-01",
+    "priority": "P1",
+    "severity": "trust-model-limitation",
+    "status": "static",
+    "description": "Synthetic root and global APIs require explicit application/service/administrator policy",
+    "evidence": [
+      {
+        "file": "kernel/linux/i386_fs.inc",
+        "line": 213,
+        "symbol_or_text": "static int32_t sys_linux_faccessat("
+      },
+      {
+        "file": "kernel/exec/elf_loader.c",
+        "line": 1396,
+        "symbol_or_text": "EXPORT(vfs_mount);"
+      }
+    ]
+  },
+  {
+    "id": "IO-01",
+    "priority": "P1",
+    "severity": "pending-backend-validation",
+    "status": "existing-mechanisms",
+    "description": "Flush exists in reviewed backends; hardware failure/writeback/recovery coverage still incomplete",
+    "evidence": [
+      {
+        "file": "kernel/drivers/storage/ata.c",
+        "line": 766,
+        "symbol_or_text": "if(durable) {"
+      },
+      {
+        "file": "kernel/drivers/storage/ahci.c",
+        "line": 144,
+        "symbol_or_text": "static bool ahci_write("
+      },
+      {
+        "file": "kernel/drivers/storage/usb_storage.c",
+        "line": 706,
+        "symbol_or_text": "static bool usb_block_write("
+      },
+      {
+        "file": "kernel/drivers/storage/bfs4.c",
+        "line": 59,
+        "symbol_or_text": "bool write_failed;"
+      }
+    ]
+  },
+  {
+    "id": "DIAG-01",
+    "priority": "P2",
+    "severity": "high-potential",
+    "status": "static-plus-pending-panic",
+    "description": "Panic uses normal subsystems; watchdog polling runs on CPU0",
+    "evidence": [
+      {
+        "file": "kernel/core/panic.c",
+        "line": 61,
+        "symbol_or_text": "void panic_show("
+      },
+      {
+        "file": "kernel/sched/smp_watchdog.c",
+        "line": 53,
+        "symbol_or_text": "void smp_watchdog_poll("
+      }
+    ]
+  },
+  {
+    "id": "IMAGE-01",
+    "priority": "P2",
+    "severity": "protection-gap",
+    "status": "static",
+    "description": "Linker flags are not hardware page permissions; image remains writable in inspected low identity map",
+    "evidence": [
+      {
+        "file": "kernel/mm/paging.c",
+        "line": 455,
+        "symbol_or_text": "bool paging_init("
+      },
+      {
+        "file": "kernel/arch/x86/linker.ld",
+        "line": 8,
+        "symbol_or_text": "text PT_LOAD FLAGS(5);"
+      }
+    ]
+  },
+  {
+    "id": "API-03",
+    "priority": "P0",
+    "severity": "critical",
+    "status": "static-call-path",
+    "description": "Public preview export loads user_image=false and calls entry(desktop) directly in dispatcher context; adversarial guest not executed",
+    "evidence": [
+      {
+        "file": "kernel/exec/elf_loader.c",
+        "lines": [
+          1539
+        ],
+        "symbol_or_text": "EXPORT(elf_preview_create);"
+      },
+      {
+        "file": "kernel/exec/elf_loader.c",
+        "lines": [
+          329,
+          2255
+        ],
+        "symbol_or_text": "bool elf_preview_create(const char *path, gui_desktop_t *desktop,"
+      },
+      {
+        "file": "kernel/exec/elf_loader.c",
+        "lines": [
+          2280
+        ],
+        "symbol_or_text": "entry(desktop);"
+      }
+    ]
+  },
+  {
+    "id": "ELF-01",
+    "priority": "P1",
+    "severity": "high",
+    "status": "controlled-host-arithmetic-reproduction",
+    "description": "Production alignment helper and allocation-size expression overflow in i386; full malformed guest ELF not reproduced",
+    "evidence": [
+      {
+        "file": "kernel/exec/elf_loader.c",
+        "lines": [
+          342
+        ],
+        "symbol_or_text": "static uint32_t elf_align("
+      },
+      {
+        "file": "kernel/exec/elf_loader.c",
+        "lines": [
+          1902,
+          2102
+        ],
+        "symbol_or_text": "raw_image = (uint8_t *)kzalloc(image_size + image_alignment - 1U +"
+      }
+    ]
+  }
+]

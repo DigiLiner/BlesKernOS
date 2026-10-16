@@ -1,0 +1,81 @@
+
+tests/desktop/test_fifa_repair.py
+BFS4: /tmp/bk-fifa-repair-lhrbnef0/test.img files=11 blocks=7680 free=6650
+BFS4 OK: 11 entries, 6650 free blocks, clean
+/SYSTEM/WINE/PROGRAM FILES/EA SPORTS/FIFA 2000/fifa2000.exe 280311 bytes; mode 0o100755
+Restored missing original executable from the verified ISO.
+/SYSTEM/WINE/PROGRAM FILES/EA SPORTS/FIFA 2000/fifa2000.exe.safedisc-backup 280311 bytes; mode 0o100755
+/SYSTEM/WINE/PROGRAM FILES/EA SPORTS/FIFA 2000/fifa2000.exe 1630208 bytes; mode 0o100755
+/WINEGATE/prefix/system.reg.fifa2000-backup 128 bytes; mode 0o100755
+/WINEGATE/prefix/system.reg 142 bytes; mode 0o100644
+BFS4 OK: 14 entries, 6182 free blocks, clean
+Repaired 0 Joliet names; installed data and aliases preserved.
+BFS4 OK: 14 entries, 6182 free blocks, clean
+BFS4 OK: 14 entries, 6182 free blocks, clean
+Repaired 0 Joliet names; installed data and aliases preserved.
+/SYSTEM/WINE/PROGRAM FILES/EA SPORTS/FIFA 2000/fifa2000.exe 23 bytes; mode 0o100755
+PASS: restore omitted EXE, preserve verified original and settings, select Direct3D explicitly, idempotent, refuse unknown EXE atomically
+
+tests/desktop/test_wine_app_defaults.py
+PASS FIFA and Quake II profiles, scope, idempotence, case/EOF, saved values and unrelated settings
+
+tests/desktop/test_glx_drawables.py
+PASS: drawable persistence, independent read, cross-context storage, rollback, resize and deferred destruction
+PASS: drawable persistence, independent read, cross-context storage, rollback, resize and deferred destruction
+
+tests/desktop/test_glx_present.py
+PASS GPU color resolves before XPutImage; failed resolve and unrelated drawable never present stale pixels
+
+tests/desktop/test_tinyx_bilinear.py
+TinyX bilinear: exact pixels, alpha, positive/negative steps and output bounds PASS
+TinyX bilinear: exact pixels, alpha, positive/negative steps and output bounds PASS
+
+tests/kernel/test_vm_metadata.py
+PASS supervisor VMA metadata, initialization, growth, OOM atomicity and independent child tables
+
+tests/desktop/test_vm_auto_reservations.py
+PASS automatic mmap skips reservations, brk, crossing hints and wraps; full arena returns failure
+
+tests/desktop/test_vm_protect.py
+PASS unchanged PTEs avoid shootdowns; read-only, PROT_NONE and COW invalidate; holes preserve pages
+
+tests/desktop/test_vm_mprotect_spans.py
+PASS 2048 paged commits: one bulk protection, no paged recursion, reservation-only commit, backing/COW permissions and failed preflight
+
+tests/kernel/test_pager_protect.py
+PASS bulk pager protection: exact coverage, holes/reuse, pins before mutations, COW/anonymous grouping, PID isolation and overflow
+
+tests/kernel/test_pager_ranges.py
+PASS production pager range, pin balance and mutation checks
+PASS production pager range, pin balance and mutation checks
+PASS production pager range, pin balance and mutation checks
+
+tests/kernel/test_swap_pager.py
+/tmp/bk-swap-pager-7m0vcy6g/test.c:21:13: warning: ‘mm_set_allocation_subsystem’ defined but not used [-Wunused-function]
+   21 | static bool mm_set_allocation_subsystem(void *p,uint8_t subsystem){assert(p && subsystem==MM_SUBSYSTEM_VM);return true;}
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/tmp/bk-swap-pager-7m0vcy6g/test.c:20:13: warning: ‘mm_set_allocation_owner’ defined but not used [-Wunused-function]
+   20 | static bool mm_set_allocation_owner(void *p,uint32_t pid){assert(p && !pid);return true;}
+      |             ^~~~~~~~~~~~~~~~~~~~~~~
+/tmp/bk-swap-pager-7m0vcy6g/test.c:19:13: warning: ‘kfree’ defined but not used [-Wunused-function]
+   19 | static void kfree(void *p){assert(p && heap_nodes);heap_nodes--;free(p);}
+      |             ^~~~~
+/tmp/bk-swap-pager-7m0vcy6g/test.c:18:14: warning: ‘kzalloc’ defined but not used [-Wunused-function]
+   18 | static void *kzalloc(uint32_t n){if(fail_metadata_heap)return NULL;void *p=calloc(1,n);if(p)heap_nodes++;return p;}
+      |              ^~~~~~~
+PASS supervisor metadata/table reserve, validated disk, slot exhaustion/reuse, actual pressure/integrity, failed swapoff, I/O rollback, TLB refusal, permissions, pin rollback, fork isolation, split unmap and process cleanup
+
+tests/desktop/test_virgl_async.py
+PASS: async map/readback barriers, completed public fences with zero-timeout polling, legacy fallback and failure handling
+
+tests/desktop/test_virgl_ranges.py
+PASS: buffer subranges preserve neighbours, reject overflow, retain texture layout, avoid redundant waits
+
+tests/desktop/test_virgl_transport.py
+PASS: context isolation, transfer bounds, packet validation, legacy fenced submission, asynchronous barriers and safe cleanup
+
+tests/desktop/test_gallium_package.py
+PASS: actual packaged GPU closure is i386 and complete; missing dependencies and host ELF rejected
+
+tests/desktop/test_wine_frame_measurement.py
+PASS incomplete serial snapshots, completed lines, corrupt cumulative counters and context reset

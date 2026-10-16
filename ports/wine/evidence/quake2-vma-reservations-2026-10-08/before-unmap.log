@@ -1,0 +1,6 @@
+0x000c4e7e in ?? ()
+Hardware assisted breakpoint 1 at 0x12a6e3
+Hardware assisted breakpoint 2 at 0x604ddbf4
+[Switching to Thread 2]
+UNMAP_TARGET address=63050000 len=800000
+[Inferior 1 (Remote target) detached]

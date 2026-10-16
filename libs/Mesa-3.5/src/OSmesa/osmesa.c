@@ -584,6 +584,15 @@ OSMesaGetDepthBuffer( OSMesaContext c, GLint *width, GLint *height,
       return GL_FALSE;
    }
    else {
+#ifdef MESA_BLESKERNOS
+      /* A display-only resolve deliberately leaves depth on the GPU.
+       * Returning a CPU depth pointer is an explicit depth consumer. */
+      if (!bkmesa_gpu_resolve(&c->gl_ctx)) {
+         *width = *height = *bytesPerValue = 0;
+         *buffer = NULL;
+         return GL_FALSE;
+      }
+#endif
       *width = c->gl_buffer->Width;
       *height = c->gl_buffer->Height;
       if (c->gl_visual->depthBits <= 16)
@@ -608,7 +617,7 @@ OSMesaGetColorBuffer( OSMesaContext c, GLint *width,
                       GLint *height, GLint *format, void **buffer )
 {
 #ifdef MESA_BLESKERNOS
-   if (c) (void) bkmesa_gpu_resolve( &c->gl_ctx );
+   if (c) (void) bkmesa_gpu_resolve_color( &c->gl_ctx );
 #endif
    if (!c->buffer) {
       *width = 0;
@@ -648,6 +657,11 @@ GLint GLAPIENTRY OSMesaBleskGetActiveRenderer(OSMesaContext ctx)
 GLboolean GLAPIENTRY OSMesaBleskGPUAvailable(OSMesaContext ctx)
 {
    return ctx ? bkmesa_gpu_available(&ctx->gl_ctx) : GL_FALSE;
+}
+
+GLboolean GLAPIENTRY OSMesaBleskResolveColor(OSMesaContext ctx)
+{
+   return ctx ? bkmesa_gpu_resolve_color(&ctx->gl_ctx) : GL_FALSE;
 }
 
 GLboolean GLAPIENTRY OSMesaBleskResolve(OSMesaContext ctx)
@@ -2004,6 +2018,7 @@ static void osmesa_update_state( GLcontext *ctx, GLuint new_state )
 #ifdef MESA_BLESKERNOS
    ctx->Driver.Flush = blesk_flush;
    ctx->Driver.Finish = blesk_finish;
+   ctx->Driver.UpdateTexturePalette = bkmesa_gpu_palette_changed;
 #endif
    ctx->Driver.SetDrawBuffer = set_draw_buffer;
    ctx->Driver.ResizeBuffersMESA = _swrast_alloc_buffers;

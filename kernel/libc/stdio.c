@@ -1,16 +1,19 @@
-#include "../stdio.h"
+#include "include/stdio.h"
 #include "../include/language.h"
-#include "../stdlib.h"
-#include "../string.h"
-#include "../ctype.h"
-#include "../errno.h"
-#include "../limits.h"
+#include "include/stdlib.h"
+#include "include/string.h"
+#include "include/ctype.h"
+#include "include/errno.h"
+#include "include/limits.h"
 #include "../include/vfs.h"
 #include "../include/vga.h"
+#include "../include/task.h"
+#include "../include/klock.h"
 
 typedef enum {
     FILE_KIND_CONSOLE = 1,
     FILE_KIND_VFS = 2,
+    FILE_KIND_VFS_STREAM = 3,
 } file_kind_t;
 
 struct FILE {
@@ -28,7 +31,40 @@ struct FILE {
     size_t size;
     size_t capacity;
     size_t position;
+    uint32_t owner;
+    struct FILE *next_stream;
 };
+
+/* Native read-only FILE descriptors bypass the syscall fd table. Track
+ * them explicitly so a killed process cannot leave a VFS handle behind. */
+static FILE *native_streams;
+static kspinlock_t native_stream_lock=KSPINLOCK_INITIALIZER;
+static void native_stream_register(FILE *stream) {
+    stream->owner=task_current_process_id();
+    uint32_t flags=kspin_lock_irqsave(&native_stream_lock);
+    stream->next_stream=native_streams;native_streams=stream;
+    kspin_unlock_irqrestore(&native_stream_lock,flags);
+}
+static void native_stream_unregister(FILE *stream) {
+    uint32_t flags=kspin_lock_irqsave(&native_stream_lock);
+    FILE **link=&native_streams;
+    while(*link && *link!=stream)link=&(*link)->next_stream;
+    if(*link)*link=stream->next_stream;
+    kspin_unlock_irqrestore(&native_stream_lock,flags);
+}
+void libc_process_stdio_cleanup(uint32_t pid) {
+    for(;;) {
+        uint32_t flags=kspin_lock_irqsave(&native_stream_lock);
+        FILE **link=&native_streams;
+        while(*link && (*link)->owner!=pid)link=&(*link)->next_stream;
+        FILE *stream=*link;
+        if(stream)*link=stream->next_stream;
+        kspin_unlock_irqrestore(&native_stream_lock,flags);
+        if(!stream)break;
+        (void)vfs_close(stream->fd);
+        free(stream);
+    }
+}
 
 typedef struct {
     char *buffer;
@@ -232,16 +268,31 @@ static int format_vprintf_to_buffer(char *buffer, size_t size,
             if (*fmt == '0') zero_pad = true;
             fmt++;
         }
-        while (isdigit((unsigned char)*fmt)) {
-            width = width * 10 + (*fmt - '0');
+        if (*fmt == '*') {
+            width = va_arg(args, int);
+            if (width < 0) {
+                left_align = true;
+                width = -width;
+            }
             fmt++;
+        } else {
+            while (isdigit((unsigned char)*fmt)) {
+                width = width * 10 + (*fmt - '0');
+                fmt++;
+            }
         }
         if (*fmt == '.') {
             precision = 0;
             fmt++;
-            while (isdigit((unsigned char)*fmt)) {
-                precision = precision * 10 + (*fmt - '0');
+            if (*fmt == '*') {
+                precision = va_arg(args, int);
+                if (precision < 0) precision = -1;
                 fmt++;
+            } else {
+                while (isdigit((unsigned char)*fmt)) {
+                    precision = precision * 10 + (*fmt - '0');
+                    fmt++;
+                }
             }
         }
         while (*fmt == 'l' || *fmt == 'h' || *fmt == 'z' || *fmt == 't') fmt++;
@@ -388,6 +439,22 @@ FILE *fopen(const char *path, const char *mode) {
     stream->dynamic = true;
     strncpy(stream->path, path, sizeof(stream->path) - 1);
 
+    /* Read-only streams need a descriptor, not a complete in-RAM copy.
+     * In particular Quake's PAK can be larger than all available heap RAM. */
+    if (readable && !writable) {
+        stream->fd = vfs_open(path, VFS_O_RDONLY);
+        if (stream->fd < 0) { free(stream); errno = ENOENT; return NULL; }
+        int32_t length = vfs_size(stream->fd);
+        if (length < 0) {
+            (void)vfs_close(stream->fd);
+            free(stream); errno = EIO; return NULL;
+        }
+        stream->kind = FILE_KIND_VFS_STREAM;
+        stream->size = (size_t)length;
+        native_stream_register(stream);
+        return stream;
+    }
+
     if (!truncate && vfs_read_all(path, &buffer, &size)) {
         stream->data = (uint8_t *)buffer;
         stream->size = size;
@@ -421,6 +488,14 @@ int fclose(FILE *stream) {
         errno = EINVAL;
         return EOF;
     }
+    if (stream->kind == FILE_KIND_VFS_STREAM) {
+        if (!vfs_close(stream->fd)) {
+            stream->error = true; errno = EIO; return EOF;
+        }
+        native_stream_unregister(stream);
+        free(stream);
+        return 0;
+    }
     if (stream->kind == FILE_KIND_VFS) {
         if (fflush(stream) == EOF) return EOF;
         if (stream->dynamic) {
@@ -440,12 +515,19 @@ size_t fread(void *buffer, size_t size, size_t count, FILE *stream) {
         errno = EINVAL;
         return 0;
     }
-    if (stream->kind != FILE_KIND_VFS) return 0;
+    if (stream->kind != FILE_KIND_VFS && stream->kind != FILE_KIND_VFS_STREAM) return 0;
+    if (count > UINT_MAX / size) {
+        stream->error = true; errno = EINVAL; return 0;
+    }
 
     wanted = size * count;
     available = stream->position < stream->size ? stream->size - stream->position : 0;
     got = wanted < available ? wanted : available;
-    if (got) memcpy(buffer, stream->data + stream->position, got);
+    if (got && stream->kind == FILE_KIND_VFS_STREAM) {
+        int read = vfs_read(stream->fd, buffer, (uint32_t)got);
+        if (read < 0) { stream->error = true; errno = EIO; return 0; }
+        got = (size_t)read;
+    } else if (got) memcpy(buffer, stream->data + stream->position, got);
     stream->position += got;
     stream->eof = got < wanted;
     return got / size;
@@ -472,9 +554,9 @@ int fflush(FILE *stream) {
 
 int fseek(FILE *stream, long offset, int whence) {
     size_t base = 0;
-    long target;
+    int64_t target;
 
-    if (!stream || stream->kind != FILE_KIND_VFS) {
+    if (!stream || (stream->kind != FILE_KIND_VFS && stream->kind != FILE_KIND_VFS_STREAM)) {
         errno = EINVAL;
         return -1;
     }
@@ -487,10 +569,14 @@ int fseek(FILE *stream, long offset, int whence) {
         return -1;
     }
 
-    target = (long)base + offset;
-    if (target < 0) {
+    target = (int64_t)base + offset;
+    if (target < 0 || target > 0x7FFFFFFFLL) {
         errno = EINVAL;
         return -1;
+    }
+    if (stream->kind == FILE_KIND_VFS_STREAM &&
+        vfs_seek(stream->fd, (int32_t)target, SEEK_SET) < 0) {
+        stream->error = true; errno = EIO; return -1;
     }
     stream->position = (size_t)target;
     stream->eof = false;
@@ -615,12 +701,10 @@ static int parse_number_token(const char **buffer, int base, bool allow_sign,
     return 1;
 }
 
-int sscanf(const char *buffer, const char *fmt, ...) {
-    va_list args;
+int vsscanf(const char *buffer, const char *fmt, va_list args) {
     int assigned = 0;
 
     if (!buffer || !fmt) return 0;
-    va_start(args, fmt);
 
     while (*fmt) {
         if (isspace((unsigned char)*fmt)) {
@@ -698,8 +782,88 @@ int sscanf(const char *buffer, const char *fmt, ...) {
     }
 
 done:
-    va_end(args);
     return assigned;
+}
+
+int sscanf(const char *buffer, const char *fmt, ...) {
+    va_list args;
+    int result;
+
+    if (!buffer || !fmt) return 0;
+    va_start(args, fmt);
+    result = vsscanf(buffer, fmt, args);
+    va_end(args);
+    return result;
+}
+
+/* BLES_LIBC_FGETC_20260909
+ * Lectura de un byte con semantica ISO C.
+ * fread() ya es el backend comun de streams de esta libc; centralizar aqui
+ * evita duplicar la logica de FILE/VFS y elimina el simbolo fgetc pendiente.
+ */
+int fgetc(FILE *stream) {
+    unsigned char byte = 0U;
+
+    if (!stream) return EOF;
+    if (fread(&byte, 1U, 1U, stream) != 1U) return EOF;
+    return (int)byte;
+}
+
+int getchar(void) {
+    return fgetc(stdin);
+}
+
+char *fgets(char *buffer, int capacity, FILE *stream) {
+    int used = 0;
+
+    if (!buffer || capacity <= 0 || !stream) return NULL;
+
+    while (used + 1 < capacity) {
+        int ch = fgetc(stream);
+        if (ch == EOF) break;
+        buffer[used++] = (char)ch;
+        if (ch == '\n') break;
+    }
+
+    if (used == 0) {
+        buffer[0] = '\0';
+        return NULL;
+    }
+
+    buffer[used] = '\0';
+    return buffer;
+}
+
+int vfscanf(FILE *stream, const char *fmt, va_list args) {
+    char line[1024];
+
+    if (!stream || !fmt) return EOF;
+    if (!fgets(line, (int)sizeof(line), stream)) return EOF;
+    return vsscanf(line, fmt, args);
+}
+
+int fscanf(FILE *stream, const char *fmt, ...) {
+    va_list args;
+    int result;
+
+    va_start(args, fmt);
+    result = vfscanf(stream, fmt, args);
+    va_end(args);
+    return result;
+}
+
+int vscanf(const char *fmt, va_list args) {
+    return vfscanf(stdin, fmt, args);
+}
+
+int scanf(const char *fmt, ...) {
+    va_list args;
+    int result;
+
+    va_start(args, fmt);
+    result = vscanf(fmt, args);
+    va_end(args);
+    return result;
 }
 
 int putchar(int c) {

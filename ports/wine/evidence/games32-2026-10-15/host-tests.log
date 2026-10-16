@@ -1,0 +1,13 @@
+test_glx_drawables.py
+PASS: drawable persistence, independent read, cross-context storage, rollback, resize and deferred destruction
+PASS: drawable persistence, independent read, cross-context storage, rollback, resize and deferred destruction
+test_glx_present.py
+PASS GPU color resolves before XPutImage; failed resolve and unrelated drawable never present stale pixels
+test_gallium_package.py
+PASS: actual packaged GPU closure is i386 and complete; missing dependencies and host ELF rejected
+test_virgl_transport.py
+PASS: context isolation, transfer bounds, packet validation, legacy fenced submission, asynchronous barriers and safe cleanup
+test_virgl_ranges.py
+PASS: buffer subranges preserve neighbours, reject overflow, retain texture layout, avoid redundant waits
+test_virgl_async.py
+PASS: async map/readback barriers, completed public fences with zero-timeout polling, legacy fallback and failure handling

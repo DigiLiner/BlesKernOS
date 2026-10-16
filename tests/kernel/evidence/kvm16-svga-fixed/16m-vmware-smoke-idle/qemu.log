@@ -1,0 +1,1 @@
+qemu-system-i386: -device AC97: no default audio driver available

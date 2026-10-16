@@ -1,0 +1,8 @@
+[Printer]
+Id=EPFX880
+Name=Epson FX-880 ESC/P
+Language=ESCP
+Transport=LPT
+Port=LPT1
+DPI=60
+EscpMode=0

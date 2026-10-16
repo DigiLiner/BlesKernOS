@@ -1,0 +1,36 @@
+{
+  "result": "PASS",
+  "ram_mib": 1536,
+  "smp": 2,
+  "vga": "vmware",
+  "notepad": {
+    "handle": 62218912,
+    "bounds": [
+      36,
+      70,
+      511,
+      376
+    ],
+    "title": "notepad.exe",
+    "visible": true,
+    "listed": true,
+    "owner": 8,
+    "controller": 7
+  },
+  "notepad_after_restart": {
+    "handle": 62218912,
+    "bounds": [
+      36,
+      70,
+      511,
+      376
+    ],
+    "title": "notepad.exe",
+    "visible": true,
+    "listed": true,
+    "owner": 8,
+    "controller": 7
+  },
+  "keyboard_clipboard_before_after": true,
+  "compositor_cpl3": true
+}

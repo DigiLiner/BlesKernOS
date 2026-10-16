@@ -1,0 +1,259 @@
+{
+  "baseline": [
+    {
+      "sample": 0,
+      "host_seconds": 20.008075734018348,
+      "start": [
+        8412,
+        10485886,
+        704836667,
+        39593370,
+        192436508,
+        84703326
+      ],
+      "end": [
+        8529,
+        10485886,
+        725826667,
+        41473374,
+        198533168,
+        87413326
+      ],
+      "presents": 117,
+      "guest_seconds": 20.99,
+      "presents_per_second": 5.574082896617437,
+      "resolve_seconds": 1.880004,
+      "present_seconds": 6.09666,
+      "copy_seconds": 2.71,
+      "host_presents_per_second": 5.847638801220299
+    },
+    {
+      "sample": 1,
+      "host_seconds": 20.010028570977738,
+      "start": [
+        8529,
+        10485886,
+        725826667,
+        41473374,
+        198533168,
+        87413326
+      ],
+      "end": [
+        8730,
+        10485886,
+        745666667,
+        43320037,
+        203449826,
+        89853327
+      ],
+      "presents": 201,
+      "guest_seconds": 19.84,
+      "presents_per_second": 10.131048387096774,
+      "resolve_seconds": 1.846663,
+      "present_seconds": 4.916658,
+      "copy_seconds": 2.440001,
+      "host_presents_per_second": 10.044963168694698
+    },
+    {
+      "sample": 2,
+      "host_seconds": 20.00623506802367,
+      "start": [
+        8730,
+        10485886,
+        745666667,
+        43320037,
+        203449826,
+        89853327
+      ],
+      "end": [
+        8937,
+        10485886,
+        765880000,
+        45083365,
+        208009821,
+        93390007
+      ],
+      "presents": 207,
+      "guest_seconds": 20.213333,
+      "presents_per_second": 10.240765340382014,
+      "resolve_seconds": 1.763328,
+      "present_seconds": 4.559995,
+      "copy_seconds": 3.53668,
+      "host_presents_per_second": 10.346774357902646
+    }
+  ],
+  "candidate_first_match_intervals": [
+    {
+      "sample": 0,
+      "host_seconds": 20.005806945002405,
+      "start": [
+        4876,
+        6291582,
+        292146667,
+        14103320,
+        46666,
+        72833342
+      ],
+      "end": [
+        4983,
+        6291582,
+        312513333,
+        16603317,
+        53333,
+        79936672
+      ],
+      "presents": 107,
+      "host_presents_per_second": 5.348447093094107,
+      "guest_seconds": 20.366666,
+      "presents_per_second": 5.253682659695014,
+      "resolve_seconds": 2.499997,
+      "present_seconds": 0.006667,
+      "copy_seconds": 7.10333
+    },
+    {
+      "sample": 1,
+      "host_seconds": 20.0198957810062,
+      "start": [
+        4983,
+        6291582,
+        312513333,
+        16603317,
+        53333,
+        79936672
+      ],
+      "end": [
+        5146,
+        6291582,
+        332833333,
+        18589981,
+        53333,
+        84686671
+      ],
+      "presents": 163,
+      "host_presents_per_second": 8.141900526507518,
+      "guest_seconds": 20.32,
+      "presents_per_second": 8.021653543307087,
+      "resolve_seconds": 1.986664,
+      "present_seconds": 0.0,
+      "copy_seconds": 4.749999
+    },
+    {
+      "sample": 2,
+      "host_seconds": 20.025479323987383,
+      "start": [
+        5146,
+        6291582,
+        332833333,
+        18589981,
+        53333,
+        84686671
+      ],
+      "end": [
+        5368,
+        6291582,
+        352856667,
+        20509976,
+        56666,
+        89000005
+      ],
+      "presents": 222,
+      "host_presents_per_second": 11.0858769674531,
+      "guest_seconds": 20.023334,
+      "presents_per_second": 11.087064721589321,
+      "resolve_seconds": 1.919995,
+      "present_seconds": 0.003333,
+      "copy_seconds": 4.313334
+    }
+  ],
+  "candidate_later_intervals": [
+    {
+      "sample": 0,
+      "host_seconds": 20.022038741997676,
+      "start": [
+        5582,
+        6291582,
+        391080000,
+        23509972,
+        63333,
+        9969000
+      ],
+      "end": [
+        5671,
+        6291582,
+        410710000,
+        25716641,
+        63333,
+        104250013
+      ],
+      "presents": 89,
+      "host_presents_per_second": 4.445101777438681,
+      "guest_seconds": 19.63,
+      "presents_per_second": 4.533876719307183,
+      "resolve_seconds": 2.206669,
+      "present_seconds": 0.0,
+      "copy_seconds": 94.281013
+    },
+    {
+      "sample": 1,
+      "host_seconds": 20.008165317005478,
+      "start": [
+        5671,
+        6291582,
+        410710000,
+        25716641,
+        63333,
+        104250013
+      ],
+      "end": [
+        5883,
+        6291582,
+        430756667,
+        27376650,
+        69999,
+        108756669
+      ],
+      "presents": 212,
+      "host_presents_per_second": 10.595674148084708,
+      "guest_seconds": 20.046667,
+      "presents_per_second": 10.575324067586896,
+      "resolve_seconds": 1.660009,
+      "present_seconds": 0.006666,
+      "copy_seconds": 4.506656
+    },
+    {
+      "sample": 2,
+      "host_seconds": 20.024324683996383,
+      "start": [
+        5883,
+        6291582,
+        430756667,
+        27376650,
+        69999,
+        108756669
+      ],
+      "end": [
+        6069,
+        6291582,
+        450360000,
+        29043319,
+        69999,
+        113833333
+      ],
+      "presents": 186,
+      "host_presents_per_second": 9.288702762028866,
+      "guest_seconds": 19.603333,
+      "presents_per_second": 9.488182443261051,
+      "resolve_seconds": 1.666669,
+      "present_seconds": 0.0,
+      "copy_seconds": 5.076664
+    }
+  ],
+  "invalid_samples": [
+    {
+      "series": "candidate_later_intervals",
+      "sample": 0,
+      "reason": "truncated cumulative copy_us in the starting serial row; derived 94 seconds of copy time in a 20-second interval"
+    }
+  ],
+  "interpretation": "No stable game FPS improvement established: scenes, intro/replays and camera positions differ. GLX presentations are not screen refresh FPS. Baseline interval 0 also overlaps build warmup. Candidate intervals were recorded without compiler activity and without audio. Explicit offscreen presentation removes the redundant source-window upload, but readback, X11 copies and scene CPU costs remain."
+}

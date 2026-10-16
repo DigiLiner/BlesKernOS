@@ -4,8 +4,9 @@
  * The video BIOS remains responsible for clocks, pipes and panel fitting.
  * BlesKernOS adopts the active display plane, including its hardware stride
  * and aperture offset.  Indexed, RGB565 and RGB888 modes are presented by a
- * safe CPU conversion; the legacy XY blitter is restricted to later 32-bpp
- * chips and enabled only after an off-screen color-BLT smoke test succeeds.
+ * safe CPU conversion. The 16/32-bpp XY blitter is enabled only after a bounded
+ * off-screen test; Gen2 uses explicitly owned GGTT backing and a separately
+ * tested fixed-function 3D subset (see intel_i830_3d.inc).
  */
 
 #include "../../include/types.h"
@@ -14,8 +15,11 @@
 #include "../../include/gfx.h"
 #include "../../include/gfx_driver.h"
 #include "../../include/pci.h"
+#include "../../include/paging.h"
+#include "../../include/klock.h"
+#include "../../include/gfx3d_driver.h"
 #include "../../include/vesa.h"
-#include "../../stdio.h"
+#include "../../libc/include/stdio.h"
 
 #define INTEL_VENDOR_ID             0x8086U
 #define GMA_DSPA_CNTR               0x70180U
@@ -65,6 +69,7 @@ typedef struct {
 } gma_device_t;
 
 static const gma_device_t gma_devices[] = {
+    {0x3582U,2U,"852GM/852GME/855GM Extreme Graphics 2"},
     {0x2582U,3U,"915G/GMA 900"}, {0x2592U,3U,"915GM/GMA 900"},
     {0x2772U,3U,"945G/GMA 950"}, {0x27A2U,3U,"945GM/GMA 950"},
     {0x27AEU,3U,"945GME/GMA 950"}, {0x2972U,4U,"946GZ/GMA 3000"},
@@ -81,6 +86,10 @@ typedef struct {
     volatile uint8_t *aperture;
     uint32_t aperture_base;
     uint32_t aperture_size;
+    uint32_t mmio_size;
+    void *owned_raw;
+    uint32_t owned_offset;
+    uint32_t *saved_ptes;
     uint32_t fb_offset;
     uint32_t ring_offset;
     volatile uint32_t *ring;
@@ -89,6 +98,7 @@ typedef struct {
     uint32_t *hws;
     bool active;
     bool accel;
+    bool dma_fault;
     bool saved;
     uint32_t saved_tail, saved_head, saved_start, saved_ctl, saved_hws;
     gfx_info_t mode;
@@ -128,7 +138,7 @@ static bool gma_find(void) {
         uint8_t aperture_bar = chip->generation == 2U ? 0U : 2U;
         if(!pci_get_bar_info(dev,mmio_bar,&mmio)||mmio.is_io||
            !pci_get_bar_info(dev,aperture_bar,&aperture)||aperture.is_io||
-           !mmio.base||!aperture.base||mmio.size<0x10000U||
+           !mmio.base||!aperture.base||mmio.size<0x80000U||
            aperture.size<4U*1024U*1024U)continue;
         if(!pci_enable_command(dev,PCI_COMMAND_MEMORY|PCI_COMMAND_BUSMASTER))
             continue;
@@ -136,6 +146,8 @@ static bool gma_find(void) {
         g_gma.mmio=(volatile uint8_t *)(uintptr_t)mmio.base;
         g_gma.aperture=(volatile uint8_t *)(uintptr_t)aperture.base;
         g_gma.aperture_base=aperture.base;g_gma.aperture_size=aperture.size;
+        g_gma.mmio_size=mmio.size;
+        if(!paging_kernel_mmio_uncached(mmio.base,mmio.size))return false;
         return true;
     }
     return false;
@@ -186,6 +198,7 @@ static void gma_restore_ring(void) {
 static void gma_stop_accel(const char *where) {
     if(g_gma.accel)
         kprintf("[INTELGMA.DVR] timeout/fallo en %s; 2D vuelve a CPU\n",where);
+    if(g_gma.accel)g_gma.dma_fault=true;
     g_gma.accel=false;
     gma_restore_ring();
 }
@@ -203,8 +216,9 @@ static bool gma_mapped_pages_distinct(uint32_t offset) {
 static bool gma_color_blt(uint32_t offset,uint32_t pitch,int x,int y,int w,int h,
                           uint32_t color) {
     uint32_t cmd[8];
-    cmd[0]=GMA_XY_COLOR_BLT|GMA_BLT_WRITE_ALPHA|GMA_BLT_WRITE_RGB;
-    cmd[1]=GMA_BLT_DEPTH_32|GMA_ROP_COPY|(pitch&0xFFFFU);
+    bool rgb32=g_gma.mode.bpp==32U;
+    cmd[0]=GMA_XY_COLOR_BLT|(rgb32?(GMA_BLT_WRITE_ALPHA|GMA_BLT_WRITE_RGB):0U);
+    cmd[1]=(rgb32?GMA_BLT_DEPTH_32:(1U<<24))|GMA_ROP_COPY|(pitch&0xFFFFU);
     cmd[2]=((uint32_t)y<<16)|(uint32_t)x;
     cmd[3]=((uint32_t)(y+h)<<16)|(uint32_t)(x+w);
     cmd[4]=offset;cmd[5]=color;cmd[6]=GMA_MI_FLUSH;cmd[7]=GMA_MI_NOOP;
@@ -214,8 +228,9 @@ static bool gma_color_blt(uint32_t offset,uint32_t pitch,int x,int y,int w,int h
 static bool gma_copy_blt(uint32_t offset,uint32_t pitch,int sx,int sy,int dx,
                          int dy,int w,int h) {
     uint32_t cmd[10];
-    cmd[0]=GMA_XY_SRC_COPY_BLT|GMA_BLT_WRITE_ALPHA|GMA_BLT_WRITE_RGB;
-    cmd[1]=GMA_BLT_DEPTH_32|GMA_ROP_COPY|(pitch&0xFFFFU);
+    bool rgb32=g_gma.mode.bpp==32U;
+    cmd[0]=GMA_XY_SRC_COPY_BLT|(rgb32?(GMA_BLT_WRITE_ALPHA|GMA_BLT_WRITE_RGB):0U);
+    cmd[1]=(rgb32?GMA_BLT_DEPTH_32:(1U<<24))|GMA_ROP_COPY|(pitch&0xFFFFU);
     cmd[2]=((uint32_t)dy<<16)|(uint32_t)dx;
     cmd[3]=((uint32_t)(dy+h)<<16)|(uint32_t)(dx+w);
     cmd[4]=offset;cmd[5]=((uint32_t)sy<<16)|(uint32_t)sx;
@@ -223,16 +238,77 @@ static bool gma_copy_blt(uint32_t offset,uint32_t pitch,int sx,int sy,int dx,
     return gma_emit(cmd,10U);
 }
 
+/* Gen2 has no local VRAM. Install owned system-memory pages in an isolated
+ * tail of GGTT rather than scribbling into firmware-owned stolen memory.
+ * The display plane and the firmware ring must be idle before this is called. */
+#define GMA_OWNED_BYTES (8U*1024U*1024U)
+static bool gma_uncached_range(uint32_t address,uint32_t length) {
+    if(!length || address+length<address)return false;
+    while(length) {
+        uint32_t chunk=0x400000U-(address&0x3FFFFFU);
+        if(chunk>length)chunk=length;
+        if(!paging_kernel_mmio_uncached(address,chunk))return false;
+        address+=chunk;length-=chunk;
+    }
+    return true;
+}
+static bool gma_map_owned(void) {
+    if(g_gma.owned_raw)return true;
+    if(!(gma_read(0x2020U)&1U) || g_gma.aperture_size<GMA_OWNED_BYTES*2U ||
+       0x10000U+(g_gma.aperture_size/4096U)*4U>g_gma.mmio_size)return false;
+    uint32_t offset=(g_gma.aperture_size-GMA_OWNED_BYTES)&~4095U;
+    uint32_t visible=g_gma.fb_offset+(uint32_t)g_gma.mode.pitch*g_gma.mode.height;
+    if(offset<visible || !gma_wait_idle())return false;
+    const uint32_t controls[2]={GMA_DSPA_CNTR,GMA_DSPB_CNTR};
+    for(unsigned plane=0;plane<2;plane++)if(gma_read(controls[plane])&GMA_DISPLAY_PLANE_ENABLED) {
+        uint32_t base=gma_read(controls[plane]+4U),pitch=gma_read(controls[plane]+8U)&0xFFC0U;
+        if((uint64_t)base+(uint64_t)pitch*g_gma.mode.height>offset)return false;
+    }
+    void *raw=kmalloc(GMA_OWNED_BYTES+4095U);
+    uint32_t *saved=kmalloc((GMA_OWNED_BYTES/4096U)*4U);
+    if(!raw || !saved){if(raw)kfree(raw);if(saved)kfree(saved);return false;}
+    if(!gma_uncached_range(g_gma.aperture_base+offset,GMA_OWNED_BYTES)) {
+        kfree(raw);kfree(saved);return false;
+    }
+    (void)mm_set_allocation_owner(raw,0);(void)mm_set_allocation_owner(saved,0);
+    uint32_t physical=ALIGN_UP((uint32_t)(uintptr_t)raw,4096U);
+    volatile uint32_t *gtt=(volatile uint32_t *)(g_gma.mmio+0x10000U)+offset/4096U;
+    /* CPU access thereafter uses ONLY the uncached aperture alias. */
+    __asm__ volatile("wbinvd":::"memory");
+    for(uint32_t i=0;i<GMA_OWNED_BYTES/4096U;i++) {
+        saved[i]=gtt[i];gtt[i]=(physical+i*4096U)|1U;
+    }
+    (void)gtt[GMA_OWNED_BYTES/4096U-1U];
+    gma_write(0x2020U,gma_read(0x2020U)); /* GGTT translation invalidation */
+    (void)gma_read(0x2020U);
+    g_gma.owned_raw=raw;g_gma.saved_ptes=saved;g_gma.owned_offset=offset;
+    return true;
+}
+static void gma_unmap_owned(void) {
+    if(!g_gma.owned_raw)return;
+    volatile uint32_t *gtt=(volatile uint32_t *)(g_gma.mmio+0x10000U)+g_gma.owned_offset/4096U;
+    for(uint32_t i=0;i<GMA_OWNED_BYTES/4096U;i++)gtt[i]=g_gma.saved_ptes[i];
+    (void)gtt[GMA_OWNED_BYTES/4096U-1U];
+    gma_write(0x2020U,gma_read(0x2020U));(void)gma_read(0x2020U);
+    kfree(g_gma.saved_ptes);kfree(g_gma.owned_raw);
+    g_gma.saved_ptes=NULL;g_gma.owned_raw=NULL;
+}
+
 static bool gma_init_ring(void) {
-    uint32_t visible_end,scratch,old;
+    uint32_t visible_end,scratch;
+    if(g_gma.dma_fault)return false;
     visible_end=g_gma.fb_offset+(uint32_t)g_gma.mode.pitch*g_gma.mode.height;
-    g_gma.ring_offset=ALIGN_UP(visible_end,4096U);
+    if(g_gma.chip->generation==2U) {
+        if(!gma_map_owned())return false;
+        g_gma.ring_offset=g_gma.owned_offset;
+    } else g_gma.ring_offset=ALIGN_UP(visible_end,4096U);
     scratch=g_gma.ring_offset+GMA_RING_SIZE;
     if(scratch+8192U>g_gma.aperture_size||
        !gma_mapped_pages_distinct(g_gma.ring_offset)||
        !gma_mapped_pages_distinct(scratch))return false;
     g_gma.hws_raw=kmalloc(8192U);
     if(!g_gma.hws_raw)return false;
+    (void)mm_set_allocation_owner(g_gma.hws_raw,0U);
     g_gma.hws=(uint32_t *)(uintptr_t)ALIGN_UP((uint32_t)(uintptr_t)g_gma.hws_raw,4096U);
     kmemset(g_gma.hws,0,4096U);
     g_gma.saved_tail=gma_read(GMA_RING_TAIL);g_gma.saved_head=gma_read(GMA_RING_HEAD);
@@ -247,13 +323,24 @@ static bool gma_init_ring(void) {
     gma_write(GMA_RING_HEAD,0U);gma_write(GMA_RING_TAIL,0U);
     gma_write(GMA_RING_CTL,(GMA_RING_SIZE-4096U)|GMA_RING_VALID);
     g_gma.ring_tail=0U;g_gma.accel=true;
-    old=*(volatile uint32_t *)(g_gma.aperture+scratch);
-    if(!gma_color_blt(scratch,32U,0,0,8,8,0xFF39A7E0U)||!gma_wait_idle()||
-       *(volatile uint32_t *)(g_gma.aperture+scratch)!=0xFF39A7E0U) {
-        *(volatile uint32_t *)(g_gma.aperture+scratch)=old;
-        gma_stop_accel("autoprueba XY_COLOR_BLT");return false;
+    uint32_t saved_pixels[128];
+    kmemcpy(saved_pixels,(const void *)(g_gma.aperture+scratch),256U);
+    kmemcpy(saved_pixels+64,(const void *)(g_gma.aperture+scratch+4096U),256U);
+    uint32_t expected=g_gma.mode.bpp==16U?0xA7E0A7E0U:0xFF39A7E0U;
+    bool tested=gma_color_blt(scratch,32U,0,0,8,8,0xFF39A7E0U) && gma_wait_idle();
+    if(tested)tested=gma_copy_blt(scratch,32U,0,0,0,128,8,8) && gma_wait_idle();
+    uint32_t columns=g_gma.mode.bpp==16U?4U:8U;
+    for(uint32_t row=0;tested && row<8U;row++)for(uint32_t col=0;col<columns;col++) {
+        uint32_t at=row*32U+col*4U;
+        if(*(volatile uint32_t *)(g_gma.aperture+scratch+at)!=expected ||
+           *(volatile uint32_t *)(g_gma.aperture+scratch+4096U+at)!=expected)tested=false;
     }
-    *(volatile uint32_t *)(g_gma.aperture+scratch)=old;
+    if(!tested)gma_stop_accel("autoprueba XY_COLOR/SRC_COPY_BLT");
+    if(!g_gma.dma_fault) {
+        kmemcpy((void *)(g_gma.aperture+scratch),saved_pixels,256U);
+        kmemcpy((void *)(g_gma.aperture+scratch+4096U),saved_pixels+64,256U);
+    }
+    if(!tested)return false;
     kprintf("[INTELGMA.DVR] ring 64KiB + XY blitter OK, GGTT=0x%x\n",
             g_gma.ring_offset);
     return true;
@@ -391,7 +478,7 @@ static bool gma_activate(gfx_info_t *info,uint16_t pw,uint16_t ph) {
        !vesa_attach_lfb(&boot,boot.framebuffer,boot.width,boot.height,
                         boot.pitch,boot.bpp))return false;
     g_gma.mode=boot;g_gma.mode.mode=GFX_MODE_INTEL_GMA9XX;g_gma.active=true;
-    if(g_gma.chip->generation>=3U&&boot.bpp==32U)(void)gma_init_ring();
+    if(boot.bpp==32U || boot.bpp==16U)(void)gma_init_ring();
     if(info)*info=g_gma.mode;
     kprintf("[INTELGMA.DVR] %s Gen%u %ux%ux%u pitch=%u fb=%x, aceleracion=%s\n",
             g_gma.chip->name,g_gma.chip->generation,boot.width,boot.height,
@@ -406,11 +493,11 @@ static uint32_t gma_caps(void) {
     return g_gma.active?c:0U;
 }
 static void gma_disable(void) {
-    if(g_gma.accel)(void)gma_wait_idle();
+    bool idle=!g_gma.dma_fault && (!g_gma.accel || gma_wait_idle());
     g_gma.accel=false;
     gma_restore_ring();
-    if(g_gma.hws_raw)kfree(g_gma.hws_raw);
-    g_gma.hws_raw=NULL;g_gma.hws=NULL;
+    if(idle)gma_unmap_owned(); /* Keep DMA backing pinned on a GPU timeout. */
+    if(idle && g_gma.hws_raw){kfree(g_gma.hws_raw);g_gma.hws_raw=NULL;g_gma.hws=NULL;}
     g_gma.active=false;
 }
 static bool gma_list(gfx_display_mode_t *m,uint32_t max,uint32_t *count) {
@@ -427,6 +514,7 @@ static bool gma_present(const gfx_info_t *info,const uint32_t *pixels,uint32_t s
                         const gfx_rect_t *rects,uint32_t n,uint32_t *fence) {
     if(fence)*fence=0U;
     if(!g_gma.active||!info||!pixels||sp<info->width)return false;
+    if(g_gma.accel && !gma_wait_idle()){gma_stop_accel("present");return false;}
     if(!rects||!n){gfx_rect_t full={0,0,info->width,info->height};rects=&full;n=1U;}
     for(uint32_t i=0;i<n;i++){int x=rects[i].x,y=rects[i].y,w=rects[i].w,h=rects[i].h;
         if(!gma_clip(info,&x,&y,&w,&h))continue;
@@ -458,34 +546,82 @@ static bool gma_wait(uint32_t f){(void)f;return !g_gma.accel||gma_wait_idle();}
 static bool gma_fill(const gfx_info_t *info,int x,int y,int w,int h,uint32_t rgb,uint32_t *f) {
     if(f)*f=0U;
     if(!g_gma.accel||!gma_clip(info,&x,&y,&w,&h))return false;
-    if(!gma_color_blt(g_gma.fb_offset,info->pitch,x,y,w,h,0xFF000000U|(rgb&0xFFFFFFU))){gma_stop_accel("fill");return false;}
+    uint32_t color=info->bpp==16U?
+        ((g_gma.scanout_format==GMA_FORMAT_BGRA555||g_gma.scanout_format==GMA_FORMAT_BGRX555)
+         ?gma_rgb555(rgb):gma_rgb565(rgb)):(0xFF000000U|(rgb&0xFFFFFFU));
+    if(!gma_color_blt(g_gma.fb_offset,info->pitch,x,y,w,h,color)){gma_stop_accel("fill");return false;}
     g_gma.fence++;if(!g_gma.fence)g_gma.fence=1U;if(f)*f=g_gma.fence;return true;
 }
 static bool gma_blt(const gfx_info_t *info,int sx,int sy,int dx,int dy,int w,int h,gfx_rop_t rop,uint32_t *f) {
     if(f)*f=0U;
     if(!g_gma.accel||!info||rop!=GFX_ROP_COPY||w<=0||h<=0)return false;
     if(sx<0||sy<0||dx<0||dy<0||sx+w>info->width||dx+w>info->width||sy+h>info->height||dy+h>info->height)return false;
-    /* Reverse-overlap copies need a directional command variant; use CPU fallback. */
-    if((dy>sy&&dy<sy+h)||(dy==sy&&dx>sx&&dx<sx+w))return false;
+    /* Stage overlapping rectangles through one off-screen row. This avoids
+     * relying on undocumented direction handling in XY_SRC_COPY_BLT. */
+    if(dx<sx+w && sx<dx+w && dy<sy+h && sy<dy+h) {
+        uint32_t scratch=g_gma.ring_offset+GMA_RING_SIZE;
+        uint32_t row_pitch=ALIGN_UP((uint32_t)w*((info->bpp+7U)/8U),4U);
+        uint32_t command=GMA_XY_SRC_COPY_BLT|(info->bpp==32U?(GMA_BLT_WRITE_ALPHA|GMA_BLT_WRITE_RGB):0U);
+        uint32_t format=(info->bpp==32U?GMA_BLT_DEPTH_32:(1U<<24))|GMA_ROP_COPY;
+        if(row_pitch>8192U)return false;
+        for(int i=0;i<h;i++) {
+            int row=dy>sy?h-1-i:i;
+            uint32_t c[20]={command,
+                format|row_pitch,0,(1U<<16)|(uint32_t)w,
+                scratch,((uint32_t)(sy+row)<<16)|(uint32_t)sx,info->pitch,g_gma.fb_offset,
+                GMA_MI_FLUSH,0,
+                command,
+                format|info->pitch,
+                ((uint32_t)(dy+row)<<16)|(uint32_t)dx,
+                ((uint32_t)(dy+row+1)<<16)|(uint32_t)(dx+w),g_gma.fb_offset,
+                0,row_pitch,scratch,GMA_MI_FLUSH,0};
+            if(!gma_emit(c,20U) || !gma_wait_idle()){gma_stop_accel("overlap");return false;}
+        }
+        if(f)*f=0;
+        return true;
+    }
     if(!gma_copy_blt(g_gma.fb_offset,info->pitch,sx,sy,dx,dy,w,h)){gma_stop_accel("bitblt");return false;}
     g_gma.fence++;if(!g_gma.fence)g_gma.fence=1U;if(f)*f=g_gma.fence;return true;
 }
+
+/* One sleeping mutex for both APIs: GFX3D's own lock does not serialize
+ * ordinary compositor blits. Hold this over complete batches and CPU access. */
+static kmutex_t gma_engine_mutex=KMUTEX_INITIALIZER;
+#define GMA_LOCKED(name,args,operation) \
+    static bool name args { \
+        kmutex_lock(&gma_engine_mutex); \
+        bool result=(operation); \
+        kmutex_unlock(&gma_engine_mutex); \
+        return result; \
+    }
+GMA_LOCKED(gma_locked_activate,(gfx_info_t *i,uint16_t w,uint16_t h),gma_activate(i,w,h))
+GMA_LOCKED(gma_locked_present,(const gfx_info_t *i,const uint32_t *p,uint32_t pitch,const gfx_rect_t *r,uint32_t n,uint32_t *f),gma_present(i,p,pitch,r,n,f))
+GMA_LOCKED(gma_locked_flush,(uint32_t *f),gma_flush(f))
+GMA_LOCKED(gma_locked_wait,(uint32_t f),gma_wait(f))
+GMA_LOCKED(gma_locked_fill,(const gfx_info_t *i,int x,int y,int w,int h,uint32_t c,uint32_t *f),gma_fill(i,x,y,w,h,c,f))
+GMA_LOCKED(gma_locked_blt,(const gfx_info_t *i,int sx,int sy,int dx,int dy,int w,int h,gfx_rop_t r,uint32_t *f),gma_blt(i,sx,sy,dx,dy,w,h,r,f))
+static void gma_locked_disable(void) {
+    kmutex_lock(&gma_engine_mutex);gma_disable();kmutex_unlock(&gma_engine_mutex);
+}
+#include "intel_i830_3d.inc"
 
 static bool gma_driver_init(void) {
     static const gfx_driver_ops_t ops={BK_GFX_DRIVER_ABI_VERSION,sizeof(gfx_driver_ops_t),
         "intel_gma9xx",235U,GFX_CAP_PRESENT_BUFFER|GFX_CAP_DIRTY_RECTS|
         GFX_CAP_FILL|GFX_CAP_BITBLT|GFX_CAP_BITBLT_COPY_HW|GFX_CAP_FENCE,
-        gma_activate,gma_caps,gma_disable,gma_list,gma_set_mode,gma_present,
-        gma_update,gma_flush,gma_wait,gma_fill,gma_blt,
+        gma_locked_activate,gma_caps,gma_locked_disable,gma_list,gma_set_mode,gma_locked_present,
+        gma_update,gma_locked_flush,gma_locked_wait,gma_locked_fill,gma_locked_blt,
         NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
     kmemset(&g_gma,0,sizeof(g_gma));
-    if(!gma_find()){kprintf("[INTELGMA.DVR] Intel GMA 915/945/965 no detectada\n");return false;}
-    return gfx_register_driver(&ops);
+    if(!gma_find()){kprintf("[INTELGMA.DVR] Intel 852/855/915/945/965 no detectada\n");return false;}
+    if(!gfx_register_driver(&ops))return false;
+    if(g_gma.chip->generation==2U)(void)gma3_register();
+    return true;
 }
-static void gma_driver_shutdown(void){gma_disable();}
+static void gma_driver_shutdown(void){gma_locked_disable();}
 
 const bk_driver_module_t *bleskernos_driver_query(void) {
-    static const bk_driver_module_t module={BK_DRIVER_ABI_VERSION,sizeof(bk_driver_module_t),
+    static const bk_driver_module_t module={BK_DRIVER_ABI_VERSION,sizeof(bk_driver_module_t),1U,0U,
         "intel_gma9xx","Intel GMA 9xx: scanout real + ring XY BLT opcional",
         gma_driver_init,gma_driver_shutdown};return &module;
 }

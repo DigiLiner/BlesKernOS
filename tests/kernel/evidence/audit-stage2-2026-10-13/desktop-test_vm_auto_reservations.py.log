@@ -1,0 +1,1 @@
+PASS automatic mmap skips reservations, brk, crossing hints and wraps; full arena returns failure

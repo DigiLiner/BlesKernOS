@@ -1,5 +1,8 @@
 #include "common.h"
 
-static int run(int argc,char **argv){ return argc==2?command_hexdump(argv[1]):command_error("objdump","@H5D8BCF60"); }
+static int run(int argc, char **argv) {
+    return command_toolchain_run("/SYSTEM/DEVEL/BINUTILS/OBJDUMP.EXE",
+                                 argc, argv, NULL);
+}
 
 BK_COMMAND_MAIN(run)

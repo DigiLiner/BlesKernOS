@@ -34,6 +34,7 @@ void command_load_args(command_args_t *args) {
     (void)bk_proc_launch_arg_copy(args->storage, sizeof(args->storage));
     args->storage[sizeof(args->storage) - 1U] = '\0';
     args->argc = parse_args(args->storage, args->argv);
+
     if (args->argc >= 3 && command_is(args->argv[1], "--cwd")) {
         (void)bk_file_chdir(args->argv[2]);
         for (int i = 1; i + 2 < args->argc; i++) args->argv[i] = args->argv[i + 2];
@@ -62,6 +63,7 @@ uint32_t command_number(const char *text, bool *valid) {
         else if (*text >= 'A' && *text <= 'F') digit = (uint32_t)(*text - 'A' + 10);
         else return 0;
         if (digit >= base) return 0;
+        if (value > (0xffffffffU-digit)/base) return 0;
         value = value * base + digit;
         text++;
     }
@@ -89,14 +91,21 @@ static void path_join(char *out, uint32_t capacity,
 }
 
 int command_list_directory(const char *path) {
-    vfs_dir_entry_t entries[COMMAND_DIR_MAX];
+    vfs_dir_entry_t *entries;
     uint32_t count = 0;
-    if (!bk_file_list_dir(path ? path : ".", entries, COMMAND_DIR_MAX, &count))
+    entries = (vfs_dir_entry_t *)bk_sys_alloc(
+        sizeof(vfs_dir_entry_t) * COMMAND_DIR_MAX);
+    if (!entries)
+        return command_error("dir", "sin memoria para leer el directorio");
+    if (!bk_file_list_dir(path ? path : ".", entries, COMMAND_DIR_MAX, &count)) {
+        bk_sys_free(entries);
         return command_error("dir", "@H921A36F7");
+    }
     for (uint32_t i = 0; i < count; i++)
         kprintf("%s %u %s\n", entries[i].type == VFS_NODE_DIR ? "<DIR>" : "",
                 entries[i].size, entries[i].name);
     kprintf("%u elemento(s)\n", count);
+    bk_sys_free(entries);
     return 0;
 }
 
@@ -135,9 +144,16 @@ int command_copy_file(const char *from, const char *to, bool remove_source) {
 }
 
 static void tree_walk(const char *path, uint32_t depth) {
-    vfs_dir_entry_t entries[COMMAND_DIR_MAX];
+    vfs_dir_entry_t *entries;
     uint32_t count = 0;
-    if (depth > 12U || !bk_file_list_dir(path, entries, COMMAND_DIR_MAX, &count)) return;
+    if (depth > 12U) return;
+    entries = (vfs_dir_entry_t *)bk_sys_alloc(
+        sizeof(vfs_dir_entry_t) * COMMAND_DIR_MAX);
+    if (!entries) return;
+    if (!bk_file_list_dir(path, entries, COMMAND_DIR_MAX, &count)) {
+        bk_sys_free(entries);
+        return;
+    }
     for (uint32_t i = 0; i < count; i++) {
         for (uint32_t n = 0; n < depth; n++) puts("  ");
         kprintf("%s%s\n", entries[i].name, entries[i].type == VFS_NODE_DIR ? "/" : "");
@@ -148,6 +164,7 @@ static void tree_walk(const char *path, uint32_t depth) {
             tree_walk(child, depth + 1U);
         }
     }
+    bk_sys_free(entries);
 }
 
 void command_tree(const char *path) {
@@ -166,9 +183,16 @@ static bool contains(const char *text, const char *needle) {
 }
 
 static void find_walk(const char *path, const char *pattern, uint32_t depth) {
-    vfs_dir_entry_t entries[COMMAND_DIR_MAX];
+    vfs_dir_entry_t *entries;
     uint32_t count = 0;
-    if (depth > 12U || !bk_file_list_dir(path, entries, COMMAND_DIR_MAX, &count)) return;
+    if (depth > 12U) return;
+    entries = (vfs_dir_entry_t *)bk_sys_alloc(
+        sizeof(vfs_dir_entry_t) * COMMAND_DIR_MAX);
+    if (!entries) return;
+    if (!bk_file_list_dir(path, entries, COMMAND_DIR_MAX, &count)) {
+        bk_sys_free(entries);
+        return;
+    }
     for (uint32_t i = 0; i < count; i++) {
         char child[VFS_MAX_PATH];
         path_join(child, sizeof(child), path, entries[i].name);
@@ -176,6 +200,7 @@ static void find_walk(const char *path, const char *pattern, uint32_t depth) {
         if (entries[i].type == VFS_NODE_DIR && !command_is(entries[i].name, ".") &&
             !command_is(entries[i].name, "..")) find_walk(child, pattern, depth + 1U);
     }
+    bk_sys_free(entries);
 }
 
 void command_find(const char *path, const char *pattern) {
@@ -262,3 +287,124 @@ int command_checksum(const char *path) {
     kprintf("FNV1a32 %x %s\n", hash, path);
     return 0;
 }
+
+#define TOOLCHAIN_COMMAND_MAX 2047U
+#define TOOLCHAIN_ELF "/SYSTEM/DEVEL/TCC/I386-TCC.EXE"
+
+static bool toolchain_append(char *out, uint32_t capacity, const char *text) {
+    uint32_t used = (uint32_t)bk_runtime_strlen(out);
+    uint32_t length = (uint32_t)bk_runtime_strlen(text ? text : "");
+    if (used + length + 1U > capacity) return false;
+    bk_runtime_strcat(out, text ? text : "");
+    return true;
+}
+
+static bool toolchain_append_arg(char *out, uint32_t capacity,
+                                 const char *argument) {
+    bool quote = false;
+    const char *p = argument ? argument : "";
+    uint32_t used = (uint32_t)bk_runtime_strlen(out);
+    if (used + 2U > capacity) return false;
+    out[used++] = ' ';
+    out[used] = '\0';
+    for (; *p; p++)
+        if (*p == ' ' || *p == '\t' || *p == '"') quote = true;
+    if (!quote) return toolchain_append(out, capacity, argument ? argument : "");
+    if (used + 2U > capacity) return false;
+    out[used++] = '"';
+    out[used] = '\0';
+    for (p = argument ? argument : ""; *p; p++) {
+        char part[3] = {0, 0, 0};
+        if (*p == '"' || *p == '\\') part[0] = '\\', part[1] = *p;
+        else part[0] = *p;
+        if (!toolchain_append(out, capacity, part)) return false;
+    }
+    used = (uint32_t)bk_runtime_strlen(out);
+    if (used + 2U > capacity) return false;
+    out[used++] = '"';
+    out[used] = '\0';
+    return true;
+}
+
+bool command_append_argument(char *out,uint32_t capacity,const char *argument) {
+    return toolchain_append_arg(out,capacity,argument);
+}
+
+int command_toolchain_run(const char *program, int argc, char **argv,
+                          const char *prefix) {
+    char line[TOOLCHAIN_COMMAND_MAX + 1U];
+    int status;
+    const char *executable = program ? program : TOOLCHAIN_ELF;
+
+    line[0] = '\0';
+    if (!toolchain_append(line, sizeof(line), executable))
+        return command_error("toolchain", "linea de comandos demasiado larga");
+    if (prefix && *prefix) {
+        uint32_t used = (uint32_t)bk_runtime_strlen(line);
+        if (used + 2U > sizeof(line))
+            return command_error("toolchain", "linea de comandos demasiado larga");
+        line[used++] = ' ';
+        line[used] = '\0';
+        if (!toolchain_append(line, sizeof(line), prefix))
+            return command_error("toolchain", "linea de comandos demasiado larga");
+    }
+    for (int i = 1; i < argc; i++) {
+        if (!toolchain_append_arg(line, sizeof(line), argv[i]))
+            return command_error("toolchain", "linea de comandos demasiado larga");
+    }
+
+    status = bk_app_run_sync(executable, line);
+
+    if (status < 0)
+        return command_error("toolchain", "no se pudo ejecutar la herramienta");
+    return status;
+}
+
+int command_build_native(const char *source, const char *output) {
+    char raw[BK_PATH_MAX];
+    char compile_line[TOOLCHAIN_COMMAND_MAX + 1U];
+    char link_line[TOOLCHAIN_COMMAND_MAX + 1U];
+    int status;
+
+    if (!source || !output) return command_error("build", "uso: build fuente.c salida.BEX");
+    if (bk_runtime_strlen(output) + 7U >= sizeof(raw))
+        return command_error("build", "ruta de salida demasiado larga");
+    bk_runtime_strncpy(raw, output, sizeof(raw) - 1U);
+    raw[sizeof(raw) - 1U] = '\0';
+    bk_runtime_strcat(raw, ".RAW.O");
+
+    compile_line[0] = '\0';
+    toolchain_append(compile_line, sizeof(compile_line), TOOLCHAIN_ELF);
+    toolchain_append(compile_line, sizeof(compile_line),
+        " -m32 -ffreestanding -fno-builtin -nostdlib -nostdinc -fno-pic"
+        " -fno-pie -fno-stack-protector -I/SYSTEM/SDK/INCLUDE -c");
+    if (!toolchain_append_arg(compile_line, sizeof(compile_line), source) ||
+        !toolchain_append(compile_line, sizeof(compile_line), " -o") ||
+        !toolchain_append_arg(compile_line, sizeof(compile_line), raw))
+        return command_error("build", "linea de compilacion demasiado larga");
+    kprintf("[CC] %s -> %s\n", source, raw);
+    status = bk_app_run_sync(TOOLCHAIN_ELF, compile_line);
+    if (status != 0) return status < 0 ? 2 : status;
+
+    link_line[0] = '\0';
+    toolchain_append(link_line, sizeof(link_line), TOOLCHAIN_ELF);
+    toolchain_append(link_line, sizeof(link_line), " -nostdlib -r");
+    if (!toolchain_append_arg(link_line, sizeof(link_line), raw) ||
+        !toolchain_append_arg(link_line, sizeof(link_line),
+                              "/SYSTEM/SDK/LIB/LIBBLESK.A") ||
+        !toolchain_append(link_line, sizeof(link_line), " -o") ||
+        !toolchain_append_arg(link_line, sizeof(link_line), output))
+        return command_error("build", "linea de enlace demasiado larga");
+    kprintf("[LD] %s -> %s\n", raw, output);
+    status = bk_app_run_sync(TOOLCHAIN_ELF, link_line);
+    if (status == 0) {
+        (void)bk_file_remove(raw);
+        kprintf("[OK] BEX nativo listo: %s\n", output);
+    }
+    return status < 0 ? 2 : status;
+}
+
+#include "filetools.inc"
+#include "command_help.inc"
+
+#include "networktools.inc"

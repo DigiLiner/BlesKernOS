@@ -1,0 +1,117 @@
+[
+  {
+    "test": "test_address_space_lifetime",
+    "returncode": 0,
+    "output": "PASS borrowed CR3 lifetime, active CPU refusal, copy references, retirement, overflow and cycle rejection\n"
+  },
+  {
+    "test": "test_usercopy_lifetime",
+    "returncode": 0,
+    "output": "PASS production usercopy pins address-space lifetime; permission/OOM/retirement failures release all references\n"
+  },
+  {
+    "test": "test_string_bounds",
+    "returncode": 0,
+    "output": "PASS production kstrncpy: early NUL, truncation, padding, zero length and destination redzones\nPASS production kstrncpy: early NUL, truncation, padding, zero length and destination redzones\n"
+  },
+  {
+    "test": "audit_native_api_boundary",
+    "returncode": 0,
+    "output": "PASS production native API blocks kernel read/write, bad ranges, readonly, payload rejection, pin failures, foreign frees, metadata mutation and invalid tokens\n"
+  },
+  {
+    "test": "test_memory_accounting",
+    "returncode": 0,
+    "output": "PASS heap metadata, free VM pool, frame allocation/free, reserved bits and saturation\n"
+  },
+  {
+    "test": "test_heap_realloc",
+    "returncode": 0,
+    "output": "PASS in-place growth under pressure, shrink/coalescing, ownership, OOM, overflow, fork pins, 1000 cycles\n"
+  },
+  {
+    "test": "test_paging_map",
+    "returncode": 0,
+    "output": "PASS OOM preserves existing PTEs; overflow/alignment rejected; remaps publish TLB changes\n"
+  },
+  {
+    "test": "test_paging_tlb",
+    "returncode": 0,
+    "output": "PASS borrowed spaces receive shootdowns; stale CR3 reloads; concurrent edits remain unacknowledged\nPASS actual pager PTE rollback, acknowledged revocation, late-AP publication and PROT_NONE\n"
+  },
+  {
+    "test": "test_tlb_generation_wrap",
+    "returncode": 0,
+    "output": "PASS TLB generation wrap: stale ACK refusal, current/newer ACK and delayed remote invalidation\n"
+  },
+  {
+    "test": "test_swap_pager",
+    "returncode": 0,
+    "output": "PASS supervisor metadata/table reserve, validated disk, slot exhaustion/reuse, actual pressure/integrity, failed swapoff, I/O rollback, TLB refusal, permissions, pin rollback, fork isolation, split unmap and process cleanup\n/tmp/bk-swap-pager-30krre5h/test.c:21:13: warning: \u2018mm_set_allocation_subsystem\u2019 defined but not used [-Wunused-function]\n   21 | static bool mm_set_allocation_subsystem(void *p,uint8_t subsystem){assert(p && subsystem==MM_SUBSYSTEM_VM);return true;}\n      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/bk-swap-pager-30krre5h/test.c:20:13: warning: \u2018mm_set_allocation_owner\u2019 defined but not used [-Wunused-function]\n   20 | static bool mm_set_allocation_owner(void *p,uint32_t pid){assert(p && !pid);return true;}\n      |             ^~~~~~~~~~~~~~~~~~~~~~~\n/tmp/bk-swap-pager-30krre5h/test.c:19:13: warning: \u2018kfree\u2019 defined but not used [-Wunused-function]\n   19 | static void kfree(void *p){assert(p && heap_nodes);heap_nodes--;free(p);}\n      |             ^~~~~\n/tmp/bk-swap-pager-30krre5h/test.c:18:14: warning: \u2018kzalloc\u2019 defined but not used [-Wunused-function]\n   18 | static void *kzalloc(uint32_t n){if(fail_metadata_heap)return NULL;void *p=calloc(1,n);if(p)heap_nodes++;return p;}\n      |              ^~~~~~~\n"
+  },
+  {
+    "test": "test_pager_lookup",
+    "returncode": 0,
+    "output": "PASS 1024 mappings: 10000 hot hits and cross-page gap hits; new mapping invalidates misses; PID collisions, partial unmap, file in a hole, VFS locking and freed-pointer invalidation\n"
+  },
+  {
+    "test": "test_pager_ranges",
+    "returncode": 0,
+    "output": "PASS production pager range, pin balance and mutation checks\nPASS production pager range, pin balance and mutation checks\nPASS production pager range, pin balance and mutation checks\n"
+  },
+  {
+    "test": "test_vm_metadata",
+    "returncode": 0,
+    "output": "PASS supervisor VMA metadata, initialization, growth, OOM atomicity and independent child tables\n"
+  },
+  {
+    "test": "test_guarded_allocation",
+    "returncode": 0,
+    "output": "PASS guarded IPC/user storage starts zero; aligned guards, allocation failure and PTE rollback release all storage\n"
+  },
+  {
+    "test": "test_desktop_api_bridge",
+    "returncode": 0,
+    "output": "PASS legacy desktop imports, real/proxy/custom/NULL handles, unchanged caller arguments, held domains, return/cleanup/errno and invalid-token rejection\n"
+  },
+  {
+    "test": "test_smp_sleep_handoff",
+    "returncode": 0,
+    "output": "PASS actual SMP handoff: runnable/sleeping/zombie stacks stay owned until retirement; timer wake and reaping wait, and a concurrent exit never queues a zombie\n"
+  },
+  {
+    "test": "test_signal_return",
+    "returncode": 0,
+    "output": "PASS signal frame work permits blocking outside spinlock; masked signals, failed delivery, zombie/kernel returns and final scheduler handoff keep IRQs disabled\n"
+  },
+  {
+    "test": "test_signal_copy_lock",
+    "returncode": 0,
+    "output": "PASS old-action copy, atomic update, pager outside spinlock, pin/access errors and balanced release\n"
+  },
+  {
+    "test": "test_elf_object_bounds",
+    "returncode": 0,
+    "output": "PASS both ET_REL loaders: valid input, tiny relocation, bounded strings, malformed alignment/tables, overflow and OOM cleanup\n"
+  },
+  {
+    "test": "test_native_api_abi",
+    "returncode": 0,
+    "output": "PASS actual i386 API wrapper: cdecl, hidden struct return pointer and bounded ret N\n"
+  },
+  {
+    "test": "test_vision_lifecycle",
+    "returncode": 0,
+    "output": "PASS abnormal owner cleanup, unrelated process isolation, reclaim and graceful release\nPASS screensaver worker and installer linked into Vision executable\n"
+  },
+  {
+    "test": "test_vision_ipc",
+    "returncode": 0,
+    "output": "PASS 800 concurrent requests, dropped caller locks, cancelled waits and stale reply rejection\n"
+  },
+  {
+    "test": "test_upcall_cleanup",
+    "returncode": 0,
+    "output": "PASS active and queued paints release staging; unlinked tombstones finalize once; payloads release once\n"
+  }
+]

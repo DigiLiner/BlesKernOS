@@ -1,0 +1,419 @@
+{
+  "upstream": {
+    "repository": "https://github.com/mdomlop/retrosmart-x11-cursors",
+    "commit": "768e207ce072945a7eba9caddc71f235b2036281",
+    "archive_sha256": "c16fbeb70498928f3a3671d3e10595b47f94918f301c033e58895a5b78a7685c",
+    "variant": "bitmap white without shadow, native 32x32"
+  },
+  "size": 32,
+  "variant": "white, no shadow",
+  "cursors": [
+    {
+      "role": "alias",
+      "file": "ALIAS.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "all-scroll",
+      "file": "ALL-SCROLL.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "bottom_left_corner",
+      "file": "BOTTOM_LEFT_CORNER.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "bottom_right_corner",
+      "file": "BOTTOM_RIGHT_CORNER.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "bottom_side",
+      "file": "BOTTOM_SIDE.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "cell",
+      "file": "CELL.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "center_ptr",
+      "file": "CENTER_PTR.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "closedhand",
+      "file": "CLOSEDHAND.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "col-resize",
+      "file": "COL-RESIZE.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "color-picker",
+      "file": "COLOR-PICKER.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "context-menu",
+      "file": "CONTEXT-MENU.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "copy",
+      "file": "COPY.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "crosshair",
+      "file": "CROSSHAIR.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "default",
+      "file": "ARROW.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "dnd-move",
+      "file": "DND-MOVE.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "dnd-no-drop",
+      "file": "DND-NO-DROP.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "down-arrow",
+      "file": "DOWN-ARROW.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "draft",
+      "file": "DRAFT.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "fleur",
+      "file": "FLEUR.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "help",
+      "file": "HELP.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "left-arrow",
+      "file": "LEFT-ARROW.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "left_side",
+      "file": "LEFT_SIDE.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "no-drop",
+      "file": "NO-DROP.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "not-allowed",
+      "file": "NOT-ALLOWED.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "openhand",
+      "file": "OPENHAND.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "pencil",
+      "file": "PENCIL.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "pirate",
+      "file": "PIRATE.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "pointer",
+      "file": "POINTER.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "progress",
+      "file": "PROGRESS.CUR",
+      "frames": 4,
+      "durations_ms": [
+        90,
+        90,
+        90,
+        90
+      ]
+    },
+    {
+      "role": "right-arrow",
+      "file": "RIGHT-ARROW.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "right_ptr",
+      "file": "RIGHT_PTR.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "right_side",
+      "file": "RIGHT_SIDE.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "row-resize",
+      "file": "ROW-RESIZE.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "size_bdiag",
+      "file": "DRESIZE2.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "size_fdiag",
+      "file": "DRESIZE1.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "size_hor",
+      "file": "HRESIZE.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "size_ver",
+      "file": "VRESIZE.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "text",
+      "file": "TEXT.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "top_left_corner",
+      "file": "TOP_LEFT_CORNER.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "top_right_corner",
+      "file": "TOP_RIGHT_CORNER.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "top_side",
+      "file": "TOP_SIDE.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "up-arrow",
+      "file": "UP-ARROW.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "vertical-text",
+      "file": "VERTICAL-TEXT.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "wait",
+      "file": "WAIT.CUR",
+      "frames": 21,
+      "durations_ms": [
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120,
+        120
+      ]
+    },
+    {
+      "role": "wayland-cursor",
+      "file": "WAYLAND-CURSOR.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "x-cursor",
+      "file": "X-CURSOR.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "zoom-in",
+      "file": "ZOOM-IN.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    },
+    {
+      "role": "zoom-out",
+      "file": "ZOOM-OUT.CUR",
+      "frames": 1,
+      "durations_ms": [
+        0
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+checking file kernel/mm/pager.c
+checking file tests/kernel/test_block_writes.py
+checking file tests/kernel/run_ram_smoke.py
+checking file tests/kernel/test_pager_ranges.py

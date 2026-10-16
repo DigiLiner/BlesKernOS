@@ -1,3 +1,4 @@
+#include "../sdk/include/bleskernos_theme.h"
 /*
  * filebrowser.c — Navegador de archivos para BlesKernOS GUI
  *
@@ -13,31 +14,37 @@
 
 #include "../kernel/include/api.h"
 #include <stdio.h>
+#include "system/desktop/file_progress.h"
 
 /* ── Ventana ── */
 #define FB_WIN_X    60
 #define FB_WIN_Y    40
-#define FB_WIN_W   560
-#define FB_WIN_H   330
+#define FB_WIN_W   640
+#define FB_WIN_H   380
 
 /* ── Lista interna ── */
 #define FB_LIST_X       6
 #define FB_LIST_Y       2
-#define FB_TILE_W     100
-#define FB_TILE_H     104
-#define FB_ICON_SIZE   64
+#define FB_TILE_W      80
+#define FB_TILE_H      64
+#define FB_ICON_SIZE   32
 
 /* ── Colores ── */
 #define FB_COLOR_FOLDER  0x00E8B840
-#define FB_COLOR_SEL     0x001060A0
-#define FB_COLOR_TEXT    0x00101010
-#define FB_COLOR_TEXTSEL 0x00FFFFFF
-#define FB_COLOR_BG      0x00F4F4F0
+#define FB_COLOR_SEL     BK_THEME_SELECTION
+#define FB_COLOR_TEXT    BK_THEME_TEXT
+#define FB_COLOR_TEXTSEL BK_THEME_SELECTION_TEXT
+#define FB_COLOR_BG      BK_THEME_PANEL
 
 /* ── Doble clic dentro de la lista ── */
-#define FB_DBLCLICK_TICKS 500
+#define FB_DBLCLICK_TICKS ((bk_sys_tick_frequency() + 1U) / 2U)
 #define FB_ICON_BYTES (FB_ICON_SIZE * FB_ICON_SIZE * sizeof(uint32_t))
-#define FB_LIST_ROW_H 24
+#define FB_LIST_ROW_H 38
+#define FB_TREE_W      150
+#define FB_TREE_ROW_H   24
+#define FB_TREE_PAD      4
+#define FB_TREE_MAX_NODES 128
+#define FB_TREE_MAX_OPEN   32
 #define FB_DIR_INITIAL_CAPACITY 64U
 #define FB_DIR_HARD_LIMIT 8192U
 
@@ -48,7 +55,8 @@ enum {
     FB_DRIVE_HDD,
     FB_DRIVE_CD,
     FB_DRIVE_USB,
-    FB_DRIVE_FLOPPY
+    FB_DRIVE_FLOPPY,
+    FB_DRIVE_SD
 };
 
 enum {
@@ -58,6 +66,14 @@ enum {
 };
 
 /* ──────────────────────────────────────────────── */
+
+typedef struct {
+    char path[VFS_MAX_PATH];
+    char label[VFS_MAX_NAME];
+    uint8_t depth;
+    bool expandable;
+    bool expanded;
+} fb_tree_node_t;
 
 typedef struct {
     gui_desktop_t   *desktop;
@@ -79,12 +95,24 @@ typedef struct {
     uint32_t        btn_refresh_id;
     void           *associations;
     uint32_t        associations_size;
+    bool            associations_owned;
     char            address[VFS_MAX_PATH];
     char            status[48];
     bool            editing_address;
     bool            list_view;
+    bool            tree_root_expanded;
+    bool            tree_cwd_expanded;
+    int             tree_scroll;
+    gui_scrollbar_drag_t tree_scrollbar_drag;
+    char            tree_open[FB_TREE_MAX_OPEN][VFS_MAX_PATH];
+    uint8_t         tree_open_count;
+    fb_tree_node_t  tree_nodes[FB_TREE_MAX_NODES];
+    uint16_t        tree_node_count;
     uint8_t         dialog;
     char            dialog_input[VFS_MAX_NAME];
+    uint32_t        file_change_seen;
+    bool            drag_pending;
+    int             drag_x, drag_y, drag_entry;
     bool            delete_dialog_open;
     uint32_t        delete_dialog_token;
     uint32_t       *folder_icon;
@@ -124,6 +152,7 @@ typedef struct {
     char path[VFS_MAX_PATH];
     char name[VFS_MAX_NAME];
     bool directory;
+    bool permanent;
     uint8_t action;
     uint32_t delete_button_id;
     uint32_t cancel_button_id;
@@ -141,6 +170,7 @@ enum {
     FB_CONTEXT_PROPERTIES,
     FB_CONTEXT_NEW_FOLDER,
     FB_CONTEXT_REFRESH,
+    FB_CONTEXT_EDIT,
 };
 
 static fb_state_t *g_fb = NULL;
@@ -149,6 +179,7 @@ static bool g_fb_clipboard_cut;
 static bool g_fb_clipboard_directory;
 static uint32_t g_fb_delete_token;
 static void fb_main(void *argument);
+static void fb_tree_set_open(fb_state_t *st, const char *path, bool open);
 
 static gui_rect_t fb_list_rect(const fb_state_t *st) {
     gui_rect_t content;
@@ -163,32 +194,62 @@ static gui_rect_t fb_list_rect(const fb_state_t *st) {
                         content.w - FB_LIST_X * 2, list_h};
 }
 
+static gui_rect_t fb_tree_rect(const fb_state_t *st) {
+    gui_rect_t list = fb_list_rect(st);
+    if (list.w < FB_TREE_W + FB_TILE_W + GUI_SCROLLBAR_SIZE + 12)
+        return (gui_rect_t){0, 0, 0, 0};
+    return (gui_rect_t){list.x, list.y, FB_TREE_W, list.h};
+}
+
+static gui_rect_t fb_items_rect(const fb_state_t *st) {
+    gui_rect_t list = fb_list_rect(st);
+    gui_rect_t tree = fb_tree_rect(st);
+    if (tree.w > 0) {
+        list.x += tree.w + FB_TREE_PAD;
+        list.w -= tree.w + FB_TREE_PAD;
+    }
+    return list;
+}
+
 static int fb_cols_for_rect(gui_rect_t list) {
-    if (g_fb && g_fb->list_view) return 1;
     int cols = (list.w - GUI_SCROLLBAR_SIZE) / FB_TILE_W;
     return cols < 1 ? 1 : cols;
 }
 
+static int fb_item_row_height(const fb_state_t *st) {
+    return st && st->list_view ? FB_LIST_ROW_H : FB_TILE_H;
+}
+
 static int fb_visible_slots(const fb_state_t *st) {
-    gui_rect_t list = fb_list_rect(st);
-    int cols = fb_cols_for_rect(list);
-    int rows = list.h / (st && st->list_view ? FB_LIST_ROW_H : FB_TILE_H);
+    gui_rect_t list = fb_items_rect(st);
+    int cols = st && st->list_view ? 1 : fb_cols_for_rect(list);
+    int rows = list.h / fb_item_row_height(st);
     if (list.w <= 0 || list.h <= 0) return 1;
     if (rows < 1) rows = 1;
     return rows * cols;
 }
 
+/* scroll se guarda como indice de entrada, pero en vista de iconos siempre
+ * debe apuntar al comienzo de una fila. Antes el thumb podia dejarlo en 1,
+ * 2, 3... y toda la grilla se corria un archivo. */
 static void fb_clamp_scroll(fb_state_t *st) {
-    int visible;
+    gui_rect_t items;
+    int cols;
+    int rows;
+    int total_rows;
     int max_scroll;
 
     if (!st) return;
-    visible = fb_visible_slots(st);
-    max_scroll = (int)st->entry_count > visible
-        ? (int)st->entry_count - visible
-        : 0;
-    if (st->scroll > max_scroll) st->scroll = max_scroll;
+    items = fb_items_rect(st);
+    cols = st->list_view ? 1 : fb_cols_for_rect(items);
+    rows = items.h / fb_item_row_height(st);
+    if (rows < 1) rows = 1;
+    total_rows = ((int)st->entry_count + cols - 1) / cols;
+    max_scroll = total_rows > rows ? (total_rows - rows) * cols : 0;
+
     if (st->scroll < 0) st->scroll = 0;
+    if (st->scroll > max_scroll) st->scroll = max_scroll;
+    if (cols > 1) st->scroll = (st->scroll / cols) * cols;
 }
 
 /* ICONS.PAK cache.
@@ -262,7 +323,7 @@ static uint32_t *fb_pak_find_icon(const char *name) {
     if (fb_rd32(data + 4) != 1) return NULL;
 
     count = fb_rd32(data + 8);
-    if (12U + count * 32U > g_fb_icon_cache.pak_size) return NULL;
+    if (count > (g_fb_icon_cache.pak_size - 12U) / 32U) return NULL;
 
     for (uint32_t i = 0; i < count; i++) {
         uint8_t *e = data + 12U + i * 32U;
@@ -270,15 +331,18 @@ static uint32_t *fb_pak_find_icon(const char *name) {
         uint32_t h = fb_rd32(e + 20);
         uint32_t off = fb_rd32(e + 24);
         uint32_t size = fb_rd32(e + 28);
-        uint32_t need = w * h * sizeof(uint32_t);
+        uint32_t need;
         uint32_t *src;
         uint32_t *out;
 
         if (!fb_name16_eq(e, name)) continue;
-        if (!w || !h) return NULL;
+        if (!w || !h || w > 4096U || h > 4096U ||
+            w > 0xFFFFFFFFU / h ||
+            w * h > 0xFFFFFFFFU / sizeof(uint32_t)) return NULL;
+        need = w * h * sizeof(uint32_t);
         if (size < need) return NULL;
         if (off > g_fb_icon_cache.pak_size ||
-            off + need > g_fb_icon_cache.pak_size) return NULL;
+            need > g_fb_icon_cache.pak_size - off) return NULL;
 
         src = (uint32_t *)(data + off);
         out = (uint32_t *)bk_sys_alloc(FB_ICON_BYTES);
@@ -299,27 +363,11 @@ static uint32_t *fb_pak_find_icon(const char *name) {
 }
 
 static bool fb_load_icon_pak(void) {
-    if (g_fb_icon_cache.pak_data) return true;
-
-    if (bk_file_read_all("/ICONS/ICONS.PAK",
-                     &g_fb_icon_cache.pak_data,
-                     &g_fb_icon_cache.pak_size)) {
-        return true;
-    }
-
-    if (bk_file_read_all("/ICONS.PAK",
-                     &g_fb_icon_cache.pak_data,
-                     &g_fb_icon_cache.pak_size)) {
-        return true;
-    }
-/*
-     * fb_load_icon_pak disabled: central loader.
-     *
-     * Antes el filebrowser leía /ICONS/ICONS.PAK otra vez con su propia cache.
-     * Eso duplicaba la lectura del PAK desde disquete.
-     *
-     * Ahora dejamos que el fallback use bk_app_load_icon().
-     * Esa función ya resuelve los BMP de /ICONS desde el PAK central cacheado.
+    /*
+     * El set viejo /ICONS/ICONS.PAK queda deliberadamente desactivado.
+     * program_load_bmp_icon_scaled() traduce las rutas historicas a
+     * GRAPHICS.PAK, por lo que FileBrowser usa la misma familia React95 que
+     * el resto del escritorio sin una segunda cache paralela.
      */
     return false;
 }
@@ -339,12 +387,6 @@ static void fb_cache_load_resources(void) {
         g_fb_icon_cache.cd_icon = fb_pak_find_icon("CD");
         g_fb_icon_cache.usb_icon = fb_pak_find_icon("USB");
         g_fb_icon_cache.floppy_icon = fb_pak_find_icon("FLOPPY");
-        g_fb_icon_cache.shell_icon = fb_pak_find_icon("SHELL");
-        g_fb_icon_cache.editor_icon = fb_pak_find_icon("EDITOR");
-        g_fb_icon_cache.calc_icon = fb_pak_find_icon("CALC");
-        g_fb_icon_cache.files_icon = fb_pak_find_icon("FILES");
-        g_fb_icon_cache.midamp_icon = fb_pak_find_icon("MIDAMP");
-        g_fb_icon_cache.netscape_icon = fb_pak_find_icon("NETSCAPE");
     }
 
 #define FB_CACHE_LOAD_ICON(field, path) do { \
@@ -370,6 +412,9 @@ static void fb_cache_load_resources(void) {
     FB_CACHE_LOAD_ICON(cd_icon, "/ICONS/CD.BMP");
     FB_CACHE_LOAD_ICON(usb_icon, "/ICONS/USB.BMP");
     FB_CACHE_LOAD_ICON(floppy_icon, "/ICONS/FLOPPY.BMP");
+    /* GRAPHICS.PAK ya esta cacheado globalmente: cargar tambien los iconos
+     * de aplicaciones permite que Associations.INI conserve iconos propios
+     * sin volver al arte BMP antiguo. */
     FB_CACHE_LOAD_ICON(shell_icon, "/ICONS/SHELL.BMP");
     FB_CACHE_LOAD_ICON(editor_icon, "/ICONS/EDITOR.BMP");
     FB_CACHE_LOAD_ICON(calc_icon, "/ICONS/CALC.BMP");
@@ -415,6 +460,8 @@ static void fb_load_resources(fb_state_t *st) {
 
     st->associations = g_fb_icon_cache.associations;
     st->associations_size = g_fb_icon_cache.associations_size;
+    void *fresh=NULL;uint32_t fresh_size=0;
+    if(bk_file_read_all("/ASSOC.INI",&fresh,&fresh_size)&&fresh){st->associations=fresh;st->associations_size=fresh_size;st->associations_owned=true;}
 }
 
 static bool fb_cdrom_available(void) {
@@ -524,6 +571,7 @@ static const uint32_t *fb_icon_for_entry(const fb_state_t *st,
             case FB_DRIVE_CD: return st->cd_icon;
             case FB_DRIVE_USB: return st->usb_icon;
             case FB_DRIVE_FLOPPY: return st->floppy_icon;
+            case FB_DRIVE_SD: return st->hdd_icon;
             default: break;
         }
     }
@@ -539,7 +587,8 @@ static const uint32_t *fb_icon_for_entry(const fb_state_t *st,
             value_len = (size_t)(separator - value);
 #define FB_ASSOC(path, icon) \
                         if (value_len == sizeof(path) - 1 && \
-                            bk_runtime_strncmp(value, path, value_len) == 0) return icon
+                            bk_runtime_strncmp(value, path, value_len) == 0 && \
+                            (icon)) return (icon)
                         FB_ASSOC("/ICONS/SHELL.BMP", st->shell_icon);
                         FB_ASSOC("/ICONS/FILES.BMP", st->files_icon);
                         FB_ASSOC("/ICONS/EDITOR.BMP", st->editor_icon);
@@ -637,12 +686,14 @@ static bool fb_reserve_entries(fb_state_t *st, uint32_t required) {
         return false;
     }
 
-    for (uint32_t i = 0; i < st->entry_count; i++) {
+    for (uint32_t i = 0;
+         i < st->entry_count && i < st->entry_capacity; i++) {
         entries[i] = st->entries[i];
         drives[i] = st->entry_drive[i];
         bk_runtime_strncpy(mounts[i], st->entry_mount[i],
                            sizeof(mounts[i]) - 1U);
     }
+    if(st->associations_owned)bk_sys_free(st->associations);
     if (st->entries) bk_sys_free(st->entries);
     if (st->entry_drive) bk_sys_free(st->entry_drive);
     if (st->entry_mount) bk_sys_free(st->entry_mount);
@@ -719,6 +770,7 @@ static void fb_load_drives(fb_state_t *st) {
         if (!bk_device_block_info(i, &device) ||
             device.type == BK_BLOCK_ATAPI) continue;
         if (device.type == BK_BLOCK_ATA) drive = FB_DRIVE_HDD;
+        else if (device.type == BK_BLOCK_SD) drive = FB_DRIVE_SD;
         else if (device.type == BK_BLOCK_USB) drive = FB_DRIVE_USB;
         else if (device.type == BK_BLOCK_FLOPPY) {
             /* El FDC se registra incluso sin disquete: no mostrar una unidad
@@ -731,12 +783,25 @@ static void fb_load_drives(fb_state_t *st) {
 
         if (drive == FB_DRIVE_HDD)
             snprintf(label, sizeof(label), "Disco local (%s)", device.name);
+        else if (drive == FB_DRIVE_SD)
+            snprintf(label, sizeof(label), "Tarjeta SD (%s)", device.name);
         else if (drive == FB_DRIVE_USB)
             snprintf(label, sizeof(label), "Unidad USB (%s)", device.name);
         else
             snprintf(label, sizeof(label), "Disquete (%s)", device.name);
         snprintf(path, sizeof(path), "/%s", device.name);
         fb_add_drive(st, label, drive, path);
+    }
+    /* C: de Wine no es otro disco: es una carpeta normal del BFS principal.
+     * Mostrar un acceso rapido aqui evita obligar al usuario a atravesar
+     * SYSTEM/WINE, pero al abrirlo navegamos la ruta real y el boton Subir
+     * vuelve a /SYSTEM como con cualquier otra carpeta. */
+    {
+        vfs_dir_entry_t wine_root;
+        if (bk_file_stat("/SYSTEM/WINE", &wine_root) &&
+            wine_root.type == VFS_NODE_DIR)
+            fb_add_drive(st, "Programas de Windows", FB_DRIVE_NONE,
+                         "/SYSTEM/WINE");
     }
     if (fb_cdrom_available())
         fb_add_drive(st, "CD-ROM", FB_DRIVE_CD, "/CDROM");
@@ -787,6 +852,9 @@ static bool fb_load_dir(fb_state_t *st) {
             bk_runtime_strcpy(st->status, "No se pudo leer el directorio");
             return false;
         }
+        /* No confiar un índice al pintor si un filesystem defectuoso informa
+         * más entradas que las que realmente caben en el buffer entregado. */
+        if (found > usable) found = usable;
         if (found < usable || st->entry_capacity >= FB_DIR_HARD_LIMIT)
             break;
         if (!fb_reserve_entries(st, st->entry_capacity * 2U)) {
@@ -809,6 +877,7 @@ static bool fb_load_dir(fb_state_t *st) {
         uint32_t write = parent;
         for (uint32_t read = parent; read < parent + found; read++) {
             vfs_dir_entry_t *entry = &st->entries[read];
+            if (!bk_runtime_strncmp(entry->name,".bk-",4)) continue;
             if (entry->name[0] == '.' &&
                 (entry->name[1] == '\0' ||
                  (entry->name[1] == '.' && entry->name[2] == '\0')))
@@ -877,6 +946,9 @@ static void fb_navigate(fb_state_t *st, const char *name) {
         if (len > 1) new_path[--len] = '\0';
         if (len == 0) { new_path[0] = '/'; new_path[1] = '\0'; }
     } else {
+        /* Mantener visible la rama desde la que se entra. Las demas ramas
+         * abiertas conservan su estado independiente. */
+        fb_tree_set_open(st, old_path, true);
         bk_runtime_strncpy(new_path, st->cwd, sizeof(new_path) - 1U);
         new_path[sizeof(new_path) - 1U] = '\0';
         size_t len = bk_runtime_strlen(new_path);
@@ -937,9 +1009,9 @@ static void fb_execute_object(gui_desktop_t *desktop, fb_state_t *st,
     bk_runtime_strncpy(path + len, name, sizeof(path) - len - 1);
     if (!bk_app_execute_path(desktop, path) && st->window) {
         bool is_pe = bk_app_is_win32(path);
-        const char *error = is_pe ? bk_app_pe_last_error() : bk_app_elf_last_error();
+        const char *error = is_pe ? "No se pudo iniciar Wine" : bk_app_elf_last_error();
 
-        bk_runtime_strncpy(st->window->title, is_pe ? "Error PE: " : "Error ELF: ",
+        bk_runtime_strncpy(st->window->title, is_pe ? "Error Wine: " : "Error ELF: ",
                  sizeof(st->window->title) - 1);
         st->window->title[sizeof(st->window->title) - 1] = '\0';
         len = bk_runtime_strlen(st->window->title);
@@ -950,7 +1022,7 @@ static void fb_execute_object(gui_desktop_t *desktop, fb_state_t *st,
     }
 }
 
-static bool fb_open_associated(fb_state_t *st, const char *name) {
+static bool fb_open_association_action(fb_state_t *st, const char *name,bool editing) {
     const char *value;
     const char *separator;
     size_t value_len;
@@ -961,10 +1033,12 @@ static bool fb_open_associated(fb_state_t *st, const char *name) {
     while (separator < value + value_len && *separator != '|') separator++;
     if (separator >= value + value_len || separator + 1 >= value + value_len)
         return false;
+    const char *association_end = value + value_len;
     value = separator + 1;
+    if(editing){while(value<association_end&&*value&&*value!='|'&&*value!='\r'&&*value!='\n')value++;if(value>=association_end||*value!='|')return false;value++;}
     {
         const char *end = value;
-        while (*end && *end != '\r' && *end != '\n') end++;
+        while (*end && *end != '|' && *end != '\r' && *end != '\n') end++;
         value_len = (size_t)(end - value);
     }
     if (!value_len || value_len >= sizeof(application)) return false;
@@ -1003,14 +1077,16 @@ static bool fb_open_selected(fb_state_t *st) {
             return true;
         }
         fb_update_title(st);
+        (void)bk_system_sound_event_play(BK_SYSTEM_SOUND_BUTTON);
     } else if (e->type == VFS_NODE_DIR) {
         fb_navigate(st, e->name);
+        (void)bk_system_sound_event_play(BK_SYSTEM_SOUND_BUTTON);
     } else if (fb_ext_is(fb_extension(e->name), ".DVR", ".dvr")) {
         char path[VFS_MAX_PATH];
         fb_join_path(path, sizeof(path), st->cwd, e->name);
         bk_runtime_strcpy(st->status, bk_device_driver_load(path) ? "@H62E1C365" :
                                                "@HCB0782AD");
-    } else if (fb_open_associated(st, e->name)) {
+    } else if (fb_open_association_action(st,e->name,false)) {
         /* Association.INI decides the program before built-in fallbacks. */
     } else if (fb_is_text_file(e->name)) {
         fb_open_text(desktop, st, e->name);
@@ -1040,7 +1116,7 @@ static void fb_properties_paint(gui_window_t *window, gui_surface_t *surface,
     int y;
     if (!p || !window || !surface) return;
     c = bk_gui_window_content_rect_raw(window);
-    bk_gui_gfx_fill_rect(surface, c, 0x00D0D0C8);
+    bk_gui_gfx_fill_rect(surface, c, BK_THEME_FACE);
     bk_gui_gfx_fill_rect(surface, (gui_rect_t){c.x + 10, c.y + 6, 82, 22},
                       p->active_tab == 0 ? 0x00FFFFFF : 0x00C0C0C0);
     bk_gui_gfx_draw_rect(surface, (gui_rect_t){c.x + 10, c.y + 6, 82, 22},
@@ -1160,64 +1236,6 @@ static void fb_btn_up_cb(gui_window_t *window UNUSED, uint32_t id UNUSED) {
     }
 }
 
-static bool fb_copy_tree(const char *source, const char *destination,
-                         bool directory, uint8_t depth) {
-    if (depth > 16) return false;
-    if (!directory) {
-        void *data = NULL;
-        uint32_t size = 0;
-        bool ok = bk_file_read_all(source, &data, &size) &&
-                  bk_file_write_all(destination, data, size);
-        if (data) bk_sys_free(data);
-        return ok;
-    }
-    if (!bk_file_mkdir(destination)) return false;
-    {
-        vfs_dir_entry_t *entries = NULL;
-        uint32_t count = 0;
-        if (!fb_read_directory(source, &entries, &count)) return false;
-        for (uint32_t i = 0; i < count; i++) {
-            char child_source[VFS_MAX_PATH], child_destination[VFS_MAX_PATH];
-            if (bk_runtime_strcmp(entries[i].name, ".") == 0 ||
-                bk_runtime_strcmp(entries[i].name, "..") == 0) continue;
-            fb_join_path(child_source, sizeof(child_source), source,
-                         entries[i].name);
-            fb_join_path(child_destination, sizeof(child_destination),
-                         destination, entries[i].name);
-            if (!fb_copy_tree(child_source, child_destination,
-                              entries[i].type == VFS_NODE_DIR,
-                              (uint8_t)(depth + 1))) {
-                bk_sys_free(entries);
-                return false;
-            }
-        }
-        bk_sys_free(entries);
-    }
-    return true;
-}
-
-static bool fb_remove_tree(const char *path, bool directory, uint8_t depth) {
-    if (depth > 16) return false;
-    if (directory) {
-        vfs_dir_entry_t *entries = NULL;
-        uint32_t count = 0;
-        if (!fb_read_directory(path, &entries, &count)) return false;
-        for (uint32_t i = 0; i < count; i++) {
-            char child[VFS_MAX_PATH];
-            if (bk_runtime_strcmp(entries[i].name, ".") == 0 ||
-                bk_runtime_strcmp(entries[i].name, "..") == 0) continue;
-            fb_join_path(child, sizeof(child), path, entries[i].name);
-            if (!fb_remove_tree(child, entries[i].type == VFS_NODE_DIR,
-                                (uint8_t)(depth + 1))) {
-                bk_sys_free(entries);
-                return false;
-            }
-        }
-        bk_sys_free(entries);
-    }
-    return bk_file_remove(path);
-}
-
 static void fb_delete_dialog_paint(gui_window_t *window,
                                    gui_surface_t *surface, void *context) {
     fb_delete_dialog_t *dialog = (fb_delete_dialog_t *)context;
@@ -1242,12 +1260,11 @@ static void fb_delete_dialog_paint(gui_window_t *window,
 
     message = (gui_rect_t){c.x + 76, c.y + 15, c.w - 92, 76};
     bk_gui_font_draw_string_clipped(surface, message.x, message.y + 2,
-        "@HD1F627C9", 0x00101010, message);
+        dialog->permanent ? "Eliminar definitivamente?" : "Enviar a la papelera?", 0x00101010, message);
     bk_gui_font_draw_string_clipped(surface, message.x, message.y + 24,
         dialog->name, 0x00004080, message);
     bk_gui_font_draw_string_clipped(surface, message.x, message.y + 46,
-        dialog->directory ? "@H786E5466"
-                          : "@H6AE867BC",
+        dialog->permanent ? "No se puede deshacer." : "Podras restaurarlo desde la papelera.",
         0x00505050, message);
 
     bk_gui_gfx_draw_line(surface, c.x + 12, c.y + 99,
@@ -1292,7 +1309,7 @@ static void fb_delete_dialog_task(void *argument) {
             dialog->cancel_button_id = button->id;
             (void)bk_gui_widget_set_icon(button, "Close");
         }
-        bk_gui_desktop_raise_window(dialog->desktop, dialog->window);
+        bk_gui_focus_window(dialog->desktop,dialog->window);
         bk_gui_request_paint();
     }
 
@@ -1303,9 +1320,9 @@ static void fb_delete_dialog_task(void *argument) {
     if (dialog->action == 1U && g_fb == dialog->owner &&
         dialog->owner->delete_dialog_open &&
         dialog->owner->delete_dialog_token == dialog->owner_token) {
-        bool removed = fb_remove_tree(dialog->path, dialog->directory, 0);
-        bk_runtime_strcpy(dialog->owner->status, removed ? "@H029C040A" :
-                                                "@H4A338897");
+        bool started=bk_shell_job_one(dialog->desktop,
+            dialog->permanent?BK_SHELL_JOB_DELETE:BK_SHELL_JOB_TRASH,dialog->path,NULL);
+        bk_runtime_strcpy(dialog->owner->status,started?"Procesando archivos...":"No se pudo iniciar la operacion");
         fb_load_dir(dialog->owner);
         if (dialog->owner->window) dialog->owner->window->dirty = true;
     }
@@ -1313,8 +1330,7 @@ static void fb_delete_dialog_task(void *argument) {
         dialog->owner->delete_dialog_token == dialog->owner_token)
         dialog->owner->delete_dialog_open = false;
     if (dialog->window) {
-        bk_gui_desktop_remove_window(dialog->desktop, dialog->window);
-        bk_gui_window_destroy_raw(dialog->window);
+        bk_gui_destroy_window(dialog->desktop,dialog->window);
         bk_proc_bind_window(NULL);
     }
     if (dialog->warning_icon) bk_sys_free(dialog->warning_icon);
@@ -1337,6 +1353,7 @@ static void fb_open_delete_dialog(fb_state_t *st) {
     dialog->owner = st;
     dialog->desktop = st->desktop;
     dialog->directory = entry->type == VFS_NODE_DIR;
+    dialog->permanent = bk_shell_inside(st->cwd,BK_TRASH_FILES);
     bk_runtime_strncpy(dialog->name, entry->name, sizeof(dialog->name) - 1);
     fb_join_path(dialog->path, sizeof(dialog->path), st->cwd, entry->name);
     st->delete_dialog_open = true;
@@ -1348,6 +1365,11 @@ static void fb_open_delete_dialog(fb_state_t *st) {
         bk_runtime_strcpy(st->status, "@H2DC23EFB");
         bk_sys_free(dialog);
     }
+}
+
+static void fb_btn_delete_cb(gui_window_t *window,uint32_t id UNUSED) {
+    fb_state_t *st=window ? (fb_state_t *)window->content_context : NULL;
+    if(st)fb_open_delete_dialog(st);
 }
 
 static void fb_begin_dialog(fb_state_t *st, uint8_t dialog) {
@@ -1429,18 +1451,12 @@ static void fb_btn_paste_cb(gui_window_t *window, uint32_t id UNUSED) {
                         bk_runtime_strlen(g_fb_clipboard)) == 0 &&
                destination[bk_runtime_strlen(g_fb_clipboard)] == '/') {
         bk_runtime_strcpy(st->status, "@HCFE1FAC7");
-    } else if (fb_copy_tree(g_fb_clipboard, destination,
-                            g_fb_clipboard_directory, 0)) {
-        if (g_fb_clipboard_cut &&
-            !fb_remove_tree(g_fb_clipboard, g_fb_clipboard_directory, 0)) {
-            bk_runtime_strcpy(st->status, "@H2BA99365");
-        } else {
-            bk_runtime_strcpy(st->status, g_fb_clipboard_cut ? "@H99618CE0" :
-                                                    "@H89905CAE");
-            if (g_fb_clipboard_cut) g_fb_clipboard[0] = '\0';
-        }
-        fb_load_dir(st);
-    } else bk_runtime_strcpy(st->status, "@HF92EF5D3");
+    } else {
+        bool started=bk_shell_job_one(st->desktop,g_fb_clipboard_cut?BK_SHELL_JOB_MOVE:BK_SHELL_JOB_COPY,
+            g_fb_clipboard,st->cwd);
+        bk_runtime_strcpy(st->status,started?"Procesando archivos...":"No se pudo iniciar la transferencia");
+        if(started && g_fb_clipboard_cut)g_fb_clipboard[0]='\0';
+    }
     window->dirty = true;
 }
 
@@ -1464,11 +1480,26 @@ static void fb_context_cb(gui_window_t *window, uint32_t item_id,
     if (!st || !window) return;
     switch (item_id) {
         case FB_CONTEXT_OPEN: (void)fb_open_selected(st); break;
+        case FB_CONTEXT_EDIT:
+            if(st->selected>=0&&(uint32_t)st->selected<st->entry_count){const char *name=st->entries[st->selected].name;if(!fb_open_association_action(st,name,true))fb_open_text(st->desktop,st,name);}
+            break;
         case FB_CONTEXT_COPY: fb_btn_copy_cb(window, 0); break;
         case FB_CONTEXT_CUT: fb_btn_cut_cb(window, 0); break;
         case FB_CONTEXT_PASTE: fb_btn_paste_cb(window, 0); break;
         case FB_CONTEXT_RENAME: fb_begin_dialog(st, FB_DIALOG_RENAME); break;
         case FB_CONTEXT_DELETE: fb_open_delete_dialog(st); break;
+        case 590: {
+            char path[VFS_MAX_PATH];
+            if (st->selected >= 0 && (uint32_t)st->selected < st->entry_count) {
+                fb_join_path(path,sizeof(path),st->cwd,st->entries[st->selected].name);
+                bool restored = bk_shell_restore(path);
+                if(restored) bk_gui_files_changed();
+                fb_load_dir(st);
+                bk_runtime_strcpy(st->status,restored ? "Restaurado" : "No se pudo restaurar");
+                st->window->dirty = true;
+            }
+            break;
+        }
         case FB_CONTEXT_PROPERTIES: fb_open_properties(st); break;
         case FB_CONTEXT_NEW_FOLDER: fb_btn_new_cb(window, 0); break;
         case FB_CONTEXT_REFRESH: fb_btn_refresh_cb(window, 0); break;
@@ -1485,9 +1516,12 @@ static void fb_open_context_menu(fb_state_t *st, int x, int y, int hit) {
     can_copy = has_entry && !st->drive_view &&
                bk_runtime_strcmp(st->entries[hit].name, "..") != 0;
     bk_gui_window_context_clear(st->window);
+    if (!bk_runtime_strcmp(st->cwd,BK_TRASH_FILES) && can_copy)
+        (void)bk_gui_window_context_add_item(st->window,590,"Restaurar",true,fb_context_cb,st);
     if (has_entry) {
         (void)bk_gui_window_context_add_item(st->window, FB_CONTEXT_OPEN,
             "@H5A216C13", true, fb_context_cb, st);
+        (void)bk_gui_window_context_add_item(st->window, FB_CONTEXT_EDIT,"Editar",can_copy,fb_context_cb,st);
         (void)bk_gui_window_context_add_item(st->window, FB_CONTEXT_COPY,
             "@HAFCCD5E7", can_copy, fb_context_cb, st);
         (void)bk_gui_window_context_add_item(st->window, FB_CONTEXT_CUT,
@@ -1512,6 +1546,191 @@ static void fb_open_context_menu(fb_state_t *st, int x, int y, int hit) {
  *  Pintar lista dentro de la ventana
  * ══════════════════════════════════════════════════ */
 
+static int fb_tree_max_rows(gui_rect_t tree) {
+    int rows = (tree.h - FB_TREE_PAD * 2) / FB_TREE_ROW_H;
+    return rows < 1 ? 1 : rows;
+}
+
+static int fb_tree_open_index(const fb_state_t *st, const char *path) {
+    for (uint8_t i = 0; st && path && i < st->tree_open_count; i++)
+        if (bk_runtime_strcmp(st->tree_open[i], path) == 0) return i;
+    return -1;
+}
+
+static void fb_tree_set_open(fb_state_t *st, const char *path, bool open) {
+    int index = fb_tree_open_index(st, path);
+    if (!st || !path) return;
+    if (open && index < 0 && st->tree_open_count < FB_TREE_MAX_OPEN) {
+        bk_runtime_strncpy(st->tree_open[st->tree_open_count], path,
+                           VFS_MAX_PATH - 1U);
+        st->tree_open_count++;
+    } else if (!open && index >= 0) {
+        for (uint8_t i = (uint8_t)index; i + 1U < st->tree_open_count; i++)
+            bk_runtime_strcpy(st->tree_open[i], st->tree_open[i + 1U]);
+        st->tree_open_count--;
+    }
+}
+
+static void fb_tree_add_node(fb_state_t *st, const char *path,
+                             const char *label, int depth, bool expandable) {
+    fb_tree_node_t *node;
+    if (!st || st->tree_node_count >= FB_TREE_MAX_NODES) return;
+    node = &st->tree_nodes[st->tree_node_count++];
+    bk_runtime_strncpy(node->path, path, sizeof(node->path) - 1U);
+    bk_runtime_strncpy(node->label, label, sizeof(node->label) - 1U);
+    node->depth = (uint8_t)depth;
+    node->expandable = expandable;
+    node->expanded = expandable && fb_tree_open_index(st, path) >= 0;
+}
+
+static void fb_tree_add_children(fb_state_t *st, const char *parent,
+                                 int depth) {
+    vfs_dir_entry_t *entries = NULL;
+    uint32_t count = 0U;
+    if (!st || depth > 12 || fb_tree_open_index(st, parent) < 0 ||
+        !fb_read_directory(parent, &entries, &count)) return;
+    for (uint32_t i = 0; i < count && st->tree_node_count < FB_TREE_MAX_NODES; i++) {
+        char path[VFS_MAX_PATH];
+        if (entries[i].type != VFS_NODE_DIR ||
+            bk_runtime_strcmp(entries[i].name, ".") == 0 ||
+            bk_runtime_strcmp(entries[i].name, "..") == 0) continue;
+        fb_join_path(path, sizeof(path), parent, entries[i].name);
+        fb_tree_add_node(st, path, entries[i].name, depth, true);
+        fb_tree_add_children(st, path, depth + 1);
+    }
+    bk_sys_free(entries);
+}
+
+static void fb_tree_rebuild(fb_state_t *st) {
+    uint32_t device_count;
+    if (!st) return;
+    st->tree_node_count = 0U;
+    fb_tree_add_node(st, "", "@H06585867", 0, true);
+    if (fb_tree_open_index(st, "") < 0) return;
+    device_count = bk_device_block_count();
+    for (uint32_t i = 0; i < device_count; i++) {
+        bk_block_info_t device;
+        char path[16];
+        if (!bk_device_block_info(i, &device) || device.type == BK_BLOCK_ATAPI)
+            continue;
+        snprintf(path, sizeof(path), "/%s", device.name);
+        fb_tree_add_node(st, path, device.name, 1, true);
+        fb_tree_add_children(st, path, 2);
+    }
+    if (fb_cdrom_available()) {
+        fb_tree_add_node(st, "/CDROM", "CD-ROM", 1, true);
+        fb_tree_add_children(st, "/CDROM", 2);
+    }
+    if (st->tree_scroll < 0) st->tree_scroll = 0;
+    if (st->tree_scroll >= (int)st->tree_node_count)
+        st->tree_scroll = st->tree_node_count ? st->tree_node_count - 1 : 0;
+}
+
+static void fb_tree_draw_row(gui_surface_t *surface, gui_rect_t tree,
+                             int row, int indent, const char *label,
+                             const uint32_t *icon, bool selected,
+                             int expansion) {
+    gui_rect_t line;
+    int y = tree.y + FB_TREE_PAD + row * FB_TREE_ROW_H;
+    int control_x = tree.x + 5 + indent * 14;
+    int ix = control_x + (expansion >= 0 ? 14 : 0);
+    if (y + FB_TREE_ROW_H > tree.y + tree.h) return;
+    line = (gui_rect_t){tree.x + 2, y, tree.w - 4, FB_TREE_ROW_H - 1};
+    if (selected)
+        bk_gui_gfx_fill_rect(surface, line, 0x00C8C8C8);
+    if (indent > 0) {
+        int stem_x = tree.x + 10 + (indent - 1) * 14;
+        bk_gui_gfx_draw_line(surface, stem_x, y,
+                             stem_x, y + FB_TREE_ROW_H / 2, 0x00808080);
+        bk_gui_gfx_draw_line(surface, stem_x, y + FB_TREE_ROW_H / 2,
+                             ix - 2, y + FB_TREE_ROW_H / 2, 0x00808080);
+    }
+    if (expansion >= 0) {
+        gui_rect_t button = {control_x, y + 6, 11, 11};
+        bk_gui_gfx_fill_rect(surface, button, 0x00F4F4F0);
+        bk_gui_gfx_draw_rect(surface, button, 0x00606060);
+        bk_gui_gfx_draw_line(surface, control_x + 2, y + 11,
+                             control_x + 8, y + 11, 0x00202020);
+        if (!expansion)
+            bk_gui_gfx_draw_line(surface, control_x + 5, y + 8,
+                                 control_x + 5, y + 14, 0x00202020);
+    }
+    fb_draw_small_icon(surface, ix, y + 2, icon);
+    bk_gui_font_draw_string_clipped(surface, ix + 24, y + 8,
+        label ? label : "", FB_COLOR_TEXT,
+        (gui_rect_t){ix + 22, y, tree.x + tree.w - ix - 25,
+                     FB_TREE_ROW_H});
+}
+
+/* Panel izquierdo tipo Explorer. La rama principal siempre muestra
+ * "Este equipo" y, debajo, las unidades o las carpetas hijas del cwd. */
+static void fb_paint_tree(gui_surface_t *surface, fb_state_t *st) {
+    gui_rect_t tree = fb_tree_rect(st);
+    int max_rows;
+    gui_scrollbar_t scrollbar;
+    if (!surface || !st || tree.w <= 0 || tree.h <= 0) return;
+
+    fb_tree_rebuild(st);
+
+    bk_gui_gfx_fill_rect(surface, tree, 0x00E8E8E8);
+    bk_gui_gfx_draw_rect(surface, tree, 0x00606060);
+    bk_gui_gfx_draw_line(surface, tree.x + tree.w - 2, tree.y + 1,
+                         tree.x + tree.w - 2, tree.y + tree.h - 2,
+                         0x00FFFFFF);
+    max_rows = fb_tree_max_rows(tree);
+    for (int row = 0; row < max_rows; row++) {
+        int index = st->tree_scroll + row;
+        fb_tree_node_t *node;
+        const uint32_t *icon;
+        if (index >= (int)st->tree_node_count) break;
+        node = &st->tree_nodes[index];
+        icon = index == 0 ? (st->files_icon ? st->files_icon : st->hdd_icon)
+                          : (node->depth == 1 ? st->hdd_icon : st->folder_icon);
+        fb_tree_draw_row(surface, tree, row, node->depth, node->label, icon,
+            node->path[0] && bk_runtime_strcmp(node->path, st->cwd) == 0,
+            node->expandable ? node->expanded : -1);
+    }
+    bk_gui_scrollbar_init_vertical(&scrollbar,
+        (gui_rect_t){tree.x + tree.w - GUI_SCROLLBAR_SIZE, tree.y,
+                     GUI_SCROLLBAR_SIZE, tree.h},
+        (uint32_t)st->tree_scroll, (uint32_t)max_rows, st->tree_node_count);
+    bk_gui_scrollbar_paint_vertical(surface, &scrollbar);
+}
+
+/* Devuelve true cuando el click pertenecia al tree, incluso si cae sobre
+ * espacio vacio: asi nunca selecciona accidentalmente un icono del panel
+ * derecho. */
+static bool fb_tree_click(fb_state_t *st, int x, int y) {
+    gui_rect_t tree = fb_tree_rect(st);
+    int row;
+    if (!st || tree.w <= 0 || !bk_gui_rect_contains(tree, x, y)) return false;
+    if (y < tree.y + FB_TREE_PAD) return true;
+    row = st->tree_scroll + (y - tree.y - FB_TREE_PAD) / FB_TREE_ROW_H;
+    if (row < 0 || row >= (int)st->tree_node_count) return true;
+    {
+        fb_tree_node_t *node = &st->tree_nodes[row];
+        int control_x = tree.x + 5 + node->depth * 14;
+        bool control = node->expandable && x >= control_x && x < control_x + 12;
+        if (control) {
+            fb_tree_set_open(st, node->path, !node->expanded);
+        } else if (!node->path[0]) {
+            st->drive_view = true;
+            bk_runtime_strcpy(st->cwd, "/");
+            (void)fb_load_dir(st);
+            fb_update_title(st);
+        } else {
+            st->drive_view = false;
+            bk_runtime_strncpy(st->cwd, node->path, sizeof(st->cwd) - 1U);
+            (void)fb_load_dir(st);
+            fb_update_title(st);
+        }
+        fb_tree_rebuild(st);
+        st->window->dirty = true;
+    }
+    (void)bk_system_sound_event_play(BK_SYSTEM_SOUND_BUTTON);
+    return true;
+}
+
 static void fb_paint_list(gui_surface_t *surface, fb_state_t *st) {
     gui_rect_t list;
     gui_scrollbar_t scrollbar;
@@ -1520,61 +1739,52 @@ static void fb_paint_list(gui_surface_t *surface, fb_state_t *st) {
 
     if (!st->window) return;
     fb_clamp_scroll(st);
-    list = fb_list_rect(st);
+    list = fb_items_rect(st);
     if (list.w <= GUI_SCROLLBAR_SIZE || list.h <= 0) return;
+
+    fb_paint_tree(surface, st);
     bk_gui_gfx_fill_rect(surface, list, FB_COLOR_BG);
+    bk_gui_gfx_draw_rect(surface, list, 0x00808080);
     bk_gui_scrollbar_init_vertical(&scrollbar,
         (gui_rect_t){list.x + list.w - GUI_SCROLLBAR_SIZE, list.y,
                      GUI_SCROLLBAR_SIZE, list.h},
         (uint32_t)st->scroll, (uint32_t)fb_visible_slots(st), st->entry_count);
 
-    cols = fb_cols_for_rect(list);
+    cols = st->list_view ? 1 : fb_cols_for_rect(list);
     visible = fb_visible_slots(st);
     for (int i = 0; i < visible; i++) {
         int idx = st->scroll + i;
         if ((uint32_t)idx >= st->entry_count) break;
         vfs_dir_entry_t *e = &st->entries[idx];
         int ex = list.x + (i % cols) * FB_TILE_W;
-        int ey = list.y + (i / cols) *
-                 (st->list_view ? FB_LIST_ROW_H : FB_TILE_H);
+        int ey = list.y + (i / cols) * fb_item_row_height(st);
         bool sel = (idx == st->selected);
-        if (st->list_view) {
-            if (sel)
-                bk_gui_gfx_fill_rect(surface, (gui_rect_t){ex, ey,
-                    list.w - GUI_SCROLLBAR_SIZE, FB_LIST_ROW_H - 1},
-                    FB_COLOR_SEL);
-            fb_draw_small_icon(surface, ex + 2, ey + 2,
-                               fb_icon_for_entry(st, e, (uint32_t)idx));
-            bk_gui_font_draw_string_clipped(surface, ex + 26, ey + 8, e->name,
-                sel ? FB_COLOR_TEXTSEL : FB_COLOR_TEXT,
-                (gui_rect_t){ex + 24, ey, list.w - 116, FB_LIST_ROW_H});
-            if (e->type == VFS_NODE_FILE) {
-                char size_text[24];
-                snprintf(size_text, sizeof(size_text), "@H516F097C", e->size);
-                bk_gui_font_draw_string_clipped(surface,
-                    list.x + list.w - 102, ey + 8, size_text,
-                    sel ? FB_COLOR_TEXTSEL : 0x00505050,
-                    (gui_rect_t){list.x + list.w - 106, ey, 88,
-                                 FB_LIST_ROW_H});
-            }
-            continue;
-        }
+        int item_w = st->list_view ? list.w - GUI_SCROLLBAR_SIZE : FB_TILE_W - 4;
+        int item_h = st->list_view ? FB_LIST_ROW_H - 1 : FB_TILE_H - 3;
         if (sel)
-            bk_gui_gfx_fill_rect(surface, (gui_rect_t){ex, ey, FB_TILE_W - 4,
-                                                    FB_TILE_H - 3},
+            bk_gui_gfx_fill_rect(surface, (gui_rect_t){ex, ey, item_w, item_h},
                               FB_COLOR_SEL);
         if (sel) {
             bk_gui_gfx_draw_rect(surface,
-                (gui_rect_t){ex, ey, FB_TILE_W - 4, FB_TILE_H - 3}, 0x00002060);
+                (gui_rect_t){ex, ey, item_w, item_h}, 0x00002060);
             bk_gui_gfx_draw_rect(surface,
-                (gui_rect_t){ex + 2, ey + 2, FB_TILE_W - 8, FB_TILE_H - 7},
+                (gui_rect_t){ex + 2, ey + 2, item_w - 4, item_h - 4},
                 0x00FFFFFF);
         }
-        fb_draw_bmp_icon(surface, ex + (FB_TILE_W - FB_ICON_SIZE) / 2, ey + 5,
-                         fb_icon_for_entry(st, e, (uint32_t)idx));
-        fb_draw_tile_name(surface, ex + 4, ey + 74, e->name,
-                          sel ? FB_COLOR_TEXTSEL : FB_COLOR_TEXT,
-                          (gui_rect_t){ex + 3, ey + 72, FB_TILE_W - 10, 28});
+        if (st->list_view) {
+            fb_draw_bmp_icon(surface, ex + 3, ey + 3,
+                             fb_icon_for_entry(st, e, (uint32_t)idx));
+            bk_gui_font_draw_string_clipped(surface, ex + FB_ICON_SIZE + 10,
+                ey + 14, e->name, sel ? FB_COLOR_TEXTSEL : FB_COLOR_TEXT,
+                (gui_rect_t){ex + FB_ICON_SIZE + 8, ey + 2,
+                             item_w - FB_ICON_SIZE - 12, item_h - 4});
+        } else {
+            fb_draw_bmp_icon(surface, ex + (FB_TILE_W - FB_ICON_SIZE) / 2,
+                             ey + 3, fb_icon_for_entry(st, e, (uint32_t)idx));
+            fb_draw_tile_name(surface, ex + 4, ey + 39, e->name,
+                              sel ? FB_COLOR_TEXTSEL : FB_COLOR_TEXT,
+                              (gui_rect_t){ex + 3, ey + 37, FB_TILE_W - 10, 24});
+        }
     }
     bk_gui_scrollbar_paint_vertical(surface, &scrollbar);
 }
@@ -1591,15 +1801,15 @@ static int fb_hit_entry(fb_state_t *st, int ex, int ey) {
     int idx;
 
     if (!st->window) return -1;
-    list = fb_list_rect(st);
+    list = fb_items_rect(st);
     if (list.w <= GUI_SCROLLBAR_SIZE || list.h <= 0) return -1;
 
     if (ex < list.x || ex >= list.x + list.w - GUI_SCROLLBAR_SIZE) return -1;
     if (ey < list.y || ey >= list.y + list.h) return -1;
 
-    cols = fb_cols_for_rect(list);
+    cols = st->list_view ? 1 : fb_cols_for_rect(list);
     col = st->list_view ? 0 : (ex - list.x) / FB_TILE_W;
-    row = (ey - list.y) / (st->list_view ? FB_LIST_ROW_H : FB_TILE_H);
+    row = (ey - list.y) / fb_item_row_height(st);
     if (col < 0 || col >= cols) return -1;
     idx = st->scroll + row * cols + col;
     if ((uint32_t)idx >= st->entry_count) return -1;
@@ -1615,15 +1825,21 @@ static void fb_content(gui_window_t *window UNUSED,
     fb_state_t *st = (fb_state_t *)context;
     if (st) {
         gui_rect_t content = bk_gui_window_content_rect_raw(st->window);
-        int x = content.x + 33;
+        int x = content.x + 38;
         int y = content.y + 4;
-        bk_gui_gfx_fill_rect(surface, (gui_rect_t){x, y, st->window->bounds.w - 42, 20},
+        bk_gui_gfx_fill_rect(surface,
+            (gui_rect_t){content.x + 2, content.y + 27, content.w - 4, 23},
+            0x00C0C0C0);
+        bk_gui_gfx_draw_line(surface, content.x + 2, content.y + 50,
+                             content.x + content.w - 3, content.y + 50,
+                             0x00808080);
+        bk_gui_gfx_fill_rect(surface, (gui_rect_t){x, y, st->window->bounds.w - 47, 20},
                           st->editing_address ? 0x00FFF4C8 : 0x00FFFFFF);
-        bk_gui_gfx_draw_rect(surface, (gui_rect_t){x, y, st->window->bounds.w - 42, 20},
+        bk_gui_gfx_draw_rect(surface, (gui_rect_t){x, y, st->window->bounds.w - 47, 20},
                           0x00606060);
         bk_gui_font_draw_string_clipped(surface, x + 4, y + 6,
             st->editing_address ? st->address : st->cwd, 0x00101010,
-            (gui_rect_t){x + 3, y + 2, st->window->bounds.w - 48, 16});
+            (gui_rect_t){x + 3, y + 2, st->window->bounds.w - 53, 16});
         fb_paint_list(surface, st);
         if (st->status[0]) {
             gui_rect_t list = fb_list_rect(st);
@@ -1640,7 +1856,7 @@ static void fb_content(gui_window_t *window UNUSED,
                               c.y + (c.h - 105) / 2, 300, 105};
             const char *caption = st->dialog == FB_DIALOG_NEW_FOLDER
                 ? "@HDB2502C6" : "@H33AFD949";
-            bk_gui_gfx_fill_rect(surface, box, 0x00D0D0C8);
+            bk_gui_gfx_fill_rect(surface, box, BK_THEME_FACE);
             bk_gui_gfx_draw_rect(surface, box, 0x00303030);
             bk_gui_font_draw_string(surface, box.x + 10, box.y + 12, caption,
                                  0x00101010, 0, false);
@@ -1698,6 +1914,54 @@ static bool fb_window_event(gui_window_t *window UNUSED,
 
     /* Solo nos interesan eventos dentro de la ventana abierta */
     if (!st->window) return false;
+    if (event->type == GUI_EVENT_FILES_CHANGED) {
+        (void)fb_load_dir(st); st->window->dirty = true; return true;
+    }
+    if (event->type == GUI_EVENT_FILE_DROP) {
+        char source[VFS_MAX_PATH], directory[VFS_MAX_PATH];
+        if (!bk_gui_file_drop_take(st->window,event,source)) return true;
+        bk_runtime_strcpy(directory,st->drive_view ? "" : st->cwd);
+        gui_rect_t tree=fb_tree_rect(st);
+        if(bk_gui_rect_contains(tree,event->x,event->y)) {
+            int row=st->tree_scroll+(event->y-tree.y-FB_TREE_PAD)/FB_TREE_ROW_H;
+            if(event->y<tree.y+FB_TREE_PAD || row<0 || row>=(int)st->tree_node_count) {
+                while(bk_gui_file_drop_take(st->window,event,source)){}return true;
+            }
+            bk_runtime_strcpy(directory,st->tree_nodes[row].path);
+        } else {
+            int hit=fb_hit_entry(st,event->x,event->y);
+            if(hit>=0 && st->drive_view)bk_runtime_strcpy(directory,st->entry_mount[hit]);
+            else if(hit>=0 && st->entries[hit].type==VFS_NODE_DIR)
+                fb_join_path(directory,sizeof(directory),st->cwd,st->entries[hit].name);
+        }
+        if(!directory[0]) {while(bk_gui_file_drop_take(st->window,event,source)){}return true;}
+        bk_shell_job_t *job=bk_shell_job_create(st->desktop,
+            !bk_runtime_strcmp(directory,BK_TRASH_FILES)?BK_SHELL_JOB_TRASH:BK_SHELL_JOB_MOVE,directory);
+        bool queued=job!=NULL;
+        do {if(!bk_shell_job_add(job,source))queued=false;}
+        while(bk_gui_file_drop_take(st->window,event,source));
+        if(queued)queued=bk_shell_job_start(job);else bk_sys_free(job);
+        bk_runtime_strcpy(st->status,queued?"Procesando archivos...":"No se pudo iniciar la transferencia");
+        st->window->dirty = true; return true;
+    }
+    if (event->type == GUI_EVENT_MOUSE_MOVE && st->drag_pending &&
+        (event->buttons & MOUSE_LEFT_BUTTON)) {
+        int dx=event->x-st->drag_x,dy=event->y-st->drag_y;
+        if (dx*dx+dy*dy >= 36 && st->drag_entry >= 0 &&
+            (uint32_t)st->drag_entry < st->entry_count && !st->drive_view &&
+            bk_runtime_strcmp(st->entries[st->drag_entry].name,"..")) {
+            char source[VFS_MAX_PATH];
+            fb_join_path(source,sizeof(source),st->cwd,st->entries[st->drag_entry].name);
+            if(!bk_gui_file_drag_start_icon(st->window,source,
+                fb_icon_for_entry(st,&st->entries[st->drag_entry],st->drag_entry),
+                FB_ICON_SIZE,FB_ICON_SIZE))return true;
+            st->drag_pending = false; st->last_list_click_tick = 0;
+            return true;
+        }
+    }
+    if (event->type == GUI_EVENT_MOUSE_UP || event->type == GUI_EVENT_FOCUS_LOST)
+        st->drag_pending = false;
+
 
     if (st->dialog && event->type == GUI_EVENT_KEY) {
         size_t len = bk_runtime_strlen(st->dialog_input);
@@ -1718,9 +1982,30 @@ static bool fb_window_event(gui_window_t *window UNUSED,
     }
 
     {
-        gui_rect_t list = fb_list_rect(st);
+        gui_rect_t tree = fb_tree_rect(st);
         gui_scrollbar_t scrollbar;
         uint32_t new_scroll;
+        int visible = fb_tree_max_rows(tree);
+        bk_gui_scrollbar_init_vertical(&scrollbar,
+            (gui_rect_t){tree.x + tree.w - GUI_SCROLLBAR_SIZE, tree.y,
+                         GUI_SCROLLBAR_SIZE, tree.h},
+            (uint32_t)st->tree_scroll, (uint32_t)visible,
+            st->tree_node_count);
+        if ((st->tree_scrollbar_drag.active ||
+             bk_gui_rect_contains(tree, event->x, event->y)) &&
+            bk_gui_scrollbar_handle_event_vertical(&scrollbar,
+                &st->tree_scrollbar_drag, event, 1U, &new_scroll)) {
+            st->tree_scroll = (int)new_scroll;
+            st->window->dirty = true;
+            return true;
+        }
+    }
+
+    {
+        gui_rect_t list = fb_items_rect(st);
+        gui_scrollbar_t scrollbar;
+        uint32_t new_scroll;
+        int cols = st->list_view ? 1 : fb_cols_for_rect(list);
         bk_gui_scrollbar_init_vertical(&scrollbar,
             (gui_rect_t){list.x + list.w - GUI_SCROLLBAR_SIZE, list.y,
                          GUI_SCROLLBAR_SIZE, list.h},
@@ -1729,8 +2014,11 @@ static bool fb_window_event(gui_window_t *window UNUSED,
         if ((st->scrollbar_drag.active ||
              bk_gui_rect_contains(list, event->x, event->y)) &&
             bk_gui_scrollbar_handle_event_vertical(&scrollbar,
-                &st->scrollbar_drag, event,
-                (uint32_t)fb_cols_for_rect(list), &new_scroll)) {
+                &st->scrollbar_drag, event, (uint32_t)cols, &new_scroll)) {
+            /* El thumb devuelve indices absolutos. Cuantizar a fila completa
+             * evita que al arrastrar la barra la grilla corra un solo icono. */
+            if (cols > 1) new_scroll = (new_scroll / (uint32_t)cols) *
+                                      (uint32_t)cols;
             st->scroll = (int)new_scroll;
             fb_clamp_scroll(st);
             st->window->dirty = true;
@@ -1805,10 +2093,13 @@ static bool fb_window_event(gui_window_t *window UNUSED,
 
     if (event->type == GUI_EVENT_MOUSE_DOWN) {
         gui_rect_t address_rect = {
-            bk_gui_window_content_rect_raw(st->window).x + 33,
+            bk_gui_window_content_rect_raw(st->window).x + 38,
             bk_gui_window_content_rect_raw(st->window).y + 4,
-            st->window->bounds.w - 42, 20
+            st->window->bounds.w - 47, 20
         };
+        if (event->button == MOUSE_LEFT_BUTTON &&
+            fb_tree_click(st, event->x, event->y))
+            return true;
         int hit = fb_hit_entry(st, event->x, event->y);
         if (event->button == MOUSE_RIGHT_BUTTON) {
             fb_open_context_menu(st, event->x, event->y, hit);
@@ -1824,6 +2115,10 @@ static bool fb_window_event(gui_window_t *window UNUSED,
             return true;
         }
         if (hit >= 0) {
+            if (event->button == MOUSE_LEFT_BUTTON) {
+                st->drag_pending = true; st->drag_entry = hit;
+                st->drag_x = event->x; st->drag_y = event->y;
+            }
             if (st->selected != hit) {
                 st->selected = hit;
                 st->window->dirty = true;
@@ -1866,9 +2161,9 @@ static bool fb_window_event(gui_window_t *window UNUSED,
 
 static void fb_cleanup(fb_state_t *st) {
     if (!st) return;
+    bk_gui_file_drag_cancel(st->window);
     if (st->window) {
-        bk_gui_desktop_remove_window(st->desktop, st->window);
-        bk_gui_window_destroy_raw(st->window);
+        bk_gui_destroy_window(st->desktop,st->window);
         bk_proc_bind_window(NULL);
     }
 
@@ -1892,6 +2187,10 @@ void filebrowser_open_path(gui_desktop_t *desktop, const char *path) {
     if (!st) return;
     st->desktop = desktop;
     st->selected = -1;
+    st->list_view = false;
+    fb_tree_set_open(st, "", true);
+    st->tree_root_expanded = true;
+    st->tree_cwd_expanded = true;
     st->drive_view = !path || !path[0] || bk_runtime_strcmp(path, "/") == 0;
     bk_runtime_strncpy(st->cwd, path && path[0] ? path : bk_file_getcwd(),
              sizeof(st->cwd) - 1);
@@ -1932,6 +2231,7 @@ bool filebrowser_get_runtime_info(program_runtime_info_t *info) {
     if (g_fb->calc_icon) info->memory_bytes += FB_ICON_BYTES;
     if (g_fb->files_icon) info->memory_bytes += FB_ICON_BYTES;
     if (g_fb->midamp_icon) info->memory_bytes += FB_ICON_BYTES;
+    if (g_fb->netscape_icon) info->memory_bytes += FB_ICON_BYTES;
     if (g_fb->window) {
         info->memory_bytes += (uint32_t)sizeof(gui_window_t);
         info->memory_bytes += (uint32_t)sizeof(gui_widget_t);
@@ -1946,7 +2246,7 @@ static void fb_main(void *argument) {
         bk_proc_exit();
     }
 
-    bk_proc_set_memory_hint(sizeof(*st) + FB_ICON_BYTES * 16);
+    bk_proc_set_memory_hint(sizeof(*st) + FB_ICON_BYTES * 17);
     /*
      * Como app externa puede ceder CPU durante la carga de iconos y el
      * escritorio llegar a pintar una primera vez con la lista vacia.
@@ -1993,36 +2293,42 @@ static void fb_main(void *argument) {
 
         gui_widget_t *btn = bk_gui_widget_create(st->desktop, st->window,
             GUI_WIDGET_BUTTON,
-            (gui_rect_t){FB_LIST_X, FB_LIST_Y, 25, 20},
+            (gui_rect_t){FB_LIST_X, FB_LIST_Y, 24, 22},
             "", fb_btn_up_cb);
         if (btn) {
             st->btn_up_id = btn->id;
             (void)bk_gui_widget_set_icon(btn, "Back");
         }
+
+        /* Toolbar compacto: una sola medida y arte React95. Los textos
+         * siguen disponibles en los menus; aca priorizamos espacio util. */
         btn = bk_gui_widget_create(st->desktop, st->window, GUI_WIDGET_BUTTON,
-            (gui_rect_t){6, 28, 66, 20}, "@HAFCCD5E7", fb_btn_copy_cb);
+            (gui_rect_t){6, 28, 26, 24}, "", fb_btn_copy_cb);
         if (btn) {
             st->btn_copy_id = btn->id;
             (void)bk_gui_widget_set_icon(btn, "Copy");
         }
         btn = bk_gui_widget_create(st->desktop, st->window, GUI_WIDGET_BUTTON,
-            (gui_rect_t){76, 28, 66, 20}, "@H0362F7D4", fb_btn_paste_cb);
+            (gui_rect_t){38, 28, 26, 24}, "", fb_btn_paste_cb);
         if (btn) {
             st->btn_paste_id = btn->id;
             (void)bk_gui_widget_set_icon(btn, "Paste");
         }
         btn = bk_gui_widget_create(st->desktop, st->window, GUI_WIDGET_BUTTON,
-            (gui_rect_t){146, 28, 82, 20}, "@H0BC9F2E9", fb_btn_new_cb);
+            (gui_rect_t){70, 28, 26, 24}, "", fb_btn_new_cb);
         if (btn) {
             st->btn_new_id = btn->id;
             (void)bk_gui_widget_set_icon(btn, "Folder");
         }
         btn = bk_gui_widget_create(st->desktop, st->window, GUI_WIDGET_BUTTON,
-            (gui_rect_t){232, 28, 86, 20}, "@H6281898A", fb_btn_refresh_cb);
+            (gui_rect_t){102, 28, 26, 24}, "", fb_btn_refresh_cb);
         if (btn) {
             st->btn_refresh_id = btn->id;
             (void)bk_gui_widget_set_icon(btn, "Refresh");
         }
+        btn=bk_gui_widget_create(st->desktop,st->window,GUI_WIDGET_BUTTON,
+            (gui_rect_t){134,28,26,24},"",fb_btn_delete_cb);
+        if(btn)(void)bk_gui_widget_set_icon(btn,"Delete");
         fb_update_title(st);
         st->window->dirty = true;
         bk_gui_request_paint();
@@ -2030,6 +2336,10 @@ static void fb_main(void *argument) {
 
     while (!bk_proc_exit_requested()) {
         if (!st->window || !st->window->listed) break;
+        if(st->file_change_seen!=bk_gui_files_sequence() && !st->dialog && !st->delete_dialog_open) {
+            st->file_change_seen=bk_gui_files_sequence();
+            (void)fb_load_dir(st);st->window->dirty=true;
+        }
         bk_sys_sleep_ticks(4);
     }
 
@@ -2054,6 +2364,10 @@ void bleskernos_program_main(gui_desktop_t *desktop) {
 
     st->desktop = desktop;
     st->selected = -1;
+    st->list_view = false;
+    fb_tree_set_open(st, "", true);
+    st->tree_root_expanded = true;
+    st->tree_cwd_expanded = true;
     st->drive_view = !path || !path[0] || bk_runtime_strcmp(path, "/") == 0;
     bk_runtime_strncpy(st->cwd, path && path[0] ? path : bk_file_getcwd(),
              sizeof(st->cwd) - 1);

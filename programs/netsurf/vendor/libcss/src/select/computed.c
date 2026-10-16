@@ -617,6 +617,18 @@ uint8_t css_computed_height(const css_computed_style *style,
 uint8_t css_computed_line_height(const css_computed_style *style,
 		css_fixed *length, css_unit *unit)
 {
+	/* Keep the public wrapper robust for small/freestanding frontends.
+	 * The generated getter unconditionally writes its output arguments for
+	 * NUMBER/DIMENSION values.  A NULL optional output must therefore be
+	 * redirected to local storage instead of becoming a Ring-3 write to 0. */
+	css_fixed dummy_length = 0;
+	css_unit dummy_unit = CSS_UNIT_PX;
+
+	if (length == NULL)
+		length = &dummy_length;
+	if (unit == NULL)
+		unit = &dummy_unit;
+
 	return get_line_height(style, length, unit);
 }
 
@@ -977,6 +989,14 @@ uint8_t css_computed_text_decoration(const css_computed_style *style)
 uint8_t css_computed_font_family(const css_computed_style *style,
 		lwc_string ***names)
 {
+	/* The generated getter always stores through names.  Accept NULL at the
+	 * API boundary so a frontend that only needs the family enum cannot
+	 * crash the process by accidentally omitting the list output. */
+	lwc_string **dummy_names = NULL;
+
+	if (names == NULL)
+		names = &dummy_names;
+
 	return get_font_family(style, names);
 }
 

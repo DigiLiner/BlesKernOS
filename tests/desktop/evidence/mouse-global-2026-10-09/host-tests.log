@@ -1,0 +1,5 @@
+PASS mouse core: one authoritative sensitivity, driver replacement and bounds
+PASS mouse: live global settings, stale-panel updates, persistence failure, all buttons, double-click pairs and test bounds
+PASS shared tabs: elevated selection, inset inactive tabs, continuous page join and stable hit geometry
+PASS: preview bounds in five modes; raised active tab and continuous page join
+PASS shared tabs and global bevel: elevated selection, inset inactive tabs, continuous page join and stable hit geometry

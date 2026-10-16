@@ -1,0 +1,79 @@
+{
+  "samples": [
+    {
+      "key_to_glyph_ms": 796.2398240051698,
+      "injection_ms": 1.9908530230168253
+    },
+    {
+      "key_to_glyph_ms": 271.66338701499626,
+      "injection_ms": 1.3529410061892122
+    },
+    {
+      "key_to_glyph_ms": 269.79524799389765,
+      "injection_ms": 2.6352280110586435
+    },
+    {
+      "key_to_glyph_ms": 299.4175689818803,
+      "injection_ms": 2.3181979777291417
+    },
+    {
+      "key_to_glyph_ms": 278.56856799917296,
+      "injection_ms": 1.3757399865426123
+    },
+    {
+      "key_to_glyph_ms": 310.4321120190434,
+      "injection_ms": 1.4974070072639734
+    },
+    {
+      "key_to_glyph_ms": 303.8410750159528,
+      "injection_ms": 1.6901710187084973
+    },
+    {
+      "key_to_glyph_ms": 299.86351300613023,
+      "injection_ms": 1.5667040133848786
+    },
+    {
+      "key_to_glyph_ms": 304.7578740224708,
+      "injection_ms": 1.653275015996769
+    },
+    {
+      "key_to_glyph_ms": 294.16612899512984,
+      "injection_ms": 1.8767659785225987
+    },
+    {
+      "key_to_glyph_ms": 293.9979410148226,
+      "injection_ms": 2.320505998795852
+    },
+    {
+      "key_to_glyph_ms": 281.3654320198111,
+      "injection_ms": 1.715068006888032
+    },
+    {
+      "key_to_glyph_ms": 274.1601039888337,
+      "injection_ms": 1.7925809952430427
+    },
+    {
+      "key_to_glyph_ms": 276.627899002051,
+      "injection_ms": 1.9320650026202202
+    },
+    {
+      "key_to_glyph_ms": 245.56520298938267,
+      "injection_ms": 1.3005519867874682
+    },
+    {
+      "key_to_glyph_ms": 299.949956999626,
+      "injection_ms": 2.5876950239762664
+    }
+  ],
+  "p50_ms": 294.0820350049762,
+  "p95_ms": 796.2398240051698,
+  "max_ms": 796.2398240051698,
+  "capture_p50_ms": 7.06183300644625,
+  "capture_max_ms": 31.12396801589057,
+  "ram_mib": 1536,
+  "smp": 2,
+  "vga": "vmware",
+  "tinyx": "/tmp/blesk-wine-opt-20261013/XFBDEV-baseline",
+  "framebuffer": "0xfd000000",
+  "method": "host monotonic from QMP key-down until new glyph ink in displayed VRAM scanlines; no guest stop while timing; includes VRAM query and QMP overhead"
+}

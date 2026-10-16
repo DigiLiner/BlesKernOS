@@ -1,0 +1,10 @@
+PASS bounded events, user snapshots, paths, dependency cycles, tombstones, forward dependencies, disk rollback, readiness ownership and critical controls
+PASS heap metadata, free VM pool, frame allocation/free, reserved bits and saturation
+PASS active and queued paints release staging; unlinked tombstones finalize once; payloads release once
+PASS caller-owned scrollbar helpers avoid GUI/GFX inversion; window mutations remain guarded
+PASS compact client allocation, nonzero origins, RGB332/full-color capture, slot exclusion and retained-buffer reuse
+PASS 1..16 CPU panels remain separated and above the window midpoint
+PASS process, service, startup and event actions retain the menu's original target
+PASS strict process filter, empty results, source/severity/search and scroll anchoring
+PASS process-wide priority, atomic system protection, bounded levels, quantum weighting and stop/priority inheritance for new threads
+PASS shell menus above windows, delayed geometry publication, damage clipping, closed-menu cleanup, bounded overlays and screensaver order

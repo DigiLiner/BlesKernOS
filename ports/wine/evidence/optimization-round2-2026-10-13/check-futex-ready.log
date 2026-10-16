@@ -1,0 +1,1 @@
+PASS FUTEX_WAKE: retired stacks ready immediately; live/handoff stacks retained; masks, scope, limits, UP and repeat wake verified

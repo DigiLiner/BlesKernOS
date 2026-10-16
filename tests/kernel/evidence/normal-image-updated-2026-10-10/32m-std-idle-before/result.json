@@ -1,0 +1,19 @@
+{
+  "ram_mib": 32,
+  "backend": "std",
+  "desktop_started": true,
+  "completed": true,
+  "smoke_pass": null,
+  "memory": {
+    "DESKTOP": {
+      "total_kib": 32255,
+      "used_kib": 14728,
+      "free_kib": 17526,
+      "reserved_kib": 3711,
+      "heap_used_kib": 11017,
+      "heap_free_kib": 15478,
+      "vm_free_kib": 2048
+    }
+  },
+  "depths": []
+}

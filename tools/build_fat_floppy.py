@@ -304,8 +304,6 @@ def main():
         script_path("..", "build", "programs", "imageviewer.o"),
         "Imageviewer",
     )
-    games_data = load_program(script_path("..", "build", "programs", "games.o"),
-                              "Games")
     gears_data = load_program(script_path("..", "build", "programs", "gears.o"),
                               "Gears")
     paint_data = load_program(script_path("..", "build", "programs", "paint.o"),
@@ -314,60 +312,6 @@ def main():
                                 "APITest")
     wine_data = load_program(script_path("..", "build", "programs", "wine.o"),
                              "Wine PE launcher")
-    hello_exe_data = load_program(
-        script_path("..", "build", "win32", "HELLO.EXE"),
-        "Win32 HELLO.EXE",
-    )
-    notepad_exe_data = load_program(
-        script_path("..", "build", "win32", "NOTEPAD.EXE"),
-        "Win32 NOTEPAD.EXE",
-    )
-    msgbox_exe_data = load_program(
-        script_path("..", "build", "win32", "MSGBOX.EXE"),
-        "Win32 MSGBOX.EXE",
-    )
-    dynload_exe_data = load_program(
-        script_path("..", "build", "win32", "DYNLOAD.EXE"),
-        "Win32 DYNLOAD.EXE",
-    )
-    dlltest_exe_data = load_program(
-        script_path("..", "build", "win32", "DLLTEST.EXE"), "Win32 DLLTEST.EXE")
-    tlstest_exe_data = load_program(
-        script_path("..", "build", "win32", "TLSTEST.EXE"), "Win32 TLSTEST.EXE")
-    threadtest_exe_data = load_program(
-        script_path("..", "build", "win32", "THREADTEST.EXE"),
-        "Win32 THREADTEST.EXE",
-    )
-    synctest_exe_data = load_program(
-        script_path("..", "build", "win32", "SYNCTEST.EXE"),
-        "Win32 SYNCTEST.EXE",
-    )
-    resourcetest_exe_data = load_program(
-        script_path("..", "build", "win32", "RESOURCETEST.EXE"),
-        "Win32 RESOURCETEST.EXE",
-    )
-    menutest_exe_data = load_program(
-        script_path("..", "build", "win32", "MENUTEST.EXE"),
-        "Win32 MENUTEST.EXE",
-    )
-    dialogtest_exe_data = load_program(
-        script_path("..", "build", "win32", "DIALOGTEST.EXE"),
-        "Win32 DIALOGTEST.EXE",
-    )
-    sehtest_exe_data = load_program(
-        script_path("..", "build", "win32", "SEHTEST.EXE"),
-        "Win32 SEHTEST.EXE",
-    )
-    winecalc_compat_exe_data = load_program(
-        script_path("..", "build", "win32", "WINECALC_COMPAT.EXE"),
-        "Win32 WineCalc compatibility test",
-    )
-    edittest_exe_data = load_program(
-        script_path("..", "build", "win32", "EDITTEST.EXE"),
-        "Win32 multiline EDIT test",
-    )
-    testdll_data = load_program(
-        script_path("..", "build", "win32", "TESTDLL.DLL"), "Win32 TESTDLL.DLL")
     screensaverd_data = load_program(screensaverd_path, "ScreenSaver daemon")
     ss_logo_data = load_program(ss_logo_path, "ScreenSaver logo")
     ss_pipes_data = load_program(ss_pipes_path, "ScreenSaver pipes")
@@ -463,9 +407,7 @@ def main():
     runbox_clusters = cluster_count(runbox_data)
     imageviewer_cluster = runbox_cluster + runbox_clusters
     imageviewer_clusters = cluster_count(imageviewer_data)
-    games_cluster = imageviewer_cluster + imageviewer_clusters
-    games_clusters = cluster_count(games_data)
-    gears_cluster = games_cluster + games_clusters
+    gears_cluster = imageviewer_cluster + imageviewer_clusters
     gears_clusters = cluster_count(gears_data)
     paint_cluster = gears_cluster + gears_clusters
     paint_clusters = cluster_count(paint_data)
@@ -473,35 +415,7 @@ def main():
     apitest_clusters = cluster_count(apitest_data)
     wine_cluster = apitest_cluster + apitest_clusters
     wine_clusters = cluster_count(wine_data)
-    hello_exe_cluster = wine_cluster + wine_clusters
-    hello_exe_clusters = cluster_count(hello_exe_data)
-    notepad_exe_cluster = hello_exe_cluster + hello_exe_clusters
-    notepad_exe_clusters = cluster_count(notepad_exe_data)
-    msgbox_exe_cluster = notepad_exe_cluster + notepad_exe_clusters
-    msgbox_exe_clusters = cluster_count(msgbox_exe_data)
-    dynload_exe_cluster = msgbox_exe_cluster + msgbox_exe_clusters
-    dynload_exe_clusters = cluster_count(dynload_exe_data)
-    dlltest_exe_cluster = dynload_exe_cluster + dynload_exe_clusters
-    dlltest_exe_clusters = cluster_count(dlltest_exe_data)
-    tlstest_exe_cluster = dlltest_exe_cluster + dlltest_exe_clusters
-    tlstest_exe_clusters = cluster_count(tlstest_exe_data)
-    threadtest_exe_cluster = tlstest_exe_cluster + tlstest_exe_clusters
-    threadtest_exe_clusters = cluster_count(threadtest_exe_data)
-    synctest_exe_cluster = threadtest_exe_cluster + threadtest_exe_clusters
-    synctest_exe_clusters = cluster_count(synctest_exe_data)
-    resourcetest_exe_cluster = synctest_exe_cluster + synctest_exe_clusters
-    resourcetest_exe_clusters = cluster_count(resourcetest_exe_data)
-    menutest_exe_cluster = resourcetest_exe_cluster + resourcetest_exe_clusters
-    menutest_exe_clusters = cluster_count(menutest_exe_data)
-    dialogtest_exe_cluster = menutest_exe_cluster + menutest_exe_clusters
-    dialogtest_exe_clusters = cluster_count(dialogtest_exe_data)
-    sehtest_exe_cluster = dialogtest_exe_cluster + dialogtest_exe_clusters
-    sehtest_exe_clusters = cluster_count(sehtest_exe_data)
-    winecalc_compat_exe_cluster = sehtest_exe_cluster + sehtest_exe_clusters
-    winecalc_compat_exe_clusters = cluster_count(winecalc_compat_exe_data)
-    edittest_exe_cluster = winecalc_compat_exe_cluster + winecalc_compat_exe_clusters
-    edittest_exe_clusters = cluster_count(edittest_exe_data)
-    screensaverd_cluster = edittest_exe_cluster + edittest_exe_clusters
+    screensaverd_cluster = wine_cluster + wine_clusters
     screensaverd_clusters = cluster_count(screensaverd_data)
     ss_logo_cluster = screensaverd_cluster + screensaverd_clusters
     ss_logo_clusters = cluster_count(ss_logo_data)
@@ -568,7 +482,6 @@ def main():
     libs_cluster = next_icon_cluster; next_icon_cluster += 1
     tinygl_dir_cluster = next_icon_cluster; next_icon_cluster += 1
     libc_dir_cluster = next_icon_cluster; next_icon_cluster += 1
-    wine_dir_cluster = next_icon_cluster; next_icon_cluster += 1
     services_cluster = next_icon_cluster; next_icon_cluster += 1
     screens_cluster = next_icon_cluster; next_icon_cluster += 1
     wallpapers_dir_cluster = next_icon_cluster; next_icon_cluster += 1
@@ -581,8 +494,6 @@ def main():
     next_icon_cluster += cluster_count(tinygl_data)
     libc_cluster = next_icon_cluster
     next_icon_cluster += cluster_count(libc_data)
-    testdll_cluster = next_icon_cluster
-    next_icon_cluster += cluster_count(testdll_data)
     control_dir_cluster = next_icon_cluster
     next_icon_cluster += 1
     control_clusters = []
@@ -682,10 +593,6 @@ def main():
             dir_entry("VIEWER.O", 0x20, imageviewer_cluster,
                       len(imageviewer_data))
         )
-    if games_data:
-        programs_entries.append(
-            dir_entry("GAMES.O", 0x20, games_cluster, len(games_data))
-        )
     if apitest_data:
         programs_entries.append(
             dir_entry("APITEST.O", 0x20, apitest_cluster,
@@ -695,78 +602,8 @@ def main():
         programs_entries.append(
             dir_entry("WINE.O", 0x20, wine_cluster, len(wine_data))
         )
-    if hello_exe_data:
-        programs_entries.append(
-            dir_entry("HELLO.EXE", 0x20, hello_exe_cluster,
-                      len(hello_exe_data))
-        )
-    if notepad_exe_data:
-        programs_entries.append(
-            dir_entry("NOTEPAD.EXE", 0x20, notepad_exe_cluster,
-                      len(notepad_exe_data))
-        )
-    if msgbox_exe_data:
-        programs_entries.append(
-            dir_entry("MSGBOX.EXE", 0x20, msgbox_exe_cluster,
-                      len(msgbox_exe_data))
-        )
-    if dynload_exe_data:
-        programs_entries.append(
-            dir_entry("DYNLOAD.EXE", 0x20, dynload_exe_cluster,
-                      len(dynload_exe_data))
-        )
-    if dlltest_exe_data:
-        programs_entries.append(
-            dir_entry("DLLTEST.EXE", 0x20, dlltest_exe_cluster,
-                      len(dlltest_exe_data))
-        )
-    if tlstest_exe_data:
-        programs_entries.append(
-            dir_entry("TLSTEST.EXE", 0x20, tlstest_exe_cluster,
-                      len(tlstest_exe_data))
-        )
-    if threadtest_exe_data:
-        programs_entries.append(
-            dir_entry("THREADTEST.EXE", 0x20, threadtest_exe_cluster,
-                      len(threadtest_exe_data))
-        )
-    if synctest_exe_data:
-        programs_entries.append(
-            dir_entry("SYNCTEST.EXE", 0x20, synctest_exe_cluster,
-                      len(synctest_exe_data))
-        )
-    if resourcetest_exe_data:
-        programs_entries.append(
-            dir_entry("RESOURCETEST.EXE", 0x20, resourcetest_exe_cluster,
-                      len(resourcetest_exe_data))
-        )
-    if menutest_exe_data:
-        programs_entries.append(
-            dir_entry("MENUTEST.EXE", 0x20, menutest_exe_cluster,
-                      len(menutest_exe_data))
-        )
-    if dialogtest_exe_data:
-        programs_entries.append(
-            dir_entry("DIALOGTEST.EXE", 0x20, dialogtest_exe_cluster,
-                      len(dialogtest_exe_data))
-        )
-    if sehtest_exe_data:
-        programs_entries.append(
-            dir_entry("SEHTEST.EXE", 0x20, sehtest_exe_cluster,
-                      len(sehtest_exe_data))
-        )
 
-    if winecalc_compat_exe_data:
-        programs_entries.append(
-            dir_entry("WCCOMPAT.EXE", 0x20, winecalc_compat_exe_cluster,
-                      len(winecalc_compat_exe_data))
-        )
 
-    if edittest_exe_data:
-        programs_entries.append(
-            dir_entry("EDITTEST.EXE", 0x20, edittest_exe_cluster,
-                      len(edittest_exe_data))
-        )
 
     programs_dir = build_directory(programs_entries)
     docs_dir = build_directory([
@@ -803,7 +640,6 @@ def main():
         entry for entry in (
             dir_entry("TINYGL", 0x10, tinygl_dir_cluster, 0) if tinygl_data else None,
             dir_entry("LIBC", 0x10, libc_dir_cluster, 0) if libc_data else None,
-            dir_entry("WINE", 0x10, wine_dir_cluster, 0) if testdll_data else None,
         ) if entry
     ])
     tinygl_dir = build_directory([
@@ -812,9 +648,6 @@ def main():
     libc_dir = build_directory([
         dir_entry("LIBC.A", 0x20, libc_cluster, len(libc_data)),
     ] if libc_data else [])
-    wine_dir = build_directory([
-        dir_entry("TESTDLL.DLL", 0x20, testdll_cluster, len(testdll_data)),
-    ] if testdll_data else [])
     services_dir = build_directory([
         dir_entry("SCREENSV.O", 0x20, screensaverd_cluster, len(screensaverd_data)),
     ] if screensaverd_data else [])
@@ -858,7 +691,6 @@ def main():
         (user_config_dir_cluster, user_config_dir),
         (libs_cluster, libs_dir),
         (tinygl_dir_cluster, tinygl_dir), (libc_dir_cluster, libc_dir),
-        (wine_dir_cluster, wine_dir),
         (services_cluster, services_dir), (screens_cluster, screens_dir),
         (wallpapers_dir_cluster, wallpapers_dir), (control_dir_cluster, control_dir),
     ):
@@ -890,8 +722,6 @@ def main():
         write_file_clusters(image, fat, calendar_cluster, calendar_data)
     if imageviewer_data:
         write_file_clusters(image, fat, imageviewer_cluster, imageviewer_data)
-    if games_data:
-        write_file_clusters(image, fat, games_cluster, games_data)
     if gears_data:
         write_file_clusters(image, fat, gears_cluster, gears_data)
     if paint_data:
@@ -900,40 +730,6 @@ def main():
         write_file_clusters(image, fat, apitest_cluster, apitest_data)
     if wine_data:
         write_file_clusters(image, fat, wine_cluster, wine_data)
-    if hello_exe_data:
-        write_file_clusters(image, fat, hello_exe_cluster, hello_exe_data)
-    if notepad_exe_data:
-        write_file_clusters(image, fat, notepad_exe_cluster, notepad_exe_data)
-    if msgbox_exe_data:
-        write_file_clusters(image, fat, msgbox_exe_cluster, msgbox_exe_data)
-    if dynload_exe_data:
-        write_file_clusters(image, fat, dynload_exe_cluster, dynload_exe_data)
-    if dlltest_exe_data:
-        write_file_clusters(image, fat, dlltest_exe_cluster, dlltest_exe_data)
-    if tlstest_exe_data:
-        write_file_clusters(image, fat, tlstest_exe_cluster, tlstest_exe_data)
-    if threadtest_exe_data:
-        write_file_clusters(image, fat, threadtest_exe_cluster, threadtest_exe_data)
-    if synctest_exe_data:
-        write_file_clusters(image, fat, synctest_exe_cluster, synctest_exe_data)
-    if resourcetest_exe_data:
-        write_file_clusters(image, fat, resourcetest_exe_cluster,
-                            resourcetest_exe_data)
-    if menutest_exe_data:
-        write_file_clusters(image, fat, menutest_exe_cluster,
-                            menutest_exe_data)
-    if dialogtest_exe_data:
-        write_file_clusters(image, fat, dialogtest_exe_cluster,
-                            dialogtest_exe_data)
-    if sehtest_exe_data:
-        write_file_clusters(image, fat, sehtest_exe_cluster,
-                            sehtest_exe_data)
-    if winecalc_compat_exe_data:
-        write_file_clusters(image, fat, winecalc_compat_exe_cluster,
-                            winecalc_compat_exe_data)
-    if edittest_exe_data:
-        write_file_clusters(image, fat, edittest_exe_cluster,
-                            edittest_exe_data)
     if screensaverd_data:
         write_file_clusters(image, fat, screensaverd_cluster, screensaverd_data)
     if ss_logo_data:
@@ -966,20 +762,14 @@ def main():
         write_file_clusters(image, fat, tinygl_cluster, tinygl_data)
     if libc_data:
         write_file_clusters(image, fat, libc_cluster, libc_data)
-    if testdll_data:
-        write_file_clusters(image, fat, testdll_cluster, testdll_data)
     for cluster, payload in zip(control_clusters, control_data):
         if payload:
             write_file_clusters(image, fat, cluster, payload)
     if (shell_data or about_data or runbox_data or filebrowser_data or
             texteditor_data or calculator_data or midamp_data or
             processmanager_data or calendar_data or imageviewer_data or
-            games_data or gears_data or paint_data or
-            apitest_data or wine_data or hello_exe_data or msgbox_exe_data or
-            dynload_exe_data or
-            dlltest_exe_data or tlstest_exe_data or threadtest_exe_data or
-            testdll_data or
-            screensaverd_data or ss_logo_data or ss_pipes_data or ss_balls_data or
+            gears_data or paint_data or
+            apitest_data or wine_data or screensaverd_data or ss_logo_data or ss_pipes_data or ss_balls_data or
             screensv_data or
             wallpaper_files or
             midhdr_data or midbtn_data or midbot_data or

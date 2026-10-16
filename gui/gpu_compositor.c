@@ -3,12 +3,13 @@
 #include "../kernel/include/gfx.h"
 #include "../kernel/include/gfx3d.h"
 #include "../kernel/include/memory.h"
+#include "../kernel/include/vga.h"
 
 #define GPU_COMP_MAX_WINDOWS 12U
 #define GPU_GLYPH_ATLAS_W 128U
 #define GPU_GLYPH_ATLAS_H 128U
 #define GPU_GLYPH_CELL 8U
-#define GPU_CDE_INACTIVE_TITLE 0x009F9692U
+#define GPU_CDE_INACTIVE_TITLE 0x00999999U
 
 /* This compositor is deliberately an optional layer.  It is entered only
  * when the active driver exposes the fixed-function SVGA3D path.  QEMU's
@@ -17,6 +18,9 @@
 typedef struct {
     gui_window_t *window;
     gfx3d_surface_handle_t surface;
+    gfx3d_surface_handle_t viewport;
+    uint16_t viewport_width;
+    uint16_t viewport_height;
     uint16_t width;
     uint16_t height;
     bool seen;
@@ -25,6 +29,7 @@ typedef struct {
 typedef struct {
     bool ready;
     bool frame_active;
+    bool scene_valid;
     uint32_t generation;
     uint16_t width;
     uint16_t height;
@@ -32,6 +37,7 @@ typedef struct {
     gfx3d_surface_handle_t target;
     gfx3d_surface_handle_t overlay;
     gfx3d_surface_handle_t glyph_atlas;
+    gfx3d_surface_handle_t cursor;
     gpu_window_surface_t windows[GPU_COMP_MAX_WINDOWS];
     uint32_t *scratch;
     uint32_t scratch_pixels;
@@ -39,6 +45,9 @@ typedef struct {
     uint32_t scene_pixels;
     uint32_t *overlay_pixels;
     uint32_t overlay_capacity;
+    uint32_t cursor_pixels[GUI_CURSOR_WIDTH * GUI_CURSOR_HEIGHT];
+    uint32_t cursor_hash;
+    bool cursor_uploaded;
 } gpu_compositor_state_t;
 
 static gpu_compositor_state_t g_gpu;
@@ -65,6 +74,9 @@ static void gpu_destroy_handle(gfx3d_surface_handle_t *handle) {
 static void gpu_release_resources(void) {
     for (uint32_t i = 0; i < GPU_COMP_MAX_WINDOWS; i++) {
         gpu_destroy_handle(&g_gpu.windows[i].surface);
+        gpu_destroy_handle(&g_gpu.windows[i].viewport);
+        g_gpu.windows[i].viewport_width = 0U;
+        g_gpu.windows[i].viewport_height = 0U;
         g_gpu.windows[i].window = NULL;
         g_gpu.windows[i].width = 0U;
         g_gpu.windows[i].height = 0U;
@@ -74,6 +86,7 @@ static void gpu_release_resources(void) {
     gpu_destroy_handle(&g_gpu.target);
     gpu_destroy_handle(&g_gpu.overlay);
     gpu_destroy_handle(&g_gpu.glyph_atlas);
+    gpu_destroy_handle(&g_gpu.cursor);
     if (g_gpu.scratch) kfree(g_gpu.scratch);
     if (g_gpu.scene) kfree(g_gpu.scene);
     if (g_gpu.overlay_pixels) kfree(g_gpu.overlay_pixels);
@@ -83,8 +96,11 @@ static void gpu_release_resources(void) {
     g_gpu.scratch_pixels = 0U;
     g_gpu.scene_pixels = 0U;
     g_gpu.overlay_capacity = 0U;
+    g_gpu.cursor_hash = 0U;
+    g_gpu.cursor_uploaded = false;
     g_gpu.ready = false;
     g_gpu.frame_active = false;
+    g_gpu.scene_valid = false;
     g_gpu.width = 0U;
     g_gpu.height = 0U;
 }
@@ -96,6 +112,11 @@ static bool gpu_ensure_buffer(uint32_t **buffer, uint32_t *capacity,
     if (*buffer && *capacity >= pixels) return true;
     new_buffer = (uint32_t *)krealloc(*buffer, pixels * sizeof(uint32_t));
     if (!new_buffer) return false;
+    /* First publication can initialize the compositor from a user process.
+     * Shared desktop caches must outlive that process's heap reclamation. */
+#ifndef BLES_VISION_SERVICE
+    (void)mm_set_allocation_owner(new_buffer, 0U);
+#endif
     *buffer = new_buffer;
     *capacity = pixels;
     return true;
@@ -151,6 +172,7 @@ static bool gpu_prepare(uint16_t width, uint16_t height) {
     gfx3d_info_t info;
     uint32_t generation;
     uint32_t pixels;
+    const char *phase;
     if (!gfx3d_get_info(&info)) return false;
     generation = info.transport_generation;
     pixels = (uint32_t)width * height;
@@ -165,33 +187,62 @@ static bool gpu_prepare(uint16_t width, uint16_t height) {
     g_gpu.generation = generation;
     g_gpu.width = width;
     g_gpu.height = height;
-    if (!gpu_ensure_buffer(&g_gpu.scene, &g_gpu.scene_pixels, pixels) ||
-        !gpu_ensure_buffer(&g_gpu.overlay_pixels, &g_gpu.overlay_capacity,
-                           pixels) ||
-        !gpu_create_surface(width, height, GFX3D_FORMAT_XRGB8888,
+    phase = "scene-buffer";
+    if (!gpu_ensure_buffer(&g_gpu.scene, &g_gpu.scene_pixels, pixels)) goto failed;
+    phase = "overlay-buffer";
+    if (!gpu_ensure_buffer(&g_gpu.overlay_pixels, &g_gpu.overlay_capacity, pixels)) goto failed;
+    phase = "background";
+    if (!gpu_create_surface(width, height, GFX3D_FORMAT_XRGB8888,
             GFX3D_SURFACE_TEXTURE | GFX3D_SURFACE_DYNAMIC,
-            &g_gpu.background) ||
-        !gpu_create_surface(width, height, GFX3D_FORMAT_ARGB8888,
+            &g_gpu.background)) goto failed;
+    phase = "target";
+    if (!gpu_create_surface(width, height, GFX3D_FORMAT_ARGB8888,
             GFX3D_SURFACE_RENDER_TARGET | GFX3D_SURFACE_TEXTURE |
             GFX3D_SURFACE_WINDOW,
-            &g_gpu.target) ||
-        !gpu_create_surface(width, height, GFX3D_FORMAT_ARGB8888,
+            &g_gpu.target)) goto failed;
+    phase = "overlay";
+    if (!gpu_create_surface(width, height, GFX3D_FORMAT_ARGB8888,
             GFX3D_SURFACE_TEXTURE | GFX3D_SURFACE_DYNAMIC,
-            &g_gpu.overlay) ||
-        !gpu_create_surface(GPU_GLYPH_ATLAS_W, GPU_GLYPH_ATLAS_H,
+            &g_gpu.overlay)) goto failed;
+    phase = "glyph-atlas";
+    if (!gpu_create_surface(GPU_GLYPH_ATLAS_W, GPU_GLYPH_ATLAS_H,
             GFX3D_FORMAT_ARGB8888, GFX3D_SURFACE_TEXTURE,
-            &g_gpu.glyph_atlas) ||
-        !gpu_build_glyph_atlas()) {
-        gpu_release_resources();
-        return false;
-    }
+            &g_gpu.glyph_atlas)) goto failed;
+    phase = "cursor";
+    if (!gpu_create_surface(GUI_CURSOR_WIDTH, GUI_CURSOR_HEIGHT,
+            GFX3D_FORMAT_ARGB8888,
+            GFX3D_SURFACE_TEXTURE | GFX3D_SURFACE_DYNAMIC,
+            &g_gpu.cursor)) goto failed;
+    phase = "glyph-upload";
+    if (!gpu_build_glyph_atlas()) goto failed;
     g_gpu.ready = true;
     return true;
+failed:
+    {
+        static bool reported;
+        if (!reported) {
+            reported = true;
+            kprintf("[GUI:GPU] resource initialization failed phase=%s\n", phase);
+        }
+    }
+    gpu_release_resources();
+    return false;
 }
 
+bool gui_gpu_compositor_needed(const gui_desktop_t *desktop) {
+    const gui_window_t *window;
+    if (!desktop) return false;
+    for (window = desktop->first_window; window; window = window->next) {
+        if (window->visible && window->gpu_view_visible &&
+            window->gpu_view_surface) return true;
+    }
+    return false;
+}
+
+/* BLES_GRAPHICS_GUI_PERF_V1: keep normal desktop/window rendering on the 2D backend. */
 bool gui_gpu_compositor_enabled(void) {
     const gfx_info_t *info = gfx_get_info();
-    if (!info || info->bpp != 32U || !gfx3d_available()) {
+    if (gui_gfx_output_depth() || !info || info->bpp != 32U || !gfx3d_available()) {
         if (g_gpu.ready) gpu_release_resources();
         return false;
     }
@@ -200,8 +251,17 @@ bool gui_gpu_compositor_enabled(void) {
 
 void gui_gpu_compositor_begin_frame(gui_desktop_t *desktop,
                                     const gui_surface_t *surface) {
+    /* BLES_GRAPHICS_GUI_PERF_V1: no imported GPU viewport -> no reason to rebuild/upload a
+     * complete 3D desktop scene. The regular compositor will present only its
+     * dirty rectangles through VirtIO 2D / Rage128 / SVGA. */
+    if (!gui_gpu_compositor_needed(desktop)) {
+        g_gpu.frame_active = false;
+        return;
+    }
+
     uint32_t pixels;
     if (!desktop || !surface || !surface->pixels ||
+        !gui_gpu_compositor_needed(desktop) ||
         !gpu_prepare(surface->width, surface->height)) {
         g_gpu.frame_active = false;
         return;
@@ -234,6 +294,68 @@ static gpu_window_surface_t *gpu_find_window_slot(gui_window_t *window) {
         if (!g_gpu.windows[i].window && !free_slot) free_slot = &g_gpu.windows[i];
     }
     return free_slot;
+}
+
+void gui_gpu_compositor_clear_viewport(gui_window_t *window) {
+    gpu_window_surface_t *slot = gpu_find_window_slot(window);
+    if (!window || !slot || slot->window != window) return;
+    gpu_destroy_handle(&slot->viewport);
+    slot->viewport_width = slot->viewport_height = 0U;
+}
+
+void gui_gpu_compositor_forget_window(gui_window_t *window) {
+    gpu_window_surface_t *slot = gpu_find_window_slot(window);
+    if (!window || !slot || slot->window != window) return;
+    gpu_destroy_handle(&slot->viewport);
+    gpu_destroy_handle(&slot->surface);
+    kmemset(slot, 0, sizeof(*slot));
+}
+
+bool gui_gpu_compositor_publish_viewport(gui_window_t *window,
+                                         uint32_t source,
+                                         uint16_t width, uint16_t height) {
+    gui_desktop_t *desktop = gui_get_desktop();
+    gpu_window_surface_t *slot;
+    gfx3d_composite_t copy;
+    if (!window || !source || !width || !height || !desktop) return false;
+    if (!gpu_prepare(desktop->surface.width, desktop->surface.height)) {
+        static bool reported;
+        if (!reported) {
+            reported = true;
+            kprintf("[GUI:GPU] prepare failed size=%ux%u caps=%x ready=%u scene=%u overlay=%u\n",
+                (uint32_t)desktop->surface.width, (uint32_t)desktop->surface.height,
+                gfx3d_capabilities(), g_gpu.ready, g_gpu.scene_pixels, g_gpu.overlay_capacity);
+        }
+        return false;
+    }
+    slot = gpu_find_window_slot(window);
+    if (!slot) return false;
+    if (!slot->viewport || slot->viewport_width != width ||
+        slot->viewport_height != height) {
+        gpu_destroy_handle(&slot->viewport);
+        if (!gpu_create_surface(width, height, GFX3D_FORMAT_ARGB8888,
+                GFX3D_SURFACE_TEXTURE | GFX3D_SURFACE_RENDER_TARGET |
+                GFX3D_SURFACE_WINDOW, &slot->viewport)) return false;
+        slot->viewport_width = width;
+        slot->viewport_height = height;
+    }
+    slot->window = window;
+    /* Publish an immutable frame for the compositor. The application may
+     * clear/draw its original render target as soon as this call returns.
+     * FIFO order protects this GPU copy without a CPU readback or wait. */
+    kmemset(&copy, 0, sizeof(copy));
+    copy.source = (gfx_rect_t){0, 0, width, height};
+    copy.clip = copy.source;
+    copy.transform = (gfx3d_transform2d_t){1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f};
+    copy.opacity = 255U;
+    copy.modulation_color = 0xFFFFFFFFU;
+    copy.filter = GFX3D_FILTER_NEAREST;
+    /* ONE source factor over transparent black copies RGBA unchanged,
+     * including straight-alpha pixels. Later composition blends normally. */
+    copy.source_premultiplied = true;
+    return gfx3d_surface_clear(slot->viewport, 0U, NULL) &&
+           gfx3d_surface_composite(source, slot->viewport, &copy, NULL) &&
+           gfx3d_end(slot->viewport, NULL);
 }
 
 void gui_gpu_compositor_capture_window(gui_window_t *window,
@@ -301,6 +423,55 @@ static bool gpu_composite(gfx3d_surface_handle_t source,
     operation.source_premultiplied = false;
     operation.modulation_color = modulation;
     return gfx3d_surface_composite(source, destination, &operation, fence_out);
+}
+
+static uint32_t gpu_cursor_hash(const uint32_t *pixels,
+                                uint16_t width, uint16_t height,
+                                int16_t hot_x, int16_t hot_y) {
+    uint32_t hash = 2166136261U;
+    if (!pixels) return 0U;
+    for (uint32_t i = 0U;
+         i < GUI_CURSOR_WIDTH * GUI_CURSOR_HEIGHT; i++) {
+        hash ^= pixels[i];
+        hash *= 16777619U;
+    }
+    hash ^= (uint32_t)width | ((uint32_t)height << 16);
+    hash *= 16777619U;
+    hash ^= (uint16_t)hot_x | ((uint32_t)(uint16_t)hot_y << 16);
+    hash *= 16777619U;
+    return hash ? hash : 1U;
+}
+
+static bool gpu_draw_cursor(gui_desktop_t *desktop, gfx_rect_t clip) {
+    gfx3d_transform2d_t transform = {1.0f, 0.0f, 0.0f,
+                                    0.0f, 1.0f, 0.0f};
+    gfx_rect_t source;
+    uint16_t width = 0U, height = 0U;
+    int16_t hot_x = 0, hot_y = 0;
+    uint32_t hash;
+
+    if (!desktop || !g_gpu.cursor ||
+        !gui_compositor_cursor_argb(desktop, g_gpu.cursor_pixels,
+                                    &width, &height, &hot_x, &hot_y) ||
+        !width || !height || width > GUI_CURSOR_WIDTH ||
+        height > GUI_CURSOR_HEIGHT)
+        return false;
+
+    hash = gpu_cursor_hash(g_gpu.cursor_pixels, width, height, hot_x, hot_y);
+    if (!g_gpu.cursor_uploaded || g_gpu.cursor_hash != hash) {
+        if (!gpu_upload_full(g_gpu.cursor, g_gpu.cursor_pixels,
+                             GUI_CURSOR_WIDTH, GUI_CURSOR_HEIGHT))
+            return false;
+        g_gpu.cursor_hash = hash;
+        g_gpu.cursor_uploaded = true;
+    }
+
+    source = (gfx_rect_t){0, 0, width, height};
+    transform.tx = (float)(desktop->mouse_x - hot_x);
+    transform.ty = (float)(desktop->mouse_y - hot_y);
+    return gpu_composite(g_gpu.cursor, g_gpu.target, source, transform,
+                         clip, 255U, 0xFFFFFFFFU,
+                         GFX3D_FILTER_NEAREST, NULL);
 }
 
 static bool gpu_draw_text(gfx3d_surface_handle_t destination,
@@ -371,12 +542,14 @@ static bool gpu_build_overlay(const gui_surface_t *surface) {
 }
 
 bool gui_gpu_compositor_present(gui_desktop_t *desktop,
-                                const gui_surface_t *final_surface) {
+                                const gui_surface_t *final_surface,
+                                bool draw_cursor) {
     gfx_rect_t full;
     gfx3d_transform2d_t identity = {1.0f, 0.0f, 0.0f,
                                   0.0f, 1.0f, 0.0f};
     uint32_t fence = 0U;
     if (!g_gpu.frame_active || !desktop || !final_surface ||
+        !gui_gpu_compositor_needed(desktop) ||
         !gpu_build_overlay(final_surface)) return false;
     full = (gfx_rect_t){0, 0, g_gpu.width, g_gpu.height};
     if (!gfx3d_begin(g_gpu.target, 0xFF000000U, 0.0f,
@@ -403,7 +576,7 @@ bool gui_gpu_compositor_present(gui_desktop_t *desktop,
         /* The 3D viewport is a separate GPU layer. It is inserted after the
          * window's software client and before later windows, preserving the
          * normal z-order without ever reading its pixels back to the CPU. */
-        if (window->gpu_view_visible && window->gpu_view_surface) {
+        if (window->gpu_view_visible && slot->viewport) {
             gfx_rect_t viewport_source = {0, 0,
                 window->gpu_view_width, window->gpu_view_height};
             gfx_rect_t viewport_clip;
@@ -421,7 +594,7 @@ bool gui_gpu_compositor_present(gui_desktop_t *desktop,
                                          window->gpu_view_width;
                 viewport_transform.m11 = (float)gpu_rect.h /
                                          window->gpu_view_height;
-                if (!gpu_composite(window->gpu_view_surface, g_gpu.target,
+                if (!gpu_composite(slot->viewport, g_gpu.target,
                                    viewport_source, viewport_transform,
                                    viewport_clip, 255U, 0xFFFFFFFFU,
                                    GFX3D_FILTER_LINEAR, NULL)) return false;
@@ -430,19 +603,102 @@ bool gui_gpu_compositor_present(gui_desktop_t *desktop,
     }
     if (!gpu_composite(g_gpu.overlay, g_gpu.target, full, identity,
                        full, 255U, 0xFFFFFFFFU, GFX3D_FILTER_NEAREST, NULL) ||
+        (draw_cursor && !gpu_draw_cursor(desktop, full)) ||
         !gfx3d_end(g_gpu.target, &fence) ||
         !gfx3d_surface_present(g_gpu.target, &full, &fence)) return false;
-    if (fence && !gfx3d_wait_fence(fence)) return false;
+    /* BLESKERNOS_SVGA3D_PIPELINE_V6: PRESENT is ordered with following
+     * SVGA3D commands on the same FIFO. Waiting here stalls the GUI thread
+     * and makes the mouse lag behind a busy game. CPU readback/upload paths
+     * retain their own synchronization. */
+    g_gpu.scene_valid = true;
 
     for (uint32_t i = 0U; i < GPU_COMP_MAX_WINDOWS; i++) {
         if (g_gpu.windows[i].window && !g_gpu.windows[i].seen) {
             gpu_destroy_handle(&g_gpu.windows[i].surface);
+            gpu_destroy_handle(&g_gpu.windows[i].viewport);
+            g_gpu.windows[i].viewport_width = 0U;
+            g_gpu.windows[i].viewport_height = 0U;
             g_gpu.windows[i].window = NULL;
             g_gpu.windows[i].width = 0U;
             g_gpu.windows[i].height = 0U;
         }
     }
     g_gpu.frame_active = false;
+    return true;
+}
+
+bool gui_gpu_compositor_present_cached(gui_desktop_t *desktop,
+                                       bool draw_cursor) {
+    gfx_rect_t full;
+    gfx3d_transform2d_t identity = {1.0f, 0.0f, 0.0f,
+                                   0.0f, 1.0f, 0.0f};
+    uint32_t fence = 0U;
+
+    /* Fast path for a new frame inside an already-attached GPU viewport.
+     * Background, CPU window surfaces and overlay are unchanged; only the
+     * contents of the application's render target changed.  Reusing those
+     * cached layers avoids repainting/uploading the whole 1024x768 desktop
+     * for every game frame. */
+    if (!desktop || !gui_gpu_compositor_needed(desktop) ||
+        !g_gpu.ready || !g_gpu.scene_valid || g_gpu.frame_active) return false;
+
+    full = (gfx_rect_t){0, 0, g_gpu.width, g_gpu.height};
+    if (!gfx3d_begin(g_gpu.target, 0xFF000000U, 0.0f,
+                     GFX3D_DRAW_CLEAR_COLOR) ||
+        !gpu_composite(g_gpu.background, g_gpu.target, full, identity,
+                       full, 255U, 0xFFFFFFFFU,
+                       GFX3D_FILTER_NEAREST, NULL))
+        return false;
+
+    for (gui_window_t *window = desktop->first_window;
+         window; window = window->next) {
+        gpu_window_surface_t *slot = gpu_find_window_slot(window);
+        gfx3d_transform2d_t transform = identity;
+        gfx_rect_t source;
+        if (!slot || slot->window != window || !slot->surface ||
+            !window->visible) continue;
+        source = (gfx_rect_t){0, 0, slot->width, slot->height};
+        transform.tx = (float)window->bounds.x;
+        transform.ty = (float)window->bounds.y;
+        /* The captured window already contains its title. Focus/title
+         * changes recapture that layer; ordinary frames need no glyph draws. */
+        if (!gpu_composite(slot->surface, g_gpu.target, source, transform,
+                           full, 255U, 0xFFFFFFFFU,
+                           GFX3D_FILTER_NEAREST, NULL)) return false;
+
+        if (window->gpu_view_visible && slot->viewport) {
+            gfx_rect_t viewport_source = {0, 0,
+                window->gpu_view_width, window->gpu_view_height};
+            gfx_rect_t viewport_clip;
+            gfx3d_transform2d_t viewport_transform = identity;
+            gui_rect_t clipped;
+            gui_rect_t gpu_rect = window->gpu_view_rect;
+            if (gui_rect_intersect(window->bounds, gpu_rect, &clipped) &&
+                gui_rect_intersect(clipped,
+                    (gui_rect_t){0, 0, g_gpu.width, g_gpu.height}, &clipped)) {
+                viewport_clip = (gfx_rect_t){clipped.x, clipped.y,
+                                             clipped.w, clipped.h};
+                viewport_transform.tx = (float)gpu_rect.x;
+                viewport_transform.ty = (float)gpu_rect.y;
+                viewport_transform.m00 = (float)gpu_rect.w /
+                                         window->gpu_view_width;
+                viewport_transform.m11 = (float)gpu_rect.h /
+                                         window->gpu_view_height;
+                if (!gpu_composite(slot->viewport, g_gpu.target,
+                                   viewport_source, viewport_transform,
+                                   viewport_clip, 255U, 0xFFFFFFFFU,
+                                   GFX3D_FILTER_LINEAR, NULL)) return false;
+            }
+        }
+    }
+
+    if (!gpu_composite(g_gpu.overlay, g_gpu.target, full, identity,
+                       full, 255U, 0xFFFFFFFFU,
+                       GFX3D_FILTER_NEAREST, NULL) ||
+        (draw_cursor && !gpu_draw_cursor(desktop, full)) ||
+        !gfx3d_end(g_gpu.target, &fence) ||
+        !gfx3d_surface_present(g_gpu.target, &full, &fence)) return false;
+    /* BLESKERNOS_SVGA3D_PIPELINE_V6: keep cached presentation async. */
     return true;
 }
 

@@ -1,5 +1,23 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later
+ * Combined PrintSpool executable links GPL-2.0-or-later JBIG-KIT.
+ */
 #include <bleskernos_api.h>
 #include <bleskernos_print.h>
+
+/* Allocation failure in JBIG-KIT terminates this Ring-3 service. */
+void bk_print_jbig_abort(void) NORETURN;
+void bk_print_jbig_abort(void) {
+    bk_sys_log("[PRINT] JBIG allocation failed; service terminated\n");
+    bk_proc_exit();
+}
+
+/* Local freestanding dependency used by JBIG-KIT. */
+void *bk_print_memchr(const void *memory, int value, size_t length) {
+    const unsigned char *bytes = memory;
+    for (size_t i = 0; i < length; i++)
+        if (bytes[i] == (unsigned char)value) return (void *)(bytes + i);
+    return NULL;
+}
 
 #define SPOOL_DIR "/TEMP/SPOOL"
 #define SPOOL_HISTORY_DIR "/TEMP/SPOOL/HISTORY"
@@ -31,7 +49,9 @@ typedef enum {
     LANG_ESCP,
     LANG_ESCP2,
     LANG_PCL5,
-    LANG_POSTSCRIPT
+    LANG_POSTSCRIPT,
+    LANG_ZJS,
+    LANG_AUTO
 } print_language_t;
 
 typedef enum {
@@ -367,9 +387,11 @@ static void profile_apply(printer_profile_t *profile, const char *key,
     else if (text_equal_ci(key, "Name"))
         text_copy(profile->name, sizeof(profile->name), value);
     else if (text_equal_ci(key, "Language")) {
-        if (text_equal_ci(value, "TEXT")) profile->language = LANG_TEXT;
+        if (text_equal_ci(value, "AUTO")) profile->language = LANG_AUTO;
+        else if (text_equal_ci(value, "TEXT")) profile->language = LANG_TEXT;
         else if (text_equal_ci(value, "ESCP")) profile->language = LANG_ESCP;
         else if (text_equal_ci(value, "ESCP2")) profile->language = LANG_ESCP2;
+        else if (text_equal_ci(value, "ZJS")) profile->language = LANG_ZJS;
         else if (text_equal_ci(value, "PCL5")) profile->language = LANG_PCL5;
         else if (text_equal_ci(value, "POSTSCRIPT"))
             profile->language = LANG_POSTSCRIPT;
@@ -398,6 +420,8 @@ static void profile_apply(printer_profile_t *profile, const char *key,
         if (escp_8dot_mode_valid(mode)) profile->escp_mode = (uint8_t)mode;
     }
 }
+
+static bool profile_auto_detect(printer_profile_t *profile);
 
 static bool profile_load(const char *requested_id, printer_profile_t *profile) {
     char id[16];
@@ -467,6 +491,7 @@ static bool profile_load(const char *requested_id, printer_profile_t *profile) {
         text_copy(profile->extension, sizeof(profile->extension), "PRN");
     if (!profile->output_dir[0])
         text_copy(profile->output_dir, sizeof(profile->output_dir), OUTPUT_DIR);
+    if (profile->language == LANG_AUTO) return profile_auto_detect(profile);
     return true;
 }
 
@@ -1047,10 +1072,13 @@ static bool render_escp(const uint8_t *job, uint32_t size,
     return job_iterator_complete(&iterator) && !page_open && !output->failed;
 }
 
+#include "print_zjs.inc"
+
 static bool render_job(const uint8_t *job, uint32_t size,
                        const printer_profile_t *profile,
                        output_buffer_t *output) {
     switch (profile->language) {
+        case LANG_ZJS: return render_zjs(job, size, output);
         case LANG_TEXT: return render_text_driver(job, size, output);
         case LANG_ESCP:
         case LANG_ESCP2: return render_escp(job, size, profile, output);
@@ -1139,6 +1167,9 @@ static bool find_print_port(const printer_profile_t *profile,
     }
     memory_zero(&info, sizeof(info));
     info.struct_size = sizeof(info);
+    /* Named USB ports must never fall through to a different LPT printer. */
+    if (profile->port_name[0] && (upper_ascii(profile->port_name[0]) < '0' ||
+        upper_ascii(profile->port_name[0]) > '9')) return false;
     if (profile->lpt_index < count &&
         bk_print_port_info(profile->lpt_index, &info)) {
         *index_out = profile->lpt_index;
@@ -1148,9 +1179,11 @@ static bool find_print_port(const printer_profile_t *profile,
     return false;
 }
 
+#include "print_families.inc"
+
 static bool transport_output(const printer_profile_t *profile,
                              const char *stem, const output_buffer_t *output,
-                             char *message, uint32_t message_capacity) {
+                             char *message, uint32_t message_capacity, bool *retryable) {
     if (profile->transport == TRANSPORT_FILE) {
         char path[BK_PATH_MAX];
         (void)bk_file_mkdir(profile->output_dir);
@@ -1183,6 +1216,8 @@ static bool transport_output(const printer_profile_t *profile,
         written = bk_print_lpt_write(port_index, output->data,
                                      output->size, PRINT_IDLE_TIMEOUT_MS);
         if (written < 0 || (uint32_t)written != output->size) {
+            /* Once bytes may have reached the printer, require manual retry. */
+            if (retryable && !(info.virtual_port && written == -4)) *retryable = false;
             text_copy(message, message_capacity,
                       info.virtual_port ? "fallo o timeout enviando por USB" :
                                           "fallo o timeout enviando a LPT");
@@ -1245,6 +1280,7 @@ static bool process_job(const char *entry_name) {
     printer_profile_t profile;
     output_buffer_t output;
     bool success = false;
+    bool retryable = true;
 
     memory_zero(&profile, sizeof(profile));
     memory_zero(&output, sizeof(output));
@@ -1284,7 +1320,7 @@ static bool process_job(const char *entry_name) {
         text_copy(message, sizeof(message), "fallo al renderizar el trabajo");
         goto failed;
     }
-    if (!transport_output(&profile, stem, &output, message, sizeof(message)))
+    if (!transport_output(&profile, stem, &output, message, sizeof(message), &retryable))
         goto failed;
     success = true;
     (void)bk_file_remove(running);
@@ -1294,7 +1330,7 @@ static bool process_job(const char *entry_name) {
 
 failed:
     attempt++;
-    if (attempt <= PRINT_MAX_RETRIES) {
+    if (retryable && attempt <= PRINT_MAX_RETRIES) {
         const char *extension = attempt == 1U ? "R01" :
                                 (attempt == 2U ? "R02" : "R03");
         bool moved = false;

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Build BlesKernOS GRAPHICS.PAK from the PNG assets in @react95/icons.
+"""Build BlesKernOS GRAPHICS.PAK from KDE 1 (default) or React95.
 
-The package intentionally keeps one canonical bitmap per React95 component
-name. 32x32 variants are preferred; when unavailable the closest/largest
-variant is selected. PNG payloads stay compressed and are decoded by the OS.
+KDE resources retain all bitmap variants with distinct names and legacy OS
+aliases. The optional React95 importer keeps one canonical bitmap per name.
+PNG payloads stay compressed and are decoded by the OS.
 """
 
 from __future__ import annotations
@@ -116,7 +116,7 @@ def select_canonical(candidates: list[Candidate]) -> list[Candidate]:
 def build_package(selected: list[Candidate], output: Path,
                   manifest: Path | None, source_version: str) -> None:
     if not selected:
-        raise ValueError("no se encontraron iconos React95")
+        raise ValueError("no se encontraron recursos graficos")
 
     table_end = 12 + ENTRY_SIZE * len(selected)
     payload = bytearray()
@@ -152,7 +152,7 @@ def build_package(selected: list[Candidate], output: Path,
     if manifest:
         lines = [
             "# GRAPHICS.PAK resource catalog",
-            f"# Source: @react95/icons {source_version}",
+            f"# Source: {source_version}",
             f"# Entries: {len(entries)}",
             "# name,width,height,source",
         ]
@@ -181,6 +181,13 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    if not (args.png_dir or args.tarball or args.download):
+        from kde1_graphics import candidates as kde_candidates, source_bundle
+        build_package(kde_candidates(Candidate), args.output, args.manifest,
+                      "KDE 1 historical kdebase + kdelibs; third_party/kde1/*-source.json")
+        source_bundle(args.output.with_name('KDE1SRC.TGZ'))
+        return 0
+
     if args.png_dir:
         candidates = candidates_from_directory(args.png_dir)
     elif args.tarball:
@@ -189,7 +196,8 @@ def main() -> int:
         candidates = candidates_from_tarball(download_tarball(args.version))
 
     build_package(
-        select_canonical(candidates), args.output, args.manifest, args.version,
+        select_canonical(candidates), args.output, args.manifest,
+        f"@react95/icons {args.version}",
     )
     return 0
 

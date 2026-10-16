@@ -1,0 +1,104 @@
+{
+  "environment": {
+    "accelerator": "KVM",
+    "cpus": 2,
+    "ram_mib": 1536,
+    "gpu": "virtio-vga-gl",
+    "mesa": "24.3.4",
+    "wine": "11.0",
+    "disk_controller": "AHCI",
+    "game_renderer": "dx6",
+    "game_extent": [
+      640,
+      480
+    ],
+    "audio_device": false
+  },
+  "baseline_sdl": {
+    "first": {
+      "frames": 1830,
+      "elapsed_us": 134403333,
+      "resolve_us": 3113333,
+      "present_us": 14569971,
+      "copy_us": 3770015
+    },
+    "last": {
+      "frames": 1850,
+      "elapsed_us": 166246666,
+      "resolve_us": 3993335,
+      "present_us": 14693304,
+      "copy_us": 3830017
+    },
+    "delta": {
+      "frames": 20,
+      "elapsed_us": 31843333,
+      "resolve_us": 880002,
+      "present_us": 123333,
+      "copy_us": 60002
+    },
+    "presentations_per_second": 0.6280749568520355
+  },
+  "csmt0_sdl": {
+    "first": {
+      "frames": 1407,
+      "elapsed_us": 117343334,
+      "resolve_us": 11496640,
+      "present_us": 11350026,
+      "copy_us": 4473314
+    },
+    "last": {
+      "frames": 1699,
+      "elapsed_us": 153556667,
+      "resolve_us": 17729968,
+      "present_us": 14780034,
+      "copy_us": 5983314
+    },
+    "delta": {
+      "frames": 292,
+      "elapsed_us": 36213333,
+      "resolve_us": 6233328,
+      "present_us": 3430008,
+      "copy_us": 1510000
+    },
+    "presentations_per_second": 8.063328498373789
+  },
+  "installed_files_hashes_preserved": 63,
+  "full_match_certified": false,
+  "notes": [
+    "One run per variant, different moments/cameras of the same exhibition; rates are GLX presentation counters during gameplay, not a controlled identical-frame benchmark.",
+    "The SDL run with the GLX probe passed pixel tests but later reported a host fence failure; its game performance is excluded.",
+    "getrusage returned ENOSYS in baseline; no kernel syscall semantics were changed."
+  ],
+  "production_sha256": {
+    "tools/wine_app_defaults.py": "8f24a778952c93ceb45f472a768b59230c7320cb41454b2f5b498974f3c61959",
+    "build/wine/wine-launch": "b3278902873ecec1a1c5b5350a6ad4a301add75f963c206aacffbfb2f421f6a9",
+    "ports/wine/package/wine-11.0-i386/rootfs/WINEGATE/lib/libGL.so.1": "d623c435ce30ebb958f0c350dab0c9457bd4fe7dd24f020d09558dcc8ba00ceb",
+    "ports/wine/package/wine-11.0-i386/rootfs/WINEGATE/lib/libbkvirgl.so.8": "e1998571cf7b8c33d73f490f848e967e8ca6c2b81d5df42c4fa9cad076b5ae76"
+  },
+  "hidden_window_upload_optimization": "rejected and reverted",
+  "final_csmt0_sdl": {
+    "first": {
+      "frames": 2188,
+      "elapsed_us": 153896667,
+      "resolve_us": 16076662,
+      "present_us": 13573346,
+      "copy_us": 5886653
+    },
+    "last": {
+      "frames": 2529,
+      "elapsed_us": 191916667,
+      "resolve_us": 22913325,
+      "present_us": 17626680,
+      "copy_us": 7106655
+    },
+    "delta": {
+      "frames": 341,
+      "elapsed_us": 38020000,
+      "resolve_us": 6836663,
+      "present_us": 4053334,
+      "copy_us": 1220002
+    },
+    "presentations_per_second": 8.968963703314046,
+    "host_fence_errors": false
+  }
+}

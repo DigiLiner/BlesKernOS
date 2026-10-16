@@ -1,0 +1,9 @@
+[USB]  Creando imagen USB-HDD con MBR...
+python3 tools/build_usb_image.py build/bleskernos-usb-user.img build/bleskernos-ata-user.img build/mbr.bin
+USB image: build/bleskernos-usb-user.img (806354944 bytes, partition LBA 2048)
+[OK]   USB: 806354944 bytes
+[VMDK] Creando disco VMware IDE...
+qemu-img convert -f raw -O vmdk \
+	-o subformat=monolithicSparse,compat6=on,adapter_type=ide \
+	build/bleskernos-usb-user.img build/bleskernos-vmware-user.vmdk
+[OK]   VMware: build/bleskernos-vmware-user.vmdk (490668032 bytes)

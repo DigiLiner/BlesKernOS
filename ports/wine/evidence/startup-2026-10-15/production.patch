@@ -1,0 +1,452 @@
+--- a/kernel/drivers/storage/bfs4.c
++++ b/kernel/drivers/storage/bfs4.c
+@@ -46,6 +46,8 @@
+     block_device_t *device;
+     uint32_t partition_lba, start_lba;
+     bfs4_super_t super;
++    bfs4_super_t persisted_super;
++    bool persisted_super_valid;
+     uint8_t *block_bitmap, *inode_bitmap;
+     bfs4_inode_t *inodes;
+     bfs4_extent_t **indirect_tables;
+@@ -107,6 +109,10 @@
+ static bfs4_cache_entry_t *g_cache;
+ static uint32_t g_cache_slots, g_cache_age, g_cache_generation;
+ static kspinlock_t g_cache_lock = KSPINLOCK_INITIALIZER;
++/* Serialized by g_bfs_lock. Small demand-page reads can share one disk
++ * command without exposing the speculative bytes to the caller. */
++static uint8_t *g_read_ahead;
++#define BFS4_READ_AHEAD_BLOCKS 16U
+ 
+ static void bfs4_cache_init(void) {
+     if (g_cache) return;
+@@ -314,8 +320,16 @@
+     kmemset(raw, 0, sizeof(raw));
+     v->super.crc = 0;
+     v->super.crc = bfs4_crc(&v->super, sizeof(v->super));
++    /* In-place data/timestamp updates often leave allocation counters and
++     * every other superblock byte unchanged. Do not journal and flush that
++     * identical checkpoint again. Compare bytes, not just their CRC. */
++    if(!v->write_failed && v->persisted_super_valid &&
++       !kmemcmp(&v->super,&v->persisted_super,sizeof(v->super)))return true;
+     kmemcpy(raw, &v->super, sizeof(v->super));
+-    return bfs4_write_block(v, 0, raw);
++    bool ok=bfs4_write_block(v, 0, raw);
++    if(ok){v->persisted_super=v->super;v->persisted_super_valid=true;}
++    else v->persisted_super_valid=false;
++    return ok;
+ }
+ 
+ static bool bfs4_begin_change(bfs4_volume_t *v) {
+@@ -793,12 +807,37 @@
+                 }
+             if (!cached) {
+                 uint32_t epoch = bfs4_cache_epoch();
+-                if (!block_read(v->device, v->start_lba + block * 8U,
++                uint32_t fetch = run;
++                void *target = (uint8_t *)buffer + total;
++                if (g_cache && mm_total_bytes() >= 128U * 1024U * 1024U) {
++                    while (fetch < BFS4_READ_AHEAD_BLOCKS &&
++                           (uint64_t)position / BFS4_BLOCK_SIZE + fetch <
++                               inode->size / BFS4_BLOCK_SIZE &&
++                           bfs4_map(v, inode, position / BFS4_BLOCK_SIZE + fetch) == block + fetch)
++                        ++fetch;
++                    if (fetch > run && !g_read_ahead) {
++                        g_read_ahead = kmalloc(BFS4_READ_AHEAD_BLOCKS * BFS4_BLOCK_SIZE);
++                        if (g_read_ahead) (void)mm_set_allocation_owner(g_read_ahead, 0U);
++                    }
++                    if (fetch > run && g_read_ahead) target = g_read_ahead;
++                    else fetch = run;
++                }
++                bool ok = block_read(v->device, v->start_lba + block * 8U,
++                                     (uint8_t)(fetch * 8U), target);
++                /* A failure in the speculative tail must not turn a readable
++                 * requested page into an I/O error. OOM also keeps the old path. */
++                if (!ok && fetch > run) {
++                    fetch = run; target = (uint8_t *)buffer + total;
++                    ok = block_read(v->device, v->start_lba + block * 8U,
+                                 (uint8_t)(run * 8U),
+-                                (uint8_t *)buffer + total)) return false;
+-                for (uint32_t i = 0; i < run; ++i)
++                                target);
++                }
++                if (!ok) return false;
++                if (target == g_read_ahead)
++                    kmemcpy((uint8_t *)buffer + total, target, run * BFS4_BLOCK_SIZE);
++                for (uint32_t i = 0; i < fetch; ++i)
+                     bfs4_cache_publish(v, block + i,
+-                        (uint8_t *)buffer + total + i * BFS4_BLOCK_SIZE, epoch);
++                        (uint8_t *)target + i * BFS4_BLOCK_SIZE, epoch);
+             }
+             total += run * BFS4_BLOCK_SIZE;
+             continue;
+@@ -1506,6 +1545,8 @@
+ }
+ 
+ static bool bfs4_journal_reload(bfs4_volume_t *v) {
++    /* Recovery rewrites disk outside the normal superblock writer. */
++    v->persisted_super_valid=false;
+     bfs4_super_t super;uint32_t crc;
+     if(!bfs4_read_super(v->device,v->start_lba,&super,&crc) ||
+        super.total_blocks!=v->super.total_blocks ||
+--- a/kernel/drivers/storage/bfs4_journal.inc
++++ b/kernel/drivers/storage/bfs4_journal.inc
+@@ -9,11 +9,12 @@
+ #define BFS4_JOURNAL_MAX 120U
+ #define BFS4_JOURNAL_MAGIC 0x314a3442U
+ #define BFS4_JOURNAL_RECORD 0x524a3442U
+-#define BFS4_JOURNAL_BATCH 4U
+-/* The global recursive BFS4 mutex protects this resident scratch space. Four
++#define BFS4_JOURNAL_BATCH 8U
++/* The global recursive BFS4 mutex protects this resident scratch space. Eight
+  * adjacent records need one durable write, then one durable count checkpoint.
+  * The on-disk format and the undo-before-overwrite ordering are unchanged. */
+ static uint8_t bfs4_journal_batch[BFS4_JOURNAL_BATCH*1024U];
++static uint8_t bfs4_journal_old[BFS4_JOURNAL_BATCH*512U];
+ 
+ typedef struct __attribute__((packed)) {
+     uint32_t magic, sequence, epoch, active, count, start, sectors;
+@@ -132,15 +133,28 @@
+                 if(v->journal_targets[j]==lba+i){saved=true;break;}
+             if(saved){++i;continue;}
+             if(v->journal_count+batch==BFS4_JOURNAL_MAX)goto fail;
+-            uint8_t *raw=bfs4_journal_batch+batch*1024U;
+-            bfs4_journal_record_t r;
+-            if(!block_read(v->device,lba+i,1,raw+512U))goto fail;
+-            kmemset(&r,0,sizeof(r));r.magic=BFS4_JOURNAL_RECORD;
+-            r.epoch=v->journal_epoch;r.target=lba+i;r.data_crc=bfs4_crc(raw+512U,512U);
+-            r.crc=bfs4_crc(&r,508U);
+-            kmemcpy(raw,&r,512U);targets[batch++]=lba+i++;
++            targets[batch++]=lba+i++;
+         }
+         if(!batch)continue;
++        bool contiguous=true;
++        for(uint32_t j=1;j<batch;j++)
++            if(targets[j]!=targets[0]+j)contiguous=false;
++        /* A metadata block is eight adjacent sectors. Read its undo image
++         * with one command before building the interleaved journal records.
++         * Duplicate/noncontiguous targets retain individual reads. */
++        if(contiguous) {
++            if(!block_read(v->device,targets[0],(uint8_t)batch,bfs4_journal_old))goto fail;
++        } else for(uint32_t j=0;j<batch;j++)
++            if(!block_read(v->device,targets[j],1,bfs4_journal_old+j*512U))goto fail;
++        for(uint32_t j=0;j<batch;j++) {
++            uint8_t *raw=bfs4_journal_batch+j*1024U;
++            bfs4_journal_record_t r;
++            kmemcpy(raw+512U,bfs4_journal_old+j*512U,512U);
++            kmemset(&r,0,sizeof(r));r.magic=BFS4_JOURNAL_RECORD;
++            r.epoch=v->journal_epoch;r.target=targets[j];r.data_crc=bfs4_crc(raw+512U,512U);
++            r.crc=bfs4_crc(&r,508U);
++            kmemcpy(raw,&r,512U);
++        }
+         uint32_t target=v->partition_lba+BFS4_JOURNAL_LBA+2U+v->journal_count*2U;
+         if(!block_write(v->device,target,(uint8_t)(batch*2U),bfs4_journal_batch))goto fail;
+         h.count=v->journal_count+batch;
+--- a/kernel/drivers/core/vfs.c
++++ b/kernel/drivers/core/vfs.c
+@@ -1215,9 +1215,15 @@
+ }
+ 
+ static bool vfs_stream_file(const vfs_file_t *file, uint32_t size) {
++    /* Wine's registry is written in small stdio chunks. Streaming as soon
++     * as it crosses 1 MiB journals every subsequent chunk separately. Keep
++     * a bounded full-file cache on hosts with room; close/fsync still flush
++     * durably, and small-memory machines retain the original threshold. */
++    uint32_t threshold=mm_total_bytes()>=128U*1024U*1024U
++        ? 8U*VFS_STREAM_THRESHOLD : VFS_STREAM_THRESHOLD;
+     return file && !file->unlinked && file->source == VFS_FILE_FAT &&
+            file->entry.fat.fs.type == FAT_TYPE_BFS4 &&
+-           (size > VFS_STREAM_THRESHOLD || file->entry.fat.entry.size > VFS_STREAM_THRESHOLD);
++           (size > threshold || file->entry.fat.entry.size > threshold);
+ }
+ 
+ /* Flush dirty aliases before bypassing the full-file cache. Refresh all open
+@@ -1260,12 +1266,16 @@
+     }
+     end = file->offset + size;
+     if (vfs_stream_file(file, end)) return vfs_stream_write(file, buffer, size);
+-    if (!vfs_sync_path(file->path, file) ||
+-        !vfs_cache_load(file, true)) return -1;
++    if (!vfs_sync_path(file->path, file)) return -1;
++    if (!vfs_cache_load(file, true))
++        return file->entry.fat.fs.type==FAT_TYPE_BFS4
++            ? vfs_stream_write(file,buffer,size) : -1;
+ 
+     end = file->offset + size;
+-    if (end < file->offset || end > VFS_WRITE_CACHE_LIMIT ||
+-        !vfs_cache_reserve(file, end, VFS_WRITE_CACHE_LIMIT)) return -1;
++    if (end < file->offset || end > VFS_WRITE_CACHE_LIMIT) return -1;
++    if (!vfs_cache_reserve(file, end, VFS_WRITE_CACHE_LIMIT))
++        return file->entry.fat.fs.type==FAT_TYPE_BFS4
++            ? vfs_stream_write(file,buffer,size) : -1;
+     if (file->offset > file->cache_size)
+         kmemset(file->cache + file->cache_size, 0,
+                 file->offset - file->cache_size);
+--- a/kernel/mm/memory.c
++++ b/kernel/mm/memory.c
+@@ -86,6 +86,7 @@
+ static uint32_t g_vm_frame_end;
+ static uint32_t g_vm_frame_pages;
+ static uint32_t g_vm_frame_used;
++static uint32_t g_vm_frame_hint;
+ static uint32_t g_vm_frame_reserved_pages;
+ static uint32_t g_vm_frame_bitmap[MM_VM_POOL_BITMAP_WORDS];
+ 
+@@ -401,6 +402,7 @@
+     g_vm_frame_end = 0U;
+     g_vm_frame_pages = 0U;
+     g_vm_frame_used = 0U;
++    g_vm_frame_hint = 0U;
+     g_vm_frame_reserved_pages = 0U;
+     kmemset(g_vm_frame_bitmap, 0, sizeof(g_vm_frame_bitmap));
+ 
+@@ -519,7 +521,13 @@
+         kspin_unlock_irqrestore(&g_mm_vm_frame_lock, flags);
+         return false;
+     }
+-    for (uint32_t page = 0U; page < g_vm_frame_pages; page++) {
++    /* Demand paging allocates thousands of individual frames. Restarting at
++     * zero made that workload quadratic, with interrupts masked throughout
++     * every scan. Continue after the last allocation, then retry the complete
++     * pool so a free run spanning the hint is never mistaken for exhaustion. */
++    for (uint32_t pass = 0U; pass < 2U; ++pass) {
++      run = 0U;
++      for (uint32_t page = pass ? 0U : g_vm_frame_hint; page < g_vm_frame_pages; page++) {
+         if (!mm_vm_bit_test(page)) {
+             if (!run) run_start = page;
+             run++;
+@@ -527,6 +535,8 @@
+                 for (uint32_t i = 0U; i < page_count; i++)
+                     mm_vm_bit_set(run_start + i);
+                 g_vm_frame_used += page_count;
++                g_vm_frame_hint = run_start + page_count;
++                if (g_vm_frame_hint == g_vm_frame_pages) g_vm_frame_hint = 0U;
+                 *physical_out = g_vm_frame_start + run_start * MM_PAGE_SIZE;
+                 kspin_unlock_irqrestore(&g_mm_vm_frame_lock, flags);
+                 kmemset((void *)(uintptr_t)*physical_out, 0,
+@@ -536,6 +546,7 @@
+         } else {
+             run = 0U;
+         }
++      }
+     }
+     kspin_unlock_irqrestore(&g_mm_vm_frame_lock, flags);
+     return false;
+--- a/kernel/mm/paging.c
++++ b/kernel/mm/paging.c
+@@ -1417,7 +1417,15 @@
+         access=(access&~PAGE_WRITABLE)|PAGE_COPY_ON_WRITE;
+     else if(!cow && (access&PAGE_COPY_ON_WRITE))
+         access=(access&~PAGE_COPY_ON_WRITE)|PAGE_WRITABLE;
+-    *pte=access|PAGE_PAGED|PAGE_PRIVATE_PTE|(present?(frame|PAGE_PRESENT):0U);
++    uint32_t value=access|PAGE_PAGED|PAGE_PRIVATE_PTE|(present?(frame|PAGE_PRESENT):0U);
++    /* Pinning a clean file page can request its already installed mapping.
++     * Preserve hardware accessed/dirty bits and avoid reloading CR3/IPIs for
++     * that exact translation. Revocation must still wait for remote ACKs,
++     * even when another caller has already cleared the present bit. */
++    if(present && (old&~0x060U)==value) {
++        kspin_unlock_irqrestore(&g_paging_lock,flags);return true;
++    }
++    *pte=value;
+     uint32_t generation=paging_publish_change();
+     kspin_unlock_irqrestore(&g_paging_lock,flags);
+     uint32_t mask=paging_kick_generation(pid);
+--- a/kernel/mm/pager.c
++++ b/kernel/mm/pager.c
+@@ -468,14 +468,43 @@
+     return ok;
+ }
+ 
++/* Caller holds the pager mutex. Preflight the complete span before adding
++ * any pins, so a miss can use the normal VFS-before-pager loading path.
++ * Resident pages need no inode I/O or mapping publication. In particular,
++ * a writable pin must still materialize COW through load(). */
++static bool pager_pin_resident(uint32_t pid,uint32_t first,uint32_t last,bool write) {
++    for(uint32_t va=first;;va+=4096U) {
++        pager_page_t *p=find(pid,va);
++        if(p) {
++            if((!p->frame && !p->source_frame) || p->slot)return false;
++            uint32_t entry=paging_pager_entry(pid,va);
++            if((entry&5U)!=5U ||
++               (entry&~4095U)!=(p->frame?p->frame:p->source_frame) ||
++               (write && (!p->frame || !(entry&2U) || (entry&0x800U))))return false;
++        }
++        if(va==last)break;
++    }
++    for(uint32_t va=first;;va+=4096U) {
++        pager_page_t *p=find(pid,va);
++        if(p)__sync_add_and_fetch(&p->pins,1U);
++        if(va==last)break;
++    }
++    return true;
++}
++
+ bool pager_pin(uint32_t pid,uint32_t address,uint32_t length,bool write) {
+     if(!length)return true;
+     if(address+length<address)return false;
+     pid=paging_process_owner(pid);
+     uint32_t first=address&~4095U,end=address+length;
++    uint32_t last=(end-1U)&~4095U;
++    kmutex_lock(&lock);
++    bool resident=pager_pin_resident(pid,first,last,write);
++    kmutex_unlock(&lock);
++    if(resident)return true;
+     bool guarded=file_guard(pid,first,end-first);
+     kmutex_lock(&lock);
+-    uint32_t va=first,last=(end-1U)&~4095U;
++    uint32_t va=first;
+     bool ok=false;
+     for(;;) {
+         pager_page_t *p=find(pid,va);
+--- a/kernel/linux/i386_exec.inc
++++ b/kernel/linux/i386_exec.inc
+@@ -11,15 +11,25 @@
+     if(vector) for(uint32_t i=0;;i++) {
+         uint32_t string;
+         if(i>=128 || vector+i*4<vector)return -7;
+-        if(!copy_from_user(&string,(void *)(vector+i*4),4))return -BK_EFAULT;
++        if(!copy_from_user(&string,(void *)(uintptr_t)(vector+i*4),4))return -BK_EFAULT;
+         if(!string)break;
+         if(total>=128)return -7;
+         args->offsets[total++]=args->used;
+-        for(uint32_t j=0;;j++) {
++        for(uint32_t j=0;;) {
+             if(args->used>=sizeof(args->data))return -7;
+-            char c;
+-            if(string+j<string || !copy_from_user(&c,(void *)(string+j),1))return -BK_EFAULT;
+-            args->data[args->used++]=c;if(!c)break;
++            uint32_t address=string+j;
++            if(address<string)return -BK_EFAULT;
++            uint32_t chunk=4096U-(address&4095U);
++            if(chunk>sizeof(args->data)-args->used)chunk=sizeof(args->data)-args->used;
++            /* Pin/validate once per page, including environment strings.
++             * Never read the next page before looking for this page's NUL. */
++            if(!copy_from_user(args->data+args->used,(void *)(uintptr_t)address,chunk))return -BK_EFAULT;
++            bool terminated=false;
++            for(uint32_t n=0;n<chunk;n++) {
++                if(!args->data[args->used++]){terminated=true;break;}
++            }
++            if(terminated)break;
++            j+=chunk;
+         }
+     }
+     if(environment)args->envc=total-args->argc;
+--- a/kernel/api/syscall.c
++++ b/kernel/api/syscall.c
+@@ -665,9 +665,21 @@
+         uint32_t address=(uint32_t)(uintptr_t)buffer+done;
+         /* Pipes must see one complete <=PIPE_BUF write. Splitting at a
+          * virtual page boundary would violate atomic nonblocking writes. */
+-        uint32_t chunk=special?SYSCALL_WRITE_MAX:4096U-(address&4095U);
++        /* A page at a time turned a large BFS4 streaming write into hundreds
++         * of independent durable metadata transactions. Bound resident I/O
++         * to 64 KiB, matching the lower layer, instead of splitting every
++         * otherwise contiguous user buffer at virtual page boundaries. */
++        uint32_t chunk=SYSCALL_WRITE_MAX;
+         if(chunk>length-done)chunk=length-done;
+-        if(!pager_pin(pid,address,chunk,read))return done?(int32_t)done:-BK_EFAULT;
++        if(!pager_pin(pid,address,chunk,read)) {
++            /* Preserve progress up to an inaccessible page and low-RAM
++             * operation when the complete batch cannot be made resident.
++             * Pipe/socket writes keep their existing atomic span. */
++            if(special)return done?(int32_t)done:-BK_EFAULT;
++            chunk=4096U-(address&4095U);
++            if(chunk>length-done)chunk=length-done;
++            if(!pager_pin(pid,address,chunk,read))return done?(int32_t)done:-BK_EFAULT;
++        }
+         int32_t result=read?sys_read_resident(regs,fd,(void *)(uintptr_t)address,chunk)
+                            :sys_write_resident(regs,fd,(void *)(uintptr_t)address,chunk);
+         pager_unpin(pid,address,chunk);
+@@ -2420,9 +2432,11 @@
+         case SYS_FREE:
+             return KDOMAIN_TASK;
+         case SYS_SPAWN:
+-            return KDOMAIN_TASK | KDOMAIN_VFS | KDOMAIN_GUI;
+         case SYS_LINUX_EXECVE:
+-            return KDOMAIN_TASK | KDOMAIN_VFS | KDOMAIN_GUI;
++            /* Loading/relocating an ELF does not mutate desktop state.
++             * Reaping and error dialogs take GUI locally when needed; holding
++             * it across disk I/O stalls unrelated native windows. */
++            return KDOMAIN_TASK | KDOMAIN_VFS;
+         case SYS_LINUX_STAT64:
+         case SYS_LINUX_FSTAT64:
+         case SYS_LINUX_ACCESS:
+@@ -3603,6 +3617,14 @@
+     }
+     kernel_domains_exit(domain_mask);
+ #undef SYSCALL_RETURN
++    /* The compositor needs this gate too. Once the syscall has completed,
++     * yield to a waiting frame before a hot Wine thread reacquires it.
++     * Do not sleep a timer tick: repeated I/O otherwise pays that delay
++     * throughout an interactive launch. Never yield across an outer domain. */
++    if(caller_is_user(regs) && task_current_is_linux_abi() &&
++       (domain_mask&KDOMAIN_VFS) &&
++       gui_vision_frame_waiting() &&
++       !kernel_domains_held_mask())task_yield();
+     return regs;
+ }
+ 
+--- a/kernel/api/api.c
++++ b/kernel/api/api.c
+@@ -723,6 +723,13 @@
+ void bk_gui_window_invalidate(gui_window_t *window) {
+     if (!window) return;
+     window->dirty = true;
++    /* An asynchronous client's invalidation may arrive after Vision sampled
++     * this window but before it clears dirty at frame completion. Keep it
++     * until a content callback is actually queued (which consumes this bit).
++     * Streaming and synchronous windows have no such callback lifecycle. */
++    if (window->content_pid && window->content_paint &&
++        !window->streaming_content)
++        window->content_repaint = true;
+     gui_request_paint();
+ }
+ 
+--- a/kernel/sched/kernel_domains.c
++++ b/kernel/sched/kernel_domains.c
+@@ -150,7 +150,9 @@
+     if (text_starts(name, "bk_app_launch") ||
+         text_equals(name, "program_execute_path") ||
+         text_equals(name, "program_execute_path_arg"))
+-        return KDOMAIN_TASK | KDOMAIN_VFS | KDOMAIN_GUI;
++        /* The loader only reads images and publishes tasks. Its failure
++         * dialog acquires GUI itself; disk reads must not gate the desktop. */
++        return KDOMAIN_TASK | KDOMAIN_VFS;
+ 
+     if (text_starts(name, "vfs_") || text_starts(name, "fat_") ||
+         text_starts(name, "bfs_") || text_starts(name, "iso9660_") ||
+--- a/gui/gui.c
++++ b/gui/gui.c
+@@ -488,6 +488,11 @@
+ /* Frame locks span CPL3 execution. Explicit ownership permits abnormal-exit
+  * cleanup to release them before any reaper attempts to retire GUI objects. */
+ static volatile uint32_t g_vision_frame_tid;
++static volatile uint32_t g_vision_waiting_tid;
++bool gui_vision_frame_waiting(void) {
++    return g_vision_ready && g_vision_waiting_tid &&
++           g_vision_waiting_tid==g_vision_owner_pid;
++}
+ #define VISION_FRAME_DOMAINS (KDOMAIN_TASK|KDOMAIN_VFS|KDOMAIN_GUI|KDOMAIN_GFX)
+ void bk_vision_worker_begin(void) {
+     if(task_current_process_id()==g_vision_owner_pid && task_current_pid()!=g_vision_owner_pid)
+@@ -501,8 +506,10 @@
+     if(!frame || tid!=g_vision_owner_pid || !g_vision_ready ||
+        g_vision_frame_tid || bootsplash_active())return false;
+     vision_file_dialog_poll();
++    g_vision_waiting_tid=tid;
+     kernel_domains_enter(VISION_FRAME_DOMAINS);
+     gui_desktop_paint_lock();
++    g_vision_waiting_tid=0U;
+     g_vision_frame_tid=tid;task_block_user_upcalls(true);
+     uint32_t mode=__sync_lock_test_and_set(&g_mode_layout_refresh_pending,0U);
+     frame->layout_refresh=false;
+--- a/gui/gui.h
++++ b/gui/gui.h
+@@ -479,6 +479,7 @@
+ bool syscall_gfx_window_event(gui_window_t *window,const gui_event_t *event,bool *handled);
+ bool bk_vision_driver_window_event(gui_window_t *window,const gui_event_t *event);
+ void gui_vision_abort_frame(uint32_t tid);
++bool gui_vision_frame_waiting(void);
+ void gui_desktop_abandon_paint_lock(uint32_t tid);
+ void gui_vision_process_cleanup(uint32_t process_id);
+ bool gui_vision_ready(void);

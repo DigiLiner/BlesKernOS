@@ -1,0 +1,123 @@
+/SYSTEM/DRIVERS/PS2MOUSE.DVR 7140 bytes; mode 0o100644
+/SYSTEM/SERVICES/VISION.BEX 255380 bytes; mode 0o100644
+/SYSTEM/CONTROL/DISPLAY.CPL 2299376 bytes; mode 0o100644
+/SYSTEM/CONTROL/MOUSE.CPL 19952 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/FILE.BEX 59196 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/TEXTEDITOR.BEX 20304 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/PROCESSMANAGER.BEX 24176 bytes; mode 0o100644
+/WINEGATE/bin/abi 8960 bytes; mode 0o100755
+/WINEGATE/bin/ABI.ELF 8960 bytes; mode 0o100755
+/WINEGATE/bin/case01 18984 bytes; mode 0o100755
+/WINEGATE/bin/CASE01.ELF 18984 bytes; mode 0o100755
+/WINEGATE/bin/case02 18984 bytes; mode 0o100755
+/WINEGATE/bin/CASE02.ELF 18984 bytes; mode 0o100755
+/WINEGATE/bin/case03 18908 bytes; mode 0o100755
+/WINEGATE/bin/CASE03.ELF 18908 bytes; mode 0o100755
+/WINEGATE/bin/case04 21396 bytes; mode 0o100755
+/WINEGATE/bin/CASE04.ELF 21396 bytes; mode 0o100755
+/WINEGATE/bin/case05 21396 bytes; mode 0o100755
+/WINEGATE/bin/CASE05.ELF 21396 bytes; mode 0o100755
+/WINEGATE/bin/case06 23248 bytes; mode 0o100755
+/WINEGATE/bin/CASE06.ELF 23248 bytes; mode 0o100755
+/WINEGATE/bin/case07 24840 bytes; mode 0o100755
+/WINEGATE/bin/CASE07.ELF 24840 bytes; mode 0o100755
+/WINEGATE/bin/case08 19600 bytes; mode 0o100755
+/WINEGATE/bin/CASE08.ELF 19600 bytes; mode 0o100755
+/WINEGATE/bin/case09 19956 bytes; mode 0o100755
+/WINEGATE/bin/CASE09.ELF 19956 bytes; mode 0o100755
+/WINEGATE/bin/case10 21152 bytes; mode 0o100755
+/WINEGATE/bin/CASE10.ELF 21152 bytes; mode 0o100755
+/WINEGATE/bin/case11 20460 bytes; mode 0o100755
+/WINEGATE/bin/CASE11.ELF 20460 bytes; mode 0o100755
+/WINEGATE/bin/case12 23104 bytes; mode 0o100755
+/WINEGATE/bin/CASE12.ELF 23104 bytes; mode 0o100755
+/WINEGATE/bin/case13 22216 bytes; mode 0o100755
+/WINEGATE/bin/CASE13.ELF 22216 bytes; mode 0o100755
+/WINEGATE/bin/case14 23196 bytes; mode 0o100755
+/WINEGATE/bin/CASE14.ELF 23196 bytes; mode 0o100755
+/WINEGATE/bin/case15 19636 bytes; mode 0o100755
+/WINEGATE/bin/CASE15.ELF 19636 bytes; mode 0o100755
+/WINEGATE/bin/case16 19744 bytes; mode 0o100755
+/WINEGATE/bin/CASE16.ELF 19744 bytes; mode 0o100755
+/WINEGATE/bin/case17 22304 bytes; mode 0o100755
+/WINEGATE/bin/CASE17.ELF 22304 bytes; mode 0o100755
+/WINEGATE/bin/case18 20536 bytes; mode 0o100755
+/WINEGATE/bin/CASE18.ELF 20536 bytes; mode 0o100755
+/WINEGATE/bin/case19 24064 bytes; mode 0o100755
+/WINEGATE/bin/CASE19.ELF 24064 bytes; mode 0o100755
+/WINEGATE/bin/case20 22788 bytes; mode 0o100755
+/WINEGATE/bin/CASE20.ELF 22788 bytes; mode 0o100755
+/WINEGATE/bin/case21 28856 bytes; mode 0o100755
+/WINEGATE/bin/CASE21.ELF 28856 bytes; mode 0o100755
+/WINEGATE/bin/case22 26208 bytes; mode 0o100755
+/WINEGATE/bin/CASE22.ELF 26208 bytes; mode 0o100755
+/WINEGATE/bin/case23 48300 bytes; mode 0o100755
+/WINEGATE/bin/CASE23.ELF 48300 bytes; mode 0o100755
+/WINEGATE/bin/case24 24592 bytes; mode 0o100755
+/WINEGATE/bin/CASE24.ELF 24592 bytes; mode 0o100755
+/WINEGATE/bin/case25 45300 bytes; mode 0o100755
+/WINEGATE/bin/CASE25.ELF 45300 bytes; mode 0o100755
+/WINEGATE/bin/case26 20800 bytes; mode 0o100755
+/WINEGATE/bin/CASE26.ELF 20800 bytes; mode 0o100755
+/WINEGATE/bin/case27 19632 bytes; mode 0o100755
+/WINEGATE/bin/CASE27.ELF 19632 bytes; mode 0o100755
+/WINEGATE/bin/case28 29336 bytes; mode 0o100755
+/WINEGATE/bin/CASE28.ELF 29336 bytes; mode 0o100755
+/WINEGATE/bin/case29 22612 bytes; mode 0o100755
+/WINEGATE/bin/CASE29.ELF 22612 bytes; mode 0o100755
+/WINEGATE/bin/case30 24224 bytes; mode 0o100755
+/WINEGATE/bin/CASE30.ELF 24224 bytes; mode 0o100755
+/WINEGATE/bin/case31 31340 bytes; mode 0o100755
+/WINEGATE/bin/CASE31.ELF 31340 bytes; mode 0o100755
+/WINEGATE/bin/case32 21480 bytes; mode 0o100755
+/WINEGATE/bin/CASE32.ELF 21480 bytes; mode 0o100755
+/WINEGATE/bin/case33 24176 bytes; mode 0o100755
+/WINEGATE/bin/CASE33.ELF 24176 bytes; mode 0o100755
+/WINEGATE/lib/ld-linux.so.2 213348 bytes; mode 0o100644
+/WINEGATE/lib/libbrotlicommon.so.1 136688 bytes; mode 0o100644
+/WINEGATE/lib/libbrotlidec.so.1 50652 bytes; mode 0o100644
+/WINEGATE/lib/libbz2.so.1.0 74064 bytes; mode 0o100644
+/WINEGATE/lib/libc.so.6 2313128 bytes; mode 0o100644
+/WINEGATE/lib/libexpat.so.1 173468 bytes; mode 0o100644
+/WINEGATE/lib/libfontconfig.so.1 341308 bytes; mode 0o100644
+/WINEGATE/lib/libfreetype.so.6 861492 bytes; mode 0o100644
+/WINEGATE/lib/libgate.so 14656 bytes; mode 0o100755
+/WINEGATE/lib/libgcc_s.so.1 222888 bytes; mode 0o100644
+/WINEGATE/lib/libpng16.so.16 242996 bytes; mode 0o100644
+/WINEGATE/lib/libz.so.1 108000 bytes; mode 0o100644
+/WINEGATE/pc-large.dat 9437184 bytes; mode 0o100755
+/SYSTEM/PROGRAMS/GFXALLOC.ELF 8812 bytes; mode 0o100755
+/SYSTEM/PROGRAMS/RAMTEST.BEX 1760 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/STARTUP.INI 77 bytes; mode 0o100644
+{
+  "ram_mib": 1536,
+  "backend": "std",
+  "desktop_started": true,
+  "completed": true,
+  "kernel_sha256": "9f0ee7b9ffab712c07d2e3739ee35cd858265be49480ec1c6d9c1bce1010f2f6",
+  "wine_boot_started": false,
+  "smoke_pass": true,
+  "memory": {
+    "DESKTOP": {
+      "installed_kib": 1572351,
+      "managed_kib": 1441664,
+      "used_kib": 21126,
+      "free_kib": 1420537,
+      "unmanaged_kib": 130686,
+      "heap_used_kib": 20998,
+      "heap_free_kib": 437625,
+      "vm_free_kib": 982912
+    },
+    "IDLE": {
+      "installed_kib": 1572351,
+      "managed_kib": 1441664,
+      "used_kib": 25566,
+      "free_kib": 1416097,
+      "unmanaged_kib": 130686,
+      "heap_used_kib": 25438,
+      "heap_free_kib": 433185,
+      "vm_free_kib": 982912
+    }
+  },
+  "depths": []
+}

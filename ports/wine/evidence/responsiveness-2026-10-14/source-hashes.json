@@ -1,0 +1,11 @@
+{
+  "kernel/sched/task.c": "d067b9e9bdeb935f9c6e99f43b866029f8531e09905f15f19def9d518ca8b4ad",
+  "ports/wine/tests/ipc-latency.c": "0e4b228bac334cdef2c22a2ec4971a9212e47c1e2439162e1a439127323cf67f",
+  "tests/kernel/test_smp_sleep_handoff.py": "44c8acc0cc3a7509c20f0ddee3e4412ee54bb43dd1f44781179d5452b221f60c",
+  "tests/kernel/run_futex_bench.py": "0d0258e57d1bcc21b68e37d432ff085d23663bfa2a53643c3028c5f70175cdeb",
+  "tests/kernel/run_wine_gui_smoke.py": "72a8a5601dbe5b7f170199a7c5e45807f4484d45fdab47c09eb02b85343ceb68",
+  "ports/tinyx/scripts/build-stage2-kernel.py": "54b5b2c1f620c8a04ea91a3db37ee891056f2bcc4f158802fdb8db214e9d209d",
+  "kernel/drivers/storage/bfs4.c": "9122b72ea0c57858a84ad619075d35c6ada6ec4cce7a22011c689c3aee187c20",
+  "ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesos.c": "7c658d8155b5596d2b2b6ccd38a084432d46fbecde291f3d47024bdc385db512",
+  "ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/src/kinput.c": "fd4e8b1f350a6b390159875edd11284fcb50a98aaf1434af144ae0614e756e6b"
+}

@@ -1,0 +1,22 @@
+{
+  "test": "KVM, 2 vCPU, AHCI, 1536 MiB; Control Panel Wine.CPL opens Wine.BEX with winecfg",
+  "loading_screenshot": "wine-control-loading.png",
+  "loading_container_visible": false,
+  "notepad_screenshot": "wine-no-container-notepad.png",
+  "tinyx_cursor_visible_inside_notepad": false,
+  "about_screenshot": "wine-control-about.png",
+  "winecfg_about_version": "11.0",
+  "winecfg_configuration_tabs": [
+    "Applications",
+    "Libraries",
+    "Graphics",
+    "Desktop Integration",
+    "Drives",
+    "Audio",
+    "About"
+  ],
+  "note": "Final user ATA image, copied and booted in KVM: Control Panel Wine.CPL opened winecfg and its About tab on the first boot, in roughly two to three minutes.",
+  "cold_winecfg_screenshot": "wine-control-cold.png",
+  "cold_winecfg_opened": true,
+  "cold_about_opened": true
+}

@@ -3,5 +3,6 @@
 
 void usb_uhci_init(void);
 void usb_uhci_start_hotplug_task(void);
+void usb_uhci_diagnostics(void);
 
 #endif

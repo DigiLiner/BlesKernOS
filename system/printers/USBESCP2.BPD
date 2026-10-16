@@ -1,0 +1,7 @@
+[Printer]
+Id=USBESCP2
+Name=USB ESC/P2 family
+Language=ESCP2
+Transport=LPT
+Port=USBPRN1
+DPI=360

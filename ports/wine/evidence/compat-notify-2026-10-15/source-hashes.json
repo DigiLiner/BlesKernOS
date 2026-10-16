@@ -1,0 +1,15 @@
+{
+  "kernel/api/syscall.c": "8b805f46705816f10a29bae4243bcf2a5b6422081117fa171121543c0b1a6f2c",
+  "kernel/drivers/core/vfs.c": "c541187946ba7394be027eb5eca4ee85a011ee161f9e9b7285c0a086608510b8",
+  "kernel/include/vfs.h": "0ba4bddfdcf03ce6f1a2f4816755b986b2790aaec92d7581bee20bf9291c60c7",
+  "kernel/linux/i386_fs.inc": "50b2097ccf006c6ef1e1ce651619d1650ac3f64af13e55a3f81c531a90328cf5",
+  "kernel/linux/i386_inotify.inc": "9aeafe0ecf41e90b0f5808637a9bdad6b98b6ea3885883ea5517e1b62bd687a4",
+  "kernel/linux/i386_ipc.inc": "1443d60399885f6544d14a239fce21ac13758d4c13434ccf204f7ec8fdb75729",
+  "kernel/linux/i386_translate.inc": "4bd5ee1a1e17ec94caa1ab010afaad7875e1bcaf811871d925cc08b75f4f5f34",
+  "ports/wine/tests/directory-notify-launch.c": "742afff584ca4d7971e0ba8b6acbb4aa148dff88e77c4fd856bf94efee174152",
+  "ports/wine/tests/directory-notify.c": "63586e79405c4496fd3d2393b4798c022abe0d3c40c5b5ad7ece252b34bf8a01",
+  "ports/wine/tests/inotify.c": "75fb574fbd9ddddbae0bbc46cc813c4cb4091d06f801e7fae595ad849541222b",
+  "tests/kernel/run_wine_notify.py": "45a48464571766a3fbde51a5ab355e0c81eec7af5bd0147aa8f0716e5464513e",
+  "tests/kernel/test_gfx_poll.py": "9022a87f2bbac719d71beb13490c7cdcfe0ff676e43d105a8aacb4226b57a34e",
+  "tests/kernel/test_inotify_queue.py": "90adf471ce027a6731ca232818f5e97ff16cf1623b8bb0e110c796b34e1e23e3"
+}

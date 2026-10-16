@@ -1,0 +1,10 @@
+PASS create: 21 interruption points
+PASS extend: 17 interruption points
+PASS shrink: 14 interruption points
+PASS delete: 17 interruption points
+PASS rename: 17 interruption points
+PASS mkdir: 13 interruption points
+PASS chmod: 9 interruption points
+PASS times: 9 interruption points
+PASS sync: 6 interruption points
+PASS defrag: 19 interruption points

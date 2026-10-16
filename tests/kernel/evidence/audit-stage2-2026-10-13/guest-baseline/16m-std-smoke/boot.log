@@ -1,0 +1,1401 @@
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=6 util=15871 KiB top=16256 KiB
+  [MM] RAM usable: 15871 KB
+  [MM] Heap dinamico: 0x400000 - 0xee0000 (11136 KB)
+  [MM] VM frames: 0xee0000 - 0xfe0000 (1024 KiB, 256 paginas)
+  [MM] Vista PE fija desactivada: heap reducido ocupa 0x400000-0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x400000-0xee0000
+[COMPAT] perfil=normal RAM_top=16256 KiB heap=11136 KiB tareas=32 CPU=fam6/mod6 GUI=30FPS TIMER=100Hz
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:EARLY] BIOS LFB 800x600x32 pitch=3200 fb=0xfd000000
+[BKBOOT t=0] STARTING KERNEL
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=1] INTERRUPTS READY
+[BKBOOT t=2] INPUT DEVICES
+  [PCI] 6 dispositivos detectados
+  [LPT] LPT1 base=0x0378 status=0xD9 listo
+  [ATA] ata0: 1572864 sectores de 512 bytes
+  [ATA] ata0: read burst=16 sectores
+  [ATA] ata0: PIO read width=32 bits
+[ATA:PROBE] io=0x1f0 slave=1 ausente (status=0x0)
+  [ATAPI] cd0: unidad detectada sin medio listo
+[ATA:PROBE] io=0x170 slave=1 ausente (status=0x0)
+  [ATA] canales IDE normalizados despues del probe
+  [ATA] ata0: QEMU PIIX DMA read/write enabled
+[BKBOOT t=26] STORAGE DRIVERS
+[BKBOOT t=27] MOUNTING FILESYSTEM
+[BKBOOT t=27] F8: RECOVERY MODE (2 SEC)
+[BOOT] Pulse F8 para entrar a recovery sin Vision ni servicios
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=2
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 2
+[FAT] dev[0]=ata0 tipo=1 sectores=1572864
+[FAT] dev[1]=cd0 tipo=3 sectores=0
+Intentando montar ata0...
+fat_set_active(ata0)
+No es particion, buscando ata0
+Dispositivo encontrado
+[BFS4:CACHE] slots=64 bytes=263424
+fat_try_mount_device OK
+fat_set_active OK
+Montado ata0 OK
+[VFS] /TEMP listo
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=6 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+  [USBCLASS] HID boot/report, hubs USB 1.1 y printers cargados
+[DVR] usbclass: cargado (/SYSTEM/DRIVERS/USBCLASS.DVR)
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado
+[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo
+[SVGA.DVR] dispositivo 15AD:0405 no detectado
+[DVR] /SYSTEM/DRIVERS/VMWARESVGA.DVR: ERROR: init del driver fallo
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 10 modulo(s) cargado(s)
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA OK mode=800x600x32 pitch=3200 fb=0xfd000000
+[GFX:MODE] cambio solicitado: 640x480x8; activo=800x600x32 backend=vesa
+[GFX:MODE] OK backend=vesa modo=640x480x8 pitch=640 gen=2
+[MM] escritorio inicial 640x480, salida de 8 bits para RAM limitada
+[GFXRES] boot icons 9/9 precargados
+[BKBOOT t=770] LOADING PRINT SERVICE
+[PRINT] spooler iniciado en segundo plano, pid=5
+[BKBOOT t=797] STARTING VISION
+[BKBOOT t=803] VISION: LOADING ELF
+.[BKBOOT t=[VISION] servicio lanzado pid=6
+1023] VISION: ENTER RING3
+[VISION] ownership grafico adquirido pid=6
+[BKBOOT t=1036] VISION: GRAPHICS ENGINE
+[BKBOOT t=1043] PREPARING DESKTOP
+[PRINT] PrintSpool Ring 3 listo
+[BKBOOT t=1232] VISION: ENGINE READY
+[BKBOOT t=1240] VISION: DESKTOP
+[BKBOOT t=1247] LOADING DESKTOP ICONS
+[BKBOOT t=1250] ICONPAK preload begin
+[BKBOOT t=1250] LOADING ICON CACHE
+[BKBOOT t=1260] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=1268] DESKMANAGER read desktop config
+[BKBOOT t=1269] DESKMANAGER desktop config loaded
+[BKBOOT t=1290] VISION: DESKBAR
+[DESKBAR] alloc state bytes=17116
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[BKBOOT t=1354] VISION: SCREENSAVER
+[BKBOOT t=1374] VISION: START SHELL
+[BKBOOT t=1378] VISION: READY
+[VISION] READY: motor, escritorio y compositor bajo Vision
+[BKBOOT t=1383] kernel_main: Vision READY
+[RAM:DESKTOP] installed_kib=15871 managed_kib=12160 used_kib=9688 free_kib=2471 unmanaged_kib=3711 heap_used_kib=9560 heap_free_kib=1575 vm_free_kib=896
+[SMP] escritorio listo; iniciando procesadores secundarios
+[VISION:SAVER] Ring 3 worker started
+[SMP] CPU BSP APIC=0; no se detectaron procesadores secundarios
+[BKBOOT] VISION ONLINE pid=6
+[WINE:BOOT] deferred until Windows program launch
+[BKBOOT t=1394] DISABLE SPLASH / ENTER GUI
+[BKBOOT] DESKTOP RELEASED
+[BKBOOT] QUEUE STARTUP SOUND
+[VISION:ENGINE] compositor y ventanas CPL=3
+[MM] ERROR: sin memoria! pedido=77824 caller=0x1217e5 pid=2
+[MM] Resumen heap:
+  bloques=342 usados=11233288 libres=161768 mayor_libre=47328
+  ultimos bloques:
+  block 0xd29bac: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2abc4: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=47328 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=187716 caller=0x110d37 pid=6
+[MM] Resumen heap:
+  bloques=342 usados=11274108 libres=120948 mayor_libre=10252
+  ultimos bloques:
+  block 0xd2abc4: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=43228 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedeffc: size=4076 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=187716 caller=0x110d37 pid=6
+[MM] Resumen heap:
+  bloques=342 usados=11274108 libres=120948 mayor_libre=10252
+  ultimos bloques:
+  block 0xd2abc4: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=43228 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedeffc: size=4076 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=109416 caller=0x110d37 pid=6
+[MM] Resumen heap:
+  bloques=342 usados=11263180 libres=131876 mayor_libre=15004
+  ultimos bloques:
+  block 0xd2abc4: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=32300 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedc54c: size=15004 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=109416 caller=0x110d37 pid=6
+[MM] Resumen heap:
+  bloques=342 usados=11263180 libres=131876 mayor_libre=15004
+  ultimos bloques:
+  block 0xd2abc4: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=32300 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedc54c: size=15004 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=71960 caller=0x110d37 pid=6
+[MM] Resumen heap:
+  bloques=342 usados=11258516 libres=136540 mayor_libre=19668
+  ultimos bloques:
+  block 0xd2abc4: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=27636 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedb314: size=19668 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=71960 caller=0x110d37 pid=6
+[MM] Resumen heap:
+  bloques=342 usados=11258516 libres=136540 mayor_libre=19668
+  ultimos bloques:
+  block 0xd2abc4: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=27636 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedb314: size=19668 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=49948 caller=0x110d37 pid=6
+[MM] Resumen heap:
+  bloques=342 usados=11254900 libres=140156 mayor_libre=23284
+  ultimos bloques:
+  block 0xd2abc4: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=24020 free=0 owner=6 magic=0xb1e5c0de
+  block 0xeda4f4: size=23284 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=49948 caller=0x110d37 pid=6
+[MM] Resumen heap:
+  bloques=342 usados=11254900 libres=140156 mayor_libre=23284
+  ultimos bloques:
+  block 0xd2abc4: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=24020 free=0 owner=6 magic=0xb1e5c0de
+  block 0xeda4f4: size=23284 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=30372 caller=0x110d37 pid=6
+[MM] Resumen heap:
+  bloques=342 usados=11249096 libres=145960 mayor_libre=29088
+  ultimos bloques:
+  block 0xd2abc4: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=18216 free=0 owner=6 magic=0xb1e5c0de
+  block 0xed8e48: size=29088 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=30372 caller=0x110d37 pid=6
+[MM] Resumen heap:
+  bloques=342 usados=11249096 libres=145960 mayor_libre=29088
+  ultimos bloques:
+  block 0xd2abc4: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=18216 free=0 owner=6 magic=0xb1e5c0de
+  block 0xed8e48: size=29088 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[RAM:IDLE] installed_kib=15871 managed_kib=12160 used_kib=11124 free_kib=1035 unmanaged_kib=3711 heap_used_kib=10996 heap_free_kib=139 vm_free_kib=896
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=17152 caller=0x121450 pid=6
+[MM] Resumen heap:
+  bloques=343 usados=11251888 libres=143144 mayor_libre=16144
+  ultimos bloques:
+  block 0xd2bbdc: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2cbf4: size=4128 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2dc2c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2ec44: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd2fc5c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd30c74: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd31c8c: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd32ca4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd45cbc: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd58cd4: size=4520 free=1 owner=0 magic=0xb1e5c0de
+  block 0xd59e94: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda4eac: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed0ec4: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xed4708: size=16144 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed8630: size=21008 free=0 owner=6 magic=0xb1e5c0de
+  block 0xedd858: size=10128 free=1 owner=0 magic=0xb1e5c0de

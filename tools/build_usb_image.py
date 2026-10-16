@@ -5,6 +5,7 @@ from pathlib import Path
 SECTOR_SIZE = 512
 PARTITION_START_LBA = 2048
 PARTITION_TYPE_FAT32_LBA = 0x0C
+PARTITION_TYPE_BFS4 = 0x83
 
 
 def chs_lba(lba):
@@ -27,7 +28,7 @@ def patch_hidden_sectors(image, absolute_sector, hidden):
 
 def main():
     if len(sys.argv) != 4:
-        print("usage: build_usb_image.py <out.img> <partition-fat32.img> <mbr.bin>",
+        print("usage: build_usb_image.py <out.img> <partition.img> <mbr.bin>",
               file=sys.stderr)
         return 1
 
@@ -36,6 +37,7 @@ def main():
     mbr_path = Path(sys.argv[3])
 
     part = part_path.read_bytes()
+    bfs4 = part[4096 * SECTOR_SIZE:4096 * SECTOR_SIZE + 4] == b"BFS4"
     mbr = bytearray(mbr_path.read_bytes())
     if len(mbr) != SECTOR_SIZE:
         raise ValueError(f"MBR debe medir 512 bytes: {mbr_path}")
@@ -52,7 +54,7 @@ def main():
     entry = bytearray(16)
     entry[0] = 0x80
     entry[1:4] = chs_lba(PARTITION_START_LBA)
-    entry[4] = PARTITION_TYPE_FAT32_LBA
+    entry[4] = PARTITION_TYPE_BFS4 if bfs4 else PARTITION_TYPE_FAT32_LBA
     entry[5:8] = chs_lba(PARTITION_START_LBA + part_sectors - 1)
     entry[8:12] = PARTITION_START_LBA.to_bytes(4, "little")
     entry[12:16] = part_sectors.to_bytes(4, "little")
@@ -60,7 +62,7 @@ def main():
     image[510:512] = b"\x55\xAA"
 
     patch_hidden_sectors(image, PARTITION_START_LBA, PARTITION_START_LBA)
-    backup_boot_sector = int.from_bytes(
+    backup_boot_sector = 0 if bfs4 else int.from_bytes(
         image[part_offset + 50:part_offset + 52], "little")
     if backup_boot_sector:
         patch_hidden_sectors(

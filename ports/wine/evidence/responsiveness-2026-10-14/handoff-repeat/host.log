@@ -1,0 +1,31 @@
+make: 'build/system/drivers/PS2MOUSE.DVR' is up to date.
+/SYSTEM/DRIVERS/PS2MOUSE.DVR 7140 bytes; mode 0o100644
+/WINEGATE/bin/wine-phase4.ELF 48100 bytes; mode 0o100755
+/SYSTEM/SERVICES/VISION.BEX 255436 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/WINEUITEST.BEX 3432 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/STARTUP.INI 89 bytes; mode 0o100644
+/SYSTEM/USER/CONFIG/SCREENSV.INI 56 bytes; mode 0o100644
+Notepad mapped: {'handle': 62153272, 'bounds': (36, 70, 511, 376), 'title': 'notepad.exe', 'visible': True, 'listed': True, 'owner': 8, 'controller': 7}
+In file included from /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/kernel/include/klock.h:4,
+                 from /tmp/bk-wine-perf-20261014/handoff-repeat/input-offsets.c:6:
+/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/kernel/include/types.h:19: warning: "NULL" redefined
+   19 | #define NULL ((void*)0)
+      | 
+In file included from /usr/include/stdio.h:34,
+                 from /tmp/bk-wine-perf-20261014/handoff-repeat/input-offsets.c:4:
+/usr/lib/gcc/x86_64-linux-gnu/13/include/stddef.h:404: note: this is the location of the previous definition
+  404 | #define NULL ((void *)0)
+      | 
+In file included from /tmp/bk-wine-perf-20261014/handoff-repeat/input-offsets.c:2:
+/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/kernel/include/types.h:22:17: error: two or more data types in declaration specifiers
+   22 | typedef uint8_t bool;
+      |                 ^~~~
+/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/kernel/include/types.h:22:1: warning: useless type name in empty declaration
+   22 | typedef uint8_t bool;
+      | ^~~~~~~
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/run_wine_gui_smoke.py", line 216, in <module>
+    subprocess.run(['gcc','-m32','-I'+str(ROOT),str(probe_source),'-o',str(out/'input-offsets')],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['gcc', '-m32', '-I/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9', '/tmp/bk-wine-perf-20261014/handoff-repeat/input-offsets.c', '-o', '/tmp/bk-wine-perf-20261014/handoff-repeat/input-offsets']' returned non-zero exit status 1.

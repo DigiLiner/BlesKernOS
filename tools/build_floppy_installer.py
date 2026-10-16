@@ -14,6 +14,7 @@ import struct
 import subprocess
 import tempfile
 from pathlib import Path
+import bfs4
 
 FLOPPY_SIZE = 1_474_560
 PART_SIZE = 1_300_000
@@ -189,7 +190,13 @@ def main() -> int:
         tmp = Path(tmp_name)
         root = tmp / "root"
         root.mkdir()
-        run("mcopy", "-s", "-n", "-i", str(args.ata_image), "::/*", str(root) + "/")
+        with args.ata_image.open("rb") as source:
+            source.seek(bfs4.BOOT_SECTORS * 512)
+            native_bfs = source.read(4) == b"BFS4"
+        if native_bfs:
+            bfs4.extract(args.ata_image, root)
+        else:
+            run("mcopy", "-s", "-n", "-i", str(args.ata_image), "::/*", str(root) + "/")
         archive, file_count, raw_total, stored_files, lzss_files = build_archive(root)
         parts = [archive[i:i + PART_SIZE] for i in range(0, len(archive), PART_SIZE)]
         total_disks = 2 + len(parts)

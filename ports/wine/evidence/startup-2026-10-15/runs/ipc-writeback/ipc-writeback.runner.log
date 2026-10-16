@@ -1,0 +1,28 @@
+make: 'build/system/services/vision.o' is up to date.
+ld: warning: build/isr_stubs.o: missing .note.GNU-stack section implies executable stack
+ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+patched /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine-oct15/ipc-writeback/test.img: kernel 841772 bytes
+/SYSTEM/SERVICES/VISION.BEX 255380 bytes; mode 0o100644
+/WINEGATE/bin/futex-suite.ELF 15244 bytes; mode 0o100755
+/WINEGATE/bin/ipc-latency.ELF 15608 bytes; mode 0o100755
+/WINEGATE/bin/futex-latency.ELF 15548 bytes; mode 0o100755
+/WINEGATE/bin/futex-mapping.ELF 15524 bytes; mode 0o100755
+/WINEGATE/bin/writeback-batch.ELF 15516 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/SCREENSV.INI 23 bytes; mode 0o100644
+{'host_s': 27.106487741984893, 'line': '[IPC-LATENCY] poll=0 sample=0 rounds=500 us=73334'}
+{'host_s': 27.323404892988037, 'line': '[IPC-LATENCY] poll=0 sample=1 rounds=500 us=33333'}
+{'host_s': 27.430962112994166, 'line': '[IPC-LATENCY] poll=0 sample=2 rounds=500 us=23333'}
+{'host_s': 27.600828994996846, 'line': '[IPC-LATENCY] poll=1 sample=0 rounds=500 us=36667'}
+{'host_s': 27.80618392000906, 'line': '[IPC-LATENCY] poll=1 sample=1 rounds=500 us=70000'}
+{'host_s': 28.038806822005427, 'line': '[IPC-LATENCY] poll=1 sample=2 rounds=500 us=56667'}
+{'host_s': 28.138183447998017, 'line': '[IPC-LATENCY] PASS'}
+{'host_s': 29.305409881984815, 'line': '[FUTEX-LATENCY] run=1 rounds=1000 us=50000 waits=1019,1019 wakes=1019,1019'}
+{'host_s': 29.545933547982713, 'line': '[FUTEX-LATENCY] run=2 rounds=1000 us=86667 waits=1017,1018 wakes=1018,1017'}
+{'host_s': 29.627568338008132, 'line': '[FUTEX-LATENCY] PASS'}
+{'host_s': 30.842739469982916, 'line': '[FUTEX-MAPPING] private aliases stay separate; wake survives file COW without PRIVATE flag PASS'}
+{'host_s': 34.018970909994096, 'line': '[FUTEX-SUITE] PASS'}
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/run_futex_bench.py", line 118, in <module>
+    if 'futex-latency' in programs:assert len(results)==3, 'missing latency samples'
+                                          ^^^^^^^^^^^^^^^
+AssertionError: missing latency samples

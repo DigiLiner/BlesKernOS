@@ -1,0 +1,94 @@
+{
+  "date": "2026-10-13",
+  "guest_functional_passes": 9,
+  "guest_tests": [
+    {
+      "path": "smp4/64m-std-smoke-network-e1000/result.json",
+      "pass": true,
+      "kernel_sha256": "c776ad1005bbe386f29b15822b9308be44dfbd7b659de9f8d25944464c8693be"
+    },
+    {
+      "path": "smp4/64m-std-smoke-network-ne2k_pci/result.json",
+      "pass": true,
+      "kernel_sha256": "c776ad1005bbe386f29b15822b9308be44dfbd7b659de9f8d25944464c8693be"
+    },
+    {
+      "path": "smp4/64m-std-smoke-network-pcnet/result.json",
+      "pass": true,
+      "kernel_sha256": "c776ad1005bbe386f29b15822b9308be44dfbd7b659de9f8d25944464c8693be"
+    },
+    {
+      "path": "smp4/64m-std-smoke-network-tulip/result.json",
+      "pass": true,
+      "kernel_sha256": "c776ad1005bbe386f29b15822b9308be44dfbd7b659de9f8d25944464c8693be"
+    },
+    {
+      "path": "final/64m-std-smoke-audio-rtl8139/result.json",
+      "pass": true,
+      "kernel_sha256": "c776ad1005bbe386f29b15822b9308be44dfbd7b659de9f8d25944464c8693be"
+    },
+    {
+      "path": "final/64m-cirrus-smoke-framebuffer-rtl8139/result.json",
+      "pass": true,
+      "kernel_sha256": "c776ad1005bbe386f29b15822b9308be44dfbd7b659de9f8d25944464c8693be"
+    },
+    {
+      "path": "final/64m-std-smoke-printing-rtl8139/result.json",
+      "pass": true,
+      "kernel_sha256": "c776ad1005bbe386f29b15822b9308be44dfbd7b659de9f8d25944464c8693be"
+    },
+    {
+      "path": "final/64m-std-smoke-driverimports-rtl8139/result.json",
+      "pass": true,
+      "kernel_sha256": "c776ad1005bbe386f29b15822b9308be44dfbd7b659de9f8d25944464c8693be"
+    },
+    {
+      "path": "isolated-idle/64m-cirrus-smoke-idle/result.json",
+      "pass": true,
+      "kernel_sha256": "c776ad1005bbe386f29b15822b9308be44dfbd7b659de9f8d25944464c8693be"
+    }
+  ],
+  "host_executables": 16,
+  "additional_regressions": [
+    "native memory API boundary",
+    "ET_REL loader bounds"
+  ],
+  "upstream_zjsdecode": "PASS: native Ring-3 ZJS -> 4992x7016 PBM with expected pixels",
+  "audio": {
+    "rate": 44100,
+    "channels": 2,
+    "sample_bits": 16,
+    "frames": 45403,
+    "levels": {
+      "-4096": 40744,
+      "4096": 34664,
+      "-2891": 8058,
+      "2891": 7340
+    }
+  },
+  "known_test_failure": {
+    "path": "final/64m-cirrus-smoke-idle/result.json",
+    "reason": "Vision measured 36% during concurrent QEMU executions; 20% budget",
+    "isolated_repeat": "PASS: Vision measured 20%"
+  },
+  "physical_hardware_tested": false,
+  "artifacts": {
+    "build/kernel.bin": "c776ad1005bbe386f29b15822b9308be44dfbd7b659de9f8d25944464c8693be",
+    "build/stage2.bin": "5fba78f7f320c8426e672b25aae0dc6b73bcf6f26173f4695fb512d7d6d9445a",
+    "build/system/services/printspool.o": "430649e624649219484727e064d317043dac984848e1b3873fccba204b87bfa1",
+    "build/system/drivers/E1000.DVR": "3fd4c773f4d84e303b6b253ad9f101ad9b9d970bd5e6cc1d5f37a307c23fa113",
+    "build/system/drivers/PCNET.DVR": "0b48d187b30385aa4d8ed4058134ba5fe3756a57df617023c184037ad019cb46",
+    "build/system/drivers/NE2KPCI.DVR": "eb5d6a7dac13a0f3c8e232aa0598c799b7c15e987bd380eb860047dddd897ef5",
+    "build/system/drivers/TULIP.DVR": "5a39184279044996fe5c4eca84e83d471dfca98480c90ce17d85171f3e5baec3",
+    "build/system/drivers/RHINE.DVR": "9ea022b0f52297c0be492e541ec4f8c89c4e9dd7f98a8b31fef8904229de45cf",
+    "build/system/drivers/SIS900.DVR": "77ae1150d4fecfe99c9339598601ea2f18e3ed4f849b44964a5ccaf449988788",
+    "build/system/drivers/NATSEMI.DVR": "079546d17b7641f86ebfc5d1f30ae61fed06285f0f8403d22f6ed83abfab1ef2",
+    "build/system/drivers/RTL8169.DVR": "123c84f1a6289825b8b1f48687e89978119223b7979bd8aa0534146dd8f40a8e",
+    "build/system/drivers/ES1370.DVR": "f67eba13b8c5540f2a9f20505684c1b4bde25d102e8ed2f8218296adb16ced1a",
+    "build/system/drivers/CMIPCI.DVR": "41448b843b61ac9dbba695449c4e430c2470d1007af4af7cbe9e37887a7cdeec",
+    "build/system/drivers/VIA686.DVR": "13ba1f4b74974235c73407ce66ffa57a94cd168e87e27993ebed9e0ff487d11c",
+    "build/system/drivers/CS4281.DVR": "8e3a9d8ed67d4a544738e5cc4cb8cccabf43866df7cccbfb8b1a7e7a5b644875",
+    "build/system/drivers/LEGACYFB.DVR": "7e5b95931c8cfa4ddac0d5421f59010e1c86fec45b0ac9e941664744c6564aec",
+    "build/system/drivers/USBCLASS.DVR": "a2468840314d7fa9822678c5b42a62b594e207e06af29270c61af4fb2af76d2c"
+  }
+}

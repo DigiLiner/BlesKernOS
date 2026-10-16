@@ -1,0 +1,8 @@
+{
+  "kernel/linux/i386_futex.inc": "365fa8a56b809257daeb06eec4757123e2b04570d482c7c3021f5f01d203c04a",
+  "build/kernel.bin": "6c860afa7b09b391361b1c41dbe980f0f58832ec682f77f0418cbf84b25dc0ca",
+  "ports/wine/tests/ipc.c": "416f2430c3f7f6bb3b8ce12cb2985ea91938f27e8078bb6629b70c596457a4ae",
+  "ports/wine/tests/unix.c": "44f8865081eb854348c881839e4638eda74896074cafb0dc0ab2a1e03ef7118f",
+  "ports/wine/tests/futex.c": "5901b1a6842ab31fa8c6ac58986ac638793c3c9df6d7e2034768cad52c3e29ba",
+  "ports/wine/tests/futex-mapping.c": "73e9da3cdb6578eace76635b75c9ff00891ecfe1d4a6110824c3fb1d9281b5c0"
+}

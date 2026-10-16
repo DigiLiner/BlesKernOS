@@ -1,0 +1,397 @@
+--- a/kernel/api/syscall.c
++++ b/kernel/api/syscall.c
+@@ -136,8 +136,19 @@
+     return __sync_val_compare_and_swap(&g_wine_boot_result,0,0);
+ }
+ 
++/* VMA descriptors contain physical backing and trusted ownership/protection
++ * state. The legacy heap is PAGE_USER; an owner tag there is not isolation.
++ * Use the existing supervisor identity pool, just like private page tables.
++ * Capacity is bounded by SYSCALL_VM_MAP_LIMIT before computing page counts. */
++static uint32_t sys_vm_map_pages(uint32_t capacity) {
++    return (capacity * sizeof(syscall_vm_map_t) + PAGING_PAGE_SIZE - 1U) /
++        PAGING_PAGE_SIZE;
++}
++
+ static bool sys_vm_maps_reserve(syscall_vm_state_t *vm, uint32_t wanted) {
+     syscall_vm_map_t *grown;
++    syscall_vm_map_t *old_maps;
++    uint32_t physical;
+     uint32_t old_capacity, new_capacity;
+     if (!vm || wanted > SYSCALL_VM_MAP_LIMIT) return false;
+     if (vm->map_capacity >= wanted) return true;
+@@ -148,18 +159,29 @@
+         new_capacity = next > SYSCALL_VM_MAP_LIMIT ? SYSCALL_VM_MAP_LIMIT : next;
+     }
+     if (new_capacity < wanted) return false;
+-    grown = (syscall_vm_map_t *)krealloc(vm->maps,
+-        new_capacity * sizeof(syscall_vm_map_t));
+-    if (!grown) return false;
+-    /* The table may be allocated by fork's parent or resized by a sibling.
+-     * Its lifetime belongs to syscall_process_cleanup, not that caller. */
+-    (void)mm_set_allocation_owner(grown, 0U);
++    if (!mm_vm_frame_alloc(sys_vm_map_pages(new_capacity), &physical))
++        return false; /* Preserve both descriptors and capacity on OOM. */
++    grown = (syscall_vm_map_t *)(uintptr_t)physical;
++    old_maps = vm->maps;
++    if (old_capacity)
++        kmemcpy(grown, old_maps, old_capacity * sizeof(syscall_vm_map_t));
+     kmemset(grown + old_capacity, 0,
+         (new_capacity - old_capacity) * sizeof(syscall_vm_map_t));
+-    (void)mm_set_allocation_subsystem(grown,MM_SUBSYSTEM_VM);
+     vm->maps = grown;
+     vm->map_capacity = new_capacity;
++    if (old_maps)
++        mm_vm_frame_free((uint32_t)(uintptr_t)old_maps,
++                         sys_vm_map_pages(old_capacity));
+     return true;
++}
++
++static void sys_vm_maps_release(syscall_vm_state_t *vm) {
++    if (!vm) return;
++    if (vm->maps)
++        mm_vm_frame_free((uint32_t)(uintptr_t)vm->maps,
++                         sys_vm_map_pages(vm->map_capacity));
++    vm->maps = NULL;
++    vm->map_capacity = 0U;
+ }
+ 
+ static syscall_vm_map_t *sys_vm_free_map_slot(syscall_vm_state_t *vm,
+@@ -352,7 +374,7 @@
+                 else if(map->backing)
+                     mm_vm_frame_free(map->backing, map->length / PAGING_PAGE_SIZE);
+             }
+-        if (resource->vm.maps) kfree(resource->vm.maps);
++        sys_vm_maps_release(&resource->vm);
+         if (resource->vm.brk_capacity) {
+             (void)pager_unmap(process_id,resource->vm.brk_base,
+                              resource->vm.brk_capacity);
+--- a/kernel/mm/paging.c
++++ b/kernel/mm/paging.c
+@@ -365,7 +365,12 @@
+         for (uint32_t cpu = 0U; cpu < 32U; cpu++) {
+             if (!(mask & (1U << cpu))) continue;
+             if (!smp_cpu_online(cpu)) continue;
+-            if (g_tlb_seen[cpu] < generation) {
++            /* Serial-number ordering remains valid across uint32 wrap.
++             * Plain '<' treats a pre-wrap ACK as newer than generation 0,
++             * allowing backing reuse before the remote CPU invalidates.
++             * As with other 32-bit sequence counters, compared generations
++             * must be less than 2^31 publications apart. */
++            if ((int32_t)(g_tlb_seen[cpu] - generation) < 0) {
+                 done = false;
+                 break;
+             }
+--- a/tests/kernel/run_ram_smoke.py
++++ b/tests/kernel/run_ram_smoke.py
+@@ -2,12 +2,15 @@
+ """Boot an isolated disposable clone and measure idle RAM or exercise native apps/colors."""
+ import argparse,json,re,socket,subprocess,sys,time,zlib
+ from pathlib import Path
++from hashlib import sha256
+ from PIL import Image
+ ROOT=Path(__file__).resolve().parents[2]
+ sys.path.insert(0,str(ROOT/'tools'))
+ from bfs4_update import Editor
+ p=argparse.ArgumentParser(description=__doc__)
+ p.add_argument('--base',type=Path,default=ROOT/'build/bleskernos-ata-user.img')
++p.add_argument('--kernel-bin',type=Path,default=ROOT/'build/kernel.bin',help='isolated kernel for A/B regression tests')
++p.add_argument('--stage2-bin',type=Path,default=ROOT/'build/stage2.bin',help='Stage 2 built for the selected kernel')
+ p.add_argument('--ram',type=int,default=32)
+ p.add_argument('--swap-working-set-mib',type=int,choices=[6,8],default=6)
+ swap_choice=p.add_mutually_exclusive_group()
+@@ -15,7 +18,7 @@
+ swap_choice.add_argument('--swap-file',action='store_true',help='reserve a swap file inside the isolated system disk')
+ p.add_argument('--smoke',action='store_true')
+ p.add_argument('--vision-fault',action='store_true',help='install a test-only Vision that faults while holding frame locks')
+-p.add_argument('--fixture',choices=['ram','preferences','benchmark','idle','quake','swap','runtime','filesystem','vision'],default='ram')
++p.add_argument('--fixture',choices=['ram','preferences','benchmark','idle','quake','swap','runtime','filesystem','vision','vm'],default='ram')
+ p.add_argument('--runtime-case',type=int,choices=range(1,34),help='run one ABI case; default runs the complete suite')
+ p.add_argument('--accel',default='tcg')
+ p.add_argument('--cpu',default='qemu32,+rdrand')
+@@ -37,6 +40,7 @@
+ if a.fixture=='preferences':tag+='-preferences'
+ if a.fixture=='quake':marker='QUAKETEST';tag+='-quake'
+ if a.fixture=='runtime':marker='RUNTIMETEST';tag+='-runtime'
++if a.fixture=='vm':marker='VMMETATEST';tag+='-vm'
+ if a.runtime_case:
+  assert a.fixture=='runtime','--runtime-case requires --fixture runtime'
+  tag+='-case'+str(a.runtime_case)
+@@ -47,10 +51,11 @@
+ image=out/'test.img';sock=Path('/tmp/bk-ram-'+tag+'-'+format(zlib.crc32(str(a.out.resolve()).encode()),'x')+'.sock');sock.unlink(missing_ok=True)
+ subprocess.run(['cp','--reflink=auto',str(a.base),str(image)],check=True)
+ if not a.installed:
+- subprocess.run(['make','build/stage2.bin'],cwd=ROOT,check=True)
++ if a.kernel_bin.resolve()==ROOT/'build/kernel.bin' and a.stage2_bin.resolve()==ROOT/'build/stage2.bin':
++  subprocess.run(['make','build/stage2.bin'],cwd=ROOT,check=True)
+  with image.open('r+b') as f:
+-  f.seek(512);f.write((ROOT/'build/stage2.bin').read_bytes())
+-  kernel=(ROOT/'build/kernel.bin').read_bytes()
++  f.seek(512);f.write(a.stage2_bin.read_bytes())
++  kernel=a.kernel_bin.read_bytes()
+   f.seek(9*512);f.write(kernel.ljust(1280*1024,b'\0'))
+  e=Editor(image)
+  for target,source in [('/SYSTEM/DRIVERS/PS2MOUSE.DVR','build/system/drivers/PS2MOUSE.DVR'),('/SYSTEM/SERVICES/VISION.BEX','build/system/services/vision.o'),('/SYSTEM/CONTROL/DISPLAY.CPL','build/system/control/display.o'),('/SYSTEM/CONTROL/MOUSE.CPL','build/system/control/mouse.o'),('/SYSTEM/PROGRAMS/FILE.BEX','build/programs/filebrowser.o'),('/SYSTEM/PROGRAMS/TEXTEDITOR.BEX','build/programs/texteditor.o'),('/SYSTEM/PROGRAMS/PROCESSMANAGER.BEX','build/programs/processmanager.o')]:
+@@ -61,7 +66,7 @@
+  e.finish()
+ if a.smoke:
+  obj=out/'ram_smoke.o'
+- fixture_source={'ram':'ram_smoke.c','preferences':'display_preferences_smoke.c','benchmark':'perf_smoke.c','idle':'idle_smoke.c','quake':'quake_smoke.c','swap':'swap_smoke.c','runtime':'runtime_smoke.c','filesystem':'bfs4_smoke.c','vision':'vision_restart_smoke.c'}[a.fixture]
++ fixture_source={'ram':'ram_smoke.c','preferences':'display_preferences_smoke.c','benchmark':'perf_smoke.c','idle':'idle_smoke.c','quake':'quake_smoke.c','swap':'swap_smoke.c','runtime':'runtime_smoke.c','filesystem':'bfs4_smoke.c','vision':'vision_restart_smoke.c','vm':'vm_metadata_smoke.c'}[a.fixture]
+  subprocess.run(['gcc','-m32','-march=pentium3','-mfpmath=387','-mno-sse','-mno-sse2','-ffreestanding','-fno-builtin','-nostdlib','-nostdinc','-Os','-fno-pic','-fno-pie','-fno-stack-protector','-I'+str(ROOT),'-I'+str(ROOT/'kernel/libc/include'),'-DRUNTIME_CASE='+str(a.runtime_case or 0),'-DVISION_EXPECT_FAULT='+str(int(a.vision_fault)),'-DSWAP_EXPECT_ENABLED='+str(int(a.swap or a.swap_file)),'-c',str(ROOT/'tests/userland'/fixture_source),'-o',str(obj)],check=True)
+  gfx=out/'gfx_context_smoke.elf'
+  subprocess.run(['gcc','-m32','-Os','-fno-pie','-no-pie','-fno-stack-protector','-fno-asynchronous-unwind-tables','-nostdlib','-static','-Wl,--build-id=none',str(ROOT/'tests/userland/gfx_context_smoke.c'),'-o',str(gfx)],check=True)
+@@ -79,6 +84,10 @@
+   swap_elf=out/'swap_pressure.elf'
+   subprocess.run(['gcc','-m32','-Os','-fno-pie','-no-pie','-fno-stack-protector','-fno-asynchronous-unwind-tables','-nostdlib','-static','-Wl,--build-id=none','-DSWAP_PRESSURE_MIB='+str(a.swap_working_set_mib),str(ROOT/'tests/userland/swap_pressure.c'),'-o',str(swap_elf)],check=True)
+   e=Editor(image);e.update('/SYSTEM/PROGRAMS/SWAPTEST.ELF',swap_elf.read_bytes());e.finish()
++ if a.fixture=='vm':
++  vm_elf=out/'vm_metadata.elf'
++  subprocess.run(['gcc','-m32','-Os','-fno-pie','-no-pie','-fno-stack-protector','-fno-asynchronous-unwind-tables','-nostdlib','-static','-Wl,--build-id=none',str(ROOT/'tests/userland/vm_metadata_linux.c'),'-o',str(vm_elf)],check=True)
++  e=Editor(image);e.update('/SYSTEM/PROGRAMS/VMMETA.ELF',vm_elf.read_bytes());e.finish()
+  e=Editor(image);e.update('/SYSTEM/PROGRAMS/GFXALLOC.ELF',gfx.read_bytes());e.update('/SYSTEM/PROGRAMS/RAMTEST.BEX',obj.read_bytes())
+  if a.fixture=='quake':
+   quake=ROOT/'extras/Quake-BlesKernOS-Standalone'
+@@ -129,6 +138,7 @@
+                        line.strip()!='[WINE:BOOT] deferred until Windows program launch'
+                        for line in log.splitlines())
+  result={'ram_mib':a.ram,'backend':a.vga,'desktop_started':desktop_started,'completed':done,
++         'kernel_sha256':None if a.installed else sha256(kernel).hexdigest(),
+          'wine_boot_started':wine_boot_started,
+          'smoke_pass':(f'[{marker}] DONE result=PASS' in log) if a.smoke else None,
+          'memory':{},'depths':[int(n) for n in re.findall(r'RAMTEST:DEPTH\] bpp=(\d+) result=PASS',log)]}
+--- /dev/null
++++ b/tests/kernel/test_vm_metadata.py
+@@ -0,0 +1,103 @@
++#!/usr/bin/env python3
++"""Production VMA metadata growth: supervisor allocation, OOM and release."""
++from pathlib import Path
++import argparse
++import subprocess
++import tempfile
++
++root = Path(__file__).resolve().parents[2]
++parser = argparse.ArgumentParser(description=__doc__)
++parser.add_argument('--source', type=Path, default=root / 'kernel/api/syscall.c')
++args = parser.parse_args()
++source = args.source.read_text()
++start = source.index('static uint32_t sys_vm_map_pages(') if 'static uint32_t sys_vm_map_pages(' in source else source.index('static bool sys_vm_maps_reserve(')
++functions = source[start:source.index('static syscall_vm_map_t *sys_vm_free_map_slot(')]
++types = source[source.index('typedef struct {\n    uint32_t backing;'):source.index('typedef struct {\n    int fds[')]
++code = r'''
++#include <stdint.h>
++#include <stdbool.h>
++#include <stddef.h>
++#include <stdlib.h>
++#include <string.h>
++#include <assert.h>
++#include <stdio.h>
++typedef void vfs_shared_mapping_t;
++#define SYSCALL_VM_MAP_INITIAL 64U
++#define SYSCALL_VM_MAP_LIMIT 1024U
++#define PAGING_PAGE_SIZE 4096U
++#define MM_SUBSYSTEM_VM 3U
++#define kmemset memset
++#define kmemcpy memcpy
++static unsigned char frames[32][4096] __attribute__((aligned(4096)));
++static bool used[32], oom;
++static unsigned allocations, releases;
++static unsigned live_pages(void) {
++    unsigned count=0;for(unsigned i=0;i<32;i++)count+=used[i];return count;
++}
++static bool supervisor(const void *p) {
++    return (uintptr_t)p>=(uintptr_t)frames && (uintptr_t)p<(uintptr_t)(frames+32);
++}
++static __attribute__((unused)) bool mm_vm_frame_alloc(uint32_t count,uint32_t *out) {
++    *out=0;if(oom)return false;
++    for(unsigned i=0;i+count<=32;i++) {
++        bool free_run=true;for(unsigned j=0;j<count;j++)if(used[i+j])free_run=false;
++        if(!free_run)continue;
++        for(unsigned j=0;j<count;j++)used[i+j]=true;
++        /* Deliberately poison new memory: metadata must initialize its slots. */
++        memset(frames[i],0xa5,count*4096);
++        *out=(uint32_t)(uintptr_t)frames[i];allocations++;return true;
++    }
++    return false;
++}
++static __attribute__((unused)) void mm_vm_frame_free(uint32_t address,uint32_t count) {
++    assert(supervisor((void *)(uintptr_t)address) && !(address&4095U));
++    unsigned first=(address-(uint32_t)(uintptr_t)frames)/4096;
++    assert(count && first+count<=32);
++    for(unsigned j=0;j<count;j++){assert(used[first+j]);used[first+j]=false;}
++    releases++;
++}
++static __attribute__((unused)) void *krealloc(void *p,uint32_t n){return oom?NULL:realloc(p,n);}
++static __attribute__((unused)) bool mm_set_allocation_owner(void *p,uint32_t id){(void)p;(void)id;return true;}
++static __attribute__((unused)) bool mm_set_allocation_subsystem(void *p,uint32_t id){(void)p;(void)id;return true;}
++''' + types + functions + r'''
++int main(void) {
++    syscall_vm_state_t vm={0},child={0};
++    assert(!sys_vm_maps_reserve(NULL,1));
++    assert(!sys_vm_maps_reserve(&vm,1025));
++    assert(!allocations && !vm.maps);
++    oom=true;assert(!sys_vm_maps_reserve(&vm,64));
++    assert(!vm.maps && !vm.map_capacity && !live_pages());
++    oom=false;assert(sys_vm_maps_reserve(&vm,1));
++    if(!supervisor(vm.maps))fputs("FAIL VMA metadata allocated in legacy user-visible heap\n",stderr);
++    assert(supervisor(vm.maps) && vm.map_capacity==64 && live_pages()==1);
++    for(unsigned i=0;i<64;i++)assert(!vm.maps[i].address && !vm.maps[i].backing);
++    vm.maps[0]=(syscall_vm_map_t){.address=0x60000000,.length=4096,.protection=3,.flags=0x22};
++    syscall_vm_map_t *previous=vm.maps;
++    oom=true;assert(!sys_vm_maps_reserve(&vm,65));
++    assert(vm.maps==previous && vm.map_capacity==64 && vm.maps[0].length==4096 && live_pages()==1);
++    oom=false;assert(sys_vm_maps_reserve(&vm,65));
++    assert(vm.map_capacity==128 && supervisor(vm.maps) && vm.maps[0].address==0x60000000);
++    for(unsigned i=64;i<128;i++)assert(!vm.maps[i].address && !vm.maps[i].shared);
++    assert(sys_vm_maps_reserve(&vm,129) && vm.map_capacity==256 && live_pages()==2);
++    assert(sys_vm_maps_reserve(&child,vm.map_capacity));
++    memcpy(child.maps,vm.maps,vm.map_capacity*sizeof(*vm.maps));
++    child.maps[0].protection=1;
++    assert(vm.maps[0].protection==3 && child.maps!=vm.maps && live_pages()==4);
++    assert(sys_vm_maps_reserve(&vm,1024) && vm.map_capacity==1024 && live_pages()==8);
++    unsigned before=allocations;
++    assert(sys_vm_maps_reserve(&vm,64) && allocations==before);
++''' + (r'''
++    sys_vm_maps_release(&child);sys_vm_maps_release(&vm);
++    assert(!child.maps && !child.map_capacity && !vm.maps && !vm.map_capacity);
++    sys_vm_maps_release(&vm);sys_vm_maps_release(NULL);
++    assert(!live_pages() && allocations==releases);
++''' if 'static void sys_vm_maps_release(' in source else '') + r'''
++    puts("PASS supervisor VMA metadata, initialization, growth, OOM atomicity and independent child tables");
++}
++'''
++with tempfile.TemporaryDirectory(prefix='bk-vm-metadata-') as directory:
++    c = Path(directory) / 'test.c'
++    binary = Path(directory) / 'test'
++    c.write_text(code)
++    subprocess.run(['gcc', '-m32', '-O2', '-Wall', '-Werror', str(c), '-o', str(binary)], check=True)
++    subprocess.run([str(binary)], check=True)
+--- /dev/null
++++ b/tests/kernel/test_tlb_generation_wrap.py
+@@ -0,0 +1,58 @@
++#!/usr/bin/env python3
++"""Production shootdown wait must not accept stale ACKs at uint32 wrap."""
++from pathlib import Path
++import argparse
++import subprocess
++import tempfile
++
++root = Path(__file__).resolve().parents[2]
++parser = argparse.ArgumentParser(description=__doc__)
++parser.add_argument('--source', type=Path, default=root / 'kernel/mm/paging.c')
++args = parser.parse_args()
++source = args.source.read_text()
++body = source[source.index('static bool paging_wait_generation('):source.index('static uint32_t *paging_split_pde_locked(')]
++code = r'''
++#include <stdint.h>
++#include <stdbool.h>
++#include <assert.h>
++#include <stdio.h>
++static volatile uint32_t g_tlb_seen[32];
++static bool started=true,online=true;
++static unsigned samples,ack_after;
++static uint32_t next_ack;
++static bool smp_scheduler_started(void){return started;}
++static bool smp_cpu_online(uint32_t cpu) {
++    assert(cpu==1);
++    if(ack_after && ++samples==ack_after)g_tlb_seen[cpu]=next_ack;
++    return online;
++}
++#define kprintf(...) ((void)0)
++''' + body + r'''
++int main(void) {
++    g_tlb_seen[1]=0xfffffffeU;
++    bool ok=paging_wait_generation(0U,2U,7U);
++    if(ok)fputs("FAIL stale pre-wrap TLB acknowledged as current after wrap\n",stderr);
++    assert(!ok);
++    g_tlb_seen[1]=0xffffffffU;
++    assert(!paging_wait_generation(1U,2U,7U));
++    /* A remote CPU may already have invalidated a newer generation. */
++    g_tlb_seen[1]=1;
++    assert(paging_wait_generation(0xffffffffU,2U,7U));
++    g_tlb_seen[1]=8;
++    assert(paging_wait_generation(7U,2U,7U));
++    assert(!paging_wait_generation(9U,2U,7U));
++    g_tlb_seen[1]=0xfffffffeU;samples=0;ack_after=10;next_ack=0;
++    assert(paging_wait_generation(0U,2U,7U) && samples==10);
++    ack_after=0;started=false;
++    assert(paging_wait_generation(9U,2U,7U));
++    started=true;assert(paging_wait_generation(9U,0U,7U));
++    online=false;assert(paging_wait_generation(9U,2U,7U));
++    puts("PASS TLB generation wrap: stale ACK refusal, current/newer ACK and delayed remote invalidation");
++}
++'''
++with tempfile.TemporaryDirectory(prefix='bk-tlb-wrap-') as directory:
++    c = Path(directory) / 'test.c'
++    binary = Path(directory) / 'test'
++    c.write_text(code)
++    subprocess.run(['gcc', '-O2', '-Wall', '-Werror', str(c), '-o', str(binary)], check=True)
++    subprocess.run([str(binary)], check=True)
+--- /dev/null
++++ b/tests/userland/vm_metadata_linux.c
+@@ -0,0 +1,45 @@
++/* Freestanding Linux i386 regression for VMA growth, fork and teardown. */
++#define MAPS 130U
++static volatile unsigned *pages[MAPS];
++static int call3(int n,int a,int b,int c) {
++    int result;
++    __asm__ volatile("int $0x80":"=a"(result):"a"(n),"b"(a),"c"(b),"d"(c):"memory");
++    return result;
++}
++static void quit(int status) {call3(1,status,0,0);for(;;);}
++static int map(void) {
++    unsigned args[6]={0,4096,3,0x22U,(unsigned)-1,0};
++    return call3(90,(int)args,0,0);
++}
++void _start(void) {
++    /* Repeat growth and hole reuse; the final round deliberately leaves
++     * mappings alive so exit must reclaim its descriptors and backing. */
++    for(unsigned round=0;round<3;round++) {
++        for(unsigned i=0;i<MAPS;i++) {
++            int address=map();if((unsigned)address>=0xfffff000U)quit(10);
++            pages[i]=(volatile unsigned *)address;*pages[i]=0xb1e50000U+i;
++        }
++        if(call3(125,(int)pages[0],4096,1) || *pages[0]!=0xb1e50000U)quit(11);
++        if(call3(125,(int)pages[0],4096,3))quit(12);
++        /* clone(SIGCHLD) is the fork entry supported by the current ABI. */
++        int child=call3(120,17,0,0);if(child<0)quit(13);
++        if(!child) {
++            for(unsigned i=0;i<MAPS;i++)if(*pages[i]!=0xb1e50000U+i)quit(14);
++            *pages[0]=0xcafef00dU;
++            /* Exercise child growth after inheriting a full parent table. */
++            for(unsigned i=0;i<MAPS;i++)if((unsigned)map()>=0xfffff000U)quit(15);
++            quit(0);
++        }
++        int status=-1;
++        if(call3(7,child,(int)&status,0)!=child || status || *pages[0]!=0xb1e50000U)quit(16);
++        for(unsigned i=0;i<MAPS;i+=2) {
++            if(call3(91,(int)pages[i],4096,0))quit(17);
++            int address=map();if((unsigned)address>=0xfffff000U)quit(18);
++            pages[i]=(volatile unsigned *)address;*pages[i]=0xb1e50000U+i;
++        }
++        for(unsigned i=0;i<MAPS;i++)if(*pages[i]!=0xb1e50000U+i)quit(19);
++        if(round<2)for(unsigned i=0;i<MAPS;i++)if(call3(91,(int)pages[i],4096,0))quit(20);
++    }
++    static const char pass[]="[VMMETATEST:LINUX] growth/fork/isolation/reuse PASS\n";
++    call3(4,1,(int)pass,sizeof(pass)-1);quit(0);
++}
+--- /dev/null
++++ b/tests/userland/vm_metadata_smoke.c
+@@ -0,0 +1,17 @@
++#include "../../kernel/include/api.h"
++#include "../../sdk/include/bleskernos_vm.h"
++void bleskernos_program_main(gui_desktop_t *desktop) {
++    (void)desktop;bk_sys_sleep_ms(6000);
++    bk_memory_detail_t before={0},after={0};
++    bk_vm_statistics_t vm_before={0},vm_after={0};
++    bool ok=bk_memory_detail(&before) && bk_vm_statistics(0,&vm_before);
++    int status=bk_app_run_sync("/SYSTEM/PROGRAMS/VMMETA.ELF",NULL);
++    bk_sys_sleep_ms(1000);
++    ok=ok && bk_memory_detail(&after) && bk_vm_statistics(0,&vm_after);
++    kprintf("[VMMETATEST] child=%d vm_free_before=%u vm_free_after=%u virtual_before=%u virtual_after=%u\n",
++            status,before.vm_free,after.vm_free,vm_before.virtual_pages,vm_after.virtual_pages);
++    ok=ok && !status && after.vm_free>=before.vm_free &&
++        vm_before.virtual_pages==vm_after.virtual_pages;
++    kprintf("[VMMETATEST] DONE result=%s\n",ok?"PASS":"FAIL");
++    while(!bk_proc_exit_requested())bk_sys_sleep_ms(100);
++}

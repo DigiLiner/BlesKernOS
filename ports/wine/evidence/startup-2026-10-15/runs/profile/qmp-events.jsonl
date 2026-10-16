@@ -1,0 +1,7 @@
+{"timestamp": {"seconds": 1792074489, "microseconds": 935741}, "event": "STOP"}
+{"timestamp": {"seconds": 1792074489, "microseconds": 944196}, "event": "RESUME"}
+{"timestamp": {"seconds": 1792074512, "microseconds": 25756}, "event": "STOP"}
+{"timestamp": {"seconds": 1792074512, "microseconds": 54148}, "event": "RESUME"}
+{"timestamp": {"seconds": 1792074512, "microseconds": 179408}, "event": "STOP"}
+{"timestamp": {"seconds": 1792074512, "microseconds": 188900}, "event": "RESUME"}
+{"timestamp": {"seconds": 1792074512, "microseconds": 200232}, "event": "SHUTDOWN", "data": {"guest": false, "reason": "host-qmp-quit"}}

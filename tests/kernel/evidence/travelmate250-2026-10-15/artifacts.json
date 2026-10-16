@@ -1,0 +1,38 @@
+{
+  "build/bleskernos-travelmate250.img": {
+    "bytes": 805306368,
+    "sha256": "fafbb5ff591762e1f0395dd34894955dec33f7865c93c46ab3fd6036b51aef1d"
+  },
+  "build/bleskernos-travelmate250.iso": {
+    "bytes": 564418560,
+    "sha256": "4e4f4e633fe5d74d219d4eeefec8a3dc8032e7710a05f9403b35cfe991b54530"
+  },
+  "build/kernel.bin": {
+    "bytes": 845868,
+    "sha256": "35eb85ede891df3d0075f6088ff743bfdbf30d9eaf69a2944fb3b00d18281d9d"
+  },
+  "build/stage2.bin": {
+    "bytes": 4096,
+    "sha256": "592480e89bc4c4294747ebcbb12404025e1cdbfb346547ab896c5dd1adbf302a"
+  },
+  "build/system/services/vision.o": {
+    "bytes": 254672,
+    "sha256": "189680466b5fc5a59cc7bf2d64a2d57b5dd82bc8522584b6cd0555d40b4ea323"
+  },
+  "build/system/drivers/INTELGMA.DVR": {
+    "bytes": 26700,
+    "sha256": "ae808136155da3631e03cce3852652b3f86b2b3313a75bf2a32269c8c4b8bea3"
+  },
+  "build/system/drivers/AC97.DVR": {
+    "bytes": 21600,
+    "sha256": "1659d5e18cbcc572940b4e4ff20d026c34a72f2a1c89946ce46d9e4406c98074"
+  },
+  "build/system/drivers/RTL8139.DVR": {
+    "bytes": 5984,
+    "sha256": "06f80a0a7a135bdc9862de9daaf6a8e6c50472266a9b9b4c08c1f2f88c85b206"
+  },
+  "build/system/drivers/NETSTACK.DVR": {
+    "bytes": 30652,
+    "sha256": "77c8e6990ae4731578fd4b2d2ba79cd8e3185fe2423d26e619bc1ef54d8492d8"
+  }
+}

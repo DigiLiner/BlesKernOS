@@ -1,0 +1,34 @@
+{
+  "changed_blocks": 269,
+  "filesystem_bytes_preserved": true,
+  "ata_and_usb_embed_current_kernel": true,
+  "sha256": {
+    "build/wine-stable-before-round2/ata.img": "49d16287ef9b0efa9a510dd68ff2f4653f61ad7732c2450485054cc12eef51ca",
+    "build/bleskernos-ata-user.img": "6cb268a3fbb32626061f17f870369a0a427df5c9ebbb5417495ef07911d8f369",
+    "build/bleskernos-usb-user.img": "024fe7b04a119ef6bbce9e8cff68ba22085f70acdf7b6e64b7ba155266ef2aab",
+    "build/bleskernos-vmware-user.vmdk": "d24034b5c04830ea5c15654567033d67aadcab17fd3a2a41057b4c87fb5bda36",
+    "build/kernel.bin": "78d35c8f99a4d99eb395b53ade588a41e4543eb5fc33fe9472f8022e96f00233"
+  },
+  "baseline": {
+    "ide_wine_ms": 56070,
+    "ahci_wine_ms": 14710
+  },
+  "final_samples": {
+    "ide_wine_ms": [
+      14000,
+      15500
+    ],
+    "ahci_wine_ms": [
+      11540,
+      14310
+    ],
+    "ide_first_surface_ms": [
+      2190,
+      2660
+    ],
+    "ahci_first_surface_ms": [
+      2150,
+      2890
+    ]
+  }
+}

@@ -5,10 +5,11 @@
 #include "html_parser.h"
 #include "layout.h"
 
-#define NSBK_NETWORK_BUFFER_SIZE 65536U
+#define NSBK_NETWORK_BUFFER_SIZE (512U * 1024U)
 #define NSBK_RESOURCE_BUFFER_SIZE 81920U
 #define NSBK_TEXT_BUFFER_SIZE      49152U
 #define NSBK_DECODE_BUFFER_SIZE    81920U
+#define NSBK_DOCUMENT_DECODE_SIZE NSBK_NETWORK_BUFFER_SIZE
 #define NSBK_COOKIE_MAX              16U
 #define NSBK_COOKIE_NAME_MAX         48U
 #define NSBK_COOKIE_VALUE_MAX       128U
@@ -113,6 +114,10 @@ typedef struct {
     void *progress_context;
     volatile bool *cancel_flag;
     int32_t viewport_width;
+    int32_t viewport_height;
+    int32_t layout_viewport_height;
+    uint32_t resource_budget_ms;
+    uint32_t resource_deadline_ms;
     nsbk_layout_t layout;
 } nsbk_document_t;
 

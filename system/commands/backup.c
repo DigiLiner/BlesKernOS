@@ -341,22 +341,22 @@ static int backup_read(const char *archive_path, const char *operation,
         uint32_t expected_crc;
         char relative[BK_PATH_MAX];
         char target[BK_PATH_MAX];
-        if (offset + BACKUP_ENTRY_SIZE > size) goto corrupt;
+        if (offset > size || BACKUP_ENTRY_SIZE > size-offset) goto corrupt;
         path_length = get16(archive + offset);
         kind = archive[offset + 2U];
         data_size = get32(archive + offset + 4U);
         expected_crc = get32(archive + offset + 8U);
         offset += BACKUP_ENTRY_SIZE;
         if (!path_length || path_length >= sizeof(relative) ||
-            offset + path_length > size) goto corrupt;
+            offset > size || path_length > size-offset) goto corrupt;
         for (uint32_t i = 0; i < path_length; i++)
             relative[i] = (char)archive[offset + i];
         relative[path_length] = '\0';
         offset += path_length;
-        if (!safe_relative_path(relative) ||
+        if (bk_runtime_strlen(relative)!=path_length || !safe_relative_path(relative) ||
             (kind != BACKUP_KIND_FILE && kind != BACKUP_KIND_DIR) ||
             (kind == BACKUP_KIND_DIR && data_size != 0U) ||
-            offset + data_size > size) goto corrupt;
+            offset > size || data_size > size-offset) goto corrupt;
         if (kind == BACKUP_KIND_FILE &&
             crc32(archive + offset, data_size) != expected_crc) goto corrupt;
         if (list)

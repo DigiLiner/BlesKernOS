@@ -1,0 +1,23 @@
+[GCC]  Compilando display...
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel/libc/include -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -Ilibs/Mesa-3.5/include -Ilibs/Mesa-3.5/bleskernos/include -c system/control/display.c -o build/system/control/display.raw.o
+[GCC]  Compilando system/control/mouse.c...
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel/libc/include -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -c system/control/mouse.c -o build/system/control/mouse.o
+In file included from ./system/screensavers/ss_balls.c:17,
+                 from system/control/display_props_shared.h:9,
+                 from system/control/display.c:3:
+./system/screensavers/ss_scale.h:6:13: warning: ‘ss_scale_rgb’ defined but not used [-Wunused-function]
+    6 | static void ss_scale_rgb(gui_surface_t *surface, const uint32_t *pixels,
+      |             ^~~~~~~~~~~~
+[GCC]  Compilando filebrowser como programa separado...
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel/libc/include -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -c programs/filebrowser.c -o build/programs/filebrowser.o
+[GCC]  Compilando programs/texteditor.c...
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel/libc/include -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -c programs/texteditor.c -o build/programs/texteditor.o
+[OK]   Filebrowser object: build/programs/filebrowser.o
+[GCC]  Compilando processmanager como programa separado...
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel/libc/include -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -c programs/processmanager.c -o build/programs/processmanager.o
+[LD]   Asociando display con Mesa 3.5...
+ld -m elf_i386 -r build/system/control/display.raw.o build/system/libs/mesa35/mesa35.a -o build/system/control/display.o
+ld: warning: mmx_blend.o: missing .note.GNU-stack section implies executable stack
+ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+[OK]   Display CPL object: build/system/control/display.o
+[OK]   Processmanager object: build/programs/processmanager.o

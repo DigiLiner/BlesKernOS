@@ -1,0 +1,18 @@
+{
+  "sample": 11,
+  "key": "w",
+  "injection_ms": 2.807791024679318,
+  "native_route_ms": 53.458166017662734,
+  "tinyx_consume_ms": 53.458166017662734,
+  "stream_publish_ms": null,
+  "old_ink": 450,
+  "current_ink": 450,
+  "queue_before": [
+    38,
+    38
+  ],
+  "queue_after": [
+    40,
+    40
+  ]
+}

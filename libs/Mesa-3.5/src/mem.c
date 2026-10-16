@@ -95,6 +95,8 @@ _mesa_align_malloc(size_t bytes, unsigned long alignment)
    ASSERT( alignment > 0 );
 
    ptr = (unsigned long) MALLOC( bytes + alignment );
+   if (!ptr)
+      return NULL;
 
    buf = (ptr + alignment) & ~(unsigned long)(alignment - 1);
    *(unsigned long *)(buf - sizeof(void *)) = ptr;
@@ -122,6 +124,8 @@ _mesa_align_calloc(size_t bytes, unsigned long alignment)
    ASSERT( alignment > 0 );
 
    ptr = (unsigned long) CALLOC( bytes + alignment );
+   if (!ptr)
+      return NULL;
 
    buf = (ptr + alignment) & ~(unsigned long)(alignment - 1);
    *(unsigned long *)(buf - sizeof(void *)) = ptr;

@@ -1,0 +1,543 @@
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA FAIL
+[BKBOOT t=0] STARTING KERNEL
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=1572347 KiB top=1572732 KiB
+  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000
+  [MM] RAM usable: 1536 MB
+  [MM] Heap dinamico: 0x2400000 - 0x1ffdf000 (487292 KB)
+  [MM] VM frames: 0x1ffdf000 - 0x5ffdf000 (1048576 KiB, 262144 paginas)
+  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)
+  [MM] Vista PE fija: 0x400000 - 0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2400000-0x1ffdf000
+[COMPAT] perfil=normal RAM_top=1572732 KiB heap=487292 KiB tareas=128 CPU=fam6/mod122 GUI=60FPS TIMER=300Hz
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 6 dispositivos detectados
+  [LPT] LPT1 base=0x0378 status=0xD9 listo
+  [ATAPI] cd0: 201652 bloques de 2048 bytes
+  [ATA] canales IDE normalizados despues del probe
+[AHCI] PCI 0x0:0x2.0x0 ABAR=0xfebf0000 ports=0x3f
+[AHCI] ahci0: port=0 sectors=1572864 DMA ready
+[BKBOOT t=381] STORAGE DRIVERS
+[BKBOOT t=381] MOUNTING FILESYSTEM
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=2
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 2
+[FAT] dev[0]=cd0 tipo=3 sectores=201652
+[FAT] dev[1]=ahci0 tipo=6 sectores=1572864
+Intentando montar ahci0...
+fat_set_active(ahci0)
+No es particion, buscando ahci0
+Dispositivo encontrado
+fat_try_mount_device OK
+fat_set_active OK
+Montado ahci0 OK
+[VFS] /TEMP listo
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=6 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+  [USBCLASS] HID boot/report, hubs USB 1.1 y printers cargados
+[DVR] usbclass: cargado (/SYSTEM/DRIVERS/USBCLASS.DVR)
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[GFX:TRACE] REGISTER request ops=0x3199c80 abi=2 size=100 name_ptr=0x3199c20 priority=240 caps=0xc7
+[GFX:TRACE] REGISTER SELECT name=virtio_gpu priority=240 previous=(ninguno) previous_priority=0
+[VIRTIOGPU.DVR] modern PCI listo: queues=2 scanouts=1 virgl=si edid=si
+[VIRTIOGPU.DVR] capset[0]: id=1 version=1 size=308
+[VIRTIOGPU.DVR] capset[1]: id=2 version=2 size=1384
+[VIRTIOGPU.DVR] VirGL transporte listo: capset=2 v2 bytes=1384 hash=0xb51422d3 ctx=1 submit3d=OK
+[VIRGL:TEST] multiplicative lightmap blend PASS
+[VIRGL:TEST] alpha comparisons=24 PASS
+[VIRGL:TEST] DECAL alpha preserved PASS
+[VIRGL:TEST] native mip selection and disabled mip PASS
+[VIRGL:TEST] mip update + isolated base subimage PASS
+[VIRGL:TEST] premultiplied opacity + clip + fractional Z clear PASS
+[VIRGL:TEST] interleaved targets + command/VBO rollover PASS
+[VIRGL:TEST] VBO lifetime submissions=64 bad_tiles=0 PASS
+[VIRTIOGPU.DVR] VirGL GFX3D/TinyGL: DRAW_VBO + Z + textura + descarga OK
+[VIRTIOGPU.DVR] registrado en PCI 0:3.0, prioridad=240
+[DVR] virtio_gpu: cargado (/SYSTEM/DRIVERS/VIRTIOGPU.DVR)
+[SVGA.DVR] dispositivo 15AD:0405 no detectado
+[DVR] /SYSTEM/DRIVERS/VMWARESVGA.DVR: ERROR: init del driver fallo
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 11 modulo(s) cargado(s)
+[VFS] CD-ROM ISO9660 montado en /CDROM
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=virtio_gpu ops=0x3199c80
+[GFX:TRACE] ACTIVATE call name=virtio_gpu preferred=800x600
+[VIRTIOGPU.DVR] desktop preferido: stage2=800x600 -> virtio=1024x768
+[VIRTIOGPU.DVR] scanout 0: 1024x768x32 pitch=4096 recurso=15
+[GFX:TRACE] ACTIVATE OK name=virtio_gpu mode=1024x768x32 pitch=4096 fb=0x3371000
+[GFXRES] boot icons 9/9 precargados
+[BKBOOT t=2689] LOADING PRINT SERVICE
+[PRINT] spooler iniciado en segundo plano, pid=3
+[[BKBOOT t=2854] STARTING VISION
+[VISION] servicio lanzado pid=4
+[PRINT] PrintSpool Ring 3 listo
+VISION] ownership grafico adquirido pid=4
+[BKBOOT t=3114] PREPARING DESKTOP
+[BKBOOT t=3173] LOADING DESKTOP ICONS
+[BKBOOT t=3206] ICONPAK preload begin
+[BKBOOT t=3206] LOADING ICON CACHE
+[BKBOOT t=3270] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=3343] DESKMANAGER read desktop config
+[BKBOOT t=3346] DESKMANAGER desktop config loaded
+[DESKBAR] alloc state bytes=17108
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load BlesKernOS Start icon
+[DESKBAR:STARTICON] stat /ICONS/BLESKERNOS.BMP type=1 size=16522
+[DESKBAR:STARTICON] read OK /ICONS/BLESKERNOS.BMP bytes=16522
+[DESKBAR:STARTICON] hdr sig=BM off=138 dib=124 64x64 bpp=32 comp=3
+[DESKBAR:STARTICON] decode OK /ICONS/BLESKERNOS.BMP -> 64x64
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[TASK] entrada Ring 3 no accesible: 0x168629 (screensaverd)
+[THREAD] no se pudo crear worker proceso=4 entry=0x168629 nombre=screensaverd
+[VISION] READY: motor, escritorio y[BKBOOT t=4801] kernel_main: Vision READY
+[SMP] escritorio listo; iniciando procesadores secundarios
+[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000
+[SMP] iniciando CPU1 APIC=1...
+[SMP] CPU1 online
+[SMP] 2/2 CPU(s) online; timer LAPIC=208805 cuentas/tick
+[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (124 slots libres)
+ compositor bajo Vision
+[SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI
+[BKBOOT] VISION ONLINE pid=4
+[BKBOOT t=5173] CARGANDO WINE
+[WINE:BOOT] waiting pid=5
+.._XSERVTransTransNoListen: unable to find transport: tcp
+[LOCK] inversion CPU1 tid=5: vfs despues de legacy (se ocultan repeticiones)
+............[LINUX:EXIT] pid=88 proc=88 ppid=87 name=wine-preloader status=256 thread=0
+[WINE:BOOT] READY elapsed_ms=36136
+[LINUX:EXIT] pid=91 proc=91 ppid=89 name=wine-preloader status=256 thread=0
+[BKBOOT t=16102] DISABLE SPLASH / ENTER GUI
+[BKBOOT] DESKTOP RELEASED
+[LOCK] inversion CPU0 tid=4: gui despues de legacy (se ocultan repeticiones)
+[LOCK] inversion CPU0 tid=4: wine despues de legacy (se ocultan repeticiones)
+[LOCK] inversion CPU0 tid=4: gfx despues de legacy (se ocultan repeticiones)
+[VIRTIOGPU.DVR] cursor HW cargado: 32x32 hotspot=0,0 recurso=16
+[BKBOOT] QUEUE STARTUP SOUND
+_XSERVTransTransNoListen: unable to find transport: tcp
+[WINE:GL] flush drawable=10485830 framebuffer=0 buffer=405
+[WINE:GL] flush drawable=10485833 framebuffer=0 buffer=405
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1023334 submit=205/149997us read=92/223336us write=184/333334us create=71 destroy=70 wait=0/0us write_bytes=6112 command_bytes=144
+[WINE:GL] flush drawable=10485840 framebuffer=0 buffer=405
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1010000 submit=120/109997us read=48/133335us write=130/463334us create=68 destroy=63 wait=0/0us write_bytes=3792 command_bytes=944
+[WINE:GL] flush drawable=10485847 framebuffer=0 buffer=405
+[WINE:GL] flush drawable=10485850 framebuffer=0 buffer=405
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=201/193330us read=90/176672us write=200/370001us create=73 destroy=75 wait=0/0us write_bytes=6312 command_bytes=580
+[WINE:GL] flush drawable=10485857 framebuffer=0 buffer=405
+[WINE:GL] flush drawable=10485864 framebuffer=0 buffer=405
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=147/166667us read=66/203335us write=151/319995us create=66 destroy=63 wait=0/0us write_bytes=4808 command_bytes=580
+[WINE:GL] flush drawable=10485871 framebuffer=0 buffer=405
+[WINE:GL] flush drawable=10485883 framebuffer=0 buffer=405
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1416667 submit=158/106667us read=72/149997us write=162/403333us create=68 destroy=63 wait=0/0us write_bytes=4988 command_bytes=508
+[WINE:GL] front-copy=1 source=10485886 target=10485904 size=640x480 colored_pixels=0
+[WINE:GL] present=1 swap=0 drawable=10485886 size=640x480 pixel=0,0,0 resolve_us=3334 present_us=0
+[WINE:FRAME-PERF] frames=1 drawable=10485886 size=640x480 elapsed_us=3334 resolve_us=3334 present_us=0 copy_us=16667
+[WINE:GL] present=2 swap=0 drawable=10485886 size=640x480 pixel=0,0,0 resolve_us=0 present_us=3334
+[WINE:GL] front-copy=2 source=10485886 target=10485904 size=640x480 colored_pixels=0
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1290000 submit=6/16667us read=1/10000us write=18/110000us create=5 destroy=0 wait=0/0us write_bytes=614708 command_bytes=88
+[WINE:GL] present=3 swap=1 drawable=10485886 size=640x480 pixel=0,0,0 resolve_us=20000 present_us=0
+[WINE:FRAME-PERF] frames=3 drawable=10485886 size=640x480 elapsed_us=1110000 resolve_us=23334 present_us=3334 copy_us=26667
+[WINE:GL] front-copy=3 source=10485886 target=10485904 size=640x480 colored_pixels=0
+[WINE:GL] present=4 swap=1 drawable=10485886 size=640x480 pixel=0,0,0 resolve_us=3334 present_us=3333
+[WINE:GL] front-copy=4 source=10485886 target=10485904 size=640x480 colored_pixels=0
+[WINE:VIRGL-PERF] pid=96 elapsed_us=3216667 submit=6/26668us read=2/20000us write=3/3333us create=0 destroy=0 wait=0/0us write_bytes=1843200 command_bytes=288
+[WINE:GL] present=5 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=3333 present_us=0
+[WINE:FRAME-PERF] frames=5 drawable=10485886 size=640x480 elapsed_us=4306667 resolve_us=30001 present_us=6667 copy_us=43333
+[WINE:GL] present=6 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=3334 present_us=0
+[WINE:GL] present=7 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=0 present_us=3333
+[WINE:GL] present=8 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=0 present_us=0
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1050000 submit=84/53335us read=21/106666us write=21/36667us create=0 destroy=0 wait=0/0us write_bytes=12902400 command_bytes=504
+[WINE:FRAME-PERF] frames=47 drawable=10485886 size=640x480 elapsed_us=5356667 resolve_us=56670 present_us=110000 copy_us=93333
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1040000 submit=72/89996us read=18/123332us write=18/40001us create=0 destroy=0 wait=0/0us write_bytes=11059200 command_bytes=432
+[WINE:FRAME-PERF] frames=83 drawable=10485886 size=640x480 elapsed_us=6413334 resolve_us=116667 present_us=213334 copy_us=159998
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=16/13336us read=4/16667us write=4/10000us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=96
+[WINE:FRAME-PERF] frames=91 drawable=10485886 size=640x480 elapsed_us=7420000 resolve_us=120001 present_us=230001 copy_us=166664
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1010000 submit=22/20000us read=6/16666us write=5/6666us create=0 destroy=0 wait=0/0us write_bytes=3072000 command_bytes=128
+[WINE:FRAME-PERF] frames=103 drawable=10485886 size=640x480 elapsed_us=8446667 resolve_us=133334 present_us=263334 copy_us=176665
+[WINE:GL] present=120 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=3333 present_us=3333
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=82/73336us read=20/123334us write=21/49998us create=0 destroy=0 wait=0/0us write_bytes=12902400 command_bytes=496
+[WINE:FRAME-PERF] frames=143 drawable=10485886 size=640x480 elapsed_us=9446667 resolve_us=183337 present_us=380001 copy_us=233332
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1010000 submit=18/19999us read=5/33332us write=4/16667us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=104
+[WINE:FRAME-PERF] frames=153 drawable=10485886 size=640x480 elapsed_us=10453334 resolve_us=206670 present_us=406669 copy_us=249999
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1023333 submit=14/19999us read=3/23334us write=4/30000us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=88
+[WINE:FRAME-PERF] frames=159 drawable=10485886 size=640x480 elapsed_us=11500000 resolve_us=220002 present_us=446669 copy_us=293332
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003334 submit=68/93333us read=17/76666us write=17/36668us create=0 destroy=0 wait=0/0us write_bytes=10444800 command_bytes=408
+[WINE:FRAME-PERF] frames=195 drawable=10485886 size=640x480 elapsed_us=13260000 resolve_us=273337 present_us=546669 copy_us=366665
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1020000 submit=22/23332us read=6/33332us write=5/10000us create=0 destroy=0 wait=0/0us write_bytes=3072000 command_bytes=128
+[WINE:FRAME-PERF] frames=207 drawable=10485886 size=640x480 elapsed_us=14283334 resolve_us=296670 present_us=573337 copy_us=390001
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=22/13333us read=5/36665us write=6/10000us create=0 destroy=0 wait=0/0us write_bytes=3686400 command_bytes=136
+[WINE:GL] front-copy=120 source=10485886 target=10485904 size=640x480 colored_pixels=307200
+[WINE:GL] present=240 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=0 present_us=3333
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1143333 submit=58/53329us read=15/110001us write=14/26666us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=344
+[WINE:FRAME-PERF] frames=243 drawable=10485886 size=640x480 elapsed_us=15823334 resolve_us=346667 present_us=873336 copy_us=450004
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1336667 submit=42/43334us read=10/56665us write=11/33335us create=0 destroy=0 wait=0/0us write_bytes=6758400 command_bytes=256
+[WINE:FRAME-PERF] frames=265 drawable=10485886 size=640x480 elapsed_us=16990000 resolve_us=366667 present_us=970002 copy_us=493334
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1360000 submit=16/10001us read=4/30000us write=4/13334us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=96
+[WINE:FRAME-PERF] frames=273 drawable=10485886 size=640x480 elapsed_us=18330000 resolve_us=366667 present_us=1090001 copy_us=556668
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1020000 submit=30/76668us read=8/56666us write=7/23335us create=0 destroy=0 wait=0/0us write_bytes=4300800 command_bytes=176
+[WINE:FRAME-PERF] frames=287 drawable=10485886 size=640x480 elapsed_us=19350000 resolve_us=446668 present_us=1253334 copy_us=616668
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=27/56669us read=7/43335us write=7/26666us create=0 destroy=0 wait=0/0us write_bytes=4300800 command_bytes=160
+[WINE:FRAME-PERF] frames=301 drawable=10485886 size=640x480 elapsed_us=20383334 resolve_us=463335 present_us=1390000 copy_us=696666
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1006667 submit=15/16666us read=3/30000us write=4/13332us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=96
+[WINE:FRAME-PERF] frames=309 drawable=10485886 size=640x480 elapsed_us=21406667 resolve_us=470001 present_us=1440002 copy_us=719998
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1103333 submit=12/10001us read=3/16666us write=3/6667us create=0 destroy=0 wait=0/0us write_bytes=1843200 command_bytes=72
+[WINE:FRAME-PERF] frames=315 drawable=10485886 size=640x480 elapsed_us=22510000 resolve_us=476669 present_us=1506666 copy_us=746665
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1943334 submit=4/3334us read=1/3334us write=1/6667us create=0 destroy=0 wait=0/0us write_bytes=614400 command_bytes=24
+[WINE:FRAME-PERF] frames=317 drawable=10485886 size=640x480 elapsed_us=24436667 resolve_us=476669 present_us=1533333 copy_us=773332
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1040000 submit=34/53332us read=9/70001us write=8/23333us create=0 destroy=0 wait=0/0us write_bytes=4915200 command_bytes=200
+[WINE:FRAME-PERF] frames=335 drawable=10485886 size=640x480 elapsed_us=25536667 resolve_us=513335 present_us=1650001 copy_us=856665
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1010000 submit=44/53336us read=11/89998us write=11/43332us create=0 destroy=0 wait=0/0us write_bytes=6758400 command_bytes=264
+[WINE:FRAME-PERF] frames=357 drawable=10485886 size=640x480 elapsed_us=26563334 resolve_us=560000 present_us=1793334 copy_us=943333
+[WINE:GL] present=360 swap=0 drawable=10485886 size=640x480 pixel=173,223,189 resolve_us=3334 present_us=10000
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=35/73334us read=9/83335us write=9/26667us create=0 destroy=0 wait=0/0us write_bytes=5529600 command_bytes=208
+[WINE:FRAME-PERF] frames=373 drawable=10485886 size=640x480 elapsed_us=27563334 resolve_us=593333 present_us=1946668 copy_us=1016667
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=57/63334us read=14/89997us write=14/46667us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=344
+[WINE:FRAME-PERF] frames=405 drawable=10485886 size=640x480 elapsed_us=29266667 resolve_us=640001 present_us=2056670 copy_us=1079999
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=17/13332us read=4/13333us write=4/10002us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=104
+[WINE:FRAME-PERF] frames=429 drawable=10485886 size=640x480 elapsed_us=30346667 resolve_us=653333 present_us=2176670 copy_us=1139999
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1046667 submit=43/66666us read=11/86667us write=11/36666us create=0 destroy=0 wait=0/0us write_bytes=6758400 command_bytes=256
+[WINE:FRAME-PERF] frames=443 drawable=10485886 size=640x480 elapsed_us=31360000 resolve_us=726666 present_us=2273334 copy_us=1250000
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1013333 submit=28/146670us read=7/73332us write=7/120002us create=0 destroy=0 wait=0/0us write_bytes=4300800 command_bytes=168
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1070000 submit=2/10000us read=0/0us write=1/0us create=0 destroy=0 wait=0/0us write_bytes=614400 command_bytes=16
+[WINE:FRAME-PERF] frames=447 drawable=10485886 size=640x480 elapsed_us=33060000 resolve_us=796667 present_us=2873333 copy_us=1280000
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1010000 submit=5/70000us read=2/250000us write=1/0us create=0 destroy=0 wait=0/0us write_bytes=614400 command_bytes=24
+[WINE:FRAME-PERF] frames=451 drawable=10485886 size=640x480 elapsed_us=34370000 resolve_us=863334 present_us=2973332 copy_us=1330000
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1040000 submit=13/50000us read=3/26667us write=3/16667us create=0 destroy=0 wait=0/0us write_bytes=1843200 command_bytes=80
+[WINE:FRAME-PERF] frames=475 drawable=10485886 size=640x480 elapsed_us=35386667 resolve_us=920003 present_us=3123332 copy_us=1400001
+[WINE:GL] front-copy=240 source=10485886 target=10485904 size=640x480 colored_pixels=307200
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1760000 submit=46/63334us read=11/56668us write=12/40000us create=0 destroy=0 wait=0/0us write_bytes=7372800 command_bytes=280
+[WINE:FRAME-PERF] frames=479 drawable=10485886 size=640x480 elapsed_us=36420000 resolve_us=920003 present_us=3153331 copy_us=1456669
+[WINE:GL] present=480 swap=0 drawable=10485886 size=640x480 pixel=173,223,189 resolve_us=0 present_us=3333
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1013333 submit=14/56666us read=4/30001us write=3/20000us create=0 destroy=0 wait=0/0us write_bytes=1843200 command_bytes=80
+[WINE:FRAME-PERF] frames=487 drawable=10485886 size=640x480 elapsed_us=37450000 resolve_us=946669 present_us=3203329 copy_us=1466670
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=13/26666us read=3/30000us write=3/36666us create=0 destroy=0 wait=0/0us write_bytes=1843200 command_bytes=80
+[WINE:FRAME-PERF] frames=493 drawable=10485886 size=640x480 elapsed_us=38516667 resolve_us=956670 present_us=3266662 copy_us=1473336
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1023334 submit=43/70000us read=11/70000us write=11/23333us create=0 destroy=0 wait=0/0us write_bytes=6758400 command_bytes=256
+[WINE:FRAME-PERF] frames=515 drawable=10485886 size=640x480 elapsed_us=39573334 resolve_us=1036670 present_us=3366664 copy_us=1563336
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1046666 submit=36/56666us read=9/123332us write=9/23336us create=0 destroy=0 wait=0/0us write_bytes=5529600 command_bytes=216
+[WINE:FRAME-PERF] frames=533 drawable=10485886 size=640x480 elapsed_us=40583334 resolve_us=1070005 present_us=3463331 copy_us=1623336
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1016667 submit=25/73334us read=6/60000us write=6/26666us create=0 destroy=0 wait=0/0us write_bytes=3686400 command_bytes=152
+[WINE:FRAME-PERF] frames=547 drawable=10485886 size=640x480 elapsed_us=41640000 resolve_us=1113338 present_us=3669998 copy_us=1710003
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1006667 submit=43/79999us read=11/86666us write=11/43334us create=0 destroy=0 wait=0/0us write_bytes=6758400 command_bytes=256
+[WINE:FRAME-PERF] frames=569 drawable=10485886 size=640x480 elapsed_us=42770000 resolve_us=1170006 present_us=3833330 copy_us=1780001
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1030000 submit=38/79998us read=9/86665us write=10/36667us create=0 destroy=0 wait=0/0us write_bytes=6144000 command_bytes=232
+[WINE:FRAME-PERF] frames=591 drawable=10485886 size=640x480 elapsed_us=43800000 resolve_us=1200005 present_us=3976666 copy_us=1843334
+[WINE:GL] present=600 swap=0 drawable=10485886 size=640x480 pixel=173,223,189 resolve_us=6666 present_us=6667
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1006666 submit=36/60000us read=9/163334us write=9/33335us create=0 destroy=0 wait=0/0us write_bytes=5529600 command_bytes=216
+[WINE:FRAME-PERF] frames=607 drawable=10485886 size=640x480 elapsed_us=44833334 resolve_us=1226673 present_us=4083328 copy_us=1936666
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1026667 submit=30/50003us read=8/200000us write=7/16667us create=0 destroy=0 wait=0/0us write_bytes=4300800 command_bytes=176
+[WINE:FRAME-PERF] frames=621 drawable=10485886 size=640x480 elapsed_us=45846667 resolve_us=1266674 present_us=4186662 copy_us=1996667
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1026667 submit=28/30001us read=7/250002us write=7/46665us create=0 destroy=0 wait=0/0us write_bytes=4300800 command_bytes=168
+[WINE:FRAME-PERF] frames=637 drawable=10485886 size=640x480 elapsed_us=46966667 resolve_us=1306675 present_us=4303327 copy_us=2066668
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1036666 submit=32/53338us read=8/210000us write=8/16666us create=0 destroy=0 wait=0/0us write_bytes=4915200 command_bytes=192
+[WINE:FRAME-PERF] frames=653 drawable=10485886 size=640x480 elapsed_us=48096667 resolve_us=1386676 present_us=4453327 copy_us=2140002
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1196667 submit=16/40000us read=4/73333us write=4/13333us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=96
+[WINE:FRAME-PERF] frames=657 drawable=10485886 size=640x480 elapsed_us=49100000 resolve_us=1520010 present_us=4523326 copy_us=2350003
+[WINE:VIRGL-PERF] pid=96 elapsed_us=2436667 submit=10/26667us read=2/20000us write=3/10000us create=0 destroy=0 wait=0/0us write_bytes=1843200 command_bytes=64
+[WINE:FRAME-PERF] frames=661 drawable=10485886 size=640x480 elapsed_us=51253334 resolve_us=1523343 present_us=4666659 copy_us=2490004
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1016666 submit=54/106666us read=14/93335us write=13/46666us create=0 destroy=0 wait=0/0us write_bytes=7987200 command_bytes=320
+[WINE:FRAME-PERF] frames=687 drawable=10485886 size=640x480 elapsed_us=52260000 resolve_us=1596676 present_us=4806658 copy_us=2563339
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1013334 submit=18/23333us read=4/16668us write=5/13335us create=0 destroy=0 wait=0/0us write_bytes=3072000 command_bytes=112
+[WINE:FRAME-PERF] frames=697 drawable=10485886 size=640x480 elapsed_us=53283334 resolve_us=1606675 present_us=4853325 copy_us=2583338
+[WINE:GL] front-copy=360 source=10485886 target=10485904 size=640x480 colored_pixels=305203
+[WINE:GL] present=720 swap=0 drawable=10485886 size=640x480 pixel=247,251,247 resolve_us=0 present_us=6666
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1006666 submit=48/66667us read=12/96669us write=12/30001us create=0 destroy=0 wait=0/0us write_bytes=7372800 command_bytes=288
+[WINE:FRAME-PERF] frames=721 drawable=10485886 size=640x480 elapsed_us=54370000 resolve_us=1626675 present_us=5023324 copy_us=2660003
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1026667 submit=58/60000us read=15/103333us write=14/29998us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=344
+[WINE:FRAME-PERF] frames=753 drawable=10485886 size=640x480 elapsed_us=55406667 resolve_us=1673340 present_us=5123324 copy_us=2726671
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=67/66666us read=17/99999us write=17/73335us create=0 destroy=0 wait=0/0us write_bytes=10444800 command_bytes=400
+[WINE:FRAME-PERF] frames=785 drawable=10485886 size=640x480 elapsed_us=56536667 resolve_us=1700007 present_us=5246654 copy_us=2800005
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1016667 submit=37/73334us read=9/43332us write=9/43334us create=0 destroy=0 wait=0/0us write_bytes=5529600 command_bytes=224
+[WINE:FRAME-PERF] frames=811 drawable=10485886 size=640x480 elapsed_us=57556667 resolve_us=1740006 present_us=5309987 copy_us=2826673
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1030000 submit=68/49999us read=17/89997us write=17/43338us create=0 destroy=0 wait=0/0us write_bytes=10444800 command_bytes=408
+[WINE:GL] present=840 swap=0 drawable=10485886 size=640x480 pixel=247,251,247 resolve_us=0 present_us=3333
+[WINE:FRAME-PERF] frames=843 drawable=10485886 size=640x480 elapsed_us=59263334 resolve_us=1803338 present_us=5446655 copy_us=2883338
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=23/20000us read=6/46666us write=6/16667us create=0 destroy=0 wait=0/0us write_bytes=3686400 command_bytes=136
+[WINE:FRAME-PERF] frames=883 drawable=10485886 size=640x480 elapsed_us=60310000 resolve_us=1823338 present_us=5563321 copy_us=2946671
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1016667 submit=77/53333us read=19/86665us write=19/40002us create=0 destroy=0 wait=0/0us write_bytes=11673600 command_bytes=464
+[WINE:FRAME-PERF] frames=921 drawable=10485886 size=640x480 elapsed_us=61313334 resolve_us=1860004 present_us=5659988 copy_us=3013338
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1010000 submit=76/56667us read=19/116667us write=19/46668us create=0 destroy=0 wait=0/0us write_bytes=11673600 command_bytes=456
+[WINE:FRAME-PERF] frames=933 drawable=10485886 size=640x480 elapsed_us=62353334 resolve_us=1873337 present_us=5689988 copy_us=3036671
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=21/20001us read=5/30001us write=5/13333us create=0 destroy=0 wait=0/0us write_bytes=3072000 command_bytes=128
+[WINE:GL] front-copy=480 source=10485886 target=10485904 size=640x480 colored_pixels=304949
+[WINE:GL] present=960 swap=0 drawable=10485886 size=640x480 pixel=247,251,247 resolve_us=0 present_us=0
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1033333 submit=75/56667us read=19/86665us write=19/50001us create=0 destroy=0 wait=0/0us write_bytes=11673600 command_bytes=448
+[WINE:FRAME-PERF] frames=971 drawable=10485886 size=640x480 elapsed_us=63426667 resolve_us=1926671 present_us=5789988 copy_us=3103337
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1016667 submit=16/0us read=4/26666us write=4/6667us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=96
+[WINE:FRAME-PERF] frames=979 drawable=10485886 size=640x480 elapsed_us=64430000 resolve_us=1936671 present_us=5813320 copy_us=3113338
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=76/70001us read=19/93333us write=19/39998us create=0 destroy=0 wait=0/0us write_bytes=11673600 command_bytes=456
+[WINE:FRAME-PERF] frames=1017 drawable=10485886 size=640x480 elapsed_us=65433334 resolve_us=1993337 present_us=5919985 copy_us=3160005
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=39/69999us read=10/63335us write=10/13334us create=0 destroy=0 wait=0/0us write_bytes=6144000 command_bytes=232
+[WINE:FRAME-PERF] frames=1037 drawable=10485886 size=640x480 elapsed_us=66503334 resolve_us=2030006 present_us=6216650 copy_us=3203337
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1043333 submit=45/46665us read=11/83334us write=11/46668us create=0 destroy=0 wait=0/0us write_bytes=6758400 command_bytes=272
+[WINE:FRAME-PERF] frames=1059 drawable=10485886 size=640x480 elapsed_us=67520000 resolve_us=2083338 present_us=6423317 copy_us=3300003
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003334 submit=26/126666us read=6/46667us write=7/36666us create=0 destroy=0 wait=0/0us write_bytes=4300800 command_bytes=160
+[WINE:FRAME-PERF] frames=1073 drawable=10485886 size=640x480 elapsed_us=68566667 resolve_us=2130002 present_us=6543317 copy_us=3386669
+[WINE:GL] present=1080 swap=0 drawable=10485886 size=640x480 pixel=247,251,247 resolve_us=3333 present_us=23333
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1933333 submit=20/53332us read=5/50000us write=5/16667us create=0 destroy=0 wait=0/0us write_bytes=3072000 command_bytes=120
+[WINE:FRAME-PERF] frames=1083 drawable=10485886 size=640x480 elapsed_us=70436667 resolve_us=2153335 present_us=6699983 copy_us=3426669
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=40/40001us read=10/80000us write=10/29999us create=0 destroy=0 wait=0/0us write_bytes=6144000 command_bytes=240
+[WINE:FRAME-PERF] frames=1103 drawable=10485886 size=640x480 elapsed_us=71483334 resolve_us=2170002 present_us=6929982 copy_us=3523337
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1040000 submit=54/63336us read=14/79998us write=13/30001us create=0 destroy=0 wait=0/0us write_bytes=7987200 command_bytes=320
+[WINE:FRAME-PERF] frames=1131 drawable=10485886 size=640x480 elapsed_us=72530000 resolve_us=2216670 present_us=7106650 copy_us=3573335
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1046667 submit=20/13335us read=5/23333us write=5/3333us create=0 destroy=0 wait=0/0us write_bytes=3072000 command_bytes=120
+[WINE:FRAME-PERF] frames=1141 drawable=10485886 size=640x480 elapsed_us=73570000 resolve_us=2233337 present_us=7149982 copy_us=3593334
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1016666 submit=56/63334us read=14/76667us write=14/23334us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=336
+[WINE:FRAME-PERF] frames=1169 drawable=10485886 size=640x480 elapsed_us=74580000 resolve_us=2270004 present_us=7256649 copy_us=3640000
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1013334 submit=49/63335us read=12/56668us write=12/39997us create=0 destroy=0 wait=0/0us write_bytes=7372800 command_bytes=296
+[WINE:FRAME-PERF] frames=1193 drawable=10485886 size=640x480 elapsed_us=75640000 resolve_us=2290005 present_us=7443313 copy_us=3713334
+[WINE:GL] front-copy=600 source=10485886 target=10485904 size=640x480 colored_pixels=305788
+[WINE:GL] present=1200 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=0 present_us=6667
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1006666 submit=47/50004us read=12/53334us write=12/20000us create=0 destroy=0 wait=0/0us write_bytes=7372800 command_bytes=280
+[WINE:FRAME-PERF] frames=1219 drawable=10485886 size=640x480 elapsed_us=76713334 resolve_us=2336675 present_us=7626646 copy_us=3793333
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1006667 submit=43/89998us read=11/136668us write=11/20001us create=0 destroy=0 wait=0/0us write_bytes=6758400 command_bytes=256
+[WINE:FRAME-PERF] frames=1238 drawable=10485886 size=640x480 elapsed_us=77830000 resolve_us=2350007 present_us=7873313 copy_us=3850000
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=28/43335us read=7/69999us write=7/23332us create=0 destroy=0 wait=0/0us write_bytes=4300800 command_bytes=168
+[WINE:FRAME-PERF] frames=1257 drawable=10485886 size=640x480 elapsed_us=78876667 resolve_us=2380008 present_us=8043311 copy_us=3913334
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=36/63335us read=8/53333us write=9/33333us create=0 destroy=0 wait=0/0us write_bytes=5529600 command_bytes=216
+[WINE:FRAME-PERF] frames=1275 drawable=10485886 size=640x480 elapsed_us=79996667 resolve_us=2406675 present_us=8219974 copy_us=4006667
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1026667 submit=30/60004us read=8/46667us write=7/19999us create=0 destroy=0 wait=0/0us write_bytes=4300800 command_bytes=184
+[WINE:FRAME-PERF] frames=1293 drawable=10485886 size=640x480 elapsed_us=81030000 resolve_us=2433344 present_us=8439970 copy_us=4059999
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=48/46666us read=12/56666us write=12/30001us create=0 destroy=0 wait=0/0us write_bytes=7372800 command_bytes=288
+[WINE:GL] present=1320 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=0 present_us=20000
+[WINE:FRAME-PERF] frames=1321 drawable=10485886 size=640x480 elapsed_us=82050000 resolve_us=2453344 present_us=8639971 copy_us=4110000
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1026666 submit=56/53331us read=14/83333us write=14/26664us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=336
+[WINE:FRAME-PERF] frames=1345 drawable=10485886 size=640x480 elapsed_us=83080000 resolve_us=2480009 present_us=8859970 copy_us=4163336
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1013334 submit=43/93331us read=11/73333us write=11/20000us create=0 destroy=0 wait=0/0us write_bytes=6758400 command_bytes=256
+[WINE:FRAME-PERF] frames=1371 drawable=10485886 size=640x480 elapsed_us=84116667 resolve_us=2520008 present_us=8976637 copy_us=4213338
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1010000 submit=60/69998us read=15/70002us write=15/39999us create=0 destroy=0 wait=0/0us write_bytes=9216000 command_bytes=360
+[WINE:FRAME-PERF] frames=1405 drawable=10485886 size=640x480 elapsed_us=85120000 resolve_us=2556674 present_us=9106638 copy_us=4276672
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1036666 submit=72/63332us read=18/93333us write=18/46665us create=0 destroy=0 wait=0/0us write_bytes=11059200 command_bytes=432
+[WINE:FRAME-PERF] frames=1435 drawable=10485886 size=640x480 elapsed_us=86133334 resolve_us=2596672 present_us=9246640 copy_us=4356674
+[WINE:GL] front-copy=720 source=10485886 target=10485904 size=640x480 colored_pixels=305551
+[WINE:GL] present=1440 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=3333 present_us=0
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1033334 submit=60/49998us read=15/76665us write=15/36667us create=0 destroy=0 wait=0/0us write_bytes=9216000 command_bytes=360
+[WINE:FRAME-PERF] frames=1469 drawable=10485886 size=640x480 elapsed_us=87153334 resolve_us=2630005 present_us=9363306 copy_us=4450008
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1620000 submit=54/56668us read=13/83335us write=14/49999us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=328
+[WINE:FRAME-PERF] frames=1481 drawable=10485886 size=640x480 elapsed_us=88373334 resolve_us=2636671 present_us=9466641 copy_us=4470007
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=13/6666us read=4/33334us write=3/16666us create=0 destroy=0 wait=0/0us write_bytes=1843200 command_bytes=72
+[WINE:FRAME-PERF] frames=1489 drawable=10485886 size=640x480 elapsed_us=89516667 resolve_us=2640005 present_us=9513307 copy_us=4513341
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=14/10000us read=3/20001us write=3/6666us create=0 destroy=0 wait=0/0us write_bytes=1843200 command_bytes=88
+[WINE:FRAME-PERF] frames=1501 drawable=10485886 size=640x480 elapsed_us=90543334 resolve_us=2643338 present_us=9556640 copy_us=4550008
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1006667 submit=55/39999us read=14/83334us write=14/53334us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=328
+[WINE:FRAME-PERF] frames=1528 drawable=10485886 size=640x480 elapsed_us=91543334 resolve_us=2663338 present_us=9673303 copy_us=4633343
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=66/53333us read=16/76668us write=17/56667us create=0 destroy=0 wait=0/0us write_bytes=10444800 command_bytes=400
+[WINE:GL] present=1560 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=0 present_us=3334
+[WINE:FRAME-PERF] frames=1563 drawable=10485886 size=640x480 elapsed_us=93300000 resolve_us=2696669 present_us=9809969 copy_us=4706679
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1020000 submit=19/9999us read=5/33334us write=4/3333us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=112
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=55/53334us read=14/86665us write=14/43334us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=328
+[WINE:FRAME-PERF] frames=1591 drawable=10485886 size=640x480 elapsed_us=94363334 resolve_us=2730003 present_us=10046635 copy_us=4773346
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1073333 submit=29/170001us read=7/40001us write=7/6666us create=0 destroy=0 wait=0/0us write_bytes=4300800 command_bytes=176
+[WINE:FRAME-PERF] frames=1606 drawable=10485886 size=640x480 elapsed_us=95430000 resolve_us=2766670 present_us=10413300 copy_us=4820013
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1006667 submit=43/76665us read=11/100001us write=11/23334us create=0 destroy=0 wait=0/0us write_bytes=6758400 command_bytes=256
+[WINE:FRAME-PERF] frames=1628 drawable=10485886 size=640x480 elapsed_us=96433334 resolve_us=2810002 present_us=10563303 copy_us=4880012
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1006667 submit=54/70000us read=13/86665us write=14/23336us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=328
+[WINE:FRAME-PERF] frames=1655 drawable=10485886 size=640x480 elapsed_us=97456667 resolve_us=2840004 present_us=10803305 copy_us=4930009
+[WINE:GL] front-copy=840 source=10485886 target=10485904 size=640x480 colored_pixels=305660
+[WINE:GL] present=1680 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=3333 present_us=16667
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1006666 submit=62/60000us read=16/83331us write=15/40003us create=0 destroy=0 wait=0/0us write_bytes=9216000 command_bytes=368
+[WINE:FRAME-PERF] frames=1685 drawable=10485886 size=640x480 elapsed_us=98466667 resolve_us=2906673 present_us=10936638 copy_us=5013338
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003334 submit=60/46666us read=15/100002us write=15/33332us create=0 destroy=0 wait=0/0us write_bytes=9216000 command_bytes=360
+[WINE:FRAME-PERF] frames=1717 drawable=10485886 size=640x480 elapsed_us=99496667 resolve_us=2940007 present_us=11076638 copy_us=5120004
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1013333 submit=56/39998us read=14/103331us write=14/56667us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=336
+[WINE:FRAME-PERF] frames=1745 drawable=10485886 size=640x480 elapsed_us=100523334 resolve_us=2970006 present_us=11206641 copy_us=5183335
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1016667 submit=16/10000us read=4/23332us write=4/6668us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=96
+[WINE:FRAME-PERF] frames=1753 drawable=10485886 size=640x480 elapsed_us=101540000 resolve_us=2983339 present_us=11243307 copy_us=5196668
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1010000 submit=57/40002us read=14/63332us write=14/30001us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=344
+[WINE:FRAME-PERF] frames=1781 drawable=10485886 size=640x480 elapsed_us=102546667 resolve_us=3006676 present_us=11483305 copy_us=5246668
+[WINE:GL] present=1800 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=3333 present_us=0
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=53/60000us read=13/60001us write=14/23332us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=320
+[WINE:FRAME-PERF] frames=1807 drawable=10485886 size=640x480 elapsed_us=103553334 resolve_us=3040008 present_us=11646640 copy_us=5320002
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1006667 submit=48/63336us read=12/60000us write=12/23333us create=0 destroy=0 wait=0/0us write_bytes=7372800 command_bytes=288
+[WINE:FRAME-PERF] frames=1831 drawable=10485886 size=640x480 elapsed_us=104560000 resolve_us=3073341 present_us=11769970 copy_us=5390002
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=31/56666us read=8/53334us write=7/26665us create=0 destroy=0 wait=0/0us write_bytes=4300800 command_bytes=184
+[WINE:FRAME-PERF] frames=1847 drawable=10485886 size=640x480 elapsed_us=105576667 resolve_us=3103340 present_us=11926637 copy_us=5440003
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1050000 submit=15/23333us read=4/30000us write=4/13332us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=88
+[WINE:FRAME-PERF] frames=1853 drawable=10485886 size=640x480 elapsed_us=106590000 resolve_us=3143339 present_us=11996638 copy_us=5460003
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1773333 submit=46/59998us read=11/76669us write=12/29998us create=0 destroy=0 wait=0/0us write_bytes=7372800 command_bytes=280
+[WINE:FRAME-PERF] frames=1877 drawable=10485886 size=640x480 elapsed_us=108453334 resolve_us=3200004 present_us=12213305 copy_us=5510003
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1103334 submit=10/76668us read=3/60000us write=2/13333us create=0 destroy=0 wait=0/0us write_bytes=1228800 command_bytes=56
+[WINE:FRAME-PERF] frames=1881 drawable=10485886 size=640x480 elapsed_us=109476667 resolve_us=3260004 present_us=12549971 copy_us=5663337
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1080000 submit=8/76669us read=2/40000us write=2/9999us create=0 destroy=0 wait=0/0us write_bytes=1228800 command_bytes=48
+[WINE:FRAME-PERF] frames=1885 drawable=10485886 size=640x480 elapsed_us=110540000 resolve_us=3330005 present_us=12769970 copy_us=5693337
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1016666 submit=10/26667us read=2/30000us write=3/3333us create=0 destroy=0 wait=0/0us write_bytes=1843200 command_bytes=64
+[WINE:FRAME-PERF] frames=1891 drawable=10485886 size=640x480 elapsed_us=111690000 resolve_us=3346671 present_us=12863303 copy_us=5723337
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1040000 submit=8/56667us read=2/23334us write=1/3333us create=0 destroy=0 wait=0/0us write_bytes=614400 command_bytes=48
+[WINE:FRAME-PERF] frames=1895 drawable=10485886 size=640x480 elapsed_us=112913334 resolve_us=3423338 present_us=12996637 copy_us=5820003
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1050000 submit=26/30000us read=7/70000us write=7/26666us create=0 destroy=0 wait=0/0us write_bytes=4300800 command_bytes=152
+[WINE:FRAME-PERF] frames=1913 drawable=10485886 size=640x480 elapsed_us=113986667 resolve_us=3466672 present_us=13169972 copy_us=5886668
+[WINE:GL] front-copy=960 source=10485886 target=10485904 size=640x480 colored_pixels=305755
+[WINE:GL] present=1920 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=0 present_us=6667
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1700000 submit=38/43334us read=9/73332us write=10/20001us create=0 destroy=0 wait=0/0us write_bytes=6144000 command_bytes=232
+[WINE:FRAME-PERF] frames=1927 drawable=10485886 size=640x480 elapsed_us=115313334 resolve_us=3480006 present_us=13263307 copy_us=5950001
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1006667 submit=15/29999us read=4/16666us write=3/103334us create=0 destroy=0 wait=0/0us write_bytes=1843200 command_bytes=88
+[WINE:FRAME-PERF] frames=1934 drawable=10485886 size=640x480 elapsed_us=116336667 resolve_us=3486672 present_us=13303308 copy_us=5976668
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1020000 submit=15/19999us read=4/26666us write=4/10000us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=88
+[WINE:FRAME-PERF] frames=1942 drawable=10485886 size=640x480 elapsed_us=117336667 resolve_us=3510005 present_us=13326642 copy_us=6030003
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=22/30001us read=5/23333us write=5/13334us create=0 destroy=0 wait=0/0us write_bytes=3072000 command_bytes=136
+[WINE:FRAME-PERF] frames=1953 drawable=10485886 size=640x480 elapsed_us=118380000 resolve_us=3533338 present_us=13383308 copy_us=6040002
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1010000 submit=66/53333us read=17/96666us write=17/26668us create=0 destroy=0 wait=0/0us write_bytes=10444800 command_bytes=392
+[WINE:FRAME-PERF] frames=1987 drawable=10485886 size=640x480 elapsed_us=119396667 resolve_us=3573338 present_us=13523310 copy_us=6096667
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=69/76672us read=17/99999us write=17/46667us create=0 destroy=0 wait=0/0us write_bytes=10444800 command_bytes=416
+[WINE:FRAME-PERF] frames=2023 drawable=10485886 size=640x480 elapsed_us=120426667 resolve_us=3630008 present_us=13616642 copy_us=6159999
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1036667 submit=19/13334us read=5/30000us write=5/6667us create=0 destroy=0 wait=0/0us write_bytes=3072000 command_bytes=112
+[WINE:FRAME-PERF] frames=2033 drawable=10485886 size=640x480 elapsed_us=121480000 resolve_us=3646675 present_us=13636642 copy_us=6170000
+[WINE:GL] present=2040 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=0 present_us=3333
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1020000 submit=64/46669us read=16/96666us write=16/46665us create=0 destroy=0 wait=0/0us write_bytes=9830400 command_bytes=384
+[WINE:FRAME-PERF] frames=2063 drawable=10485886 size=640x480 elapsed_us=122483334 resolve_us=3673344 present_us=13873304 copy_us=6226671
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1016666 submit=48/59999us read=12/73335us write=12/33334us create=0 destroy=0 wait=0/0us write_bytes=7372800 command_bytes=288
+[WINE:FRAME-PERF] frames=2087 drawable=10485886 size=640x480 elapsed_us=123600000 resolve_us=3730009 present_us=14029971 copy_us=6300004
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1043334 submit=28/73332us read=7/56666us write=7/30000us create=0 destroy=0 wait=0/0us write_bytes=4300800 command_bytes=168
+[WINE:FRAME-PERF] frames=2103 drawable=10485886 size=640x480 elapsed_us=125303334 resolve_us=3796675 present_us=14133306 copy_us=6366671
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=12/13333us read=3/16667us write=3/13333us create=0 destroy=0 wait=0/0us write_bytes=1843200 command_bytes=72
+[WINE:FRAME-PERF] frames=2123 drawable=10485886 size=640x480 elapsed_us=126326667 resolve_us=3840010 present_us=14293305 copy_us=6433338
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=44/53334us read=11/66665us write=11/30000us create=0 destroy=0 wait=0/0us write_bytes=6758400 command_bytes=264
+[WINE:GL] front-copy=1080 source=10485886 target=10485904 size=640x480 colored_pixels=305477
+[WINE:FRAME-PERF] frames=2159 drawable=10485886 size=640x480 elapsed_us=127360000 resolve_us=3876675 present_us=14453306 copy_us=6486672
+[WINE:GL] present=2160 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=0 present_us=3334
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1026666 submit=70/43330us read=17/83335us write=18/39998us create=0 destroy=0 wait=0/0us write_bytes=11059200 command_bytes=424
+[WINE:FRAME-PERF] frames=2195 drawable=10485886 size=640x480 elapsed_us=128386667 resolve_us=3903343 present_us=14553307 copy_us=6556670
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1020000 submit=74/53335us read=19/93332us write=18/66669us create=0 destroy=0 wait=0/0us write_bytes=11059200 command_bytes=440
+[WINE:FRAME-PERF] frames=2205 drawable=10485886 size=640x480 elapsed_us=129393334 resolve_us=3923342 present_us=14609974 copy_us=6573336
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003334 submit=18/23332us read=4/30000us write=5/13333us create=0 destroy=0 wait=0/0us write_bytes=3072000 command_bytes=112
+[WINE:FRAME-PERF] frames=2233 drawable=10485886 size=640x480 elapsed_us=130403334 resolve_us=3936676 present_us=14803308 copy_us=6636670
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=57/40000us read=14/100000us write=14/16667us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=336
+[WINE:FRAME-PERF] frames=2266 drawable=10485886 size=640x480 elapsed_us=131403334 resolve_us=3963345 present_us=14979972 copy_us=6686670
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=63/43335us read=16/103332us write=16/40002us create=0 destroy=0 wait=0/0us write_bytes=9830400 command_bytes=384
+[WINE:GL] present=2280 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=0 present_us=0
+[WINE:FRAME-PERF] frames=2299 drawable=10485886 size=640x480 elapsed_us=132433334 resolve_us=3980011 present_us=15123306 copy_us=6743337
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1010000 submit=66/39999us read=17/83335us write=16/43332us create=0 destroy=0 wait=0/0us write_bytes=9830400 command_bytes=392
+[WINE:FRAME-PERF] frames=2327 drawable=10485886 size=640x480 elapsed_us=133460000 resolve_us=4026675 present_us=15253309 copy_us=6790003
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1050000 submit=56/63331us read=14/86669us write=14/36665us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=336
+[WINE:FRAME-PERF] frames=2351 drawable=10485886 size=640x480 elapsed_us=134526667 resolve_us=4073340 present_us=15373309 copy_us=6846673
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1033333 submit=45/66667us read=11/76665us write=11/20000us create=0 destroy=0 wait=0/0us write_bytes=6758400 command_bytes=272
+[WINE:FRAME-PERF] frames=2377 drawable=10485886 size=640x480 elapsed_us=135583334 resolve_us=4123341 present_us=15533310 copy_us=6906675
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1023333 submit=52/76666us read=13/103336us write=13/39998us create=0 destroy=0 wait=0/0us write_bytes=7987200 command_bytes=312
+[WINE:GL] front-copy=1200 source=10485886 target=10485904 size=640x480 colored_pixels=305802
+[WINE:GL] present=2400 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=3333 present_us=3334
+[WINE:FRAME-PERF] frames=2403 drawable=10485886 size=640x480 elapsed_us=136586667 resolve_us=4146672 present_us=15753311 copy_us=6973341
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1013334 submit=53/60000us read=13/63334us write=13/29998us create=0 destroy=0 wait=0/0us write_bytes=7987200 command_bytes=320
+[WINE:FRAME-PERF] frames=2421 drawable=10485886 size=640x480 elapsed_us=137626667 resolve_us=4206673 present_us=15956643 copy_us=7040008
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1023333 submit=35/53333us read=9/70002us write=9/23332us create=0 destroy=0 wait=0/0us write_bytes=5529600 command_bytes=208
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1160000 submit=15/36669us read=4/36666us write=4/143333us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=88
+[WINE:FRAME-PERF] frames=2429 drawable=10485886 size=640x480 elapsed_us=138870000 resolve_us=4273341 present_us=16143308 copy_us=7123342
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1136667 submit=20/50000us read=5/60001us write=5/33334us create=0 destroy=0 wait=0/0us write_bytes=3072000 command_bytes=120
+[WINE:FRAME-PERF] frames=2439 drawable=10485886 size=640x480 elapsed_us=140000000 resolve_us=4343340 present_us=16273308 copy_us=7376675
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=31/56667us read=7/53334us write=8/36667us create=0 destroy=0 wait=0/0us write_bytes=4915200 command_bytes=184
+[WINE:FRAME-PERF] frames=2455 drawable=10485886 size=640x480 elapsed_us=141030000 resolve_us=4363340 present_us=16369975 copy_us=7436676
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1010000 submit=38/66666us read=10/86665us write=9/10000us create=0 destroy=0 wait=0/0us write_bytes=5529600 command_bytes=232
+[WINE:FRAME-PERF] frames=2475 drawable=10485886 size=640x480 elapsed_us=142050000 resolve_us=4400004 present_us=16513310 copy_us=7506674
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1016666 submit=39/59998us read=10/60002us write=10/33335us create=0 destroy=0 wait=0/0us write_bytes=6144000 command_bytes=232
+[WINE:FRAME-PERF] frames=2495 drawable=10485886 size=640x480 elapsed_us=143056667 resolve_us=4426670 present_us=16646645 copy_us=7566676
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1323334 submit=30/23331us read=7/30000us write=8/23334us create=0 destroy=0 wait=0/0us write_bytes=4915200 command_bytes=184
+[WINE:FRAME-PERF] frames=2509 drawable=10485886 size=640x480 elapsed_us=144330000 resolve_us=4433337 present_us=16699979 copy_us=7593342
+[WINE:GL] present=2520 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=0 present_us=3333
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1010000 submit=46/56667us read=12/60000us write=11/26665us create=0 destroy=0 wait=0/0us write_bytes=6758400 command_bytes=272
+[WINE:FRAME-PERF] frames=2531 drawable=10485886 size=640x480 elapsed_us=145350000 resolve_us=4486668 present_us=16833314 copy_us=7653341
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=48/56667us read=12/83333us write=12/29999us create=0 destroy=0 wait=0/0us write_bytes=7372800 command_bytes=288
+[WINE:FRAME-PERF] frames=2557 drawable=10485886 size=640x480 elapsed_us=146386667 resolve_us=4530000 present_us=16963315 copy_us=7713343
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1010000 submit=62/36671us read=15/96666us write=16/43334us create=0 destroy=0 wait=0/0us write_bytes=9830400 command_bytes=376
+[WINE:FRAME-PERF] frames=2588 drawable=10485886 size=640x480 elapsed_us=147396667 resolve_us=4543336 present_us=17173313 copy_us=7796676
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1020000 submit=58/53330us read=15/80001us write=14/49999us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=344
+[WINE:FRAME-PERF] frames=2617 drawable=10485886 size=640x480 elapsed_us=148420000 resolve_us=4576668 present_us=17243312 copy_us=7866676
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=37/40004us read=9/43334us write=9/29998us create=0 destroy=0 wait=0/0us write_bytes=5529600 command_bytes=224
+[WINE:FRAME-PERF] frames=2635 drawable=10485886 size=640x480 elapsed_us=149456667 resolve_us=4606671 present_us=17329977 copy_us=7886676
+[WINE:GL] front-copy=1320 source=10485886 target=10485904 size=640x480 colored_pixels=305521
+[WINE:GL] present=2640 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=0 present_us=3334
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1006667 submit=53/43334us read=13/73333us write=14/33335us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=320
+[WINE:FRAME-PERF] frames=2663 drawable=10485886 size=640x480 elapsed_us=150456667 resolve_us=4626672 present_us=17476645 copy_us=8006675
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1003333 submit=58/39998us read=15/93332us write=14/30003us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=344
+[WINE:FRAME-PERF] frames=2693 drawable=10485886 size=640x480 elapsed_us=151483334 resolve_us=4650005 present_us=17606643 copy_us=8093344
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1023333 submit=64/96667us read=16/96667us write=16/30000us create=0 destroy=0 wait=0/0us write_bytes=9830400 command_bytes=384
+[WINE:FRAME-PERF] frames=2725 drawable=10485886 size=640x480 elapsed_us=152550000 resolve_us=4740006 present_us=17736644 copy_us=8150009
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=50/96664us read=12/56669us write=13/6666us create=0 destroy=0 wait=0/0us write_bytes=7987200 command_bytes=304
+[WINE:FRAME-PERF] frames=2749 drawable=10485886 size=640x480 elapsed_us=153550000 resolve_us=4780007 present_us=17939977 copy_us=8196675
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1023334 submit=18/30000us read=5/26668us write=4/9999us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=104
+[WINE:GL] present=2760 swap=0 drawable=10485886 size=640x480 pixel=255,255,255 resolve_us=0 present_us=3333
+[WINE:FRAME-PERF] frames=2761 drawable=10485886 size=640x480 elapsed_us=154580000 resolve_us=4803340 present_us=17973310 copy_us=8220007
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=68/63331us read=17/83330us write=17/36670us create=0 destroy=0 wait=0/0us write_bytes=10444800 command_bytes=408
+[WINE:FRAME-PERF] frames=2795 drawable=10485886 size=640x480 elapsed_us=156303334 resolve_us=4853339 present_us=18069978 copy_us=8270007
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1000000 submit=16/6667us read=4/23333us write=4/16667us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=96
+[WINE:FRAME-PERF] frames=2823 drawable=10485886 size=640x480 elapsed_us=157343334 resolve_us=4896671 present_us=18173311 copy_us=8320007
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1016666 submit=56/73334us read=14/80001us write=14/29999us create=0 destroy=0 wait=0/0us write_bytes=8601600 command_bytes=336
+!!!!!CUP 1 = 80d5d0
+!!!!!CUP 2= 80d5d0
+!!!!!CUP 3 = 80d5d0
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1770000 submit=14/20000us read=3/16666us write=4/10000us create=0 destroy=0 wait=0/0us write_bytes=2457600 command_bytes=88
+[VIRTIOGPU.DVR] timeout controlq cmd=0x206 avail=18738 used=18737
+[WINE:VIRGL-PERF] pid=96 elapsed_us=3016667 submit=1/0us read=1/3006667us write=0/0us create=0 destroy=0 wait=0/0us write_bytes=0 command_bytes=0
+[WINE:FRAME-PERF] frames=2833 drawable=10485886 size=640x480 elapsed_us=162230000 resolve_us=4926671 present_us=18269978 copy_us=8343340
+[WINE:VIRGL-PERF] pid=96 elapsed_us=1390000 submit=23/0us read=5/0us write=6/3333us create=0 destroy=0 wait=0/0us write_bytes=3686400 command_bytes=144
+[WINE:FRAME-PERF] frames=2845 drawable=10485886 size=640x480 elapsed_us=163600000 resolve_us=4926671 present_us=18306644 copy_us=8363340
+ERROR: invalid home goalie kit ID 0
+ERROR: invalid away goalie kit ID 0
+[WINE:VIRGL-PERF] pid=96 elapsed_us=3336667 submit=20/0us read=5/3333us write=5/0us create=0 destroy=0 wait=0/0us write_bytes=3072000 command_bytes=120
+[WINE:FRAME-PERF] frames=2855 drawable=10485886 size=640x480 elapsed_us=166940000 resolve_us=4926671 present_us=18323312 copy_us=8373340
+wine: Unhandled page fault on write access to 00000000 at address 60C7EC15 (thread 012c), starting debugger...
+[LINUX:EXIT] pid=96 proc=96 ppid=90 name=wine-preloader status=1280 thread=0
+[WINE] application failed raw=1280
+[MM] proceso 96: 11167 KiB recuperados

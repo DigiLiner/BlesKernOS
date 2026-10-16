@@ -1,5 +1,5 @@
 /*
- * BlesBalls - TinyGL 3D falling balls screensaver for BlesKernOS
+ * BlesBalls - Mesa 3.5 3D falling balls screensaver for BlesKernOS
  *
  * Pelotas 3D caen dentro de una caja angosta, se apilan hasta llenar
  * la pantalla y, tras una pausa, la escena se reinicia automaticamente.
@@ -13,8 +13,11 @@
 #include "kernel/include/api.h"
 #include <math.h>
 #include <stdint.h>
-#include <TGL/gl.h>
-#include "zbuffer.h"
+#include "ss_mesa.h"
+#include "ss_scale.h"
+#include "ss_timing.h"
+
+#define SS_INPUT_GRACE_MS 500U
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -49,9 +52,8 @@ static uint16_t g_balls_render_h = SS_BALLS_H;
 #define SS_BALLS_MIN_RADIUS  (0.37f)
 #define SS_BALLS_MAX_RADIUS  (0.46f)
 #define SS_BALLS_GRAVITY     (0.0105f)
-#define SS_BALLS_SPAWN_TICKS 8U
-#define SS_BALLS_RESET_TICKS 220U
-#define SS_BALLS_FRAME_TICKS 10U
+#define SS_BALLS_SPAWN_MS 27U
+#define SS_BALLS_RESET_MS 733U
 #define SS_BALLS_RENDER_MAX_W 400U
 #define SS_BALLS_RENDER_MAX_H 300U
 #define SS_BALLS_SOLVER_PASSES 3
@@ -71,18 +73,19 @@ typedef struct {
 typedef struct {
     gui_desktop_t *desktop;
     gui_program_t *program;
-    ZBuffer *framebuffer;
-    PIXEL *pixels;
+    ss_mesa_surface_t mesa;
+    uint32_t *pixels;
     uint16_t render_w;
     uint16_t render_h;
     bool active;
     bool gl_ready;
     bool filled;
-    uint32_t last_tick;
-    uint32_t last_spawn_tick;
-    uint32_t filled_tick;
+    uint32_t last_frame_ms;
+    uint32_t last_spawn_ms;
+    uint32_t filled_ms;
     uint32_t seed;
     uint32_t frames;
+    uint32_t input_armed_ms;
     uint16_t ball_count;
     GLfloat box_left;
     GLfloat box_right;
@@ -133,12 +136,6 @@ static bool ss_balls_input_event(const gui_event_t *event) {
             event->type == GUI_EVENT_KEY);
 }
 #endif
-
-static uint32_t ss_balls_pixel_to_rgb(PIXEL pixel) {
-    return ((uint32_t)GET_RED(pixel) << 16) |
-           ((uint32_t)GET_GREEN(pixel) << 8) |
-           ((uint32_t)GET_BLUE(pixel));
-}
 
 #ifndef SS_BALLS_EMBEDDED_PREVIEW
 static void ss_balls_configure_resolution(ss_balls_state_t *st,
@@ -223,8 +220,6 @@ static void ss_balls_build_sphere(void) {
 
 static void ss_balls_material(uint8_t color) {
     GLfloat diffuse[4];
-    GLfloat specular[4] = {0.92f, 0.92f, 0.92f, 1.0f};
-    GLfloat shininess = 26.0f;
     const GLfloat *src = g_ball_colors[
         color % (sizeof(g_ball_colors) / sizeof(g_ball_colors[0]))];
 
@@ -233,9 +228,6 @@ static void ss_balls_material(uint8_t color) {
     diffuse[2] = src[2];
     diffuse[3] = 1.0f;
 
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
-    glMaterialfv(GL_FRONT, GL_SHININESS, &shininess);
     glColor3fv(diffuse);
 }
 
@@ -277,7 +269,6 @@ static void ss_balls_draw_box(const ss_balls_state_t *st) {
     glMaterialfv(GL_FRONT, GL_SHININESS, &zero);
 
     /* Fondo oscuro. */
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, wall_diffuse);
     glColor3fv(wall_diffuse);
     glBegin(GL_QUADS);
     glNormal3f(0.0f, 0.0f, 1.0f);
@@ -288,7 +279,6 @@ static void ss_balls_draw_box(const ss_balls_state_t *st) {
     glEnd();
 
     /* Piso. */
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, floor_diffuse);
     glColor3fv(floor_diffuse);
     glBegin(GL_QUADS);
     glNormal3f(0.0f, 1.0f, 0.0f);
@@ -494,8 +484,8 @@ static void ss_balls_reset_scene(ss_balls_state_t *st, uint32_t now) {
 
     st->ball_count = 0;
     st->filled = false;
-    st->filled_tick = 0;
-    st->last_spawn_tick = now - SS_BALLS_SPAWN_TICKS;
+    st->filled_ms = 0;
+    st->last_spawn_ms = now - SS_BALLS_SPAWN_MS;
     st->seed ^= now + 0x9E3779B9U;
     st->next_color = (uint8_t)(ss_balls_rand(st) %
         (sizeof(g_ball_colors) / sizeof(g_ball_colors[0])));
@@ -506,28 +496,21 @@ static bool ss_balls_init_gl(ss_balls_state_t *st) {
     GLfloat light_pos[4] = {-3.5f, 6.5f, 8.0f, 0.0f};
     GLfloat white[4] = {0.90f, 0.90f, 0.90f, 1.0f};
     GLfloat ambient[4] = {0.14f, 0.15f, 0.20f, 1.0f};
-    uint32_t pixel_count;
 
     if (!st->render_w || !st->render_h) {
         st->render_w = SS_BALLS_W;
         st->render_h = SS_BALLS_H;
     }
 
-    pixel_count = (uint32_t)st->render_w * (uint32_t)st->render_h;
-
-    st->pixels = (PIXEL *)bk_sys_alloc_zero(pixel_count * sizeof(PIXEL));
-    if (!st->pixels) return false;
-
-    st->framebuffer = ZB_open(st->render_w, st->render_h,
-#if TGL_FEATURE_RENDER_BITS == 32
-                              ZB_MODE_RGBA,
+    if (!ss_mesa_surface_create(&st->mesa, st->render_w, st->render_h,
+#ifdef SS_BALLS_EMBEDDED_PREVIEW
+                                false
 #else
-                              ZB_MODE_5R6G5B,
+                                true
 #endif
-                              0);
-    if (!st->framebuffer) return false;
-
-    glInit(st->framebuffer);
+                                ))
+        return false;
+    st->pixels = st->mesa.pixels;
     st->gl_ready = true;
 
     ss_balls_build_sphere();
@@ -538,6 +521,8 @@ static bool ss_balls_init_gl(ss_balls_state_t *st) {
 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
+    glColorMaterial(GL_FRONT, GL_DIFFUSE);
+    glEnable(GL_COLOR_MATERIAL);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glDisable(GL_BLEND);
@@ -546,7 +531,6 @@ static bool ss_balls_init_gl(ss_balls_state_t *st) {
     glLightfv(GL_LIGHT0, GL_DIFFUSE, white);
     glLightfv(GL_LIGHT0, GL_SPECULAR, white);
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-    glSetEnableSpecular(GL_TRUE);
 
     aspect = (GLfloat)st->render_w / (GLfloat)st->render_h;
     glMatrixMode(GL_PROJECTION);
@@ -554,20 +538,23 @@ static bool ss_balls_init_gl(ss_balls_state_t *st) {
     glFrustum(-aspect, aspect, -1.0f, 1.0f,
               SS_BALLS_VIEW_NEAR, 80.0f);
 
-    ss_balls_reset_scene(st, bk_sys_ticks());
+    ss_balls_reset_scene(st, bk_sys_uptime_ms());
     return true;
 }
 
 static void ss_balls_render_frame(ss_balls_state_t *st) {
     uint32_t now;
+    GLfloat specular[4] = {0.92f, 0.92f, 0.92f, 1.0f};
+    GLfloat shininess = 26.0f;
 
-    if (!st || !st->gl_ready || !st->framebuffer || !st->pixels) return;
+    if (!st || !st->gl_ready || !st->mesa.ready || !st->pixels) return;
+    if (!ss_mesa_surface_make_current(&st->mesa)) return;
 
-    now = bk_sys_ticks();
+    now = bk_sys_uptime_ms();
 
     if (!st->filled && st->ball_count < SS_BALLS_MAX &&
-        (uint32_t)(now - st->last_spawn_tick) >= SS_BALLS_SPAWN_TICKS) {
-        st->last_spawn_tick = now;
+        (uint32_t)(now - st->last_spawn_ms) >= SS_BALLS_SPAWN_MS) {
+        st->last_spawn_ms = now;
         ss_balls_spawn(st);
     }
 
@@ -580,12 +567,12 @@ static void ss_balls_render_frame(ss_balls_state_t *st) {
 
         if (max_scene_settled || ss_balls_pile_reached_top(st)) {
             st->filled = true;
-            st->filled_tick = now;
+            st->filled_ms = now;
         }
     }
 
     if (st->filled &&
-        (uint32_t)(now - st->filled_tick) >= SS_BALLS_RESET_TICKS) {
+        (uint32_t)(now - st->filled_ms) >= SS_BALLS_RESET_MS) {
         ss_balls_reset_scene(st, now);
     }
 
@@ -597,12 +584,14 @@ static void ss_balls_render_frame(ss_balls_state_t *st) {
                  -(SS_BALLS_VIEW_HALF_HEIGHT * SS_BALLS_VIEW_NEAR));
 
     ss_balls_draw_box(st);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, &shininess);
 
     for (uint32_t i = 0; i < st->ball_count; i++)
         ss_balls_draw_sphere(&st->balls[i]);
 
-    ZB_copyFrameBuffer(st->framebuffer, st->pixels,
-                       st->render_w * sizeof(PIXEL));
+    if (!ss_mesa_surface_present(&st->mesa)) return;
+    st->pixels = st->mesa.pixels;
     st->frames++;
 }
 
@@ -615,11 +604,8 @@ void ss_balls_preview_draw(gui_surface_t *surface, gui_rect_t screen) {
 
     if (preview && (preview->render_w != (uint16_t)screen.w ||
                     preview->render_h != (uint16_t)screen.h)) {
-        if (preview->gl_ready) {
-            if (preview->framebuffer) ZB_close(preview->framebuffer);
-            glClose();
-        }
-        if (preview->pixels) bk_sys_free(preview->pixels);
+        if (preview->gl_ready) ss_mesa_surface_destroy(&preview->mesa);
+        preview->pixels = NULL;
         bk_sys_free(preview);
         preview = NULL;
     }
@@ -628,15 +614,15 @@ void ss_balls_preview_draw(gui_surface_t *surface, gui_rect_t screen) {
         preview = (ss_balls_state_t *)bk_sys_alloc_zero(sizeof(*preview));
         if (!preview) return;
         preview->active = true;
-        preview->seed = bk_sys_ticks() ^ 0xBA115EEDU;
-        preview->last_tick = bk_sys_ticks();
-        preview->last_spawn_tick = preview->last_tick;
+        preview->seed = bk_sys_uptime_ms() ^ 0xBA115EEDU;
+        preview->last_frame_ms = bk_sys_uptime_ms();
+        preview->last_spawn_ms = preview->last_frame_ms;
         preview->render_w = (uint16_t)screen.w;
         preview->render_h = (uint16_t)screen.h;
         ss_balls_configure_world(preview);
         if (!ss_balls_init_gl(preview)) {
-            if (preview->framebuffer) ZB_close(preview->framebuffer);
-            if (preview->pixels) bk_sys_free(preview->pixels);
+            if (preview->gl_ready) ss_mesa_surface_destroy(&preview->mesa);
+            preview->pixels = NULL;
             bk_sys_free(preview);
             preview = NULL;
             bk_gui_gfx_fill_rect(surface, screen, 0x00000000);
@@ -645,9 +631,8 @@ void ss_balls_preview_draw(gui_surface_t *surface, gui_rect_t screen) {
         ss_balls_render_frame(preview);
     }
 
-    now = bk_sys_ticks();
-    if ((uint32_t)(now - preview->last_tick) >= SS_BALLS_FRAME_TICKS) {
-        preview->last_tick = now;
+    now = bk_sys_uptime_ms();
+    if (ss_frame_due(now, &preview->last_frame_ms)) {
         ss_balls_render_frame(preview);
     }
 
@@ -655,7 +640,7 @@ void ss_balls_preview_draw(gui_surface_t *surface, gui_rect_t screen) {
     for (uint16_t y = 0; y < preview->render_h; y++) {
         for (uint16_t x = 0; x < preview->render_w; x++) {
             bk_gui_gfx_putpixel(surface, screen.x + x, screen.y + y,
-                ss_balls_pixel_to_rgb(
+                ss_mesa_pixel_to_rgb(
                     preview->pixels[(uint32_t)y * preview->render_w + x]));
         }
     }
@@ -674,15 +659,7 @@ static void ss_balls_blit(gui_surface_t *surface, ss_balls_state_t *st) {
 
     /* Escalado vecino más cercano directamente sobre la superficie. Evita
        cientos de miles de llamadas individuales a gui_gfx_putpixel(). */
-    for (uint32_t y = 0; y < surface->height; y++) {
-        uint32_t source_y = y * rh / surface->height;
-        uint32_t *destination = surface->pixels + y * surface->pitch;
-        const PIXEL *source = st->pixels + source_y * rw;
-        for (uint32_t x = 0; x < surface->width; x++) {
-            uint32_t source_x = x * rw / surface->width;
-            destination[x] = ss_balls_pixel_to_rgb(source[source_x]);
-        }
-    }
+    ss_scale_rgb(surface, st->pixels, rw, rh);
 }
 
 static void ss_balls_paint(gui_program_t *program, gui_desktop_t *desktop,
@@ -692,9 +669,8 @@ static void ss_balls_paint(gui_program_t *program, gui_desktop_t *desktop,
 
     if (!st || !desktop || !surface || !st->active) return;
 
-    now = bk_sys_ticks();
-    if ((uint32_t)(now - st->last_tick) >= SS_BALLS_FRAME_TICKS) {
-        st->last_tick = now;
+    now = bk_sys_uptime_ms();
+    if (ss_frame_due(now, &st->last_frame_ms)) {
         ss_balls_render_frame(st);
     }
 
@@ -716,12 +692,8 @@ static void ss_balls_cleanup(gui_desktop_t *desktop, ss_balls_state_t *st) {
         bk_gui_desktop_unregister_program(desktop, program);
     }
 
-    if (st->gl_ready) {
-        if (st->framebuffer) ZB_close(st->framebuffer);
-        glClose();
-    }
-
-    if (st->pixels) bk_sys_free(st->pixels);
+    if (st->gl_ready) ss_mesa_surface_destroy(&st->mesa);
+    st->pixels = NULL;
 
     bk_sys_free(st);
     bk_gui_gfx_invalidate_front();
@@ -733,6 +705,9 @@ static bool ss_balls_event(gui_program_t *program, gui_desktop_t *desktop,
     ss_balls_state_t *st = program ? (ss_balls_state_t *)program->state : NULL;
 
     if (!st || !event) return false;
+    if (ss_balls_input_event(event) &&
+        (int32_t)(bk_sys_uptime_ms() - st->input_armed_ms) < 0)
+        return true;
     if (ss_balls_input_event(event)) {
         ss_balls_cleanup(desktop, st);
         return true;
@@ -745,6 +720,8 @@ bool ss_balls_is_active(void);
 bool ss_balls_handle_global_event(gui_desktop_t *desktop,
                                   const gui_event_t *event) {
     if (!ss_balls_is_active() || !ss_balls_input_event(event)) return false;
+    if ((int32_t)(bk_sys_uptime_ms() - g_ss_balls->input_armed_ms) < 0)
+        return true;
     ss_balls_cleanup(desktop, g_ss_balls);
     return true;
 }
@@ -763,9 +740,10 @@ void ss_balls_open_from_desktop(gui_desktop_t *desktop) {
 
     st->desktop = desktop;
     st->active = true;
-    st->seed = bk_sys_ticks() ^ 0xBA115EEDU;
-    st->last_tick = bk_sys_ticks();
-    st->last_spawn_tick = st->last_tick;
+    st->seed = bk_sys_uptime_ms() ^ 0xBA115EEDU;
+    st->last_frame_ms = bk_sys_uptime_ms();
+    st->last_spawn_ms = st->last_frame_ms;
+    st->input_armed_ms = bk_sys_uptime_ms() + SS_INPUT_GRACE_MS;
     ss_balls_configure_resolution(st, desktop);
     ss_balls_configure_world(st);
 
@@ -791,7 +769,7 @@ void ss_balls_open_from_desktop(gui_desktop_t *desktop) {
 }
 
 void ss_balls_main(gui_desktop_t *desktop) {
-    gui_desktop_t *target = desktop ? desktop : bk_gui_get_desktop();
+    gui_desktop_t *target = desktop ? desktop : bk_gui_desktop();
     uint32_t last_request;
 
     if (!target || ss_balls_is_active()) return;
@@ -800,15 +778,14 @@ void ss_balls_main(gui_desktop_t *desktop) {
 
     /* El proceso marca un cuadro a ~30 FPS. Antes el callback se despertaba a
        sí mismo sin límite y hacía trabajar al compositor aun entre cuadros. */
-    last_request = bk_sys_ticks();
+    last_request = bk_sys_uptime_ms();
     while (ss_balls_is_active() && !bk_proc_exit_requested()) {
-        uint32_t now = bk_sys_ticks();
-        if ((uint32_t)(now - last_request) >= SS_BALLS_FRAME_TICKS) {
-            last_request = now;
+        uint32_t now = bk_sys_uptime_ms();
+        if (ss_frame_due(now, &last_request)) {
             bk_gui_desktop_invalidate_all(target);
             bk_gui_request_paint();
         }
-        bk_sys_sleep_ticks(2);
+        bk_sys_sleep_ms(5U);
     }
 
     if (bk_proc_exit_requested() && ss_balls_is_active())

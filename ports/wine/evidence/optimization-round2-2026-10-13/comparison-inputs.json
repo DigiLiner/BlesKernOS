@@ -1,0 +1,6 @@
+{
+  "inputs/i386_futex.inc": "be17f3d2cbda2498f24333cb7ffed1f80f69895d2d96cba811d3849e31efaab5",
+  "inputs/i386_futex-optimized.inc": "365fa8a56b809257daeb06eec4757123e2b04570d482c7c3021f5f01d203c04a",
+  "baseline/loaded-kernel.elf": "e9dcd35ea2418d2145b09752ed0df7fc8f35e3b36a5cb58ff89ce49362ce7641",
+  "futex-ui/loaded-kernel.elf": "9c47ef62f72e10cc8deff1e92361b55f648ab321554f0d7b7dca5e8b3c58d151"
+}

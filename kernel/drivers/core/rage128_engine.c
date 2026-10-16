@@ -1,56 +1,27 @@
 #include "../../include/rage128_engine.h"
-#include "../../include/task.h"
-#include "../../stdio.h"
+#include "../../include/klock.h"
+#include "../../include/perfmon.h"
+#include "../../libc/include/stdio.h"
 
 static const r128_engine_2d_ops_t *g_r128_2d;
-static volatile uint32_t g_r128_lock_owner;
-static uint32_t g_r128_lock_depth;
+static kmutex_t g_r128_lock = KMUTEX_INITIALIZER;
 static r128_engine_context_t g_r128_context;
 static uint32_t g_r128_switch_2d;
 static uint32_t g_r128_switch_3d;
-static uint32_t g_r128_lock_waits;
 static uint32_t g_r128_present_hw;
 static uint32_t g_r128_present_fail;
 
-static uint32_t r128_lock_token(void) {
-    uint32_t token = task_current_pid() + 1U;
-    return token ? token : 0xFFFFFFFFU;
-}
-
+/* Disabling preemption only serializes the local CPU. The shared 2D/3D
+ * engine needs the kernel's atomic, recursive, per-task mutex on SMP too. */
 static void r128_lock(void) {
-    uint32_t owner = r128_lock_token();
-    bool counted = false;
-
-    for (;;) {
-        task_preempt_disable();
-        if (g_r128_lock_owner == owner) {
-            g_r128_lock_depth++;
-            task_preempt_enable();
-            return;
-        }
-        if (g_r128_lock_owner == 0U) {
-            g_r128_lock_owner = owner;
-            g_r128_lock_depth = 1U;
-            task_preempt_enable();
-            return;
-        }
-        if (!counted) {
-            g_r128_lock_waits++;
-            counted = true;
-        }
-        task_preempt_enable();
-        task_yield();
-    }
+    uint64_t started = perfmon_scope_begin();
+    kmutex_lock(&g_r128_lock);
+    perfmon_scope_end(PERF_SCOPE_ATI_LOCK, started);
+    perfmon_scope_note(PERF_SCOPE_ATI_LOCK, 0U, 0U, 0U);
 }
 
 static void r128_unlock(void) {
-    uint32_t owner = r128_lock_token();
-
-    task_preempt_disable();
-    if (g_r128_lock_owner == owner && g_r128_lock_depth) {
-        if (--g_r128_lock_depth == 0U) g_r128_lock_owner = 0U;
-    }
-    task_preempt_enable();
+    kmutex_unlock(&g_r128_lock);
 }
 
 bool r128_engine_register_2d(const r128_engine_2d_ops_t *ops) {
@@ -89,12 +60,16 @@ bool r128_engine_acquire_2d(void) {
         return false;
     }
     if (g_r128_context != R128_ENGINE_CONTEXT_2D) {
-        if (!g_r128_2d->enter_2d()) {
+        uint64_t started = perfmon_scope_begin();
+        bool entered = g_r128_2d->enter_2d();
+        perfmon_scope_end(PERF_SCOPE_ATI_SWITCH_2D, started);
+        if (!entered) {
             r128_unlock();
             return false;
         }
         g_r128_context = R128_ENGINE_CONTEXT_2D;
         g_r128_switch_2d++;
+        perfmon_scope_note(PERF_SCOPE_ATI_SWITCH_2D, 0U, 0U, 0U);
     }
     return true;
 }
@@ -109,6 +84,7 @@ bool r128_engine_acquire_3d(void) {
     if (g_r128_context != R128_ENGINE_CONTEXT_3D) {
         g_r128_context = R128_ENGINE_CONTEXT_3D;
         g_r128_switch_3d++;
+        perfmon_scope_note(PERF_SCOPE_ATI_SWITCH_3D, 0U, 0U, 0U);
     }
     return true;
 }
@@ -160,6 +136,6 @@ void r128_engine_report(const char *reason) {
     kprintf("[R128:ENGINE] %s context=%s switch2D=%u switch3D=%u "
             "lockwait=%u presentHW=%u presentFail=%u\n",
             reason ? reason : "estado", context,
-            g_r128_switch_2d, g_r128_switch_3d, g_r128_lock_waits,
+            g_r128_switch_2d, g_r128_switch_3d, g_r128_lock.contentions,
             g_r128_present_hw, g_r128_present_fail);
 }

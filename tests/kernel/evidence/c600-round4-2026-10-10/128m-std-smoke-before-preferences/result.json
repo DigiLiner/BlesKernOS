@@ -1,0 +1,46 @@
+{
+  "ram_mib": 128,
+  "backend": "std",
+  "desktop_started": true,
+  "completed": true,
+  "smoke_pass": true,
+  "memory": {
+    "DESKTOP": {
+      "total_kib": 130559,
+      "used_kib": 47076,
+      "free_kib": 83482,
+      "reserved_kib": 32383,
+      "heap_used_kib": 14693,
+      "heap_free_kib": 58938,
+      "vm_free_kib": 24544
+    },
+    "IDLE": {
+      "total_kib": 130559,
+      "used_kib": 51410,
+      "free_kib": 79148,
+      "reserved_kib": 32383,
+      "heap_used_kib": 19027,
+      "heap_free_kib": 54604,
+      "vm_free_kib": 24544
+    }
+  },
+  "depths": [],
+  "colors": [
+    {
+      "wanted": 8,
+      "actual": 8
+    },
+    {
+      "wanted": 16,
+      "actual": 16
+    },
+    {
+      "wanted": 4,
+      "actual": 4
+    },
+    {
+      "wanted": 32,
+      "actual": 32
+    }
+  ]
+}

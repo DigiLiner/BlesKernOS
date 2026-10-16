@@ -1,8 +1,10 @@
-# BlesKernOS 0.8
+# BlesKernOS 0.9
+
+Source layout and build entrypoints: [repository guide](docs/README.md).
 
 BlesKernOS is a lightweight 32-bit x86 operating system written primarily from scratch in C and x86 Assembly.
 
-It includes its own bootloader and protected-mode kernel, preemptive multitasking, native Ring 3 applications, a graphical desktop, FAT/ISO9660 storage, networking with HTTPS, loadable drivers, multimedia support, an SDK for native software, experimental Win16/Win32 compatibility, and software/hardware-assisted 3D graphics.
+It includes its own bootloader and protected-mode kernel, preemptive multitasking, native Ring 3 applications, a graphical desktop, FAT/ISO9660 storage, networking with HTTPS, loadable drivers, multimedia support, an SDK for native software, Windows applications through Wine, and software/hardware-assisted 3D graphics.
 
 BlesKernOS is still under active development. Hardware support and compatibility layers are incomplete, and some features described below remain experimental.
 
@@ -36,7 +38,7 @@ BlesKernOS is still under active development. Hardware support and compatibility
 - USB UHCI support, USB storage and an external USB class driver for HID, hubs and USB printers.
 - Expanded audio support including Sound Blaster 16, Intel AC'97 and ESS Maestro3-family hardware.
 - Print spooler and printer profiles for text, PostScript, PCL 5 and ESC/P-family output over file, LPT and USB printer transports.
-- Experimental Win16 NE execution and substantially expanded Win32/Windows 95 compatibility APIs.
+- Windows application support is now provided by the Wine port.
 - User and Developer editions, installer media and SDK improvements.
 - Improved desktop, graphics resources, language catalogs, system utilities and performance monitoring.
 
@@ -76,7 +78,7 @@ BlesKernOS automatically selects a reduced profile according to detected physica
 - **8-15 MB:** reduced desktop profile, lower GUI refresh rate and disabled heavy subsystems.
 - **More than 15 MB:** normal feature set.
 
-Low-memory profiles can automatically disable external drivers, network autoconfiguration, USB hotplug, printing, startup audio, screensavers, wallpaper, image icons and Win16/Win32 compatibility to preserve RAM.
+Low-memory profiles can automatically disable external drivers, network autoconfiguration, USB hotplug, printing, startup audio, screensavers, wallpaper, image icons and compatibility services to preserve RAM.
 
 ### Storage and filesystems
 
@@ -219,6 +221,7 @@ The source tree includes native BlesKernOS applications and system tools such as
 - Text Editor.
 - Calculator.
 - Calendar.
+- Font: visor de 24 familias de 8 a 72 px, lista con nombres en su propia fuente y vista previa desplazable.
 - Paint.
 - Image Viewer.
 - Control Panel.
@@ -240,39 +243,29 @@ The source tree includes native BlesKernOS applications and system tools such as
 
 The command-line environment also contains a larger collection of Unix/DOS-style utilities for files, processes, hardware inspection, networking, checksums, archives and system diagnostics.
 
-### Win16 compatibility — experimental
+### Windows applications through Wine
 
-BlesKernOS contains an experimental NE/Win16 compatibility layer influenced by the architecture and API metadata of Wine.
+Windows executables and batch files run through Wine 11 on the Linux i386 ABI.
+The former kernel PE/NE loaders and built-in Win32 API implementation have been
+removed. The desktop launcher is `WINE.BEX`; console developer tools enter
+Wine through `wine-tool.ELF`.
 
-Implemented foundations include:
+See [the Wine port](ports/wine/README.md) for build instructions and
+compatibility evidence. Full self-hosting through Wine still needs guest
+validation: the old Win32 makefile relied on the removed batch interpreter to
+launch native BEX commands. Individual developer tools now use Wine.
 
-- NE executable loading and relocation.
-- 16-bit GDT code/data selectors.
-- 16:16 Ring 3 task startup.
-- KERNEL/USER/GDI relay infrastructure.
-- Basic local/global memory APIs.
-- Several KERNEL string/task helpers.
-- Basic `MessageBox` integration.
+The [2026-10-14 responsiveness report](ports/wine/evidence/responsiveness-2026-10-14/README.md)
+documents the SMP wakeup correction, Notepad measurements, regression checks,
+and the separate `build/bleskernos-wine-performance.img` test image. The goals
+of 5–10 second launches and 20–30 ms typing latency remain open.
 
-This is **not** a complete Windows 3.x or Wine implementation. Complex applications can still stop on missing USER/GDI, DLL, resource, callback or multimedia APIs.
-
-### Win32 / Windows 95 compatibility — experimental
-
-The PE32 compatibility layer includes an expanding set of Windows 95/98-era APIs, including portions of:
-
-- KERNEL32.
-- USER32.
-- GDI32.
-- COMCTL32.
-- Registry APIs.
-- Process and synchronization APIs.
-- Virtual memory bookkeeping.
-- File and file-mapping APIs.
-- DIB and bitmap graphics.
-- WinSock / networking-related compatibility work.
-- Additional compatibility libraries assembled into the project's Wine compatibility library.
-
-The compatibility layer is partial. It does not provide full Windows memory isolation or complete Win32 API coverage.
+The [2026-10-15 startup report](ports/wine/evidence/startup-2026-10-15/README.md)
+adds bounded read-ahead and writeback, faster resident-page pinning and frame
+allocation, and native repaint preservation during application loading.
+`build/bleskernos-wine-responsive.img` contains these changes. The report
+separates idle startup from startup while using another window; stable
+20-second launches and consistently responsive loading still need work.
 
 ---
 
@@ -286,7 +279,7 @@ The compatibility layer is partial. It does not provide full Windows memory isol
 - Python 3
 - QEMU for testing
 
-Some Win32 test targets additionally require a MinGW i686 cross-compiler.
+The Windows self-hosting tools require a MinGW i686 cross-compiler when rebuilt.
 
 Build the normal User edition:
 
@@ -319,7 +312,7 @@ build/bleskernos-ata-user.img
 build/bleskernos-ata-developer.img
 ```
 
-The build system can also create USB and VMware images. See [`docs/EDITIONS_AND_UTILITIES.md`](docs/EDITIONS_AND_UTILITIES.md).
+The build system can also create USB and VMware images. `make vmware-image` generates a VMDK and a compatible VMX profile for legacy SVGA3D. See [`docs/graphics/SVGA3D_VALIDATION.md`](docs/graphics/SVGA3D_VALIDATION.md) for Tux Racer, automatic pixel validation and VMware compatibility, and [`docs/build/EDITIONS_AND_UTILITIES.md`](docs/build/EDITIONS_AND_UTILITIES.md) for image editions.
 
 ### Installer CD
 
@@ -352,7 +345,7 @@ build/sdk/libblesk_tinygl.a  TinyGL integration
 build/sdk/libblesk_mesa.a    Mesa 3.5 / OpenGL integration
 ```
 
-See [`docs/API.md`](docs/API.md) and [`sdk/README.md`](sdk/README.md).
+See [`docs/reference/API.md`](docs/reference/API.md) and [`sdk/README.md`](sdk/README.md).
 
 Kernel driver headers are not part of the native application ABI.
 
@@ -381,7 +374,7 @@ Runtime layout inside the FAT32 system image includes:
 /SYSTEM/CORE/          Desktop core components
 /SYSTEM/DRIVERS/       Loadable .DVR drivers
 /SYSTEM/LIBS/          Runtime/static libraries
-/SYSTEM/WIN32/         Win32 applications and compatibility files
+/SYSTEM/WINE/          Windows applications installed under Wine
 /SYSTEM/PRINTERS/      Printer profiles
 /SYSTEM/GRAPHICS.PAK   Shared graphical resources
 ```
@@ -392,20 +385,18 @@ Runtime layout inside the FAT32 system image includes:
 
 The repository contains more detailed documentation for individual subsystems, including:
 
-- [`docs/API.md`](docs/API.md) — native userspace API.
-- [`docs/SMP.md`](docs/SMP.md) — multiprocessor architecture.
-- [`docs/SMP_LOCKING.md`](docs/SMP_LOCKING.md) — SMP locking model.
-- [`docs/PAGING.md`](docs/PAGING.md) — paging and process memory.
-- [`docs/LOW_MEMORY_MODE.md`](docs/LOW_MEMORY_MODE.md) — 4-15 MB compatibility profiles.
-- [`docs/DRIVERS.md`](docs/DRIVERS.md) — loadable driver ABI.
-- [`docs/NETWORKING.md`](docs/NETWORKING.md) — IPv4, sockets, HTTP and TLS.
-- [`docs/printing.md`](docs/printing.md) — print subsystem.
-- [`docs/mesa35.md`](docs/mesa35.md) — Mesa 3.5/GFX3D integration.
-- [`docs/tinygl-gfx3d.md`](docs/tinygl-gfx3d.md) — TinyGL hardware acceleration path.
-- [`docs/VMWARE_SVGA_II.md`](docs/VMWARE_SVGA_II.md) — VMware SVGA-II.
-- [`docs/virtio_gpu.md`](docs/virtio_gpu.md) — VirtIO GPU and VirGL.
-- [`docs/WIN16_PORT.md`](docs/WIN16_PORT.md) — experimental Win16 compatibility.
-- [`docs/WIN32_PHASE1_COMPAT.md`](docs/WIN32_PHASE1_COMPAT.md) — Win32 compatibility work.
+- [`docs/reference/API.md`](docs/reference/API.md) — native userspace API.
+- [`docs/kernel/SMP.md`](docs/kernel/SMP.md) — multiprocessor architecture.
+- [`docs/kernel/SMP_LOCKING.md`](docs/kernel/SMP_LOCKING.md) — SMP locking model.
+- [`docs/kernel/PAGING.md`](docs/kernel/PAGING.md) — paging and process memory.
+- [`docs/kernel/LOW_MEMORY_MODE.md`](docs/kernel/LOW_MEMORY_MODE.md) — 4-15 MB compatibility profiles.
+- [`docs/platform/DRIVERS.md`](docs/platform/DRIVERS.md) — loadable driver ABI.
+- [`docs/platform/NETWORKING.md`](docs/platform/NETWORKING.md) — IPv4, sockets, HTTP and TLS.
+- [`docs/platform/printing.md`](docs/platform/printing.md) — print subsystem.
+- [`docs/graphics/mesa35.md`](docs/graphics/mesa35.md) — Mesa 3.5/GFX3D integration.
+- [`docs/graphics/tinygl-gfx3d.md`](docs/graphics/tinygl-gfx3d.md) — TinyGL hardware acceleration path.
+- [`docs/graphics/VMWARE_SVGA_II.md`](docs/graphics/VMWARE_SVGA_II.md) — VMware SVGA-II.
+- [`docs/graphics/virtio_gpu.md`](docs/graphics/virtio_gpu.md) — VirtIO GPU and VirGL.
 
 ---
 
@@ -419,7 +410,7 @@ The 0.8 tree is considerably more capable than previous releases, but several ar
 - More complete OpenGL hardware acceleration coverage.
 - More complete TCP/IP behavior and server-side sockets.
 - EHCI/class-driver unification in the USB stack.
-- More complete Win16 and Win32 API compatibility.
+- Broader application compatibility through Wine.
 - Continued GUI, driver, filesystem and performance stabilization.
 
 ---
@@ -428,7 +419,18 @@ The 0.8 tree is considerably more capable than previous releases, but several ar
 
 BlesKernOS is distributed under the MIT License unless a source file or third-party component states otherwise.
 
-Third-party components retain their own licenses and notices. See [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) and the license files included with individual libraries.
+Third-party components retain their own licenses and notices. See the scope in
+[`NOTICE.md`](NOTICE.md), the component matrix in [`LICENSES/README.md`](LICENSES/README.md)
+and [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).
+
+That inventory records unresolved provenance and redistribution permissions,
+including Actua Soccer/HMI, the local Heretic snapshot, some KDE artwork and
+the exact TinyGL import. Descent carries its own noncommercial terms.
+The general MIT license does not resolve those cases. Image builders collect
+additional library notices in `/DOCS/LICENSES.TXT`.
+
+Workspace cleanup and preserved build outputs are documented in
+[`docs/source-maintenance.md`](docs/source-maintenance.md).
 
 ---
 

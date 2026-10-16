@@ -1,0 +1,20 @@
+--- a/dlls/ntdll/unix/file.c
++++ b/dlls/ntdll/unix/file.c
+@@ -1316,9 +1316,14 @@
+     {
+         sens = FALSE;
+     }
+-    else if (fstatfs( fd, &stfs ) == 0 &&                          /* CIOPFS is case insensitive.  Instead of */
+-             stfs.f_type == 0x65735546 /* FUSE_SUPER_MAGIC */ &&   /* parsing mtab to discover if the FUSE FS */
+-             fstatat( fd, ".ciopfs", &st, AT_NO_AUTOMOUNT ) == 0)  /* is CIOPFS, look for .ciopfs in the dir. */
++    /* BlesKernOS FAT lookup already folds case. Avoid a directory scan
++     * after a failed lookup on this filesystem. BFS4 deliberately reports
++     * a different statfs magic because its native fold is ASCII-only; Wine
++     * must keep the normal Unicode case-insensitive fallback there. */
++    else if (fstatfs( fd, &stfs ) == 0 &&
++             (stfs.f_type == 0x4d44 /* MSDOS_SUPER_MAGIC */ ||
++              (stfs.f_type == 0x65735546 /* FUSE_SUPER_MAGIC */ &&
++               fstatat( fd, ".ciopfs", &st, AT_NO_AUTOMOUNT ) == 0)))
+     {
+         sens = FALSE;
+     }

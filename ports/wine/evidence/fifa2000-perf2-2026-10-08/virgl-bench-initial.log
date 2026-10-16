@@ -1,0 +1,254 @@
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA FAIL
+[BKBOOT t=0] STARTING KERNEL
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=1572347 KiB top=1572732 KiB
+  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000
+  [MM] RAM usable: 1536 MB
+  [MM] Heap dinamico: 0x2400000 - 0x1ffdf000 (487292 KB)
+  [MM] VM frames: 0x1ffdf000 - 0x5ffdf000 (1048576 KiB, 262144 paginas)
+  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)
+  [MM] Vista PE fija: 0x400000 - 0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2400000-0x1ffdf000
+[COMPAT] perfil=normal RAM_top=1572732 KiB heap=487292 KiB tareas=128 CPU=fam6/mod122 GUI=60FPS TIMER=300Hz
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 6 dispositivos detectados
+  [LPT] LPT1 base=0x0378 status=0xD9 listo
+  [ATAPI] cd0: 201652 bloques de 2048 bytes
+  [ATA] canales IDE normalizados despues del probe
+[AHCI] PCI 0x0:0x2.0x0 ABAR=0xfebf0000 ports=0x3f
+[AHCI] ahci0: port=0 sectors=1572864 DMA ready
+[BKBOOT t=202] STORAGE DRIVERS
+[BKBOOT t=202] MOUNTING FILESYSTEM
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=2
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 2
+[FAT] dev[0]=cd0 tipo=3 sectores=201652
+[FAT] dev[1]=ahci0 tipo=6 sectores=1572864
+Intentando montar ahci0...
+fat_set_active(ahci0)
+No es particion, buscando ahci0
+Dispositivo encontrado
+fat_try_mount_device OK
+fat_set_active OK
+Montado ahci0 OK
+[VFS] /TEMP listo
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=6 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+  [USBCLASS] HID boot/report, hubs USB 1.1 y printers cargados
+[DVR] usbclass: cargado (/SYSTEM/DRIVERS/USBCLASS.DVR)
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[GFX:TRACE] REGISTER request ops=0x3199ba0 abi=2 size=100 name_ptr=0x3199b40 priority=240 caps=0xc7
+[GFX:TRACE] REGISTER SELECT name=virtio_gpu priority=240 previous=(ninguno) previous_priority=0
+[VIRTIOGPU.DVR] modern PCI listo: queues=2 scanouts=1 virgl=si edid=si
+[VIRTIOGPU.DVR] capset[0]: id=1 version=1 size=308
+[VIRTIOGPU.DVR] capset[1]: id=2 version=2 size=1384
+[VIRTIOGPU.DVR] VirGL transporte listo: capset=2 v2 bytes=1384 hash=0xb51422d3 ctx=1 submit3d=OK
+[VIRGL:TEST] multiplicative lightmap blend PASS
+[VIRGL:TEST] alpha comparisons=24 PASS
+[VIRGL:TEST] DECAL alpha preserved PASS
+[VIRGL:TEST] native mip selection and disabled mip PASS
+[VIRGL:TEST] mip update + isolated base subimage PASS
+[VIRGL:TEST] premultiplied opacity + clip + fractional Z clear PASS
+[VIRGL:TEST] interleaved targets + command/VBO rollover PASS
+[VIRGL:TEST] VBO lifetime submissions=64 bad_tiles=0 PASS
+[VIRTIOGPU.DVR] VirGL GFX3D/TinyGL: DRAW_VBO + Z + textura + descarga OK
+[VIRTIOGPU.DVR] registrado en PCI 0:3.0, prioridad=240
+[DVR] virtio_gpu: cargado (/SYSTEM/DRIVERS/VIRTIOGPU.DVR)
+[SVGA.DVR] dispositivo 15AD:0405 no detectado
+[DVR] /SYSTEM/DRIVERS/VMWARESVGA.DVR: ERROR: init del driver fallo
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 11 modulo(s) cargado(s)
+[VFS] CD-ROM ISO9660 montado en /CDROM
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=virtio_gpu ops=0x3199ba0
+[GFX:TRACE] ACTIVATE call name=virtio_gpu preferred=800x600
+[VIRTIOGPU.DVR] desktop preferido: stage2=800x600 -> virtio=1024x768
+[VIRTIOGPU.DVR] scanout 0: 1024x768x32 pitch=4096 recurso=15
+[GFX:TRACE] ACTIVATE OK name=virtio_gpu mode=1024x768x32 pitch=4096 fb=0x3371000
+[GFXRES] boot icons 9/9 precargados
+[BKBOOT t=1032] LOADING PRINT SERVICE
+[PRINT] spooler iniciado en segundo plano, pid=3
+[[BKBOOT t=1077] STARTING VISION
+[VISION] servicio lanzado pid=4
+[PRINT] PrintSpool Ring 3 listo
+VISION] ownership grafico adquirido pid=4
+[BKBOOT t=1167] PREPARING DESKTOP
+[BKBOOT t=1222] LOADING DESKTOP ICONS
+[BKBOOT t=1256] ICONPAK preload begin
+[BKBOOT t=1256] LOADING ICON CACHE
+[BKBOOT t=1317] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=1335] DESKMANAGER read desktop config
+[BKBOOT t=1336] DESKMANAGER desktop config loaded
+[DESKBAR] alloc state bytes=17108
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load BlesKernOS Start icon
+[DESKBAR:STARTICON] stat /ICONS/BLESKERNOS.BMP type=1 size=16522
+[DESKBAR:STARTICON] read OK /ICONS/BLESKERNOS.BMP bytes=16522
+[DESKBAR:STARTICON] hdr sig=BM off=138 dib=124 64x64 bpp=32 comp=3
+[DESKBAR:STARTICON] decode OK /ICONS/BLESKERNOS.BMP -> 64x64
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[TASK] entrada Ring 3 no accesible: 0x168629 (screensaverd)
+[THREAD] no se pudo crear worker proceso=4 entry=0x168629 nombre=screensaverd
+[VISION] READY: motor, escritorio y compositor bajo Vi[BKBOOT t=1754] kernel_main: Vision READY
+[SMP] escritorio listo; iniciando procesadores secundariosion
+s
+[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000
+[SMP] iniciando CPU1 APIC=1...
+[SMP] CPU1 online
+[SMP] 2/2 CPU(s) online; timer LAPIC=225302 cuentas/tick
+[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (124 slots libres)
+[SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI
+[BKBOOT] VISION ONLINE pid=4
+[BKBOOT t=1870] CARGANDO WINE
+[WINE:BOOT] waiting pid=5
+_XSERVTransTransNoListen: unable to find transport: tcp
+[LOCK] inversion CPU1 tid=5: vfs despues de legacy (se ocultan repeticiones)
+........[LINUX:EXIT] pid=87 proc=87 ppid=86 name=wine-preloader status=256 thread=0
+[LINUX:EXIT] pid=90 proc=90 ppid=88 name=wine-preloader status=256 thread=0
+[WINE:BOOT] READY elapsed_ms=22206
+[BKBOOT t=8566] DISABLE SPLASH / ENTER GUI
+[BKBOOT] DESKTOP RELEASED
+[BKBOOT] QUEUE STARTUP SOUND
+[LOCK] inversion CPU0 tid=4: gui despues de legacy (se ocultan repeticiones)
+[LOCK] inversion CPU0 tid=4: wine despues de legacy (se ocultan repeticiones)
+[LOCK] inversion CPU0 tid=4: gfx despues de legacy (se ocultan repeticiones)
+[VIRTIOGPU.DVR] cursor HW cargado: 32x32 hotspot=0,0 recurso=16
+_XSERVTransTransNoListen: unable to find transport: tcp
+[GLX-BENCH] renderer=virgl (Mesa Intel(R) UHD Graphics 600 (GLK 2)) version=4.3 (Compatibility Profile) Mesa 24.3.4 glsl=4.30
+[WINE:GL] flush drawable=2097153 framebuffer=0 buffer=405
+[WINE:GL] flush drawable=2097153 framebuffer=0 buffer=405
+[WINE:GL] flush drawable=2097153 framebuffer=0 buffer=405
+[WINE:GL] flush drawable=2097153 framebuffer=0 buffer=405
+[WINE:GL] flush drawable=2097153 framebuffer=0 buffer=405
+[WINE:GL] flush drawable=2097153 framebuffer=0 buffer=405
+[WINE:GL] flush drawable=2097153 framebuffer=0 buffer=405
+[WINE:GL] flush drawable=2097153 framebuffer=0 buffer=405
+[GLX-BENCH] phase=render size=320x240 batches=1 frames=24 us=340000
+[WINE:GL] present=1 swap=1 drawable=2097153 size=320x240 pixel=255,0,0 resolve_us=20000 present_us=0
+[WINE:FRAME-PERF] frames=1 drawable=2097153 size=320x240 elapsed_us=20000 resolve_us=20000 present_us=0 copy_us=0
+[WINE:GL] present=2 swap=1 drawable=2097153 size=320x240 pixel=255,0,0 resolve_us=16666 present_us=0
+[WINE:GL] present=3 swap=1 drawable=2097153 size=320x240 pixel=255,0,0 resolve_us=23333 present_us=0
+[WINE:GL] present=4 swap=1 drawable=2097153 size=320x240 pixel=255,0,0 resolve_us=23334 present_us=0
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1046666 submit=36/310000us read=4/13333us write=33/36668us create=6 destroy=2 wait=8/0us write_bytes=17301504 command_bytes=5640
+[WINE:GL] present=5 swap=1 drawable=2097153 size=320x240 pixel=255,0,0 resolve_us=106667 present_us=3333
+[WINE:GL] present=6 swap=1 drawable=2097153 size=320x240 pixel=255,0,0 resolve_us=26666 present_us=0
+[WINE:GL] present=7 swap=1 drawable=2097153 size=320x240 pixel=255,0,0 resolve_us=26667 present_us=0
+[WINE:GL] present=8 swap=1 drawable=2097153 size=320x240 pixel=255,0,0 resolve_us=26667 present_us=0
+[WINE:FRAME-PERF] frames=17 drawable=2097153 size=320x240 elapsed_us=1026667 resolve_us=490000 present_us=13333 copy_us=0
+[GLX-BENCH] phase=present size=320x240 batches=1 frames=24 us=926667
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1000000 submit=52/450000us read=24/83332us write=27/36669us create=0 destroy=0 wait=48/0us write_bytes=14155776 command_bytes=6552
+[GLX-BENCH] phase=render size=320x240 batches=128 frames=24 us=256667
+[WINE:FRAME-PERF] frames=39 drawable=2097153 size=320x240 elapsed_us=2030000 resolve_us=960000 present_us=40000 copy_us=0
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1003334 submit=70/673335us read=22/53333us write=47/73333us create=0 destroy=0 wait=44/0us write_bytes=24641536 command_bytes=22528
+[GLX-BENCH] phase=present size=320x240 batches=128 frames=24 us=796666
+[GLX-BENCH] phase=render size=320x240 batches=1024 frames=24 us=266667
+[WINE:FRAME-PERF] frames=57 drawable=2097153 size=320x240 elapsed_us=3030000 resolve_us=1503333 present_us=59999 copy_us=0
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1000000 submit=62/606666us read=18/76665us write=51/53333us create=5 destroy=5 wait=36/0us write_bytes=26738688 command_bytes=21804
+[GLX-BENCH] phase=present size=320x240 batches=1024 frames=24 us=736667
+[GLX-BENCH] corner=0000ff expected=0000ff
+[GLX-BENCH] phase=render size=640x480 batches=1 frames=24 us=236667
+[WINE:FRAME-PERF] frames=85 drawable=2097153 size=640x480 elapsed_us=4320000 resolve_us=2309998 present_us=110000 copy_us=0
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1006666 submit=63/606667us read=17/53333us write=47/59998us create=5 destroy=5 wait=34/0us write_bytes=24641536 command_bytes=12120
+[WINE:FRAME-PERF] frames=98 drawable=2097153 size=640x480 elapsed_us=5343334 resolve_us=2783332 present_us=596667 copy_us=0
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1013334 submit=25/246666us read=13/86668us write=13/20001us create=0 destroy=0 wait=26/0us write_bytes=6815744 command_bytes=2176
+[GLX-BENCH] phase=present size=640x480 batches=1 frames=24 us=860000
+[GLX-BENCH] phase=render size=640x480 batches=128 frames=24 us=260000
+[WINE:FRAME-PERF] frames=116 drawable=2097153 size=640x480 elapsed_us=6366667 resolve_us=3316668 present_us=649998 copy_us=0
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1026666 submit=64/576667us read=18/90000us write=46/66668us create=0 destroy=0 wait=36/3333us write_bytes=24117248 command_bytes=16920
+[WINE:GL] present=120 swap=1 drawable=2097153 size=640x480 pixel=255,0,0 resolve_us=26667 present_us=6667
+[GLX-BENCH] phase=present size=640x480 batches=128 frames=24 us=900000
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1000000 submit=54/526667us read=24/126663us write=30/60003us create=1 destroy=1 wait=48/0us write_bytes=15728640 command_bytes=15108
+[GLX-BENCH] phase=render size=640x480 batches=1024 frames=24 us=380000
+[WINE:FRAME-PERF] frames=141 drawable=2097153 size=640x480 elapsed_us=7853334 resolve_us=4090000 present_us=739999 copy_us=0
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1003334 submit=56/570001us read=16/83332us write=43/59998us create=5 destroy=5 wait=32/0us write_bytes=22544384 command_bytes=18984
+[WINE:FRAME-PERF] frames=167 drawable=2097153 size=640x480 elapsed_us=8856667 resolve_us=4909998 present_us=843332 copy_us=0
+[GLX-BENCH] phase=present size=640x480 batches=1024 frames=24 us=940000
+[GLX-BENCH] corner=0000ff expected=0000ff
+[GLX-BENCH] phase=render size=1024x768 batches=1 frames=24 us=240000
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1000000 submit=53/530001us read=13/73333us write=42/46666us create=4 destroy=4 wait=26/0us write_bytes=22020096 command_bytes=9480
+[WINE:FRAME-PERF] frames=177 drawable=2097153 size=1024x768 elapsed_us=9873334 resolve_us=5379999 present_us=896664 copy_us=0
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1010000 submit=41/369999us read=21/220002us write=20/46667us create=0 destroy=0 wait=41/0us write_bytes=10485760 command_bytes=3584
+[GLX-BENCH] phase=present size=1024x768 batches=1 frames=24 us=1153333
+[GLX-BENCH] phase=render size=1024x768 batches=128 frames=24 us=280000
+[WINE:FRAME-PERF] frames=197 drawable=2097153 size=1024x768 elapsed_us=11250000 resolve_us=6149998 present_us=1046664 copy_us=0
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1003333 submit=50/516667us read=11/99999us write=40/33333us create=1 destroy=1 wait=22/0us write_bytes=20971520 command_bytes=16156
+[WINE:FRAME-PERF] frames=219 drawable=2097153 size=1024x768 elapsed_us=12263334 resolve_us=6949996 present_us=1193333 copy_us=0
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1003333 submit=42/426666us read=21/209999us write=22/30000us create=0 destroy=0 wait=43/0us write_bytes=11534336 command_bytes=10752
+[GLX-BENCH] phase=present size=1024x768 batches=128 frames=24 us=1210000
+[GLX-BENCH] phase=render size=1024x768 batches=1024 frames=24 us=286667
+[WINE:FRAME-PERF] frames=231 drawable=2097153 size=1024x768 elapsed_us=13283334 resolve_us=7436662 present_us=1263334 copy_us=0
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1000000 submit=52/550000us read=11/89999us write=44/43335us create=5 destroy=5 wait=22/0us write_bytes=23068672 command_bytes=19192
+[WINE:GL] present=240 swap=1 drawable=2097153 size=1024x768 pixel=255,0,0 resolve_us=30000 present_us=6666
+[WINE:FRAME-PERF] frames=250 drawable=2097153 size=1024x768 elapsed_us=14323334 resolve_us=8166661 present_us=1420001 copy_us=0
+[WINE:VIRGL-PERF] pid=89 elapsed_us=1000000 submit=35/369998us read=18/190002us write=20/20000us create=2 destroy=2 wait=36/0us write_bytes=10485760 command_bytes=9364
+[GLX-BENCH] phase=present size=1024x768 batches=1024 frames=24 us=1443333
+X Error:  BadMatch
+  Request Major code 73 ()
+  Error Serial #2709
+  Current Serial #2709
+[LINUX:EXIT] pid=89 proc=89 ppid=5 name=glx-bench status=256 thread=0

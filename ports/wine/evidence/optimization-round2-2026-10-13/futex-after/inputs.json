@@ -1,0 +1,8 @@
+{
+  "kernel/linux/i386_futex.inc": "365fa8a56b809257daeb06eec4757123e2b04570d482c7c3021f5f01d203c04a",
+  "build/kernel.bin": "1e95cc9a7b9adfe1d56427b4ffca7a0b28ee80f689ca9299799555a1849cde2f",
+  "ports/wine/tests/futex-latency.c": "aca3f4ac02f20a8755423db281db46900a947fd1acc7d960e47521a8afc40b73",
+  "ports/wine/tests/futex.c": "5901b1a6842ab31fa8c6ac58986ac638793c3c9df6d7e2034768cad52c3e29ba",
+  "ports/wine/tests/futex-mapping.c": "73e9da3cdb6578eace76635b75c9ff00891ecfe1d4a6110824c3fb1d9281b5c0",
+  "ports/wine/tests/futex-stress.c": "cf2d59bb4d593d2eab72c91704b707e0e6275924e18264f269c7f7626a6f05a2"
+}

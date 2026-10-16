@@ -1,0 +1,5 @@
+/SYSTEM/CONTROL/MOUSE.CPL 16556 bytes; mode 0o100644
+/SYSTEM/USER/CONFIG/STARTUP.INI 123 bytes; mode 0o100644
+/SYSTEM/USER/CONFIG/MOUSE.INI 24 bytes; mode 0o100644
+SIZE (800, 600)
+PASS Ring 3 mouse panel: clicks captured, tabs switched and sensitivity 5 persisted

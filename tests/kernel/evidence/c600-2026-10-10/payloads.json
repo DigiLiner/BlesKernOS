@@ -1,0 +1,38 @@
+{
+  "baseline": {
+    "kernel.bin": {
+      "bytes": 808900,
+      "sha256": "4b9659ae6edfbeb65c59205fa27d8279424594408ec0ebd73225547740413479"
+    },
+    "stage2.bin": {
+      "bytes": 4096,
+      "sha256": "fdccf9ae758ea807aa06827a05701e744e496f39bd2966b39817af523c6d5049"
+    },
+    "ATIR128.DVR": {
+      "bytes": 38368,
+      "sha256": "c3a24e15d6da947e2a4becf4c6123426b36fd99d641b9db0feef4b3fbe370643"
+    },
+    "processmanager.o": {
+      "bytes": 24144,
+      "sha256": "1e2baa0be93f59bd9ea1945186c0bba1001004d3f4abb6d6e0ec3b48087df7d3"
+    }
+  },
+  "installed_build": {
+    "kernel.bin": {
+      "bytes": 808900,
+      "sha256": "b825b67e98d59be84f21cef2b687a29b5e1678d58003366805a39a4a3a969706"
+    },
+    "stage2.bin": {
+      "bytes": 4096,
+      "sha256": "d721135b559f359c7573afd392ea53e7d9ac6eed583c190fd64d94cae768e9c7"
+    },
+    "system/drivers/ATIR128.DVR": {
+      "bytes": 38900,
+      "sha256": "333f3f526c41dfb463755cd934e995203ea443bab2038ddb782614357cbd372e"
+    },
+    "programs/processmanager.o": {
+      "bytes": 24144,
+      "sha256": "8dd8fe3bd6cc1aed648a93b7bfe7231d3d44dbc025d319d8adf5b47a15a333ce"
+    }
+  }
+}

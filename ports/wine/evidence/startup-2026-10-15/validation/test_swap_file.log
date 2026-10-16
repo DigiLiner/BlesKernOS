@@ -1,0 +1,2 @@
+PASS actual BFS4 file swap: signatures, contiguous allocation, raw page I/O, pin guards, swapoff/enable, defrag exclusion and filesystem integrity
+PASS offline installer idempotence and invalid-file preservation

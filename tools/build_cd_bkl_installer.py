@@ -20,7 +20,7 @@ MAX_CHAIN = 32
 METHOD_STORE = 0
 METHOD_LZSS = 1
 
-TERMS_TEXT = """BlesKernOS 0.8 - Terminos y condiciones\r\n\r\nBlesKernOS se distribuye bajo la licencia MIT. Se permite usar, copiar, modificar, combinar, publicar, distribuir, sublicenciar y vender copias del software, siempre que se conserve el aviso de copyright y el texto de la licencia.\r\n\r\nEl software se entrega "tal cual", sin garantias expresas ni implicitas. Los autores no son responsables por danos, perdida de datos o cualquier reclamo derivado de su uso.\r\n\r\nAlgunos componentes de terceros conservan sus propias licencias y avisos. La instalacion no cambia esas condiciones. Consulte README.TXT y la documentacion incluida para conocer sus atribuciones.\r\n\r\nEl codigo de licencia de esta version es solamente una interfaz de prueba: cualquier codigo no vacio es aceptado y no activa ni restringe funciones.\r\n"""
+TERMS_TEXT = """BlesKernOS 1.0 - Terminos y condiciones\r\n\r\nBlesKernOS se distribuye bajo la licencia MIT. Se permite usar, copiar, modificar, combinar, publicar, distribuir, sublicenciar y vender copias del software, siempre que se conserve el aviso de copyright y el texto de la licencia.\r\n\r\nEl software se entrega "tal cual", sin garantias expresas ni implicitas. Los autores no son responsables por danos, perdida de datos o cualquier reclamo derivado de su uso.\r\n\r\nAlgunos componentes de terceros conservan sus propias licencias y avisos. La instalacion no cambia esas condiciones. Consulte README.TXT y la documentacion incluida para conocer sus atribuciones.\r\n\r\nEl codigo de licencia de esta version es solamente una interfaz de prueba: cualquier codigo no vacio es aceptado y no activa ni restringe funciones.\r\n"""
 
 START_INI = """[START]\r\nBoot=Setup\r\nProgram=/SYSTEM/PROGRAMS/SETUP.BEX\r\nPackages=/SYSTEM/SETUP\r\n"""
 
@@ -94,6 +94,11 @@ def encode_lzss(data: bytes) -> bytes:
 
 
 def pack_file(raw: bytes) -> tuple[int, bytes]:
+    # The pure-Python LZSS encoder becomes prohibitively slow on the large
+    # Wine runtime. BKL3 already supports stored entries, and the complete
+    # payload still fits on a CD when files >= 64 KiB use that method.
+    if len(raw) >= 64 * 1024:
+        return METHOD_STORE, raw
     packed = encode_lzss(raw)
     return (METHOD_STORE, raw) if len(packed) >= len(raw) else (METHOD_LZSS, packed)
 
@@ -106,9 +111,13 @@ def classify(relative: Path) -> str | None:
     # Required before the graphical first-boot setup starts.
     if text.startswith("SYSTEM/DRIVERS/"):
         return None
+    # The kernel launches Vision BEFORE SETUP.BEX can unpack PROGRAMS.BKL.
+    # Stage the real GUI service as part of the bootable first-run environment.
+    if text == "SYSTEM/SERVICES/VISION.BEX":
+        return None
     if text.startswith("SYSTEM/LENG/"):
         return None
-    if text == "SYSTEM/WALLPAPR/NOCHE.BMP":
+    if text in {"SYSTEM/WALLPAPR/NOCHE.BMP", "SYSTEM/WALLPAPR/CLASSIC.BMP"}:
         return None
 
     if (text.startswith("SYSTEM/LIBS/WINE/") or
@@ -214,10 +223,20 @@ def main() -> int:
     (output / "SYSTEM" / "WALLPAPR").mkdir(parents=True, exist_ok=True)
     (output / "SYSTEM" / "SETUP").mkdir(parents=True, exist_ok=True)
     shutil.copyfile(args.setup_exe, output / "SYSTEM" / "PROGRAMS" / "SETUP.BEX")
+    vision = source / "SYSTEM" / "SERVICES" / "VISION.BEX"
+    if not vision.is_file() or vision.stat().st_size == 0:
+        raise RuntimeError("Missing SYSTEM/SERVICES/VISION.BEX: "
+                           "first-boot Setup cannot start without Vision")
+    (output / "SYSTEM" / "SERVICES").mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(vision, output / "SYSTEM" / "SERVICES" / "VISION.BEX")
     night = source / "SYSTEM" / "WALLPAPR" / "NOCHE.BMP"
     if not night.is_file():
         raise RuntimeError("NOCHE.BMP is required by graphical Setup")
     shutil.copyfile(night, output / "SYSTEM" / "WALLPAPR" / "NOCHE.BMP")
+    classic = source / "SYSTEM" / "WALLPAPR" / "CLASSIC.BMP"
+    if not classic.is_file():
+        raise RuntimeError("CLASSIC.BMP is required by the default desktop")
+    shutil.copyfile(classic, output / "SYSTEM" / "WALLPAPR" / "CLASSIC.BMP")
     (output / "SYSTEM" / "USER" / "START.INI").write_text(START_INI, encoding="ascii")
     (output / "SYSTEM" / "SETUP" / "PACKAGES.INI").write_text(PACKAGE_INI, encoding="ascii")
     (output / "SYSTEM" / "SETUP" / "TERMS.TXT").write_text(TERMS_TEXT, encoding="utf-8")
@@ -233,7 +252,7 @@ def main() -> int:
         if group:
             groups[group].append(path)
 
-    lines = ["BlesKernOS 0.8 staged CD installer", "Format: BKL3 (LZSS-4K + STORE + CRC32)"]
+    lines = ["BlesKernOS 1.0 staged CD installer", "Format: BKL3 (LZSS-4K + STORE + CRC32)"]
     grand_raw = 0
     grand_packed = 0
     for name in ("CORE", "PROGRAMS", "ASSETS", "WINE"):

@@ -1,0 +1,447 @@
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=1572351 KiB top=1572736 KiB
+  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000
+  [MM] RAM usable: 1536 MB
+  [MM] Heap dinamico: 0x2000000 - 0x1ffe0000 (491392 KB)
+  [MM] VM frames: 0x1ffe0000 - 0x5ffe0000 (1048576 KiB, 262144 paginas)
+  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)
+  [MM] Vista PE fija: 0x400000 - 0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2000000-0x1ffe0000
+[COMPAT] perfil=normal RAM_top=1572736 KiB heap=491392 KiB tareas=128 CPU=fam6/mod7 GUI=30FPS TIMER=100Hz
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:EARLY] BIOS LFB 800x600x32 pitch=3200 fb=0xfd000000
+[BKBOOT t=0] STARTING KERNEL
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 6 dispositivos detectados
+  [LPT] LPT1 base=0x0378 status=0xD9 listo
+  [ATA] ata0: 1572864 sectores de 512 bytes
+  [ATA] ata0: read burst=16 sectores
+  [ATA] ata0: PIO read width=32 bits
+[ATA:PROBE] io=0x1f0 slave=1 ausente (status=0x0)
+  [ATAPI] cd0: unidad detectada sin medio listo
+[ATA:PROBE] io=0x170 slave=1 ausente (status=0x0)
+  [ATA] canales IDE normalizados despues del probe
+  [ATA] ata0: QEMU PIIX DMA read/write enabled
+[BKBOOT t=89] STORAGE DRIVERS
+[BKBOOT t=89] MOUNTING FILESYSTEM
+[BKBOOT t=90] F8: RECOVERY MODE (2 SEC)
+[BOOT] Pulse F8 para entrar a recovery sin Vision ni servicios
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=2
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 2
+[FAT] dev[0]=ata0 tipo=1 sectores=1572864
+[FAT] dev[1]=cd0 tipo=3 sectores=0
+Intentando montar ata0...
+fat_set_active(ata0)
+No es particion, buscando ata0
+Dispositivo encontrado
+[BFS4:CACHE] slots=2048 bytes=8429568
+fat_try_mount_device OK
+fat_set_active OK
+Montado ata0 OK
+[VFS] /TEMP listo
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cce0bc image=0x2ccd8a0
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cd1fb5 image=0x2cd1000
+[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cdc5c6 image=0x2cd7060
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=6 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cd6d2d image=0x2cd3ac0
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cccc2a image=0x2ccc930
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cd0a30 image=0x2ccfac0
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2ccfe89 image=0x2ccf200
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2ce1bee image=0x2ce0640
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2ce5fca image=0x2ce2f00
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2ccc4d9 image=0x2ccbee0
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cce809 image=0x2cce1e0
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2d10b1e image=0x2d10000
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2d82e3e image=0x2d81d00
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2d45258 image=0x2d433e0
+[DVR] /SYSTEM/DRIVERS/USBCLASS.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cd0aab image=0x2cd0080
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2d4ac8f image=0x2d433e0
+[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado
+[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cfbff7 image=0x2cf9640
+[GFX:TRACE] REGISTER request ops=0x2cfc0e0 abi=2 size=100 name_ptr=0x2cfc086 priority=200 caps=0x4ff
+[GFX:TRACE] REGISTER SELECT name=vmware_svga priority=200 previous=(ninguno) previous_priority=0
+[DVR] vmware_svga: cargado (/SYSTEM/DRIVERS/VMWARESVGA.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cdfc85 image=0x2cdbc40
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 10 modulo(s) cargado(s)
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=vmware_svga ops=0x2cfc0e0
+[GFX:TRACE] ACTIVATE call name=vmware_svga preferred=800x600
+[SVGA:MODE] begin 800x600 active=0 generation=1
+[SVGA:MODE] OK 800x600x32 pitch=3200 fb=0xfd000000 generation=2
+[SVGA.DVR] SVGA3D preflight guest=0x20001 rb=0x0 memregs=0 reserved=4 modern=0
+[SVGA.DVR] VMware SVGA-II ID=0x90000002 IO=0xc050 FB=0xfd000000 FIFO=0xfe000000
+[SVGA.DVR] 800x600x32 pitch=3200 caps=0x3 fifo=0x0 GMR=fallback
+[GFX:TRACE] ACTIVATE OK name=vmware_svga mode=800x600x32 pitch=3200 fb=0xfd000000
+[GFXRES] boot icons 9/9 precargados
+[BKBOOT t=617] LOADING PRINT SERVICE
+[PERF:ELF] entry=bleskernos_program_main address=0x2d5f024 image=0x2d5bc78
+[PRINT] spooler iniciado en segundo plano, pid=4
+[PRINT] PrintSpool Ring 3 listo
+[BKBOOT t=630] STARTING VISION
+[BKBOOT t=631] VISION: LOADING ELF
+[PERF:ELF] entry=bleskernos_program_main address=0x302bd05 image=0x3019900
+[VISION] servicio lanzado pid=5
+[BKBOOT t=643] VISION: ENTER RING3
+[VISION] ownership grafico adquirido pid=5
+[BKBOOT t=648] VISION: GRAPHICS ENGINE
+[BKBOOT t=650] PREPARING DESKTOP
+[BKBOOT t=651] VISION: ENGINE READY
+[BKBOOT t=651] VISION: DESKTOP
+[BKBOOT t=652] LOADING DESKTOP ICONS
+[BKBOOT t=653] ICONPAK preload begin
+[BKBOOT t=653] LOADING ICON CACHE
+[BKBOOT t=654] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=658] DESKMANAGER read desktop config
+[BKBOOT t=658] DESKMANAGER desktop config loaded
+[BKBOOT t=658] VISION: DESKBAR
+[DESKBAR] alloc state bytes=17116
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[BKBOOT t=796] VISION: SCREENSAVER
+[BKBOOT t=801] VISION: START SHELL
+[BKBOOT t=801] VISION: READY
+[VISION] READY: motor, escritorio y compositor bajo Vision
+[BKBOOT t=805] kernel_main: Vision READY
+[RAM:DESKTOP] installed_kib=1572351 managed_kib=1441664 used_kib=19266 free_kib=1422397 unmanaged_kib=130686 [VISION:SAVER] Ring 3 worker started
+heap_used_kib=19138 heap_free_kib=439485 vm_free_kib=982912
+[SMP] escritorio listo; iniciando procesadores secundarios
+[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000
+[SMP] iniciando CPU1 APIC=1...
+[SMP] CPU1 online
+[SMP] 2/2 CPU(s) online; timer LAPIC=625398 cuentas/tick
+[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (122 slots libres)
+[SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI
+[BKBOOT] VISION ONLINE pid=5
+[WINE:BOOT] deferred until Windows program launch
+[BKBOOT t=879] DISABLE SPLASH / ENTER GUI
+[BKBOOT] DESKTOP RELEASED
+[BKBOOT] QUEUE STARTUP SOUND
+[VISION:ENGINE] compositor y ventanas CPL=3
+[GATE:STAGE2] START /WINEGATE/bin/wine-launch.ELF
+[RAM:IDLE] installed_kib=1572351 managed_kib=1441664 used_kib=45048 free_kib=1396615 unmanaged_kib=130686 heap_used_kib=31500 heap_free_kib=427123 vm_free_kib=969492
+[TASK:DUMP2] begin reason=wine-runtime-measurement tick=1886 cpus=2
+[TASK:DUMP2] cpu=0 current_slot=7 deferred=6 rq_count=0 rq=
+[TASK:DUMP2] cpu=1 current_slot=11 deferred=10 rq_count=0 rq=
+[TASK:DUMP2] slot=1 pid=2 proc=2 ppid=1 name=system-admin state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=75 wake=1895 delta=9 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2cc1cca eax=0x4 ctx=0x2cc1c68 stack=0x2cb2000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=cdrom-watch state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=2 wake=1979 delta=93 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d54f7a eax=0x4 ctx=0x2d54f18 stack=0x2d45000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=5 wake=2022 delta=136 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d70ad6 eax=0x4 ctx=0x2d70a74 stack=0x2d61000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=4 pid=5 proc=5 ppid=1 name=VISION.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=226 wake=1887 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2fecad6 eax=0x4 ctx=0x2feca74 stack=0x2fdd000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=5 pid=6 proc=5 ppid=5 name=screensaverd state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=43 wake=1908 delta=22 exit=0 thread=1 linux=0 lender=0 eip=0x125434 esp=0x329ead6 eax=0x4 ctx=0x329ea74 stack=0x328f000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-gate state=SLEEPING(3) run=-2 queue=-1 affinity=0 mask=0x1 ticks=6 wake=1887 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x32cff6a eax=0x4 ctx=0x32cff08 stack=0x32c0000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=1 name=stage2-perf state=RUNNING(2) run=0 queue=-1 affinity=0 mask=0x1 ticks=0 wake=1886 delta=0 exit=0 thread=0 linux=0 lender=0 eip=0x28790c esp=0x32e2f8a eax=0x4 ctx=0x32e2f28 stack=0x32d3000 size=0x10000 cs=0x32e2fb4 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=8 pid=9 proc=9 ppid=7 name=wine-launch.ELF state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=39 wake=1887 delta=1 exit=0 thread=0 linux=1 lender=0 eip=0x3769bb2 esp=0x37a16fc eax=0x0 ctx=0x373afb4 stack=0x371b000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8
+[TASK:DUMP2] slot=9 pid=12 proc=12 ppid=9 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=14 wake=1895 delta=9 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x37c87fe eax=0x0 ctx=0x37c879c stack=0x37a9000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=10 pid=10 proc=10 ppid=9 name=XFBDEV state=SLEEPING(3) run=-2 queue=-1 affinity=-1 mask=0x3 ticks=41 wake=1887 delta=1 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x385189e eax=0x0 ctx=0x385183c stack=0x3842000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768
+[TASK:DUMP2] slot=11 pid=17 proc=17 ppid=15 name=wineserver state=RUNNING(2) run=1 queue=-1 affinity=-1 mask=0x3 ticks=169 wake=1885 delta=-1 exit=0 thread=0 linux=1 lender=0 eip=0x60870000 esp=0x11 eax=0x10 ctx=0x38149ec stack=0x37f6000 size=0x20000 cs=0x3814a38 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x604011a8
+[TASK:DUMP2] slot=12 pid=19 proc=19 ppid=18 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=99 wake=1985 delta=99 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3f5d7fe eax=0x0 ctx=0x3f5d79c stack=0x3f3e000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=13 pid=20 proc=20 ppid=0 name=wine-preloader state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=0 wake=0 delta=-1886 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x37eb294 eax=0x3d ctx=0x3fa3fb4 stack=0x3f84000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] end
+[TASK:DUMP2] begin reason=wine-runtime-measurement tick=2909 cpus=2
+[TASK:DUMP2] cpu=0 current_slot=7 deferred=6 rq_count=1 rq=4
+[TASK:DUMP2] cpu=1 current_slot=13 deferred=-1 rq_count=4 rq=16,8,10,11
+[TASK:DUMP2] slot=1 pid=2 proc=2 ppid=1 name=system-admin state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=127 wake=2927 delta=18 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2cc1cca eax=0x4 ctx=0x2cc1c68 stack=0x2cb2000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=cdrom-watch state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=17 wake=2948 delta=39 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d54f7a eax=0x4 ctx=0x2d54f18 stack=0x2d45000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=35 wake=3006 delta=97 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d70ad6 eax=0x4 ctx=0x2d70a74 stack=0x2d61000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=4 pid=5 proc=5 ppid=1 name=VISION.BEX state=READY(1) run=-1 queue=0 affinity=0 mask=0x1 ticks=518 wake=2909 delta=0 exit=0 thread=0 linux=0 lender=0 eip=0x125256 esp=0x2feca56 eax=0x0 ctx=0x2fec9f4 stack=0x2fdd000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=5 pid=6 proc=5 ppid=5 name=screensaverd state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=101 wake=2932 delta=23 exit=0 thread=1 linux=0 lender=0 eip=0x125434 esp=0x329ead6 eax=0x4 ctx=0x329ea74 stack=0x328f000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-gate state=SLEEPING(3) run=-2 queue=-1 affinity=0 mask=0x1 ticks=29 wake=2910 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x32cff6a eax=0x4 ctx=0x32cff08 stack=0x32c0000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=1 name=stage2-perf state=RUNNING(2) run=0 queue=-1 affinity=0 mask=0x1 ticks=3 wake=2909 delta=0 exit=0 thread=0 linux=0 lender=0 eip=0x28790c esp=0x32e2f8a eax=0x4 ctx=0x32e2f28 stack=0x32d3000 size=0x10000 cs=0x32e2fb4 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=8 pid=9 proc=9 ppid=7 name=wine-launch.ELF state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=54 wake=2909 delta=0 exit=0 thread=0 linux=1 lender=0 eip=0x3769bb2 esp=0x37a16fc eax=0x0 ctx=0x373afb4 stack=0x371b000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8
+[TASK:DUMP2] slot=9 pid=12 proc=12 ppid=9 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=19 wake=2953 delta=44 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x37c87fe eax=0x0 ctx=0x37c879c stack=0x37a9000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=10 pid=10 proc=10 ppid=9 name=XFBDEV state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=61 wake=2908 delta=-1 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x385189e eax=0x0 ctx=0x385183c stack=0x3842000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768
+[TASK:DUMP2] slot=11 pid=17 proc=17 ppid=15 name=wineserver state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=236 wake=2909 delta=0 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3814a4e eax=0x0 ctx=0x38149ec stack=0x37f6000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x604011a8
+[TASK:DUMP2] slot=12 pid=19 proc=19 ppid=18 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=166 wake=2982 delta=73 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3f5d7fe eax=0x0 ctx=0x3f5d79c stack=0x3f3e000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=13 pid=22 proc=22 ppid=21 name=wine-preloader state=RUNNING(2) run=1 queue=-1 affinity=-1 mask=0x2 ticks=258 wake=3003 delta=94 exit=0 thread=0 linux=1 lender=0 eip=0x3c0 esp=0xb5c eax=0xb5c ctx=0x3fa2e0c stack=0x3f84000 size=0x20000 cs=0x3fa2e58 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=15 pid=26 proc=26 ppid=0 name=wine-preloader state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=1 wake=0 delta=-2909 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x7f10fa04 eax=0x3d ctx=0x40c2fb4 stack=0x40a3000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=16 pid=25 proc=25 ppid=24 name=wine-preloader state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=39 wake=3008 delta=99 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x41287fe eax=0x0 ctx=0x412879c stack=0x4109000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] end
+[PAGING] aviso: shootdown TLB incompleto gen=93020 pid=0 mask=0x1
+[TASK:DUMP2] begin reason=wine-runtime-measurement tick=3935 cpus=2
+[TASK:DUMP2] cpu=0 current_slot=7 deferred=6 rq_count=1 rq=4
+[TASK:DUMP2] cpu=1 current_slot=26 deferred=11 rq_count=4 rq=8,10,14,16
+[[PTAAGSIKN:GD]U MaPv2i]s os:l osth=o1o tpdido=w2n  pTrLoBc =i2n cpopmipdl=e1t on agmeen==s1y1s2t6e1m2- apdimdi=n0  smtaastke==0SxL1E
+EPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=172 wake=3943 delta=8 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2cc1cca eax=0x4 ctx=0x2cc1c68 stack=0x2cb2000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=cdrom-watch state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=30 wake=3966 delta=31 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d54f7a eax=0x4 ctx=0x2d54f18 stack=0x2d45000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=54 wake=3993 delta=58 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d70ad6 eax=0x4 ctx=0x2d70a74 stack=0x2d61000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=4 pid=5 proc=5 ppid=1 name=VISION.BEX state=READY(1) run=-1 queue=0 affinity=0 mask=0x1 ticks=902 wake=3935 delta=0 exit=0 thread=0 linux=0 lender=0 eip=0x125256 esp=0x2fecaae eax=0x0 ctx=0x2feca4c stack=0x2fdd000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=5 pid=6 proc=5 ppid=5 name=screensaverd state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=175 wake=3983 delta=48 exit=0 thread=1 linux=0 lender=0 eip=0x125434 esp=0x329ead6 eax=0x4 ctx=0x329ea74 stack=0x328f000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-gate state=SLEEPING(3) run=-2 queue=-1 affinity=0 mask=0x1 ticks=45 wake=3936 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x32cff6a eax=0x4 ctx=0x32cff08 stack=0x32c0000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=1 name=stage2-perf state=RUNNING(2) run=0 queue=-1 affinity=0 mask=0x1 ticks=6 wake=3935 delta=0 exit=0 thread=0 linux=0 lender=0 eip=0x28790c esp=0x32e2f8a eax=0x4 ctx=0x32e2f28 stack=0x32d3000 size=0x10000 cs=0x32e2fb4 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=8 pid=9 proc=9 ppid=7 name=wine-launch.ELF state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=77 wake=4034 delta=99 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3739a4e eax=0x0 ctx=0x37399ec stack=0x371b000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8
+[TASK:DUMP2] slot=9 pid=12 proc=12 ppid=9 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=19 wake=3990 delta=55 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x37c87fe eax=0x0 ctx=0x37c879c stack=0x37a9000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=10 pid=10 proc=10 ppid=9 name=XFBDEV state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=82 wake=3926 delta=-9 exit=0 thread=0 linux=1 lender=0 eip=0x80537a4 esp=0x3864250 eax=0x1429f ctx=0x3851fb4 stack=0x3842000 size=0x10000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768
+[TASK:DUMP2] slot=11 pid=17 proc=17 ppid=15 name=wineserver state=SLEEPING(3) run=-2 queue=-1 affinity=-1 mask=0x3 ticks=309 wake=3935 delta=0 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3814a4e eax=0x0 ctx=0x38149ec stack=0x37f6000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x604011a8
+[TASK:DUMP2] slot=12 pid=19 proc=19 ppid=18 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=167 wake=3988 delta=53 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3f5d7fe eax=0x0 ctx=0x3f5d79c stack=0x3f3e000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=13 pid=22 proc=22 ppid=21 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=309 wake=3990 delta=55 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3fa37fe eax=0x0 ctx=0x3fa379c stack=0x3f84000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=14 pid=28 proc=28 ppid=27 name=wine-preloader state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=218 wake=4034 delta=99 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x40c27fe eax=0x0 ctx=0x40c279c stack=0x40a3000 size=0x20000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=15 pid=30 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=4 wake=4013 delta=78 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x416c7fe eax=0x0 ctx=0x416c79c stack=0x415d000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f86fba8
+[TASK:DUMP2] slot=16 pid=25 proc=25 ppid=24 name=wine-preloader state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=99 wake=3903 delta=-32 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x4128ece eax=0x0 ctx=0x4128e6c stack=0x4109000 size=0x20000 cs=0x8 futex=0x0 fproc=25 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=17 pid=32 proc=32 ppid=31 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=67 wake=4013 delta=78 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x420c7fe eax=0x0 ctx=0x420c79c stack=0x41ed000 size=0x20000 cs=0x8 futex=0x0 fproc=32 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=18 pid=34 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=3990 delta=55 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42497fe eax=0x0 ctx=0x424979c stack=0x423a000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa6fba8
+[TASK:DUMP2] slot=19 pid=35 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=4258 delta=323 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x7fc6f028 eax=0xffffff92 ctx=0x4278fb4 stack=0x4269000 size=0x10000 cs=0x1b futex=0x61131054 fproc=25 fmask=0xffffffff clear_tid=0x7fc6fba8
+[TASK:DUMP2] slot=20 pid=36 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=10 wake=3990 delta=55 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42de7fe eax=0x0 ctx=0x42de79c stack=0x42cf000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f88fba8
+[TASK:DUMP2] slot=21 pid=37 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=2 wake=4013 delta=78 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43147fe eax=0x0 ctx=0x431479c stack=0x4305000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa8fba8
+[TASK:DUMP2] slot=22 pid=38 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=2147487340 delta=2147483405 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x7fc8f028 eax=0xffffff92 ctx=0x434afb4 stack=0x433b000 size=0x10000 cs=0x1b futex=0x61123060 fproc=32 fmask=0xffffffff clear_tid=0x7fc8fba8
+[TASK:DUMP2] slot=23 pid=39 proc=28 ppid=28 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=2 wake=3990 delta=55 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43a47fe eax=0x0 ctx=0x43a479c stack=0x4395000 size=0x10000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x7fbafba8
+[TASK:DUMP2] slot=24 pid=40 proc=28 ppid=28 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=3990 delta=55 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43da7fe eax=0x0 ctx=0x43da79c stack=0x43cb000 size=0x10000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x7fdafba8
+[TASK:DUMP2] slot=25 pid=41 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=3990 delta=55 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x44107fe eax=0x0 ctx=0x441079c stack=0x4401000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x4ffba8
+[TASK:DUMP2] slot=26 pid=43 proc=43 ppid=25 name=wine-preloader state=RUNNING(2) run=1 queue=-1 affinity=-1 mask=0x3 ticks=10 wake=0 delta=-3935 exit=0 thread=0 linux=1 lender=0 eip=0x44bf9ec esp=0x2000018 eax=0x10 ctx=0x44bf93c stack=0x44a0000 size=0x20000 cs=0x44bf988 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=27 pid=44 proc=44 ppid=43 name=wine-preloader state=STARTING(4) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=0 wake=0 delta=-3935 exit=0 thread=0 linux=1 lender=0 eip=0x60021bb2 esp=0x4528fec eax=0x0 ctx=0x4505fb4 stack=0x44e6000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] end
+[TASK:DUMP2] begin reason=wine-runtime-measurement tick=5087 cpus=2
+[TASK:DUMP2] cpu=0 current_slot=7 deferred=6 rq_count=1 rq=4
+[TASK:DUMP2] cpu=1 current_slot=11 deferred=-1 rq_count=1 rq=10
+[TASK:DUMP2] slot=1 pid=2 proc=2 ppid=1 name=system-admin state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=208 wake=5107 delta=20 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2cc1cca eax=0x4 ctx=0x2cc1c68 stack=0x2cb2000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=cdrom-watch state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=39 wake=5094 delta=7 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d54f7a eax=0x4 ctx=0x2d54f18 stack=0x2d45000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=208 wake=5104 delta=17 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d70ad6 eax=0x4 ctx=0x2d70a74 stack=0x2d61000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=4 pid=5 proc=5 ppid=1 name=VISION.BEX state=READY(1) run=-1 queue=0 affinity=0 mask=0x1 ticks=1199 wake=5087 delta=0 exit=0 thread=0 linux=0 lender=0 eip=0x125256 esp=0x2feca56 eax=0x0 ctx=0x2fec9f4 stack=0x2fdd000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=5 pid=6 proc=5 ppid=5 name=screensaverd state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=418 wake=5094 delta=7 exit=0 thread=1 linux=0 lender=0 eip=0x125434 esp=0x329ead6 eax=0x4 ctx=0x329ea74 stack=0x328f000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-gate state=SLEEPING(3) run=-2 queue=-1 affinity=0 mask=0x1 ticks=56 wake=5088 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x32cff6a eax=0x4 ctx=0x32cff08 stack=0x32c0000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=1 name=stage2-perf state=RUNNING(2) run=0 queue=-1 affinity=0 mask=0x1 ticks=12 wake=5087 delta=0 exit=0 thread=0 linux=0 lender=0 eip=0x28790c esp=0x32e2f8a eax=0x4 ctx=0x32e2f28 stack=0x32d3000 size=0x10000 cs=0x32e2fb4 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=8 pid=9 proc=9 ppid=7 name=wine-launch.ELF state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=86 wake=5186 delta=99 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3739a4e eax=0x0 ctx=0x37399ec stack=0x371b000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8
+[TASK:DUMP2] slot=9 pid=12 proc=12 ppid=9 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=19 wake=5099 delta=12 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x37c87fe eax=0x0 ctx=0x37c879c stack=0x37a9000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=10 pid=10 proc=10 ppid=9 name=XFBDEV state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=110 wake=5086 delta=-1 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x385189e eax=0x0 ctx=0x385183c stack=0x3842000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768
+[TASK:DUMP2] slot=11 pid=17 proc=17 ppid=15 name=wineserver state=RUNNING(2) run=1 queue=-1 affinity=-1 mask=0x3 ticks=785 wake=3936 delta=-1151 exit=0 thread=0 linux=1 lender=0 eip=0x0 esp=0x0 eax=0x0 ctx=0x38155ac stack=0x37f6000 size=0x20000 cs=0x0 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x604011a8
+[TASK:DUMP2] slot=12 pid=19 proc=19 ppid=18 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=167 wake=5097 delta=10 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3f5d7fe eax=0x0 ctx=0x3f5d79c stack=0x3f3e000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=13 pid=22 proc=22 ppid=21 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=309 wake=5097 delta=10 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3fa37fe eax=0x0 ctx=0x3fa379c stack=0x3f84000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=14 pid=28 proc=28 ppid=27 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=221 wake=5097 delta=10 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x40c27fe eax=0x0 ctx=0x40c279c stack=0x40a3000 size=0x20000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=15 pid=30 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=4 wake=5097 delta=10 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x416c7fe eax=0x0 ctx=0x416c79c stack=0x415d000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f86fba8
+[TASK:DUMP2] slot=16 pid=25 proc=25 ppid=24 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=138 wake=5097 delta=10 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x41287fe eax=0x0 ctx=0x412879c stack=0x4109000 size=0x20000 cs=0x8 futex=0x0 fproc=25 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=17 pid=32 proc=32 ppid=31 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=67 wake=5097 delta=10 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x420c7fe eax=0x0 ctx=0x420c79c stack=0x41ed000 size=0x20000 cs=0x8 futex=0x0 fproc=32 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=18 pid=34 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=5097 delta=10 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42497fe eax=0x0 ctx=0x424979c stack=0x423a000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa6fba8
+[TASK:DUMP2] slot=19 pid=35 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=5097 delta=10 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42787fe eax=0x0 ctx=0x427879c stack=0x4269000 size=0x10000 cs=0x8 futex=0x0 fproc=25 fmask=0xffffffff clear_tid=0x7fc6fba8
+[TASK:DUMP2] slot=20 pid=36 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=10 wake=5097 delta=10 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42de7fe eax=0x0 ctx=0x42de79c stack=0x42cf000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f88fba8
+[TASK:DUMP2] slot=21 pid=37 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=2 wake=5097 delta=10 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43147fe eax=0x0 ctx=0x431479c stack=0x4305000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa8fba8
+[TASK:DUMP2] slot=22 pid=38 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=2147487340 delta=2147482253 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x7fc8f028 eax=0xffffff92 ctx=0x434afb4 stack=0x433b000 size=0x10000 cs=0x1b futex=0x61123060 fproc=32 fmask=0xffffffff clear_tid=0x7fc8fba8
+[TASK:DUMP2] slot=23 pid=39 proc=28 ppid=28 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=4 wake=5097 delta=10 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43a47fe eax=0x0 ctx=0x43a479c stack=0x4395000 size=0x10000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x7fbafba8
+[TASK:DUMP2] slot=24 pid=40 proc=28 ppid=28 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=5097 delta=10 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43da7fe eax=0x0 ctx=0x43da79c stack=0x43cb000 size=0x10000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x7fdafba8
+[TASK:DUMP2] slot=25 pid=41 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=5097 delta=10 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x44107fe eax=0x0 ctx=0x441079c stack=0x4401000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x4ffba8
+[TASK:DUMP2] slot=26 pid=44 proc=44 ppid=43 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=145 wake=5097 delta=10 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x44bf7fe eax=0x0 ctx=0x44bf79c stack=0x44a0000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=27 pid=45 proc=45 ppid=0 name=wine-preloader state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=161 wake=0 delta=-5087 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x7f10fa04 eax=0x3d ctx=0x4505fb4 stack=0x44e6000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] end
+[WATCHDOG] CPU1 sin progreso durante 5 s heartbeat=441 detectado_por=CPU0
+[TASK:DUMP2] begin reason=wine-runtime-measurement tick=6351 cpus=2
+[TASK:DUMP2] cpu=0 current_slot=7 deferred=6 rq_count=1 rq=4
+[TASK:DUMP2] cpu=1 current_slot=26 deferred=10 rq_count=3 rq=8,14,11
+[TASK:DUMP2] slot=1 pid=2 proc=2 ppid=1 name=system-admin state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=262 wake=6354 delta=3 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2cc1cca eax=0x4 ctx=0x2cc1c68 stack=0x2cb2000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=cdrom-watch state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=40 wake=6468 delta=117 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d54f7a eax=0x4 ctx=0x2d54f18 stack=0x2d45000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=745 wake=6376 delta=25 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d70ad6 eax=0x4 ctx=0x2d70a74 stack=0x2d61000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=4 pid=5 proc=5 ppid=1 name=VISION.BEX state=READY(1) run=-1 queue=0 affinity=0 mask=0x1 ticks=1621 wake=6351 delta=0 exit=0 thread=0 linux=0 lender=0 eip=0x125256 esp=0x2fecaae eax=0x0 ctx=0x2feca4c stack=0x2fdd000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=5 pid=6 proc=5 ppid=5 name=screensaverd state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=419 wake=6373 delta=22 exit=0 thread=1 linux=0 lender=0 eip=0x125434 esp=0x329ead6 eax=0x4 ctx=0x329ea74 stack=0x328f000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-gate state=SLEEPING(3) run=-2 queue=-1 affinity=0 mask=0x1 ticks=58 wake=6352 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x32cff6a eax=0x4 ctx=0x32cff08 stack=0x32c0000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=1 name=stage2-perf state=RUNNING(2) run=0 queue=-1 affinity=0 mask=0x1 ticks=13 wake=6351 delta=0 exit=0 thread=0 linux=0 lender=0 eip=0x28790c esp=0x32e2f8a eax=0x4 ctx=0x32e2f28 stack=0x32d3000 size=0x10000 cs=0x32e2fb4 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=8 pid=9 proc=9 ppid=7 name=wine-launch.ELF state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=103 wake=6341 delta=-10 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x373a8ae eax=0x0 ctx=0x373a84c stack=0x371b000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8
+[TASK:DUMP2] slot=9 pid=12 proc=12 ppid=9 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=20 wake=6375 delta=24 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x37c87fe eax=0x0 ctx=0x37c879c stack=0x37a9000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=10 pid=10 proc=10 ppid=9 name=XFBDEV state=SLEEPING(3) run=-2 queue=-1 affinity=-1 mask=0x3 ticks=138 wake=6351 delta=0 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x385189e eax=0x0 ctx=0x385183c stack=0x3842000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768
+[TASK:DUMP2] slot=11 pid=17 proc=17 ppid=15 name=wineserver state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=1822 wake=6351 delta=0 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3814a4e eax=0x0 ctx=0x38149ec stack=0x37f6000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x604011a8
+[TASK:DUMP2] slot=12 pid=19 proc=19 ppid=18 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=167 wake=6375 delta=24 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3f5d7fe eax=0x0 ctx=0x3f5d79c stack=0x3f3e000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=13 pid=22 proc=22 ppid=21 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=309 wake=6375 delta=24 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3fa37fe eax=0x0 ctx=0x3fa379c stack=0x3f84000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=14 pid=28 proc=28 ppid=27 name=wine-preloader state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=238 wake=6442 delta=91 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x40c275e eax=0x0 ctx=0x40c26fc stack=0x40a3000 size=0x20000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=15 pid=30 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=4 wake=6375 delta=24 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x416c7fe eax=0x0 ctx=0x416c79c stack=0x415d000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f86fba8
+[TASK:DUMP2] slot=16 pid=25 proc=25 ppid=24 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=138 wake=6421 delta=70 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x41287fe eax=0x0 ctx=0x412879c stack=0x4109000 size=0x20000 cs=0x8 futex=0x0 fproc=25 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=17 pid=32 proc=32 ppid=31 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=67 wake=6375 delta=24 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x420c7fe eax=0x0 ctx=0x420c79c stack=0x41ed000 size=0x20000 cs=0x8 futex=0x0 fproc=32 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=18 pid=34 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=6375 delta=24 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42497fe eax=0x0 ctx=0x424979c stack=0x423a000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa6fba8
+[TASK:DUMP2] slot=19 pid=35 proc=25 ppid=25 name=linux-thread state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=6411 delta=60 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x7fc6f3cc eax=0x0 ctx=0x4278fb4 stack=0x4269000 size=0x10000 cs=0x1b futex=0x0 fproc=25 fmask=0xffffffff clear_tid=0x0
+[TASK:DUMP2] slot=20 pid=36 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=11 wake=6373 delta=22 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42de7fe eax=0x0 ctx=0x42de79c stack=0x42cf000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f88fba8
+[TASK:DUMP2] slot=21 pid=37 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=2 wake=6373 delta=22 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43147fe eax=0x0 ctx=0x431479c stack=0x4305000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa8fba8
+[TASK:DUMP2] slot=22 pid=38 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=2147487340 delta=2147480989 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x7fc8f028 eax=0xffffff92 ctx=0x434afb4 stack=0x433b000 size=0x10000 cs=0x1b futex=0x61123060 fproc=32 fmask=0xffffffff clear_tid=0x7fc8fba8
+[TASK:DUMP2] slot=23 pid=39 proc=28 ppid=28 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=4 wake=6373 delta=22 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43a47fe eax=0x0 ctx=0x43a479c stack=0x4395000 size=0x10000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x7fbafba8
+[TASK:DUMP2] slot=24 pid=40 proc=28 ppid=28 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=6372 delta=21 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43da7fe eax=0x0 ctx=0x43da79c stack=0x43cb000 size=0x10000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x7fdafba8
+[TASK:DUMP2] slot=25 pid=41 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=6372 delta=21 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x44107fe eax=0x0 ctx=0x441079c stack=0x4401000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x4ffba8
+[TASK:DUMP2] slot=26 pid=44 proc=44 ppid=43 name=wine-preloader state=RUNNING(2) run=1 queue=-1 affinity=-1 mask=0x2 ticks=160 wake=6439 delta=88 exit=0 thread=0 linux=1 lender=0 eip=0x2c esp=0x1000 eax=0x44bfdf8 ctx=0x44bfdbc stack=0x44a0000 size=0x20000 cs=0x44bfecc futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=27 pid=45 proc=45 ppid=0 name=wine-preloader state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=161 wake=0 delta=-6351 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x7f10fa04 eax=0x3d ctx=0x4505fb4 stack=0x44e6000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] end
+[TASK:DUMP2] begin reason=wine-runtime-measurement tick=7353 cpus=2
+[TASK:DUMP2] cpu=0 current_slot=7 deferred=6 rq_count=1 rq=4
+[TASK:DUMP2] cpu=1 current_slot=11 deferred=10 rq_count=1 rq=28
+[TASK:DUMP2] slot=1 pid=2 proc=2 ppid=1 name=system-admin state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=299 wake=7362 delta=9 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2cc1cca eax=0x4 ctx=0x2cc1c68 stack=0x2cb2000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=cdrom-watch state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=40 wake=7374 delta=21 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d54f7a eax=0x4 ctx=0x2d54f18 stack=0x2d45000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=745 wake=7374 delta=21 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d70ad6 eax=0x4 ctx=0x2d70a74 stack=0x2d61000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=4 pid=5 proc=5 ppid=1 name=VISION.BEX state=READY(1) run=-1 queue=0 affinity=0 mask=0x1 ticks=1993 wake=7353 delta=0 exit=0 thread=0 linux=0 lender=0 eip=0x125256 esp=0x2fecaae eax=0x0 ctx=0x2feca4c stack=0x2fdd000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=5 pid=6 proc=5 ppid=5 name=screensaverd state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=614 wake=7373 delta=20 exit=0 thread=1 linux=0 lender=0 eip=0x125434 esp=0x329ead6 eax=0x4 ctx=0x329ea74 stack=0x328f000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-gate state=SLEEPING(3) run=-2 queue=-1 affinity=0 mask=0x1 ticks=65 wake=7354 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x32cff6a eax=0x4 ctx=0x32cff08 stack=0x32c0000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=1 name=stage2-perf state=RUNNING(2) run=0 queue=-1 affinity=0 mask=0x1 ticks=14 wake=7353 delta=0 exit=0 thread=0 linux=0 lender=0 eip=0x28790c esp=0x32e2f8a eax=0x4 ctx=0x32e2f28 stack=0x32d3000 size=0x10000 cs=0x32e2fb4 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=8 pid=9 proc=9 ppid=7 name=wine-launch.ELF state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=133 wake=7354 delta=1 exit=0 thread=0 linux=1 lender=0 eip=0x3769bb2 esp=0x37a16fc eax=0x0 ctx=0x373afb4 stack=0x371b000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8
+[TASK:DUMP2] slot=9 pid=12 proc=12 ppid=9 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=20 wake=7374 delta=21 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x37c87fe eax=0x0 ctx=0x37c879c stack=0x37a9000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=10 pid=10 proc=10 ppid=9 name=XFBDEV state=SLEEPING(3) run=-2 queue=-1 affinity=-1 mask=0x3 ticks=167 wake=7353 delta=0 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x385189e eax=0x0 ctx=0x385183c stack=0x3842000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768
+[TASK:DUMP2] slot=11 pid=17 proc=17 ppid=15 name=wineserver state=RUNNING(2) run=1 queue=-1 affinity=-1 mask=0x3 ticks=1899 wake=7353 delta=0 exit=0 thread=0 linux=1 lender=0 eip=0x60889000 esp=0x11 eax=0x10 ctx=0x38149ec stack=0x37f6000 size=0x20000 cs=0x3814a38 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x604011a8
+[TASK:DUMP2] slot=12 pid=19 proc=19 ppid=18 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=167 wake=7374 delta=21 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3f5d7fe eax=0x0 ctx=0x3f5d79c stack=0x3f3e000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=13 pid=22 proc=22 ppid=21 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=309 wake=7374 delta=21 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3fa37fe eax=0x0 ctx=0x3fa379c stack=0x3f84000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=14 pid=28 proc=28 ppid=27 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=278 wake=7363 delta=10 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x40c27fe eax=0x0 ctx=0x40c279c stack=0x40a3000 size=0x20000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=15 pid=30 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=6 wake=7395 delta=42 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x416c7fe eax=0x0 ctx=0x416c79c stack=0x415d000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f86fba8
+[TASK:DUMP2] slot=16 pid=25 proc=25 ppid=24 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=162 wake=7413 delta=60 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x41287fe eax=0x0 ctx=0x412879c stack=0x4109000 size=0x20000 cs=0x8 futex=0x0 fproc=25 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=17 pid=32 proc=32 ppid=31 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=67 wake=7374 delta=21 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x420c7fe eax=0x0 ctx=0x420c79c stack=0x41ed000 size=0x20000 cs=0x8 futex=0x0 fproc=32 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=18 pid=34 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=7426 delta=73 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42497fe eax=0x0 ctx=0x424979c stack=0x423a000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa6fba8
+[TASK:DUMP2] slot=19 pid=46 proc=28 ppid=28 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=7429 delta=76 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42787fe eax=0x0 ctx=0x427879c stack=0x4269000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x61fba8
+[TASK:DUMP2] slot=20 pid=36 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=20 wake=7452 delta=99 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42de7fe eax=0x0 ctx=0x42de79c stack=0x42cf000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f88fba8
+[TASK:DUMP2] slot=21 pid=37 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=2 wake=7374 delta=21 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43147fe eax=0x0 ctx=0x431479c stack=0x4305000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa8fba8
+[TASK:DUMP2] slot=22 pid=38 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=2147487340 delta=2147479987 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x7fc8f028 eax=0xffffff92 ctx=0x434afb4 stack=0x433b000 size=0x10000 cs=0x1b futex=0x61123060 fproc=32 fmask=0xffffffff clear_tid=0x7fc8fba8
+[TASK:DUMP2] slot=23 pid=39 proc=28 ppid=28 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=4 wake=7374 delta=21 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43a47fe eax=0x0 ctx=0x43a479c stack=0x4395000 size=0x10000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x7fbafba8
+[TASK:DUMP2] slot=24 pid=40 proc=28 ppid=28 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=7374 delta=21 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43da7fe eax=0x0 ctx=0x43da79c stack=0x43cb000 size=0x10000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x7fdafba8
+[TASK:DUMP2] slot=25 pid=41 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=7374 delta=21 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x44107fe eax=0x0 ctx=0x441079c stack=0x4401000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x4ffba8
+[TASK:DUMP2] slot=26 pid=44 proc=44 ppid=43 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=366 wake=7363 delta=10 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x44bf7fe eax=0x0 ctx=0x44bf79c stack=0x44a0000 size=0x20000 cs=0x8 futex=0x0 fproc=44 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=27 pid=47 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=7363 delta=10 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x44537fe eax=0x0 ctx=0x445379c stack=0x4444000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0xcffba8
+[TASK:DUMP2] slot=28 pid=48 proc=25 ppid=25 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=12 wake=7352 delta=-1 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x451889e eax=0x0 ctx=0x451883c stack=0x4509000 size=0x10000 cs=0x8 futex=0x0 fproc=25 fmask=0xffffffff clear_tid=0xeffba8
+[TASK:DUMP2] slot=29 pid=49 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=7363 delta=10 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x456c7fe eax=0x0 ctx=0x456c79c stack=0x455d000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x10ffba8
+[TASK:DUMP2] slot=30 pid=50 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=3 wake=7827 delta=474 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x12ff028 eax=0xffffff92 ctx=0x45a2fb4 stack=0x4593000 size=0x10000 cs=0x1b futex=0x6113108c fproc=25 fmask=0xffffffff clear_tid=0x12ffba8
+[TASK:DUMP2] slot=31 pid=51 proc=44 ppid=44 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=7363 delta=10 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x45d87fe eax=0x0 ctx=0x45d879c stack=0x45c9000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fb5fba8
+[TASK:DUMP2] slot=32 pid=52 proc=44 ppid=44 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=2 wake=7364 delta=11 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x460e7fe eax=0x0 ctx=0x460e79c stack=0x45ff000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fd5fba8
+[TASK:DUMP2] slot=33 pid=53 proc=44 ppid=44 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=7363 delta=10 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x46447fe eax=0x0 ctx=0x464479c stack=0x4635000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x5ffba8
+[TASK:DUMP2] slot=34 pid=55 proc=55 ppid=54 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=47 wake=7407 delta=54 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x46ae7fe eax=0x0 ctx=0x46ae79c stack=0x468f000 size=0x20000 cs=0x8 futex=0x0 fproc=55 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=35 pid=57 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=7407 delta=54 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x46f27fe eax=0x0 ctx=0x46f279c stack=0x46e3000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x14ffba8
+[TASK:DUMP2] slot=36 pid=58 proc=55 ppid=55 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=7405 delta=52 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x47287fe eax=0x0 ctx=0x472879c stack=0x4719000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f86fba8
+[TASK:DUMP2] slot=37 pid=59 proc=55 ppid=55 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=7409 delta=56 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x47867fe eax=0x0 ctx=0x478679c stack=0x4777000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa6fba8
+[TASK:DUMP2] slot=38 pid=60 proc=32 ppid=32 name=linux-thread state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=7440 delta=87 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x9ff3cc eax=0x0 ctx=0x47bcfb4 stack=0x47ad000 size=0x10000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] end
+[WATCHDOG] CPU1 sin progreso durante 5 s heartbeat=650 detectado_por=CPU0
+[TASK:DUMP2] begin reason=wine-runtime-measurement tick=8897 cpus=2
+[TASK:DUMP2] cpu=0 current_slot=7 deferred=6 rq_count=0 rq=
+[TASK:DUMP2] cpu=1 current_slot=-1 deferred=10 rq_count=4 rq=8,11,27,40
+[TASK:DUMP2] slot=1 pid=2 proc=2 ppid=1 name=system-admin state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=411 wake=8898 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2cc1cca eax=0x4 ctx=0x2cc1c68 stack=0x2cb2000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=cdrom-watch state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=56 wake=8927 delta=30 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d54f7a eax=0x4 ctx=0x2d54f18 stack=0x2d45000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=888 wake=9066 delta=169 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d70ad6 eax=0x4 ctx=0x2d70a74 stack=0x2d61000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=4 pid=5 proc=5 ppid=1 name=VISION.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=2620 wake=8898 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2fecad6 eax=0x4 ctx=0x2feca74 stack=0x2fdd000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=5 pid=6 proc=5 ppid=5 name=screensaverd state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=922 wake=8924 delta=27 exit=0 thread=1 linux=0 lender=0 eip=0x125434 esp=0x329ead6 eax=0x4 ctx=0x329ea74 stack=0x328f000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-gate state=SLEEPING(3) run=-2 queue=-1 affinity=0 mask=0x1 ticks=80 wake=8898 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x32cff6a eax=0x4 ctx=0x32cff08 stack=0x32c0000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=1 name=stage2-perf state=RUNNING(2) run=0 queue=-1 affinity=0 mask=0x1 ticks=17 wake=8897 delta=0 exit=0 thread=0 linux=0 lender=0 eip=0x28790c esp=0x32e2f8a eax=0x4 ctx=0x32e2f28 stack=0x32d3000 size=0x10000 cs=0x32e2fb4 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=8 pid=9 proc=9 ppid=7 name=wine-launch.ELF state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=155 wake=8897 delta=0 exit=0 thread=0 linux=1 lender=0 eip=0x3769bb2 esp=0x37a16fc eax=0x0 ctx=0x373afb4 stack=0x371b000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8
+[TASK:DUMP2] slot=9 pid=12 proc=12 ppid=9 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=23 wake=8986 delta=89 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x37c87fe eax=0x0 ctx=0x37c879c stack=0x37a9000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=10 pid=10 proc=10 ppid=9 name=XFBDEV state=SLEEPING(3) run=-2 queue=-1 affinity=-1 mask=0x3 ticks=198 wake=8897 delta=0 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x385189e eax=0x0 ctx=0x385183c stack=0x3842000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768
+[TASK:DUMP2] slot=11 pid=17 proc=17 ppid=15 name=wineserver state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=1972 wake=8897 delta=0 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3814a4e eax=0x0 ctx=0x38149ec stack=0x37f6000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x604011a8
+[TASK:DUMP2] slot=12 pid=19 proc=19 ppid=18 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=168 wake=8986 delta=89 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3f5d7fe eax=0x0 ctx=0x3f5d79c stack=0x3f3e000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=13 pid=22 proc=22 ppid=21 name=wine-preloader state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=382 wake=8938 delta=41 exit=1 thread=0 linux=1 lender=0 eip=0x60021bb2 esp=0x7f10fc30 eax=0x0 ctx=0x3fa3fb4 stack=0x3f84000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=14 pid=28 proc=28 ppid=27 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=290 wake=8939 delta=42 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x40c27fe eax=0x0 ctx=0x40c279c stack=0x40a3000 size=0x20000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=15 pid=30 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=6 wake=8986 delta=89 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x416c7fe eax=0x0 ctx=0x416c79c stack=0x415d000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f86fba8
+[TASK:DUMP2] slot=16 pid=25 proc=25 ppid=24 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=233 wake=8977 delta=80 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x41287fe eax=0x0 ctx=0x412879c stack=0x4109000 size=0x20000 cs=0x8 futex=0x0 fproc=25 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=17 pid=32 proc=32 ppid=31 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=67 wake=8986 delta=89 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x420c7fe eax=0x0 ctx=0x420c79c stack=0x41ed000 size=0x20000 cs=0x8 futex=0x0 fproc=32 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=18 pid=34 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=16 wake=8986 delta=89 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42497fe eax=0x0 ctx=0x424979c stack=0x423a000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa6fba8
+[TASK:DUMP2] slot=19 pid=46 proc=28 ppid=28 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=2 wake=8986 delta=89 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42787fe eax=0x0 ctx=0x427879c stack=0x4269000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x61fba8
+[TASK:DUMP2] slot=20 pid=36 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=38 wake=8986 delta=89 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42de7fe eax=0x0 ctx=0x42de79c stack=0x42cf000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f88fba8
+[TASK:DUMP2] slot=21 pid=37 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=4 wake=8986 delta=89 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43147fe eax=0x0 ctx=0x431479c stack=0x4305000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa8fba8
+[TASK:DUMP2] slot=22 pid=38 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=2147487340 delta=2147478443 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x7fc8f028 eax=0xffffff92 ctx=0x434afb4 stack=0x433b000 size=0x10000 cs=0x1b futex=0x61123060 fproc=32 fmask=0xffffffff clear_tid=0x7fc8fba8
+[TASK:DUMP2] slot=23 pid=39 proc=28 ppid=28 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=5 wake=8986 delta=89 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43a47fe eax=0x0 ctx=0x43a479c stack=0x4395000 size=0x10000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x7fbafba8
+[TASK:DUMP2] slot=24 pid=40 proc=28 ppid=28 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=8986 delta=89 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43da7fe eax=0x0 ctx=0x43da79c stack=0x43cb000 size=0x10000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x7fdafba8
+[TASK:DUMP2] slot=25 pid=41 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=8986 delta=89 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x44107fe eax=0x0 ctx=0x441079c stack=0x4401000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x4ffba8
+[TASK:DUMP2] slot=26 pid=44 proc=44 ppid=43 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=368 wake=8986 delta=89 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x44bf7fe eax=0x0 ctx=0x44bf79c stack=0x44a0000 size=0x20000 cs=0x8 futex=0x0 fproc=44 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=27 pid=47 proc=25 ppid=25 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=8 wake=8897 delta=0 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x44537fe eax=0x0 ctx=0x445379c stack=0x4444000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0xcffba8
+[TASK:DUMP2] slot=28 pid=48 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=19 wake=9097 delta=200 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0xeff028 eax=0xffffff92 ctx=0x4518fb4 stack=0x4509000 size=0x10000 cs=0x1b futex=0x61131084 fproc=25 fmask=0xffffffff clear_tid=0xeffba8
+[TASK:DUMP2] slot=29 pid=49 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=8986 delta=89 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x456c7fe eax=0x0 ctx=0x456c79c stack=0x455d000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x10ffba8
+[TASK:DUMP2] slot=30 pid=61 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=50 wake=9083 delta=186 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x7fc6f028 eax=0xffffff92 ctx=0x45a2fb4 stack=0x4593000 size=0x10000 cs=0x1b futex=0x611310b4 fproc=25 fmask=0xffffffff clear_tid=0x7fc6fba8
+[TASK:DUMP2] slot=31 pid=51 proc=44 ppid=44 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=8986 delta=89 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x45d87fe eax=0x0 ctx=0x45d879c stack=0x45c9000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fb5fba8
+[TASK:DUMP2] slot=32 pid=52 proc=44 ppid=44 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=2 wake=8986 delta=89 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x460e7fe eax=0x0 ctx=0x460e79c stack=0x45ff000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fd5fba8
+[TASK:DUMP2] slot=33 pid=53 proc=44 ppid=44 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=8986 delta=89 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x46447fe eax=0x0 ctx=0x464479c stack=0x4635000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x5ffba8
+[TASK:DUMP2] slot=34 pid=55 proc=55 ppid=54 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=49 wake=8975 delta=78 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x46ae7fe eax=0x0 ctx=0x46ae79c stack=0x468f000 size=0x20000 cs=0x8 futex=0x0 fproc=55 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=35 pid=57 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=1 wake=8973 delta=76 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x46f27fe eax=0x0 ctx=0x46f279c stack=0x46e3000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x14ffba8
+[TASK:DUMP2] slot=36 pid=58 proc=55 ppid=55 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=4 wake=8973 delta=76 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x47287fe eax=0x0 ctx=0x472879c stack=0x4719000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f86fba8
+[TASK:DUMP2] slot=37 pid=59 proc=55 ppid=55 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=8973 delta=76 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x47867fe eax=0x0 ctx=0x478679c stack=0x4777000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa6fba8
+[TASK:DUMP2] slot=39 pid=64 proc=64 ppid=0 name=wine-preloader state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=9 wake=0 delta=-8897 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x7f10fa04 eax=0x3d ctx=0x4844fb4 stack=0x4825000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=40 pid=63 proc=63 ppid=62 name=wine-preloader state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=156 wake=8896 delta=-1 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x48b47fe eax=0x0 ctx=0x48b479c stack=0x4895000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] end
+[WATCHDOG] CPU1 sin progreso durante 5 s heartbeat=790 detectado_por=CPU0
+[PAGING] aviso: shootdown TLB incompleto gen=167888 pid=0 mask=0x1
+[TASK:DUMP2] begin reason=wine-runtime-measurement tick=11087 cpus=2
+[TASK:DUMP2] cpu=0 current_slot=7 deferred=0 rq_count=5 rq=3,2,4,6,1
+[TASK:DUMP2] cpu=1 current_slot=10 deferred=8 rq_count=23 rq=11,13,9,12,14,15,16,17,18,19,20,21,25,26,27,29,31,32,33,34,35,36,37
+[TASK:DUMP2] slot=1 pid=2 proc=2 ppid=1 name=system-admin state=READY(1) run=-1 queue=0 affinity=0 mask=0x1 ticks=439 wake=10697 delta=-390 exit=0 thread=0 linux=0 lender=0 eip=0x180e31 esp=0x0 eax=0x1 ctx=0x2cc1428 stack=0x2cb2000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=cdrom-watch state=READY(1) run=-1 queue=0 affinity=0 mask=0x1 ticks=63 wake=10749 delta=-338 exit=0 thread=0 linux=0 lender=0 eip=0x125434 esp=0x2d54f7a eax=0x4 ctx=0x2d54f18 stack=0x2d45000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=PRINTSPL.BEX state=READY(1) run=-1 queue=0 affinity=0 mask=0x1 ticks=895 wake=10748 delta=-339 exit=0 thread=0 linux=0 lender=0 eip=0x2cc57dd esp=0x2fd9fc8 eax=0x4 ctx=0x2d70fb4 stack=0x2d61000 size=0x10000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=4 pid=5 proc=5 ppid=1 name=VISION.BEX state=READY(1) run=-1 queue=0 affinity=0 mask=0x1 ticks=4043 wake=10550 delta=-537 exit=0 thread=0 linux=0 lender=0 eip=0x302abdc esp=0x2fffac0 eax=0x34ba908 ctx=0x2fecfb4 stack=0x2fdd000 size=0x10000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=5 pid=6 proc=5 ppid=5 name=screensaverd state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=1493 wake=11118 delta=31 exit=0 thread=1 linux=0 lender=0 eip=0x125434 esp=0x329ead6 eax=0x4 ctx=0x329ea74 stack=0x328f000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-gate state=READY(1) run=-1 queue=0 affinity=0 mask=0x1 ticks=87 wake=11070 delta=-17 exit=0 thread=0 linux=0 lender=0 eip=0x12a91d esp=0x283380 eax=0x202 ctx=0x32cff18 stack=0x32c0000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=1 name=stage2-perf state=RUNNING(2) run=0 queue=-1 affinity=0 mask=0x1 ticks=19 wake=10699 delta=-388 exit=0 thread=0 linux=0 lender=0 eip=0x28790c esp=0x32e2f8a eax=0x4 ctx=0x32e2f28 stack=0x32d3000 size=0x10000 cs=0x32e2fb4 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0
+[TASK:DUMP2] slot=8 pid=9 proc=9 ppid=7 name=wine-launch.ELF state=READY(1) run=-2 queue=-1 affinity=-1 mask=0x3 ticks=167 wake=11056 delta=-31 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x373aa1e eax=0x0 ctx=0x373a9bc stack=0x371b000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8
+[TASK:DUMP2] slot=9 pid=12 proc=12 ppid=9 name=wine-preloader state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=25 wake=11084 delta=-3 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x37c87fe eax=0x0 ctx=0x37c879c stack=0x37a9000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=10 pid=10 proc=10 ppid=9 name=XFBDEV state=RUNNING(2) run=1 queue=-1 affinity=-1 mask=0x3 ticks=230 wake=11030 delta=-57 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3851aee eax=0x0 ctx=0x3851a8c stack=0x3842000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768
+[TASK:DUMP2] slot=11 pid=17 proc=17 ppid=15 name=wineserver state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=2030 wake=11032 delta=-55 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3815a4e eax=0x0 ctx=0x38159ec stack=0x37f6000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x604011a8
+[TASK:DUMP2] slot=12 pid=19 proc=19 ppid=18 name=wine-preloader state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=170 wake=11084 delta=-3 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x3f5d7fe eax=0x0 ctx=0x3f5d79c stack=0x3f3e000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=13 pid=65 proc=25 ppid=25 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=11 wake=11070 delta=-17 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x3f9389e eax=0x0 ctx=0x3f9383c stack=0x3f84000 size=0x10000 cs=0x8 futex=0x0 fproc=25 fmask=0xffffffff clear_tid=0xeffba8
+[TASK:DUMP2] slot=14 pid=28 proc=28 ppid=27 name=wine-preloader state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=299 wake=11084 delta=-3 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x40c27fe eax=0x0 ctx=0x40c279c stack=0x40a3000 size=0x20000 cs=0x8 futex=0x0 fproc=28 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=15 pid=30 proc=25 ppid=25 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=180 wake=11084 delta=-3 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x416c7fe eax=0x0 ctx=0x416c79c stack=0x415d000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f86fba8
+[TASK:DUMP2] slot=16 pid=25 proc=25 ppid=24 name=wine-preloader state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=289 wake=11084 delta=-3 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x41287fe eax=0x0 ctx=0x412879c stack=0x4109000 size=0x20000 cs=0x8 futex=0x0 fproc=25 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=17 pid=32 proc=32 ppid=31 name=wine-preloader state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=69 wake=11084 delta=-3 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x420c7fe eax=0x0 ctx=0x420c79c stack=0x41ed000 size=0x20000 cs=0x8 futex=0x0 fproc=32 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=18 pid=34 proc=25 ppid=25 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=17 wake=11084 delta=-3 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42497fe eax=0x0 ctx=0x424979c stack=0x423a000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa6fba8
+[TASK:DUMP2] slot=19 pid=69 proc=25 ppid=25 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=203 wake=11084 delta=-3 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42717fe eax=0x0 ctx=0x427179c stack=0x4262000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x12ffba8
+[TASK:DUMP2] slot=20 pid=36 proc=32 ppid=32 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=38 wake=11084 delta=-3 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x42de7fe eax=0x0 ctx=0x42de79c stack=0x42cf000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7f88fba8
+[TASK:DUMP2] slot=21 pid=37 proc=32 ppid=32 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=4 wake=11084 delta=-3 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x43147fe eax=0x0 ctx=0x431479c stack=0x4305000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fa8fba8
+[TASK:DUMP2] slot=22 pid=38 proc=32 ppid=32 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=0 wake=2147487340 delta=2147476253 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x7fc8f028 eax=0xffffff92 ctx=0x434afb4 stack=0x433b000 size=0x10000 cs=0x1b futex=0x61123060 fproc=32 fmask=0xffffffff clear_tid=0x7fc8fba8
+[TASK:DUMP2] slot=23 pid=70 proc=25 ppid=25 name=linux-thread state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=6 wake=11314 delta=227 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x16ff028 eax=0xffffff92 ctx=0x439dfb4 stack=0x438e000 size=0x10000 cs=0x1b futex=0x611310d0 fproc=25 fmask=0xffffffff clear_tid=0x16ffba8
+[TASK:DUMP2] slot=24 pid=67 proc=67 ppid=66 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=163 wake=11154 delta=67 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x45217fe eax=0x0 ctx=0x452179c stack=0x4502000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=25 pid=41 proc=32 ppid=32 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=1 wake=11084 delta=-3 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x44107fe eax=0x0 ctx=0x441079c stack=0x4401000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x4ffba8
+[TASK:DUMP2] slot=26 pid=44 proc=44 ppid=43 name=wine-preloader state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=369 wake=11084 delta=-3 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x44bf7fe eax=0x0 ctx=0x44bf79c stack=0x44a0000 size=0x20000 cs=0x8 futex=0x0 fproc=44 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=27 pid=47 proc=25 ppid=25 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=120 wake=11084 delta=-3 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x44537fe eax=0x0 ctx=0x445379c stack=0x4444000 size=0x10000 cs=0x8 futex=0x0 fproc=25 fmask=0xffffffff clear_tid=0xcffba8
+[TASK:DUMP2] slot=29 pid=49 proc=25 ppid=25 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=0 wake=11084 delta=-3 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x456c7fe eax=0x0 ctx=0x456c79c stack=0x455d000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x10ffba8
+[TASK:DUMP2] slot=31 pid=51 proc=44 ppid=44 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=1 wake=11084 delta=-3 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x45d87fe eax=0x0 ctx=0x45d879c stack=0x45c9000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fb5fba8
+[TASK:DUMP2] slot=32 pid=52 proc=44 ppid=44 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=2 wake=11084 delta=-3 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x460e7fe eax=0x0 ctx=0x460e79c stack=0x45ff000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x7fd5fba8
+[TASK:DUMP2] slot=33 pid=53 proc=44 ppid=44 name=linux-thread state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=1 wake=11084 delta=-3 exit=0 thread=1 linux=1 lender=0 eip=0x125256 esp=0x46447fe eax=0x0 ctx=0x464479c stack=0x4635000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x5ffba8
+[TASK:DUMP2] slot=34 pid=55 proc=55 ppid=54 name=wine-preloader state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=49 wake=11084 delta=-3 exit=0 thread=0 linux=1 lender=0 eip=0x125256 esp=0x46ae7fe eax=0x0 ctx=0x46ae79c stack=0x468f000 size=0x20000 cs=0x8 futex=0x0 fproc=55 fmask=0xffffffff clear_tid=0x6043d0e8
+[TASK:DUMP2] slot=35 pid=57 proc=25 ppid=25 name=linux-thread state=READY(1) run

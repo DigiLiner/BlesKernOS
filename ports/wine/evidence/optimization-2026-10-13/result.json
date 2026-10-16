@@ -1,0 +1,242 @@
+{
+  "render_before": {
+    "result": "PASS",
+    "phases": [
+      {
+        "alpha": 0,
+        "frames": 80,
+        "host_s": 1.9323417090054136,
+        "compositions_per_s": 41.400545062589586,
+        "guest_us": 1906666,
+        "hash": "b4a29ac2"
+      },
+      {
+        "alpha": 1,
+        "frames": 80,
+        "host_s": 1.8416985490184743,
+        "compositions_per_s": 43.438162039404155,
+        "guest_us": 1816666,
+        "hash": "e1e9a4b3"
+      }
+    ]
+  },
+  "render_after": {
+    "result": "PASS",
+    "phases": [
+      {
+        "alpha": 0,
+        "frames": 80,
+        "host_s": 1.0896588350005914,
+        "compositions_per_s": 73.41747474562217,
+        "guest_us": 1050000,
+        "hash": "b4a29ac2"
+      },
+      {
+        "alpha": 1,
+        "frames": 80,
+        "host_s": 1.201597061008215,
+        "compositions_per_s": 66.5780589816648,
+        "guest_us": 1166667,
+        "hash": "e1e9a4b3"
+      }
+    ]
+  },
+  "ui_functional": {
+    "result": "PASS",
+    "ram_mib": 1536,
+    "smp": 2,
+    "vga": "vmware",
+    "notepad": {
+      "handle": 62145972,
+      "bounds": [
+        36,
+        70,
+        511,
+        376
+      ],
+      "title": "notepad.exe",
+      "visible": true,
+      "listed": true,
+      "owner": 8,
+      "controller": 7
+    },
+    "notepad_after_restart": {
+      "handle": 62145972,
+      "bounds": [
+        36,
+        70,
+        511,
+        376
+      ],
+      "title": "notepad.exe",
+      "visible": true,
+      "listed": true,
+      "owner": 8,
+      "controller": 7
+    },
+    "keyboard_clipboard_before_after": true,
+    "compositor_cpl3": true
+  },
+  "latency_baseline": {
+    "samples": [
+      {
+        "key_to_glyph_ms": 796.2398240051698,
+        "injection_ms": 1.9908530230168253
+      },
+      {
+        "key_to_glyph_ms": 271.66338701499626,
+        "injection_ms": 1.3529410061892122
+      },
+      {
+        "key_to_glyph_ms": 269.79524799389765,
+        "injection_ms": 2.6352280110586435
+      },
+      {
+        "key_to_glyph_ms": 299.4175689818803,
+        "injection_ms": 2.3181979777291417
+      },
+      {
+        "key_to_glyph_ms": 278.56856799917296,
+        "injection_ms": 1.3757399865426123
+      },
+      {
+        "key_to_glyph_ms": 310.4321120190434,
+        "injection_ms": 1.4974070072639734
+      },
+      {
+        "key_to_glyph_ms": 303.8410750159528,
+        "injection_ms": 1.6901710187084973
+      },
+      {
+        "key_to_glyph_ms": 299.86351300613023,
+        "injection_ms": 1.5667040133848786
+      },
+      {
+        "key_to_glyph_ms": 304.7578740224708,
+        "injection_ms": 1.653275015996769
+      },
+      {
+        "key_to_glyph_ms": 294.16612899512984,
+        "injection_ms": 1.8767659785225987
+      },
+      {
+        "key_to_glyph_ms": 293.9979410148226,
+        "injection_ms": 2.320505998795852
+      },
+      {
+        "key_to_glyph_ms": 281.3654320198111,
+        "injection_ms": 1.715068006888032
+      },
+      {
+        "key_to_glyph_ms": 274.1601039888337,
+        "injection_ms": 1.7925809952430427
+      },
+      {
+        "key_to_glyph_ms": 276.627899002051,
+        "injection_ms": 1.9320650026202202
+      },
+      {
+        "key_to_glyph_ms": 245.56520298938267,
+        "injection_ms": 1.3005519867874682
+      },
+      {
+        "key_to_glyph_ms": 299.949956999626,
+        "injection_ms": 2.5876950239762664
+      }
+    ],
+    "p50_ms": 294.0820350049762,
+    "p95_ms": 796.2398240051698,
+    "max_ms": 796.2398240051698,
+    "capture_p50_ms": 7.06183300644625,
+    "capture_max_ms": 31.12396801589057,
+    "ram_mib": 1536,
+    "smp": 2,
+    "vga": "vmware",
+    "tinyx": "/tmp/blesk-wine-opt-20261013/XFBDEV-baseline",
+    "framebuffer": "0xfd000000",
+    "method": "host monotonic from QMP key-down until new glyph ink in displayed VRAM scanlines; no guest stop while timing; includes VRAM query and QMP overhead"
+  },
+  "latency_final": {
+    "samples": [
+      {
+        "key_to_glyph_ms": 443.1397490261588,
+        "injection_ms": 1.986867020605132
+      },
+      {
+        "key_to_glyph_ms": 265.9325639833696,
+        "injection_ms": 1.3145919947419316
+      },
+      {
+        "key_to_glyph_ms": 282.50184399075806,
+        "injection_ms": 1.5692539745941758
+      },
+      {
+        "key_to_glyph_ms": 297.8155559976585,
+        "injection_ms": 1.4302069903351367
+      },
+      {
+        "key_to_glyph_ms": 241.29995101247914,
+        "injection_ms": 1.816288015106693
+      },
+      {
+        "key_to_glyph_ms": 257.83837100607343,
+        "injection_ms": 2.10069099557586
+      },
+      {
+        "key_to_glyph_ms": 272.50388398533687,
+        "injection_ms": 1.849504973506555
+      },
+      {
+        "key_to_glyph_ms": 303.0819100094959,
+        "injection_ms": 1.7225960036739707
+      },
+      {
+        "key_to_glyph_ms": 280.39256201009266,
+        "injection_ms": 1.4429310103878379
+      },
+      {
+        "key_to_glyph_ms": 282.8189719875809,
+        "injection_ms": 1.3038459874223918
+      },
+      {
+        "key_to_glyph_ms": 316.90500301192515,
+        "injection_ms": 1.6336789994966239
+      },
+      {
+        "key_to_glyph_ms": 295.92687799595296,
+        "injection_ms": 1.7866469861473888
+      },
+      {
+        "key_to_glyph_ms": 251.9855179998558,
+        "injection_ms": 2.7862849819939584
+      },
+      {
+        "key_to_glyph_ms": 207.8256150125526,
+        "injection_ms": 1.866211008746177
+      },
+      {
+        "key_to_glyph_ms": 230.49124699900858,
+        "injection_ms": 1.8271549779456109
+      },
+      {
+        "key_to_glyph_ms": 295.8436140033882,
+        "injection_ms": 1.7542869900353253
+      }
+    ],
+    "p50_ms": 281.44720300042536,
+    "p95_ms": 443.1397490261588,
+    "max_ms": 443.1397490261588,
+    "capture_p50_ms": 8.124333500745706,
+    "capture_max_ms": 166.35233999113552,
+    "ram_mib": 1536,
+    "smp": 2,
+    "vga": "vmware",
+    "tinyx": "/tmp/blesk-wine-opt-20261013/XFBDEV-confirmed",
+    "framebuffer": "0xfd000000",
+    "method": "host monotonic from QMP key-down until new glyph ink in displayed VRAM scanlines; no guest stop while timing; includes VRAM query and QMP overhead"
+  },
+  "base_image_unchanged": true,
+  "fifa_tested": false,
+  "photoshop_tested": false,
+  "candidate_image": "build/bleskernos-wine-optimized.img"
+}

@@ -1,0 +1,12 @@
+/tmp/bk-smp-handoff-9py02zi_/test.c:20:17: error: ‘pit_get_ticks’ defined but not used [-Werror=unused-function]
+   20 | static uint32_t pit_get_ticks(void){return now;}
+      |                 ^~~~~~~~~~~~~
+cc1: all warnings being treated as errors
+Traceback (most recent call last):
+  File "/tmp/bk-wine-perf-20261014/test-old-handoff.py", line 84, in <module>
+    subprocess.run(['gcc','-O2','-Wall','-Wextra','-Werror',str(path/'test.c'),'-o',str(path/'test')],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['gcc', '-O2', '-Wall', '-Wextra', '-Werror', '/tmp/bk-smp-handoff-9py02zi_/test.c', '-o', '/tmp/bk-smp-handoff-9py02zi_/test']' returned non-zero exit status 1.
+PASS actual SMP handoff: stacks stay owned until retirement; completed wakes publish immediately; future/wrapped deadlines and futex expiry preserved; no duplicate wake or queued zombie
+EXPECTED FAILURE: old scheduler leaves a completed wake asleep after safe stack retirement

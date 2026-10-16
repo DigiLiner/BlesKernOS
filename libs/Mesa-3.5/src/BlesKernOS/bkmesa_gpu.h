@@ -50,8 +50,10 @@ GLboolean bkmesa_gpu_try_clear(GLcontext *ctx, GLbitfield mask,
                                GLboolean all, GLint x, GLint y,
                                GLint width, GLint height);
 GLboolean bkmesa_gpu_resolve(GLcontext *ctx);
+GLboolean bkmesa_gpu_resolve_color(GLcontext *ctx);
 void bkmesa_gpu_flush(GLcontext *ctx);
 void bkmesa_gpu_finish(GLcontext *ctx);
+void bkmesa_gpu_palette_changed(GLcontext *ctx, struct gl_texture_object *obj);
 void bkmesa_gpu_texture_changed(GLcontext *ctx,
                                 struct gl_texture_object *texObj);
 void bkmesa_gpu_texture_region_changed(GLcontext *ctx,

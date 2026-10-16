@@ -1,0 +1,285 @@
+{
+  "schema": 1,
+  "host_executions_passed": 22,
+  "guest_scenarios_passed": 11,
+  "source_archive_rebuilds_passed": 2,
+  "hardware_physically_validated": 0,
+  "framebuffer_conditional_ids": 933,
+  "kernel_sha256": "138cc1d44f8023da57a63aa34e302acd1ddd2343ec640620f6a35c24473a75fe",
+  "image": "build/bleskernos-family-drivers.img",
+  "native_fixtures": [
+    {
+      "case": "pro100-82557",
+      "exit_code": 0,
+      "wall_seconds": 14.43,
+      "command": [
+        "python3",
+        "tests/kernel/run_ram_smoke.py",
+        "--base",
+        "build/bleskernos-family-drivers.img",
+        "--installed",
+        "--smoke",
+        "--ram",
+        "64",
+        "--smp",
+        "2",
+        "--fixture",
+        "network",
+        "--network",
+        "--network-device",
+        "i82557b",
+        "--out",
+        "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/evidence/family-expansion-2026-10-13/final/pro100-82557"
+      ]
+    },
+    {
+      "case": "pro100-82559",
+      "exit_code": 0,
+      "wall_seconds": 14.36,
+      "command": [
+        "python3",
+        "tests/kernel/run_ram_smoke.py",
+        "--base",
+        "build/bleskernos-family-drivers.img",
+        "--installed",
+        "--smoke",
+        "--ram",
+        "64",
+        "--smp",
+        "2",
+        "--fixture",
+        "network",
+        "--network",
+        "--network-device",
+        "i82559c",
+        "--out",
+        "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/evidence/family-expansion-2026-10-13/final/pro100-82559"
+      ]
+    },
+    {
+      "case": "usb-ecm-uhci",
+      "exit_code": 0,
+      "wall_seconds": 20.02,
+      "command": [
+        "python3",
+        "tests/kernel/run_ram_smoke.py",
+        "--base",
+        "build/bleskernos-family-drivers.img",
+        "--installed",
+        "--smoke",
+        "--ram",
+        "64",
+        "--smp",
+        "2",
+        "--fixture",
+        "network",
+        "--network",
+        "--network-device",
+        "usb-net",
+        "--device",
+        "piix3-usb-uhci,id=uhci",
+        "--out",
+        "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/evidence/family-expansion-2026-10-13/final/usb-ecm-uhci"
+      ]
+    },
+    {
+      "case": "usb-ecm-ohci",
+      "exit_code": 0,
+      "wall_seconds": 28.14,
+      "command": [
+        "python3",
+        "tests/kernel/run_ram_smoke.py",
+        "--base",
+        "build/bleskernos-family-drivers.img",
+        "--installed",
+        "--smoke",
+        "--ram",
+        "64",
+        "--smp",
+        "2",
+        "--fixture",
+        "network",
+        "--network",
+        "--network-device",
+        "usb-net",
+        "--device",
+        "pci-ohci,id=ohci",
+        "--out",
+        "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/evidence/family-expansion-2026-10-13/final/usb-ecm-ohci"
+      ]
+    },
+    {
+      "case": "usb-hid-ohci",
+      "exit_code": 0,
+      "wall_seconds": 20.18,
+      "command": [
+        "python3",
+        "tests/kernel/run_ram_smoke.py",
+        "--base",
+        "build/bleskernos-family-drivers.img",
+        "--installed",
+        "--smoke",
+        "--ram",
+        "64",
+        "--smp",
+        "2",
+        "--fixture",
+        "usbinput",
+        "--machine",
+        "pc,i8042=off,usb=off",
+        "--device",
+        "pci-ohci,id=ohci",
+        "--device",
+        "usb-kbd,bus=ohci.0",
+        "--device",
+        "usb-mouse,bus=ohci.0",
+        "--out",
+        "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/evidence/family-expansion-2026-10-13/final/usb-hid-ohci"
+      ]
+    },
+    {
+      "case": "cirrus-fb",
+      "exit_code": 0,
+      "wall_seconds": 24.57,
+      "command": [
+        "python3",
+        "tests/kernel/run_ram_smoke.py",
+        "--base",
+        "build/bleskernos-family-drivers.img",
+        "--installed",
+        "--smoke",
+        "--ram",
+        "64",
+        "--smp",
+        "2",
+        "--fixture",
+        "framebuffer",
+        "--vga",
+        "cirrus",
+        "--out",
+        "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/evidence/family-expansion-2026-10-13/final/cirrus-fb"
+      ],
+      "evidence": "final-cirrus-verified/",
+      "supersedes_generic_vesa_only_check": true
+    },
+    {
+      "case": "hp1020-render",
+      "exit_code": 0,
+      "wall_seconds": 25.42,
+      "command": [
+        "python3",
+        "tests/kernel/run_ram_smoke.py",
+        "--base",
+        "build/bleskernos-family-drivers.img",
+        "--installed",
+        "--smoke",
+        "--ram",
+        "64",
+        "--smp",
+        "2",
+        "--fixture",
+        "printing",
+        "--out",
+        "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/evidence/family-expansion-2026-10-13/final/hp1020-render"
+      ]
+    },
+    {
+      "case": "printer-family-auto",
+      "exit_code": 0,
+      "wall_seconds": 20.18,
+      "command": [
+        "python3",
+        "tests/kernel/run_ram_smoke.py",
+        "--base",
+        "build/bleskernos-family-drivers.img",
+        "--installed",
+        "--smoke",
+        "--ram",
+        "64",
+        "--smp",
+        "2",
+        "--fixture",
+        "printerfamily",
+        "--out",
+        "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/evidence/family-expansion-2026-10-13/final/printer-family-auto"
+      ]
+    },
+    {
+      "case": "idle-32m",
+      "exit_code": 0,
+      "wall_seconds": 31.46,
+      "command": [
+        "python3",
+        "tests/kernel/run_ram_smoke.py",
+        "--base",
+        "build/bleskernos-family-drivers.img",
+        "--installed",
+        "--smoke",
+        "--ram",
+        "64",
+        "--smp",
+        "2",
+        "--fixture",
+        "idle",
+        "--ram",
+        "32",
+        "--smp",
+        "1",
+        "--out",
+        "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/evidence/family-expansion-2026-10-13/final/idle-32m"
+      ]
+    }
+  ],
+  "usb_root": [
+    {
+      "case": "final-ehci-root",
+      "pass": true,
+      "evidence": "final-ehci-root/",
+      "desktop_wall_seconds": 23.961904600000707,
+      "reads": [
+        {
+          "pass": 0,
+          "bytes": 1048576,
+          "ticks": 28,
+          "hz": 100,
+          "valid": 1
+        },
+        {
+          "pass": 1,
+          "bytes": 1048576,
+          "ticks": 2,
+          "hz": 100,
+          "valid": 1
+        }
+      ]
+    },
+    {
+      "case": "final-uhci-ready",
+      "pass": true,
+      "evidence": "final-uhci-ready/",
+      "desktop_wall_seconds": 148.89811925400863,
+      "reads": [
+        {
+          "pass": 0,
+          "bytes": 1048576,
+          "ticks": 137,
+          "hz": 100,
+          "valid": 1
+        },
+        {
+          "pass": 1,
+          "bytes": 1048576,
+          "ticks": 4,
+          "hz": 100,
+          "valid": 1
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Final Cirrus check requires LEGACYFB activation as well as colors.",
+    "UHCI startup readiness timeout reproduced; fixed and verified with late-live-PID host test and USB-root boot.",
+    "Final kernel late-readiness change additionally checked by final-late-ready-fast printer AUTO fixture.",
+    "Earlier failing/partial attempts are retained as diagnostic evidence; only designated final runs count."
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "date": "2026-10-09",
+  "families": [
+    "DejaVu Sans",
+    "DejaVu Serif",
+    "DejaVu Sans Mono",
+    "Noto Sans",
+    "Noto Serif",
+    "Noto Mono",
+    "Hack",
+    "Ubuntu derivative BlesK",
+    "Ubuntu Mono derivative BlesK",
+    "Roboto",
+    "Open Sans",
+    "Montserrat",
+    "Oswald",
+    "Comic Neue",
+    "Arimo",
+    "Cousine",
+    "Rubik",
+    "Inter",
+    "Manrope",
+    "DM Serif Display"
+  ],
+  "family_count": 20,
+  "sizes": {
+    "min": 8,
+    "max": 72,
+    "count": 65
+  },
+  "pack_bytes": 89197253,
+  "decoded_strike_bytes": 213548168,
+  "build": {
+    "edition": "user",
+    "image": "temporary scratch image",
+    "exit_code": 0,
+    "normal_image_exact_payloads": true,
+    "kernel_layout": "PASS"
+  },
+  "tests": {
+    "pack_codec_and_catalog": "PASS",
+    "actual_C_renderer_ASan_UBSan": "PASS",
+    "BFS4_update_preserves_existing_user_file": "PASS",
+    "Roboto_regeneration_matches_checked_in_pack": true,
+    "regenerated_license_matches_bundle": true
+  },
+  "guest": {
+    "emulator": "qemu-system-i386 KVM",
+    "cpus": 2,
+    "ram_mib": 2048,
+    "graphics": "virtio-vga without host GL",
+    "desktop_released": true,
+    "wine_ready": true,
+    "visually_checked": [
+      "classic grey relief layout and divider",
+      "20 family dropdown with labels rendered in their own fonts; first and last pages",
+      "keyboard family selection and editable size",
+      "mouse family selection (DM Serif Display)",
+      "spin decrement 72 to 71",
+      "typed 1 clamped to 8 and 99 clamped to 72",
+      "large preview wraps words and scrolls with PgDn",
+      "window height resize adapts preview and status"
+    ]
+  },
+  "screenshots": [
+    "main",
+    "dropdown-first",
+    "dropdown-last",
+    "size-min8",
+    "size-max72",
+    "spin71",
+    "serif24",
+    "resized",
+    "large72",
+    "large72-scrolled"
+  ],
+  "production_image": {
+    "modified": false,
+    "sha256": "fe093ea01097b541258e6fea98be5042f26a43b82470abd1afc2f1c6647203f5"
+  },
+  "scope": "Native OS fonts. UTF-8 repertoire 201 characters; integer sizes 8..72. Guest reads bounded raster packs, not TTF."
+}

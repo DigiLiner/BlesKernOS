@@ -1,0 +1,1 @@
+PASS signal frame work permits blocking outside spinlock; masked signals, failed delivery, zombie/kernel returns and final scheduler handoff keep IRQs disabled

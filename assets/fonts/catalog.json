@@ -1,0 +1,305 @@
+{
+  "families": [
+    {
+      "stem": "DejaVuSans",
+      "name": "DejaVu Sans",
+      "flags": 0,
+      "source": "source/DejaVuSans.ttf",
+      "license": "DejaVu.txt",
+      "upstream": "https://dejavu-fonts.github.io/",
+      "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280"
+    },
+    {
+      "stem": "DejaVuSerif",
+      "name": "DejaVu Serif",
+      "flags": 0,
+      "source": "source/DejaVuSerif.ttf",
+      "license": "DejaVu.txt",
+      "upstream": "https://dejavu-fonts.github.io/",
+      "sha256": "8f2c103bfa3fd5de71f1b92b18f21906b5a26871fb7e19a9a4c9af539c3cc7ab"
+    },
+    {
+      "stem": "DejaVuSansMono",
+      "name": "DejaVu Sans Mono",
+      "flags": 1,
+      "source": "source/DejaVuSansMono.ttf",
+      "license": "DejaVu.txt",
+      "upstream": "https://dejavu-fonts.github.io/",
+      "sha256": "c805f9436dbc268644c1d9584f01a601a653e028e08fd74b9b949f6cf8304d88"
+    },
+    {
+      "stem": "NotoSans",
+      "name": "Noto Sans",
+      "flags": 0,
+      "source": "source/NotoSans.ttf",
+      "license": "Noto.txt",
+      "upstream": "https://github.com/notofonts",
+      "sha256": "89c3c497f618fdaa0b2d1e98fef93582f28c71debd2c4a8cdf41f190ced2909d"
+    },
+    {
+      "stem": "NotoSerif",
+      "name": "Noto Serif",
+      "flags": 0,
+      "source": "source/NotoSerif.ttf",
+      "license": "Noto.txt",
+      "upstream": "https://github.com/notofonts",
+      "sha256": "9d7583b7dc9e812afd32a14280c5cac3160012efe50c8d08938f4fea266ff67f"
+    },
+    {
+      "stem": "NotoMono",
+      "name": "Noto Mono",
+      "flags": 1,
+      "source": "source/NotoMono.ttf",
+      "license": "Noto.txt",
+      "upstream": "https://github.com/notofonts",
+      "sha256": "41fd7ccc82375e2a1e47f0cc2c941c14d7c99ba2f57cf69c9f738d07fb257686"
+    },
+    {
+      "stem": "Hack",
+      "name": "Hack",
+      "flags": 1,
+      "source": "source/Hack.ttf",
+      "license": "Hack.txt",
+      "upstream": "https://github.com/source-foundry/Hack",
+      "sha256": "9f67c8a8cd28498525639437d6fac588c452e8572945c790db7641cc7907a69b"
+    },
+    {
+      "stem": "Ubuntu",
+      "name": "Ubuntu derivative BlesK",
+      "flags": 0,
+      "source": "source/Ubuntu.ttf",
+      "license": "Ubuntu.txt",
+      "upstream": "https://design.ubuntu.com/font/",
+      "sha256": "28c4c189a44803b1986fd16074187034dc6d94ad35f5e87de13dd0e786b70b73",
+      "original_family": "Ubuntu"
+    },
+    {
+      "stem": "UbuntuMono",
+      "name": "Ubuntu Mono derivative BlesK",
+      "flags": 1,
+      "source": "source/UbuntuMono.ttf",
+      "license": "Ubuntu.txt",
+      "upstream": "https://design.ubuntu.com/font/",
+      "sha256": "fbf1e748836994f730e602f7dcf2525564d6d78aa336080cbb73af909d0e08ee",
+      "original_family": "Ubuntu Mono"
+    },
+    {
+      "stem": "Roboto",
+      "name": "Roboto",
+      "flags": 0,
+      "source": "source/Roboto.ttf",
+      "license": "Roboto.txt",
+      "upstream": "https://github.com/google/fonts/tree/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/roboto",
+      "source_url": "https://raw.githubusercontent.com/google/fonts/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/roboto/Roboto%5Bwdth%2Cwght%5D.ttf",
+      "sha256": "d7598e12c5dbef095ff8272cfc55da0250bd07fbdecbac8a530b9b277872a134"
+    },
+    {
+      "stem": "OpenSans",
+      "name": "Open Sans",
+      "flags": 0,
+      "source": "source/OpenSans.ttf",
+      "license": "OpenSans.txt",
+      "upstream": "https://github.com/google/fonts/tree/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/opensans",
+      "source_url": "https://raw.githubusercontent.com/google/fonts/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/opensans/OpenSans%5Bwdth%2Cwght%5D.ttf",
+      "sha256": "36643644f318a812aab2d2ed3bb98f8cf0872527f835fe9398d95fe6b9adb878"
+    },
+    {
+      "stem": "Montserrat",
+      "name": "Montserrat",
+      "flags": 0,
+      "source": "source/Montserrat.ttf",
+      "license": "Montserrat.txt",
+      "upstream": "https://github.com/google/fonts/tree/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/montserrat",
+      "source_url": "https://raw.githubusercontent.com/google/fonts/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/montserrat/Montserrat%5Bwght%5D.ttf",
+      "sha256": "0f7b311b2f3279e4eef9b2f968bcdbab6e28f4daeb1f049f4f278a902bcd82f7"
+    },
+    {
+      "stem": "Oswald",
+      "name": "Oswald",
+      "flags": 0,
+      "source": "source/Oswald.ttf",
+      "license": "Oswald.txt",
+      "upstream": "https://github.com/google/fonts/tree/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/oswald",
+      "source_url": "https://raw.githubusercontent.com/google/fonts/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/oswald/Oswald%5Bwght%5D.ttf",
+      "sha256": "5b38c246e255a12f5712d640d56bcced0472466fc68983d2d0410ec0457c2817"
+    },
+    {
+      "stem": "ComicNeue",
+      "name": "Comic Neue",
+      "flags": 0,
+      "source": "source/ComicNeue.ttf",
+      "license": "ComicNeue.txt",
+      "upstream": "https://github.com/google/fonts/tree/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/comicneue",
+      "source_url": "https://raw.githubusercontent.com/google/fonts/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/comicneue/ComicNeue-Regular.ttf",
+      "sha256": "a0ee5a37c8b27c4db0700137d928598b1e23b0089e1546a8961909176b779360"
+    },
+    {
+      "stem": "Arimo",
+      "name": "Arimo",
+      "flags": 0,
+      "source": "source/Arimo.ttf",
+      "license": "Arimo.txt",
+      "upstream": "https://github.com/google/fonts/tree/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/arimo",
+      "source_url": "https://raw.githubusercontent.com/google/fonts/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/arimo/Arimo%5Bwght%5D.ttf",
+      "sha256": "e43898b143ec826ac8cb4034816458a7047fbe0836558de2a1f8c6223ae3e0ca"
+    },
+    {
+      "stem": "Cousine",
+      "name": "Cousine",
+      "flags": 1,
+      "source": "source/Cousine.ttf",
+      "license": "Cousine.txt",
+      "upstream": "https://github.com/google/fonts/tree/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/cousine",
+      "source_url": "https://raw.githubusercontent.com/google/fonts/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/cousine/Cousine-Regular.ttf",
+      "sha256": "1da22250675fc4c42fcf3a9736c44bc0570516105331443b663fd5cfbd1412fe"
+    },
+    {
+      "stem": "Rubik",
+      "name": "Rubik",
+      "flags": 0,
+      "source": "source/Rubik.ttf",
+      "license": "Rubik.txt",
+      "upstream": "https://github.com/google/fonts/tree/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/rubik",
+      "source_url": "https://raw.githubusercontent.com/google/fonts/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/rubik/Rubik%5Bwght%5D.ttf",
+      "sha256": "1b3a7437ba2af80e465e773ed60c5036d1ba6ace492d89046dbcf18fb31e4e88"
+    },
+    {
+      "stem": "Inter",
+      "name": "Inter",
+      "flags": 0,
+      "source": "source/Inter.ttf",
+      "license": "Inter.txt",
+      "upstream": "https://github.com/google/fonts/tree/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/inter",
+      "source_url": "https://raw.githubusercontent.com/google/fonts/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf",
+      "sha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031"
+    },
+    {
+      "stem": "Manrope",
+      "name": "Manrope",
+      "flags": 0,
+      "source": "source/Manrope.ttf",
+      "license": "Manrope.txt",
+      "upstream": "https://github.com/google/fonts/tree/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/manrope",
+      "source_url": "https://raw.githubusercontent.com/google/fonts/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/manrope/Manrope%5Bwght%5D.ttf",
+      "sha256": "3ae11c49db0455a3cc33e37d380f20fdb8c7f8b41dc07625c177e3d87a9d6ae6"
+    },
+    {
+      "stem": "DMSerifDisplay",
+      "name": "DM Serif Display",
+      "flags": 0,
+      "source": "source/DMSerifDisplay.ttf",
+      "license": "DMSerifDisplay.txt",
+      "upstream": "https://github.com/google/fonts/tree/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/dmserifdisplay",
+      "source_url": "https://raw.githubusercontent.com/google/fonts/2eb0b48d5f760f62e286216f0859a8c540dbc1bd/ofl/dmserifdisplay/DMSerifDisplay-Regular.ttf",
+      "sha256": "8cc3643535edf039aa5d95440a8542735e9197e4f4b8d9303e980fefbf5ab616"
+    },
+    {
+      "stem": "HelveticaBoldBitmap",
+      "name": "Helvetica Bold Bitmap",
+      "flags": 0,
+      "format": "bdf",
+      "source": "source/x11/helvB24.bdf",
+      "strikes": [
+        "source/x11/helvB08.bdf",
+        "source/x11/helvB10.bdf",
+        "source/x11/helvB12.bdf",
+        "source/x11/helvB14.bdf",
+        "source/x11/helvB18.bdf",
+        "source/x11/helvB24.bdf"
+      ],
+      "source_hashes": {
+        "source/x11/helvB08.bdf": "601c787d794aafef4d50e1eff2d50676deebcfebb9f33d1daf97cbcf63abdc14",
+        "source/x11/helvB10.bdf": "81851d0cb0849feccdd9621b6fc050ff0c6383e4306c2b2ec6004acf6f051713",
+        "source/x11/helvB12.bdf": "f55e00f7d25305ccf3284db990c20f962ceb5be9f1f2e7906f32dd812665be42",
+        "source/x11/helvB14.bdf": "ddcdaaca8d09bbfea4cf2e82a1644276025cf1c6bb6e522429b8b8e2470fa46b",
+        "source/x11/helvB18.bdf": "84c73350c1d13770d20d52d67f8344029cb8685511c2aac2fd2d60fe706cda01",
+        "source/x11/helvB24.bdf": "d323a5051b286a7ed6130712416f61eaf655dadd2ea7a7210b9b824132b32a28"
+      },
+      "license": "X11-Adobe.txt",
+      "upstream": "https://www.x.org/releases/individual/font/font-adobe-75dpi-1.0.4.tar.xz",
+      "sha256": "d323a5051b286a7ed6130712416f61eaf655dadd2ea7a7210b9b824132b32a28",
+      "history": "Adobe/DEC X11 bitmap designs, copyright 1984–1989, 1994; Unicode extensions in this distribution are newer."
+    },
+    {
+      "stem": "CourierBitmap",
+      "name": "Courier Bitmap",
+      "flags": 1,
+      "format": "bdf",
+      "source": "source/x11/courR24.bdf",
+      "strikes": [
+        "source/x11/courR08.bdf",
+        "source/x11/courR10.bdf",
+        "source/x11/courR12.bdf",
+        "source/x11/courR14.bdf",
+        "source/x11/courR18.bdf",
+        "source/x11/courR24.bdf"
+      ],
+      "source_hashes": {
+        "source/x11/courR08.bdf": "e24b85bbd70d5e7ffa253f2cea87aa6298968f89780e6e244d9456132fdb51f5",
+        "source/x11/courR10.bdf": "61db0ca62afba9c038fc05ca9d619b366267adbb191133b9ef3ae9d486df9ae2",
+        "source/x11/courR12.bdf": "cf6c7c253b3ab2ca20cabf374c49e597028d7924af4badec2c923a3004a294e2",
+        "source/x11/courR14.bdf": "aa52bbd8952818e40538297dfcbe8c0226a48c3f0cb9c03e3b4b2a59a4151159",
+        "source/x11/courR18.bdf": "1d38a152e0724856428b80a2979aa65a8a658be127b598ec973c57301ef37525",
+        "source/x11/courR24.bdf": "01cef9a0e179b7d23ade8cd111ea3e205ffda8ebf02d5d430652e59d94f85181"
+      },
+      "license": "X11-Adobe.txt",
+      "upstream": "https://www.x.org/releases/individual/font/font-adobe-75dpi-1.0.4.tar.xz",
+      "sha256": "01cef9a0e179b7d23ade8cd111ea3e205ffda8ebf02d5d430652e59d94f85181",
+      "history": "Adobe/DEC X11 bitmap designs, copyright 1984–1989, 1994; Unicode extensions in this distribution are newer."
+    },
+    {
+      "stem": "TimesBitmap",
+      "name": "Times Bitmap",
+      "flags": 0,
+      "format": "bdf",
+      "source": "source/x11/timR24.bdf",
+      "strikes": [
+        "source/x11/timR08.bdf",
+        "source/x11/timR10.bdf",
+        "source/x11/timR12.bdf",
+        "source/x11/timR14.bdf",
+        "source/x11/timR18.bdf",
+        "source/x11/timR24.bdf"
+      ],
+      "source_hashes": {
+        "source/x11/timR08.bdf": "183eaaa2bea0a8735954ba9b504ce76dc004df59c7ea156190a8a7461fed05e4",
+        "source/x11/timR10.bdf": "97a813a2317142846f8b0cb0036204093c3dadb63a7383053cb860e56a96e80a",
+        "source/x11/timR12.bdf": "602c6b50255eddafdb5aad591257d267727bcd842099ded75584062d49ea640d",
+        "source/x11/timR14.bdf": "87e06263f83f8f04b8a25a47471b2ef1a01d370e5b51931fbd70c60ef5900ffe",
+        "source/x11/timR18.bdf": "027b5010abc57f316374b05471d6d9460f889b53cebfce6c8d778e0430d4c7e2",
+        "source/x11/timR24.bdf": "b85000d127b7f8b589b97b10734400adaa5e6552f72b73f718f1584016a8c58a"
+      },
+      "license": "X11-Adobe.txt",
+      "upstream": "https://www.x.org/releases/individual/font/font-adobe-75dpi-1.0.4.tar.xz",
+      "sha256": "b85000d127b7f8b589b97b10734400adaa5e6552f72b73f718f1584016a8c58a",
+      "history": "Adobe/DEC X11 bitmap designs, copyright 1984–1989, 1994; Unicode extensions in this distribution are newer."
+    },
+    {
+      "stem": "HelveticaBoldObliqueBitmap",
+      "name": "Helvetica Bold Oblique Bitmap",
+      "flags": 0,
+      "format": "bdf",
+      "source": "source/x11/helvBO24.bdf",
+      "strikes": [
+        "source/x11/helvBO08.bdf",
+        "source/x11/helvBO10.bdf",
+        "source/x11/helvBO12.bdf",
+        "source/x11/helvBO14.bdf",
+        "source/x11/helvBO18.bdf",
+        "source/x11/helvBO24.bdf"
+      ],
+      "source_hashes": {
+        "source/x11/helvBO08.bdf": "ede368d82c6075450a7cb21a10c7aa071dc24df432b45dcb7b15cbf1f66182df",
+        "source/x11/helvBO10.bdf": "caa5d48fa7aa71fea9bae1f40b5bc6007f569b64a4c06725c531b5bc36730998",
+        "source/x11/helvBO12.bdf": "39daefe0da0494500dc34f189bbeb1914bd5cf382a1dfe4e883b6da4c6408060",
+        "source/x11/helvBO14.bdf": "9b39c158cdf6ef87c6bd30f8762c80d210e090eab62cc7ec34fbd1d91137af63",
+        "source/x11/helvBO18.bdf": "b65fbd20ca7b7e6157fd6fa8310a1e12640da234d7890c69bb8c49e22ac978f9",
+        "source/x11/helvBO24.bdf": "b2d2da1b3ce293b4fe40732b320af3f374aa0a69861fa58ef335bed21defa0a9"
+      },
+      "license": "X11-Adobe.txt",
+      "upstream": "https://www.x.org/releases/individual/font/font-adobe-75dpi-1.0.4.tar.xz",
+      "sha256": "b2d2da1b3ce293b4fe40732b320af3f374aa0a69861fa58ef335bed21defa0a9",
+      "history": "Original Adobe/DEC X11 bold oblique bitmap design; same historical collection as Helvetica Bold Bitmap."
+    }
+  ]
+}

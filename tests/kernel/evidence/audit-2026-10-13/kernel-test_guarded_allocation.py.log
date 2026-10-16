@@ -1,0 +1,1 @@
+PASS guarded IPC/user storage starts zero; aligned guards, allocation failure and PTE rollback release all storage

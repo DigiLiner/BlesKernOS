@@ -1,0 +1,266 @@
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA FAIL
+[BKBOOT t=0] STARTING KERNEL
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=1572347 KiB top=1572732 KiB
+  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000
+  [MM] RAM usable: 1536 MB
+  [MM] Heap dinamico: 0xc00000 - 0x1ffdf000 (511868 KB)
+  [MM] VM frames: 0x1ffdf000 - 0x5ffdf000 (1048576 KiB, 262144 paginas)
+  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)
+  [MM] Vista PE fija: 0x400000 - 0x800000
+[PAGING] Ring 3 permitido: 0x400000-0x800000 y heap 0xc00000-0x1ffdf000
+[COMPAT] perfil=normal RAM_top=1572732 KiB heap=511868 KiB tareas=128 CPU=fam6/mod122 GUI=60FPS TIMER=300Hz
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 6 dispositivos detectados
+  [LPT] LPT1 base=0x0378 status=0xD9 listo
+  [ATA] canales IDE normalizados despues del probe
+[AHCI] PCI 0x0:0x3.0x0 ABAR=0xfebf1000 ports=0x3f
+[AHCI] ahci0: port=0 sectors=1572864 DMA ready
+[BKBOOT t=31] STORAGE DRIVERS
+[BKBOOT t=31] MOUNTING FILESYSTEM
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=1
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 1
+[FAT] dev[0]=ahci0 tipo=6 sectores=1572864
+Intentando montar ahci0...
+fat_set_active(ahci0)
+No es particion, buscando ahci0
+Dispositivo encontrado
+fat_try_mount_device OK
+fat_set_active OK
+Montado ahci0 OK
+[VFS] /TEMP listo
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[AC97] controlador ICH-compatible no detectado
+[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=6 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+  [USBCLASS] HID boot/report, hubs USB 1.1 y printers cargados
+[DVR] usbclass: cargado (/SYSTEM/DRIVERS/USBCLASS.DVR)
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado
+[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo
+[SVGA.DVR] dispositivo 15AD:0405 no detectado
+[DVR] /SYSTEM/DRIVERS/VMWARESVGA.DVR: ERROR: init del driver fallo
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 10 modulo(s) cargado(s)
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA OK mode=800x600x32 pitch=3200 fb=0xfd000000
+[GFXRES] boot icons 9/9 precargados
+[SOUND:EVENT] sin backend PCM; sonidos GUI desactivados en esta sesion
+[BKBOOT t=687] LOADING PRINT SERVICE
+[PRINT] spooler inicia[PRINT] PrintSpool Ring 3 listo
+do en segundo plano, pid=3
+[BKBOOT t=712] STARTING VISION
+[VISION] servicio lanzado pid=4
+[VISION] ownership grafico adquirido pid=4
+[BKBOOT t=749] PREPARING DESKTOP
+[BKBOOT t=752] LOADING DESKTOP ICONS
+[BKBOOT t=753] ICONPAK preload begin
+[BKBOOT t=753] LOADING ICON CACHE
+[BKBOOT t=760] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=777] DESKMANAGER read desktop config
+[BKBOOT t=778] DESKMANAGER desktop config loaded
+[DESKBAR] alloc state bytes=17108
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load BlesKernOS Start icon
+[DESKBAR:STARTICON] stat /ICONS/BLESKERNOS.BMP type=1 size=16522
+[DESKBAR:STARTICON] read OK /ICONS/BLESKERNOS.BMP bytes=16522
+[DESKBAR:STARTICON] hdr sig=BM off=138 dib=124 64x64 bpp=32 comp=3
+[DESKBAR:STARTICON] decode OK /ICONS/BLESKERNOS.BMP -> 64x64
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[TASK] entrada Ring 3 no accesible: 0x1661c9 (screensaverd)
+[THREAD] no se pudo crear worker proceso=4 entry=0x1661c9 nombre=screensaverd
+[VISION] READY: motor, [BKBOOT t=1161] kernel_main: Vision READY
+[BKBOOT t=1161] DISABLE SPLASH / ENTER GUI
+[BKBOOT] QUEUE STARTUP SOUND
+[SOUND] Sin PCM; se omite el sonido de escritorio y compositor bajo Vision
+inicio
+[SMP] escritorio listo; iniciando procesadores secundarios
+[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000
+[SMP] iniciando CPU1 APIC=1...
+[SMP] CPU1 online
+[SMP] 2/2 CPU(s) online; timer LAPIC=208352 cuentas/tick
+[LOCK] inversio[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (124 slots libres)
+[n CPU0 tid=4: gui despues de legacy (se ocultan repeticiones)
+[LOCK] inversion CPU0 tid=4: gfx despues de legacy (se ocultan repeticiones)
+SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI
+[BKBOOT] VISION ONLINE pid=4
+[LOCK] inversion CPU0 tid=4: wine despues de legacy (se ocultan repeticiones)
+[MM] proceso 7: 1 KiB recuperados
+[WINE:DESKTOP] rootless start --warmup
+[VM:FIXED-FREE] pid=9 base=0x60442000 len=0x1000 prot=0x3
+[LOCK] inversion CPU0 tid=4: vfs despues de legacy (se ocultan repeticiones)
+_XSERVTransTransNoListen: unable to find transport: tcp
+scheduling timer: Function not implemented
+[WINE:DESKTOP] TinyX rootless ready on :18 pid=9
+[WINE:TIME] x-ready ms=646
+[WINE:STAGE] PREFIX ready marker=1
+[WINE:TIME] prefix-ready ms=1003 delta_ms=357
+[WINE:STAGE] THEME ready marker=1
+[WINE:TIME] theme-ready ms=1093 delta_ms=90
+[WINE:TIME] warmup-wineserver ms=1373 delta_ms=210 status=0
+[WINE:VM-PERF] phase=warmup-wineserver mmap=9 file=7 cached=6 hits=3 misses=3 fallback=1 file_io_kib=3560 file_io_ms=3
+[VM:FIXED-FREE] pid=18 base=0x60844000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=18 base=0x60a27000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=18 base=0x60b57000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=18 base=0x60c9f000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=21 base=0x60846000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=21 base=0x60a29000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=24 base=0x6083c000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=21 base=0x60b59000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=21 base=0x60ca1000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=24 base=0x60a1f000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=24 base=0x60b4f000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=24 base=0x60c97000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=21 base=0x61dc8000 len=0x1c000 prot=0x3
+[VM:FIXED-FREE] pid=27 base=0x6084b000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=27 base=0x60a2e000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=27 base=0x60b5e000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=27 base=0x60ca6000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=27 base=0x61627000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=31 base=0x6082d000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=31 base=0x60a10000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=31 base=0x60b40000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=31 base=0x60c88000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=27 base=0x61a14000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=27 base=0x62832000 len=0x1c000 prot=0x3
+[VM:FIXED-FREE] pid=45 base=0x6082d000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=45 base=0x60a10000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=45 base=0x60b40000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=45 base=0x60c88000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=54 base=0x6082e000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=54 base=0x60a11000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=54 base=0x60b41000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=54 base=0x60c89000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=31 base=0x61213000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=61 base=0x6082d000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=61 base=0x60a10000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=61 base=0x60b40000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=61 base=0x60c88000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=75 base=0x60830000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=75 base=0x60a13000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=75 base=0x60b43000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=75 base=0x60c8b000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=18 base=0x62157000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=18 base=0x621ac000 len=0x1c000 prot=0x3
+[VM:FIXED-FREE] pid=21 base=0x623ce000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=18 base=0x6216c000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=18 base=0x6229e000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=21 base=0x627bb000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=14 base=0x60830000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=14 base=0x60a13000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=14 base=0x61441000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=14 base=0x61589000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=88 base=0x60884000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=88 base=0x60a67000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=88 base=0x60b97000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=88 base=0x60cdf000 len=0x1000 prot=0x3
+[WINE:TIME] warmup-prime ms=14353 delta_ms=12797 status=0
+[WINE:VM-PERF] phase=warmup-prime mmap=3803 file=2705 cached=2550 hits=1995 misses=555 fallback=155 file_io_kib=211413 file_io_ms=1914
+[WINE:WARMUP] mode=core server=0 prime=0 probe=skipped elapsed_ms=14353
+[WINE:PERF] warmup-ready total_ms=14353 x_ms=646 prefix_ms=1003 theme_ms=1093 wineserver_ms=210 prime_ms=12797 probe_ms=0
+[LINUX:EXIT] pid=91 proc=91 ppid=90 name=wine-preloader status=256 thread=0
+[LINUX:EXIT] pid=93 proc=93 ppid=92 name=wine-preloader status=256 thread=0
+[GATE:ASSOC] path=/SYSTEM/WINE/windows/system32/notepad.exe started=1
+[[WIMNME]: pDErSoKcTeOsPo ]95: ro o1t lKeisBs start /S recuperadosYSTEM/WINE/wind
+ows/system32/notepad.exe
+[VM:FIXED-FREE] pid=97 base=0x60442000 len=0x1000 prot=0x3
+_XSERVTransTransNoListen: unable to find transport: tcp
+scheduling timer: Function not implemented
+[WINE:DESKTOP] TinyX rootless ready on :10 pid=97
+[WINE:TIME] x-ready ms=266
+[WINE:STAGE] PREFIX ready marker=1
+[WINE:TIME] prefix-ready ms=383 delta_ms=117
+[WINE:STAGE] THEME ready marker=1
+[WINE:TIME] theme-ready ms=440 delta_ms=57
+[WINE:STAGE] TARGET begin path=/SYSTEM/WINE/windows/system32/notepad.exe kind=exe
+[WINE:TIME] target-begin ms=470
+[WINE:STAGE] TARGET spawned pid=99
+[WINE:TIME] target-spawned ms=556 delta_ms=86
+[VM:FIXED-FREE] pid=99 base=0x60766000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=99 base=0x60845000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=99 base=0x60a28000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=99 base=0x60b58000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=99 base=0x60ca0000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=99 base=0x60e0e000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=99 base=0x611ea000 len=0x1c000 prot=0x3
+[VM:FIXED-FREE] pid=99 base=0x614e2000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=103 base=0x6084b000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=103 base=0x60a2e000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=103 base=0x60b5e000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=103 base=0x60ca6000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=103 base=0x61627000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=103 base=0x61a14000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=103 base=0x62832000 len=0x1c000 prot=0x3
+[VM:FIXED-FREE] pid=99 base=0x623ea000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=99 base=0x627d7000 len=0x1000 prot=0x3
+[VM:FIXED-FREE] pid=99 base=0x627fb000 len=0x1000 prot=0x3
+[WINE:TIME] first-surface ms=3646 title=notepad.exe
+[WINE:PERF] ready total_ms=3646 x_ms=266 prefix_ms=383 theme_ms=440 target_begin_ms=470 spawn_ms=556 spawn_to_surface_ms=3090
+[WINE:VM-PERF] phase=spawn-to-surface mmap=1009 file=768 cached=708 hits=549 misses=159 fallback=60 file_io_kib=70152 file_io_ms=364

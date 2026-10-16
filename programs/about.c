@@ -22,12 +22,20 @@ static bool about_load_logo(about_state_t *st) {
 
 static void about_cpuid(uint32_t leaf, uint32_t *a, uint32_t *b,
                         uint32_t *c, uint32_t *d) {
+#if defined(BLES_ARCH_ARM32_RPI3)
+    (void)leaf;
+    *a = *b = *c = *d = 0U;
+#else
     __asm__ volatile ("cpuid"
         : "=a"(*a), "=b"(*b), "=c"(*c), "=d"(*d)
         : "a"(leaf), "c"(0));
+#endif
 }
 
 static void about_cpu_name(char *out) {
+#if defined(BLES_ARCH_ARM32_RPI3)
+    bk_runtime_strcpy(out, "ARM Cortex-A53 (AArch32)");
+#else
     uint32_t a, b, c, d;
     about_cpuid(0x80000000, &a, &b, &c, &d);
     if (a >= 0x80000004) {
@@ -50,6 +58,7 @@ static void about_cpu_name(char *out) {
     ((uint32_t *)out)[1] = d;
     ((uint32_t *)out)[2] = c;
     out[12] = '\0';
+#endif
 }
 
 static void about_number(char *out, uint32_t value) {
@@ -87,14 +96,21 @@ static void about_size_text(char *out, uint32_t bytes) {
 static void about_ram_text(char *out) {
     system_memory_info_t info;
     char total[16];
+    char usable[16];
     char free[16];
+    uint32_t managed;
 
     mm_get_system_info(&info);
+    managed = info.total_bytes >= info.reserved_bytes
+        ? (uint32_t)(info.total_bytes - info.reserved_bytes) : 0U;
     about_size_text(total, (uint32_t)info.total_bytes);
+    about_size_text(usable, managed);
     about_size_text(free, (uint32_t)info.free_bytes);
 
     bk_runtime_strcpy(out, total);
-    bk_runtime_strcat(out, " total / ");
+    bk_runtime_strcat(out, " instalados / ");
+    bk_runtime_strcat(out, usable);
+    bk_runtime_strcat(out, " utilizables / ");
     bk_runtime_strcat(out, free);
     bk_runtime_strcat(out, " libres");
 }
@@ -203,33 +219,63 @@ static void about_content(gui_window_t *window UNUSED,
                                     0x00FFFFFF, 2);
     }
 
-    y += logo_h + 10;
-    info_box = (gui_rect_t){x + 10, y, w - 20, 58};
+    /* Linea grabada entre identidad e informacion. */
+    y += logo_h + 6;
+    bk_gui_gfx_draw_line(surface, x + 6, y, x + w - 7, y, 0x00808080);
+    bk_gui_gfx_draw_line(surface, x + 6, y + 1, x + w - 7, y + 1, 0x00FFFFFF);
+    y += 7;
+
+    info_box = (gui_rect_t){x + 6, y, w - 12, 58};
     if (info_box.w > 0 && info_box.h > 0) {
+        /* Marco doble hundido: mas profundidad sin perder el aspecto clasico. */
         bk_gui_gfx_fill_rect(surface, info_box, 0x00FFFFFF);
-        bk_gui_gfx_draw_rect(surface, info_box, 0x0090A0B0);
-        bk_gui_gfx_fill_rect(surface,
-                          (gui_rect_t){info_box.x + 1, info_box.y + 1,
-                                       info_box.w - 2, 1},
-                          0x00F4F7FA);
-        info_clip = (gui_rect_t){info_box.x + 10, info_box.y + 6,
-                                 info_box.w - 20, info_box.h - 12};
-        info_y = info_box.y + 6;
-        bk_gui_font_draw_string(surface, info_box.x + 10, info_y,
+        bk_gui_gfx_draw_line(surface, info_box.x, info_box.y,
+                             info_box.x + info_box.w - 1, info_box.y, 0x00607080);
+        bk_gui_gfx_draw_line(surface, info_box.x, info_box.y,
+                             info_box.x, info_box.y + info_box.h - 1, 0x00607080);
+        bk_gui_gfx_draw_line(surface, info_box.x, info_box.y + info_box.h - 1,
+                             info_box.x + info_box.w - 1,
+                             info_box.y + info_box.h - 1, 0x00FFFFFF);
+        bk_gui_gfx_draw_line(surface, info_box.x + info_box.w - 1, info_box.y,
+                             info_box.x + info_box.w - 1,
+                             info_box.y + info_box.h - 1, 0x00FFFFFF);
+        bk_gui_gfx_draw_line(surface, info_box.x + 1, info_box.y + 1,
+                             info_box.x + info_box.w - 2, info_box.y + 1, 0x00A8B0B8);
+        bk_gui_gfx_draw_line(surface, info_box.x + 1, info_box.y + 1,
+                             info_box.x + 1, info_box.y + info_box.h - 2, 0x00A8B0B8);
+
+        /* Etiquetas separadas por una ranura vertical. */
+        bk_gui_gfx_draw_line(surface, info_box.x + 68, info_box.y + 5,
+                             info_box.x + 68, info_box.y + info_box.h - 6, 0x00D0D4D8);
+        bk_gui_gfx_draw_line(surface, info_box.x + 69, info_box.y + 5,
+                             info_box.x + 69, info_box.y + info_box.h - 6, 0x00F8F8F8);
+
+        info_clip = (gui_rect_t){info_box.x + 76, info_box.y + 5,
+                                 info_box.w - 84, info_box.h - 10};
+        info_y = info_box.y + 5;
+        bk_gui_font_draw_string(surface, info_box.x + 9, info_y,
+                             "Sistema:", 0x00203040, 0, false);
+        bk_gui_font_draw_string_clipped(surface, info_box.x + 76, info_y,
+                                     "BlesKernOS", 0x00203040, info_clip);
+        bk_gui_font_draw_string(surface, info_box.x + 9, info_y + 13,
                              "Kernel:", 0x00203040, 0, false);
-        bk_gui_font_draw_string_clipped(surface, info_box.x + 62, info_y,
+        bk_gui_font_draw_string_clipped(surface, info_box.x + 76, info_y + 13,
                                      "BK1", 0x00203040, info_clip);
-        bk_gui_font_draw_string(surface, info_box.x + 10, info_y + 18,
+        bk_gui_font_draw_string(surface, info_box.x + 9, info_y + 26,
                              "CPU:", 0x00203040, 0, false);
-        bk_gui_font_draw_string_clipped(surface, info_box.x + 62, info_y + 18,
+        bk_gui_font_draw_string_clipped(surface, info_box.x + 76, info_y + 26,
                                      st->cpu, 0x00203040, info_clip);
-        bk_gui_font_draw_string(surface, info_box.x + 10, info_y + 32,
+        bk_gui_font_draw_string(surface, info_box.x + 9, info_y + 39,
                              "RAM:", 0x00203040, 0, false);
-        bk_gui_font_draw_string_clipped(surface, info_box.x + 62, info_y + 32,
+        bk_gui_font_draw_string_clipped(surface, info_box.x + 76, info_y + 39,
                                      st->ram, 0x00203040, info_clip);
     }
 
     footer_y = st->window->bounds.y + st->window->bounds.h - 16;
+    bk_gui_gfx_draw_line(surface, x + 6, footer_y - 5,
+                         x + w - 7, footer_y - 5, 0x00808080);
+    bk_gui_gfx_draw_line(surface, x + 6, footer_y - 4,
+                         x + w - 7, footer_y - 4, 0x00FFFFFF);
     bk_gui_font_draw_string_clipped(surface,
                                  about_centered_text_x(x, w,
                                                        "@H7A28E1E5"),

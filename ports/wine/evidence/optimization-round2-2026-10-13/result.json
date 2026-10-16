@@ -1,0 +1,616 @@
+{
+  "futex_before": {
+    "result": "PASS",
+    "runs": [
+      {
+        "run": 0,
+        "rounds": 1000,
+        "us": 3503334,
+        "waits_main": 1018,
+        "waits_peer": 1019,
+        "wakes_main": 1019,
+        "wakes_peer": 1018
+      },
+      {
+        "run": 1,
+        "rounds": 1000,
+        "us": 3333334,
+        "waits_main": 1019,
+        "waits_peer": 1019,
+        "wakes_main": 1019,
+        "wakes_peer": 1019
+      },
+      {
+        "run": 2,
+        "rounds": 1000,
+        "us": 4263333,
+        "waits_main": 1018,
+        "waits_peer": 1018,
+        "wakes_main": 1018,
+        "wakes_peer": 1018
+      }
+    ]
+  },
+  "futex_after": {
+    "result": "PASS",
+    "runs": [
+      {
+        "run": 0,
+        "rounds": 1000,
+        "us": 2283334,
+        "waits_main": 1003,
+        "waits_peer": 992,
+        "wakes_main": 992,
+        "wakes_peer": 1003
+      },
+      {
+        "run": 1,
+        "rounds": 1000,
+        "us": 2316667,
+        "waits_main": 994,
+        "waits_peer": 979,
+        "wakes_main": 979,
+        "wakes_peer": 994
+      },
+      {
+        "run": 2,
+        "rounds": 1000,
+        "us": 2276666,
+        "waits_main": 977,
+        "waits_peer": 993,
+        "wakes_main": 993,
+        "wakes_peer": 977
+      }
+    ]
+  },
+  "typing": {
+    "baseline": {
+      "samples": [
+        {
+          "key_to_glyph_ms": 319.1320739861112,
+          "injection_ms": 1.4201399753801525,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 314.2463550029788,
+          "injection_ms": 1.6169220034498721,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 287.2067670105025,
+          "injection_ms": 1.763831009157002,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 270.5998219898902,
+          "injection_ms": 3.3322999952360988,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 257.4603749962989,
+          "injection_ms": 1.9416249997448176,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 229.79794300044887,
+          "injection_ms": 1.3457239838317037,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 836.644517024979,
+          "injection_ms": 3.9291280263569206,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 876.533749018563,
+          "injection_ms": 4.787787009263411,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 398.89595899148844,
+          "injection_ms": 2.0993310026824474,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 580.6117909960449,
+          "injection_ms": 8.057298982748762,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 479.82185101136565,
+          "injection_ms": 3.6828379961661994,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 435.0408710015472,
+          "injection_ms": 1.608389982720837,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 1134.0327789948788,
+          "injection_ms": 1.5316240023821592,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 523.5003569978289,
+          "injection_ms": 9.618020994821563,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 278.71687000151724,
+          "injection_ms": 1.6765589825809002,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 305.2253480127547,
+          "injection_ms": 1.474028016673401,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        }
+      ],
+      "p50_ms": 359.0140164887998,
+      "p95_ms": 1134.0327789948788,
+      "max_ms": 1134.0327789948788,
+      "capture_p50_ms": 11.133555512060411,
+      "capture_max_ms": 185.65702499472536,
+      "ram_mib": 1536,
+      "smp": 2,
+      "vga": "vmware",
+      "tinyx": "None",
+      "framebuffer": "0xfd000000",
+      "method": "host monotonic from QMP key-down until new glyph ink in displayed VRAM scanlines; no guest stop while timing; includes VRAM query and QMP overhead"
+    },
+    "futex-ui": {
+      "samples": [
+        {
+          "key_to_glyph_ms": 281.370769982459,
+          "injection_ms": 5.605625978205353,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 290.05304400925525,
+          "injection_ms": 1.5478309942409396,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 265.45940499636345,
+          "injection_ms": 1.4449380105361342,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 274.4705360091757,
+          "injection_ms": 1.9607869908213615,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 281.90670200274326,
+          "injection_ms": 2.1139750024303794,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 261.99631398776546,
+          "injection_ms": 1.3725780008826405,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 250.85655800648965,
+          "injection_ms": 6.954053998924792,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 233.16578299272805,
+          "injection_ms": 1.3587430003099144,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 281.2588649976533,
+          "injection_ms": 1.6824349877424538,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 285.9341549919918,
+          "injection_ms": 1.305545010836795,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 324.15323800523765,
+          "injection_ms": 2.0190380164422095,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 284.6373709908221,
+          "injection_ms": 1.741045998642221,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 249.73467201925814,
+          "injection_ms": 2.4529230140615255,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 327.3318709980231,
+          "injection_ms": 1.4689220115542412,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 252.89574899943545,
+          "injection_ms": 1.3084330130368471,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 283.94858998944983,
+          "injection_ms": 1.5081870078574866,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        }
+      ],
+      "p50_ms": 281.31481749005616,
+      "p95_ms": 327.3318709980231,
+      "max_ms": 327.3318709980231,
+      "capture_p50_ms": 8.189268002752215,
+      "capture_max_ms": 23.287638992769644,
+      "ram_mib": 1536,
+      "smp": 2,
+      "vga": "vmware",
+      "tinyx": "None",
+      "framebuffer": "0xfd000000",
+      "method": "host monotonic from QMP key-down until new glyph ink in displayed VRAM scanlines; no guest stop while timing; includes VRAM query and QMP overhead"
+    },
+    "baseline-ui-repeat": {
+      "samples": [
+        {
+          "key_to_glyph_ms": 338.68971798801795,
+          "injection_ms": 1.539268996566534,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 283.57115702237934,
+          "injection_ms": 1.5577660233248025,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 247.44343000929803,
+          "injection_ms": 1.4187429915182292,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 278.8928799855057,
+          "injection_ms": 1.5817649837117642,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 283.4329000033904,
+          "injection_ms": 1.5847390168346465,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 251.59175097360276,
+          "injection_ms": 1.7780539928935468,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 279.4802249991335,
+          "injection_ms": 1.5717149944975972,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 256.57223400776275,
+          "injection_ms": 1.4522899873554707,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 265.38838000851683,
+          "injection_ms": 1.7574520024936646,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 307.39462599740364,
+          "injection_ms": 3.1268279999494553,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 302.0648290112149,
+          "injection_ms": 1.7162150179501623,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 281.4293489791453,
+          "injection_ms": 1.7314199940301478,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 276.7150260042399,
+          "injection_ms": 1.5117020229808986,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 272.34043800854124,
+          "injection_ms": 1.631305000046268,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 230.2931480226107,
+          "injection_ms": 1.8001790158450603,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 229.87293600453995,
+          "injection_ms": 1.5180130139924586,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        }
+      ],
+      "p50_ms": 277.8039529948728,
+      "p95_ms": 338.68971798801795,
+      "max_ms": 338.68971798801795,
+      "capture_p50_ms": 8.274005987914279,
+      "capture_max_ms": 25.787580001633614,
+      "ram_mib": 1536,
+      "smp": 2,
+      "vga": "vmware",
+      "tinyx": "None",
+      "framebuffer": "0xfd000000",
+      "method": "host monotonic from QMP key-down until new glyph ink in displayed VRAM scanlines; no guest stop while timing; includes VRAM query and QMP overhead"
+    },
+    "futex-ui-repeat": {
+      "samples": [
+        {
+          "key_to_glyph_ms": 339.03903400641866,
+          "injection_ms": 1.5476899861823767,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 281.35130999726243,
+          "injection_ms": 1.9481070048641413,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 273.7729079963174,
+          "injection_ms": 3.5956479841843247,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 357.0505540119484,
+          "injection_ms": 1.7445039993617684,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 230.4229250003118,
+          "injection_ms": 1.5415640082210302,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 370.55012898053974,
+          "injection_ms": 1.4264259953051805,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 379.1469600109849,
+          "injection_ms": 1.3647559972014278,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 439.26193498191424,
+          "injection_ms": 1.6275609959848225,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 418.80985599709675,
+          "injection_ms": 1.4631359954364598,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 649.8949929955415,
+          "injection_ms": 5.732924997573718,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 618.955874000676,
+          "injection_ms": 2.0545420120470226,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 395.6170229939744,
+          "injection_ms": 3.3070749777834862,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 274.85714000067674,
+          "injection_ms": 1.48453502333723,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 299.7678160027135,
+          "injection_ms": 1.4253499975893646,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 285.1053829945158,
+          "injection_ms": 1.5739680093247443,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        },
+        {
+          "key_to_glyph_ms": 290.45337199931964,
+          "injection_ms": 2.7925420145038515,
+          "native_route_ms": null,
+          "tinyx_consume_ms": null,
+          "stream_publish_ms": null
+        }
+      ],
+      "p50_ms": 348.04479400918353,
+      "p95_ms": 649.8949929955415,
+      "max_ms": 649.8949929955415,
+      "capture_p50_ms": 9.959372488083318,
+      "capture_max_ms": 65.44807198224589,
+      "ram_mib": 1536,
+      "smp": 2,
+      "vga": "vmware",
+      "tinyx": "None",
+      "framebuffer": "0xfd000000",
+      "method": "host monotonic from QMP key-down until new glyph ink in displayed VRAM scanlines; no guest stop while timing; includes VRAM query and QMP overhead"
+    }
+  },
+  "typing_improvement_established": false,
+  "ui_functional": {
+    "result": "PASS",
+    "ram_mib": 1536,
+    "smp": 2,
+    "vga": "vmware",
+    "notepad": {
+      "handle": 62131688,
+      "bounds": [
+        36,
+        70,
+        511,
+        376
+      ],
+      "title": "notepad.exe",
+      "visible": true,
+      "listed": true,
+      "owner": 8,
+      "controller": 7
+    },
+    "notepad_after_restart": {
+      "handle": 62131688,
+      "bounds": [
+        36,
+        70,
+        511,
+        376
+      ],
+      "title": "notepad.exe",
+      "visible": true,
+      "listed": true,
+      "owner": 8,
+      "controller": 7
+    },
+    "keyboard_clipboard_before_after": true,
+    "compositor_cpl3": true
+  },
+  "fifa_tested": false,
+  "photoshop_tested": false,
+  "image": "build/bleskernos-wine-optimized-v2.img"
+}

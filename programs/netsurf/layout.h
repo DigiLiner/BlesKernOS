@@ -47,6 +47,7 @@ typedef struct {
     uint8_t opacity;
     uint8_t background_position_flags;
     uint8_t reserved;
+    uint16_t font_id;
     uint16_t text_length;
     uint16_t flags;
 } nsbk_layout_item_t;

@@ -1,0 +1,15 @@
+{
+  "test": "demo1 -> loading; killserver; wait; newgame",
+  "backend": "VMware SVGA3D",
+  "fix": "automatic maps respect VM metadata reservations including libc heap allocations",
+  "kernel_sha256": "9c90f744bad505d080ed830b1d8f50feeaddede8a6fb4652aa14482ae99b05e9",
+  "gpu_frame": 479,
+  "checks": [
+    "optical drive probe PASS",
+    "GPU frames continue after transition",
+    "zero renderer fallbacks in trace",
+    "automatic-map reservation regression PASS",
+    "page protection regression PASS"
+  ],
+  "manual_menu_validation": "pending user confirmation"
+}

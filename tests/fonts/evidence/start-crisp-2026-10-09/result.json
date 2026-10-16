@@ -1,0 +1,13 @@
+{
+  "label": "Start",
+  "font": "Helvetica Bold Oblique Bitmap",
+  "color": "#C0C0C0",
+  "shadow": false,
+  "sizing": "native strikes or exact integer enlargement; 36px is the original 18px doubled",
+  "pixel_check": "All five glyphs at 36px verified byte-for-byte as 2x2 copies of the 18px glyph pixels",
+  "normal_user_build": "PASS",
+  "native_renderer_ASan_UBSan_24x65": "PASS",
+  "normal_image_payloads": "PASS",
+  "guest": "QEMU KVM 2 CPU 2GiB, virtio-vga; appearance visually checked; menu opens",
+  "production_image_written_by_this_task": false
+}

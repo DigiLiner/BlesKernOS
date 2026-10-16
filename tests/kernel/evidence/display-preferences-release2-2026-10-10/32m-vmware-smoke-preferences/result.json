@@ -1,0 +1,46 @@
+{
+  "ram_mib": 32,
+  "backend": "vmware",
+  "desktop_started": true,
+  "completed": true,
+  "smoke_pass": true,
+  "memory": {
+    "DESKTOP": {
+      "total_kib": 32255,
+      "used_kib": 15761,
+      "free_kib": 16493,
+      "reserved_kib": 3711,
+      "heap_used_kib": 12050,
+      "heap_free_kib": 14445,
+      "vm_free_kib": 2048
+    },
+    "IDLE": {
+      "total_kib": 32255,
+      "used_kib": 22470,
+      "free_kib": 9784,
+      "reserved_kib": 3711,
+      "heap_used_kib": 18759,
+      "heap_free_kib": 7736,
+      "vm_free_kib": 2048
+    }
+  },
+  "depths": [],
+  "colors": [
+    {
+      "wanted": 8,
+      "actual": 8
+    },
+    {
+      "wanted": 16,
+      "actual": 16
+    },
+    {
+      "wanted": 4,
+      "actual": 4
+    },
+    {
+      "wanted": 32,
+      "actual": 32
+    }
+  ]
+}

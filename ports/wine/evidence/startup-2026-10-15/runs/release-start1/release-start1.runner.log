@@ -1,0 +1,33 @@
+make: 'build/system/drivers/PS2MOUSE.DVR' is up to date.
+/SYSTEM/DRIVERS/PS2MOUSE.DVR 7140 bytes; mode 0o100644
+/WINEGATE/bin/wine-phase4.ELF 48100 bytes; mode 0o100755
+/SYSTEM/SERVICES/VISION.BEX 255380 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/WINEUITEST.BEX 3524 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/STARTUP.INI 89 bytes; mode 0o100644
+/SYSTEM/USER/CONFIG/SCREENSV.INI 56 bytes; mode 0o100644
+Notepad mapped: {'handle': 62214636, 'bounds': (36, 70, 511, 376), 'title': 'notepad.exe', 'visible': True, 'listed': True, 'owner': 8, 'controller': 7}
+{
+  "result": "PASS",
+  "first_surface_ms": 17110,
+  "ram_mib": 1536,
+  "host_launch_observed_to_surface_ms": 17190.40704201325,
+  "smp": 2,
+  "disk_bus": "ide",
+  "vga": "vmware",
+  "kernel_sha256": "0c7dcd2052a98a16a7199f57f53f68dddfef6dd91efcfc47a387ed8998eefc56",
+  "notepad": {
+    "handle": 62214636,
+    "bounds": [
+      36,
+      70,
+      511,
+      376
+    ],
+    "title": "notepad.exe",
+    "visible": true,
+    "listed": true,
+    "owner": 8,
+    "controller": 7
+  },
+  "method": "guest launcher monotonic time to first surface; fresh guest boot, no typing"
+}

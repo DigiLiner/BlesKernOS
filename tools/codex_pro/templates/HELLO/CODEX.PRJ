@@ -1,0 +1,12 @@
+[project]
+name=Hello
+output=HELLO.O
+sources=main.c
+profile=debug
+sdk=/SDK
+
+[editor]
+syntax=c
+line_numbers=1
+tab_width=4
+autosave=1

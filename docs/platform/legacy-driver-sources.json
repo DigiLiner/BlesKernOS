@@ -1,0 +1,120 @@
+{
+  "retrieved": "2026-10-13",
+  "note": "Reference hashes identify the consulted bytes; only JBIG-KIT is incorporated verbatim as a GPL library. Driver implementations are local.",
+  "sources": [
+    {
+      "file": "es1370.c",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/master/sound/pci/ens1370.c",
+      "sha256": "a7f277fe4144588492740fe7c2242d51caac84ebcb0b7a4ecb78622304d640bf",
+      "usage": "reference only"
+    },
+    {
+      "file": "cmipci.c",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/master/sound/pci/cmipci.c",
+      "sha256": "38acce5352f586724e831c8ae7ff399f02230bf9d0dd09ea273d4ebec0c33e34",
+      "usage": "reference only"
+    },
+    {
+      "file": "via82xx.c",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/master/sound/pci/via82xx.c",
+      "sha256": "bddf23987551b905a1034f55690927c53896f761ab517856b86c1ec8dbb62bee",
+      "usage": "reference only"
+    },
+    {
+      "file": "cs4281.c",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/master/sound/pci/cs4281.c",
+      "sha256": "8832f0b04aad043f258463e4bbdb38b5418b94116f5e7c10e1c5dd78e1cdaa37",
+      "usage": "reference only"
+    },
+    {
+      "file": "pcnet32.c",
+      "url": "https://raw.githubusercontent.com/ipxe/ipxe/master/src/drivers/net/pcnet32.c",
+      "sha256": "95ceb4206d7a70735471330851cefec2273fd67c8b17b2e7f599843b15a9afc8",
+      "usage": "reference only"
+    },
+    {
+      "file": "pcnet32.h",
+      "url": "https://raw.githubusercontent.com/ipxe/ipxe/master/src/drivers/net/pcnet32.h",
+      "sha256": "c5a6c6b9743acb6152b4fed819ecca804ffebfe4c6d6a3f50b2057ac34330f7d",
+      "usage": "reference only"
+    },
+    {
+      "file": "tulip.c",
+      "url": "https://raw.githubusercontent.com/ipxe/ipxe/master/src/drivers/net/tulip.c",
+      "sha256": "2a57d6d70a36cf29569e84b60c05f799d1f51c302177e14b308ca637ef4271c2",
+      "usage": "reference only"
+    },
+    {
+      "file": "via-rhine.c",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/master/drivers/net/ethernet/via/via-rhine.c",
+      "sha256": "3745143ef5f3e76021d2197ded7b634db4c2d71423986de678e382e158148863",
+      "usage": "reference only"
+    },
+    {
+      "file": "sis900.c",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/master/drivers/net/ethernet/sis/sis900.c",
+      "sha256": "d728b8b09fe20367ef98ecf0882559d43dd46766b9bd30d4cbf55b4d8bf9045f",
+      "usage": "reference only"
+    },
+    {
+      "file": "natsemi.c",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/master/drivers/net/ethernet/natsemi/natsemi.c",
+      "sha256": "0fe08a0c6c5a51db10896f3cd814973c155a404c473eedf2bbca14b1db6b60c1",
+      "usage": "reference only"
+    },
+    {
+      "file": "rtl8169_main.c",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/master/drivers/net/ethernet/realtek/r8169_main.c",
+      "sha256": "318a06c27e43a1da82db01a3ff203a09f2d1790d2ffd1852833a1777568b284c",
+      "usage": "reference only"
+    },
+    {
+      "file": "foo2zjs.c",
+      "url": "https://raw.githubusercontent.com/OpenPrinting/foo2zjs/master/foo2zjs.c",
+      "sha256": "7859dcf2d5af4c1dba63807a8d791c5af936c26a6a1dfec164eff897e1a8c1fa",
+      "usage": "reference only"
+    },
+    {
+      "file": "zjs.h",
+      "url": "https://raw.githubusercontent.com/OpenPrinting/foo2zjs/master/zjs.h",
+      "sha256": "d62b56934283fdccfb9137bbf98d8faeab2c6b032b8b4a9732b963c8d5a9cc89",
+      "usage": "reference only"
+    },
+    {
+      "file": "jbig.c",
+      "url": "https://raw.githubusercontent.com/OpenPrinting/foo2zjs/master/jbig.c",
+      "sha256": "835ce9b964a6735187b6e064562695063a65f35fe29924de1d60db660c3e21b3",
+      "usage": "vendored library"
+    },
+    {
+      "file": "jbig.h",
+      "url": "https://raw.githubusercontent.com/OpenPrinting/foo2zjs/master/jbig.h",
+      "sha256": "0c016a8c69e349c510630edbf5b96057be952c2ac19c1a9b8488ad8c9864d7a4",
+      "usage": "vendored library"
+    },
+    {
+      "file": "jbig_ar.c",
+      "url": "https://raw.githubusercontent.com/OpenPrinting/foo2zjs/master/jbig_ar.c",
+      "sha256": "a51552d2f839ce8b758400660bd423b95b4b25cde11e65cc4e7d6c63c1a19d6f",
+      "usage": "vendored library"
+    },
+    {
+      "file": "jbig_ar.h",
+      "url": "https://raw.githubusercontent.com/OpenPrinting/foo2zjs/master/jbig_ar.h",
+      "sha256": "292c4c43c944e2573b558d89b7004cec6c59c70dbbfd7b9890868a2291d1250a",
+      "usage": "vendored library"
+    },
+    {
+      "file": "foo2zjs-COPYING",
+      "url": "https://raw.githubusercontent.com/OpenPrinting/foo2zjs/master/COPYING",
+      "sha256": "9c504edb1ae0bc25cf6191a06f1087c7a8d229b87df4f704fbcaa8415e28935f",
+      "usage": "reference only"
+    },
+    {
+      "file": "qemu-tulip.c",
+      "url": "https://raw.githubusercontent.com/qemu/qemu/master/hw/net/tulip.c",
+      "sha256": "061d9d83567eed1d130a20d78cb45cd9451fb3fa33f7bfd163a4f10666faa8aa",
+      "usage": "reference only"
+    }
+  ]
+}

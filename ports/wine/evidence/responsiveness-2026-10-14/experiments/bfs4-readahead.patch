@@ -1,0 +1,55 @@
+--- a/kernel/drivers/storage/bfs4.c
++++ b/kernel/drivers/storage/bfs4.c
+@@ -107,6 +107,10 @@
+ static bfs4_cache_entry_t *g_cache;
+ static uint32_t g_cache_slots, g_cache_age, g_cache_generation;
+ static kspinlock_t g_cache_lock = KSPINLOCK_INITIALIZER;
++/* Serialized by g_bfs_lock. Small demand-page reads can share one disk
++ * command without exposing the speculative bytes to the caller. */
++static uint8_t *g_read_ahead;
++#define BFS4_READ_AHEAD_BLOCKS 16U
+ 
+ static void bfs4_cache_init(void) {
+     if (g_cache) return;
+@@ -793,12 +797,37 @@
+                 }
+             if (!cached) {
+                 uint32_t epoch = bfs4_cache_epoch();
+-                if (!block_read(v->device, v->start_lba + block * 8U,
++                uint32_t fetch = run;
++                void *target = (uint8_t *)buffer + total;
++                if (g_cache && mm_total_bytes() >= 128U * 1024U * 1024U) {
++                    while (fetch < BFS4_READ_AHEAD_BLOCKS &&
++                           (uint64_t)position / BFS4_BLOCK_SIZE + fetch <
++                               inode->size / BFS4_BLOCK_SIZE &&
++                           bfs4_map(v, inode, position / BFS4_BLOCK_SIZE + fetch) == block + fetch)
++                        ++fetch;
++                    if (fetch > run && !g_read_ahead) {
++                        g_read_ahead = kmalloc(BFS4_READ_AHEAD_BLOCKS * BFS4_BLOCK_SIZE);
++                        if (g_read_ahead) (void)mm_set_allocation_owner(g_read_ahead, 0U);
++                    }
++                    if (fetch > run && g_read_ahead) target = g_read_ahead;
++                    else fetch = run;
++                }
++                bool ok = block_read(v->device, v->start_lba + block * 8U,
++                                     (uint8_t)(fetch * 8U), target);
++                /* A failure in the speculative tail must not turn a readable
++                 * requested page into an I/O error. OOM also keeps the old path. */
++                if (!ok && fetch > run) {
++                    fetch = run; target = (uint8_t *)buffer + total;
++                    ok = block_read(v->device, v->start_lba + block * 8U,
+                                 (uint8_t)(run * 8U),
+-                                (uint8_t *)buffer + total)) return false;
+-                for (uint32_t i = 0; i < run; ++i)
++                                target);
++                }
++                if (!ok) return false;
++                if (target == g_read_ahead)
++                    kmemcpy((uint8_t *)buffer + total, target, run * BFS4_BLOCK_SIZE);
++                for (uint32_t i = 0; i < fetch; ++i)
+                     bfs4_cache_publish(v, block + i,
+-                        (uint8_t *)buffer + total + i * BFS4_BLOCK_SIZE, epoch);
++                        (uint8_t *)target + i * BFS4_BLOCK_SIZE, epoch);
+             }
+             total += run * BFS4_BLOCK_SIZE;
+             continue;

@@ -1,0 +1,28 @@
+[GATE:A] RESULT /WINEGATE/bin/abi status=0
+[GATE:A] RESULT /WINEGATE/bin/case01 status=0
+[STAGE1] heartbeat seconds=0 mapped=0
+[STAGE1] window id=12582913 size=501x347 title=Untitled - Notepad class=notepad.exe
+[STAGE1] application mapped
+[STAGE1] heartbeat seconds=30 mapped=1
+[STAGE1] heartbeat seconds=60 mapped=1
+[STAGE1] heartbeat seconds=90 mapped=1
+[STAGE1] heartbeat seconds=120 mapped=1
+[STAGE1] heartbeat seconds=150 mapped=1
+[STAGE1] heartbeat seconds=180 mapped=1
+[STAGE1] result mapped=1 exited=0 status=0
+[GATE:A] RESULT /WINEGATE/bin/wine-stage1-launch status=0
+[STAGE1] heartbeat seconds=0 mapped=0
+[STAGE1] window id=12582913 size=562x368 title=Registry Editor class=regedit.exe
+[STAGE1] application mapped
+[STAGE1] heartbeat seconds=30 mapped=1
+[STAGE1] heartbeat seconds=60 mapped=1
+[STAGE1] result mapped=1 exited=0 status=0
+[GATE:A] RESULT /WINEGATE/bin/wine-regedit-launch status=0
+[STAGE1] heartbeat seconds=0 mapped=0
+[STAGE1] window id=12582913 size=154x201 title=WineMine class=winemine.exe
+[STAGE1] application mapped
+[STAGE1] heartbeat seconds=30 mapped=1
+[STAGE1] heartbeat seconds=60 mapped=1
+[STAGE1] result mapped=1 exited=0 status=0
+[GATE:A] RESULT /WINEGATE/bin/wine-winemine-launch status=0
+[GATE:A] END

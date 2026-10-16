@@ -1,0 +1,102 @@
+{
+  "ipc-before": {
+    "samples": [
+      {
+        "poll": 0,
+        "sample": 0,
+        "rounds": 500,
+        "us": 1236667,
+        "us_per_round": 2473.334
+      },
+      {
+        "poll": 0,
+        "sample": 1,
+        "rounds": 500,
+        "us": 1773334,
+        "us_per_round": 3546.668
+      },
+      {
+        "poll": 0,
+        "sample": 2,
+        "rounds": 500,
+        "us": 1050000,
+        "us_per_round": 2100.0
+      },
+      {
+        "poll": 1,
+        "sample": 0,
+        "rounds": 500,
+        "us": 1880000,
+        "us_per_round": 3760.0
+      },
+      {
+        "poll": 1,
+        "sample": 1,
+        "rounds": 500,
+        "us": 1746666,
+        "us_per_round": 3493.332
+      },
+      {
+        "poll": 1,
+        "sample": 2,
+        "rounds": 500,
+        "us": 1323334,
+        "us_per_round": 2646.668
+      }
+    ],
+    "median_us_per_round": {
+      "0": 2473.334,
+      "1": 3493.332
+    }
+  },
+  "ipc-after": {
+    "samples": [
+      {
+        "poll": 0,
+        "sample": 0,
+        "rounds": 500,
+        "us": 30000,
+        "us_per_round": 60.0
+      },
+      {
+        "poll": 0,
+        "sample": 1,
+        "rounds": 500,
+        "us": 16666,
+        "us_per_round": 33.332
+      },
+      {
+        "poll": 0,
+        "sample": 2,
+        "rounds": 500,
+        "us": 30000,
+        "us_per_round": 60.0
+      },
+      {
+        "poll": 1,
+        "sample": 0,
+        "rounds": 500,
+        "us": 20000,
+        "us_per_round": 40.0
+      },
+      {
+        "poll": 1,
+        "sample": 1,
+        "rounds": 500,
+        "us": 20000,
+        "us_per_round": 40.0
+      },
+      {
+        "poll": 1,
+        "sample": 2,
+        "rounds": 500,
+        "us": 20000,
+        "us_per_round": 40.0
+      }
+    ],
+    "median_us_per_round": {
+      "0": 60.0,
+      "1": 40.0
+    }
+  }
+}

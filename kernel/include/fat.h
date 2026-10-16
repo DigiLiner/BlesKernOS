@@ -26,7 +26,8 @@ typedef enum {
     FAT_TYPE_NONE = 0,
     FAT_TYPE_FAT12 = 12,
     FAT_TYPE_FAT16 = 16,
-    FAT_TYPE_FAT32 = 32
+    FAT_TYPE_FAT32 = 32,
+    FAT_TYPE_BFS4 = 64
 } fat_type_t;
 
 typedef struct {
@@ -125,10 +126,28 @@ const char *fat_get_active_name(void);
 /* Diagnostico de la ultima operacion FAT que fallo. */
 const char *fat_last_error(void);
 void fat_print_info(const fat_fs_t *fs);
+/* Optional metadata from the same directory scan, without changing the
+ * public fat_dir_entry_t layout used by existing native programs. */
+typedef struct { uint64_t position; uint16_t mode; } fat_dir_metadata_t;
+bool fat_list_dir_metadata(const fat_fs_t *fs, const fat_dir_entry_t *dir,
+    fat_dir_entry_t *entries, fat_dir_metadata_t *metadata,
+    uint32_t max_entries, uint32_t *count);
 bool fat_list_root(const fat_fs_t *fs, fat_dir_entry_t *entries, uint32_t max_entries, uint32_t *count);
 bool fat_list_dir(const fat_fs_t *fs, const fat_dir_entry_t *dir, fat_dir_entry_t *entries, uint32_t max_entries, uint32_t *count);
 bool fat_find_file(const fat_fs_t *fs, const char *name, fat_dir_entry_t *entry);
 bool fat_resolve_path(const fat_fs_t *fs, const char *path, fat_dir_entry_t *entry);
+bool fat_path_inode(const fat_fs_t *fs, const char *path, uint64_t *inode);
+/* BlesKernOS FAT extension: persistent POSIX permission/special bits are
+ * stored in the two otherwise-unused bytes of the short directory entry.
+ * This keeps FAT interoperable (attributes/name/cluster/size stay standard)
+ * while allowing the Linux personality to round-trip chmod/mkdir modes. */
+bool fat_get_posix_mode(const fat_fs_t *fs, const char *path, uint16_t *mode);
+bool fat_set_posix_mode(fat_fs_t *fs, const char *path, uint16_t mode);
+bool fat_set_times(fat_fs_t *fs, const char *path,
+                   bool set_access, uint64_t access_seconds,
+                   bool set_modify, uint64_t modify_seconds);
+bool fat_get_times(const fat_fs_t *fs, const char *path,
+                   uint32_t *access_seconds, uint32_t *modify_seconds);
 bool fat_read_file(const fat_fs_t *fs, const fat_dir_entry_t *entry, void *buffer, uint32_t max_size, uint32_t *bytes_read);
 bool fat_read_file_at(const fat_fs_t *fs, const fat_dir_entry_t *entry, uint32_t offset, void *buffer, uint32_t max_size, uint32_t *bytes_read);
 /* Setup/BKL bulk-write accelerator. Keeps the volume FAT in RAM between
@@ -139,6 +158,10 @@ void fat_bulk_write_end(void);
 bool fat_bulk_write_is_active(void);
 
 bool fat_write_path(fat_fs_t *fs, const char *path, const void *data, uint32_t size);
+/* Persist an append-only cached file without rewriting its existing clusters.
+ * Returns false when the on-disk file no longer has the expected old size. */
+bool fat_append_path(fat_fs_t *fs, const char *path, const void *data,
+                     uint32_t old_size, uint32_t new_size);
 bool fat_mkdir_path(fat_fs_t *fs, const char *path);
 bool fat_remove_path(fat_fs_t *fs, const char *path);
 bool fat_rename_path(fat_fs_t *fs, const char *old_path, const char *new_path);

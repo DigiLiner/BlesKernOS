@@ -1,0 +1,29 @@
+{
+  "environment": "QEMU/KVM, virtio-vga-gl, egl-headless, Intel UHD 600 host, AHCI, 2 CPU, 1536 MiB, Quake II GL 640x480",
+  "comparison": "First 120 swaps of autoplay; scene counts vary with elapsed time, not a deterministic timedemo",
+  "before_socket_and_caps_optimization": {
+    "elapsed_ms": 12446,
+    "resolve_ms": 939,
+    "present_ms": 5360
+  },
+  "after_socket_only": {
+    "elapsed_ms": 11503,
+    "resolve_ms": 1060,
+    "present_ms": 4056
+  },
+  "final": {
+    "elapsed_ms": 6550,
+    "resolve_ms": 980,
+    "present_ms": 766,
+    "triangles": 668327,
+    "draws": 5130,
+    "texture_uploads": 54,
+    "fallbacks": 0
+  },
+  "ipc_test_status": 0,
+  "installed_sha256": {
+    "/WINEGATE/lib/libGL.so.1": "287d5db69ff576faa9283f1afcdefff8067d59f46c8dc424a126599ca78a377c",
+    "/WINEGATE/lib/libbkmesa.so.1": "48aabe63747444cec56e2f82cbef9eb68fdf3caadb8f572b510177796292a664",
+    "/WINEGATE/BIN/wine-launch.ELF": "666597d73b298ea3a4a031a07bcd7fbdafbd4206352a0e9e54458a820c4fad55"
+  }
+}

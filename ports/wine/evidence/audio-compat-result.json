@@ -1,0 +1,16 @@
+{
+  "test": "ports/wine/tests/audio-compat.c",
+  "vm": "QEMU KVM, 2 CPUs, 1536 MiB, IDE, Virtio 2D, AC97 WAV backend",
+  "backend_selection": "explicit OSS registry selection in disposable test prefix",
+  "driver_loaded": true,
+  "waveout_devices": 1,
+  "playback_completion": true,
+  "capture_extra_nonzero_pcm": true,
+  "limits": [
+    "mono native output",
+    "intermittent playback observed with verbose audio diagnostics",
+    "no capture or MIDI",
+    "interactive file dragging and appearance need user testing"
+  ],
+  "production_update": "Applied offline with the subsequent desktop update, preserving installed files"
+}

@@ -17,7 +17,9 @@
 #include "maestro3_firmware.h"
 
 #define M3_VENDOR_ESS          0x125DU
-#define M3_RING_SIZE           4096U
+#define M3_RING_FRAMES         4096U
+#define M3_FRAME_BYTES         4U /* S16LE stereo */
+#define M3_RING_SIZE           (M3_RING_FRAMES * M3_FRAME_BYTES)
 #define M3_RING_MASK           (M3_RING_SIZE - 1U)
 #define M3_OUTPUT_RATE         48000U
 #define M3_VOICE_COUNT         8U
@@ -49,11 +51,36 @@ typedef struct {
     uint32_t silent_refill;
     uint32_t last_progress_tick;
     uint32_t stalls;
+    uint32_t codec_id;
+
 } m3_state_t;
 
 typedef struct { uint16_t offset, value; } m3_init_word_t;
 
 static m3_state_t g_m3;
+
+/*
+ * Serializa el acceso a los puertos indirectos del DSP y al estado de
+ * voces entre IRQ0 (sound_poll), el worker de respaldo y llamadas API.
+ * El handler del PIT nunca espera: si interrumpe al dueño, salta ese
+ * tick y vuelve en ~3.3 ms. Eso evita deadlock por interrupción local.
+ */
+static volatile uint32_t g_m3_service_lock;
+
+static bool m3_service_try_lock(void) {
+    return __sync_lock_test_and_set(&g_m3_service_lock, 1U) == 0U;
+}
+
+static void m3_service_lock(void) {
+    while (!m3_service_try_lock())
+        __asm__ volatile ("pause" : : : "memory");
+    __asm__ volatile ("" : : : "memory");
+}
+
+static void m3_service_unlock(void) {
+    __asm__ volatile ("" : : : "memory");
+    __sync_lock_release(&g_m3_service_lock);
+}
 static m3_voice_t g_m3_voices[M3_VOICE_COUNT];
 static uint8_t g_m3_ring[M3_RING_SIZE] __attribute__((aligned(64)));
 static uint8_t g_m3_tone[M3_OUTPUT_RATE] __attribute__((aligned(16)));
@@ -185,11 +212,82 @@ static uint16_t m3_ac97_read(uint8_t reg) {
     return m3_inw(M3_CODEC_DATA);
 }
 
-static bool m3_ac97_write(uint8_t reg, uint16_t value) {
+static bool m3_ac97_write_once(uint8_t reg, uint16_t value) {
     if (!m3_ac97_wait()) return false;
     m3_outw(M3_CODEC_DATA, value);
     m3_outb(M3_CODEC_COMMAND, reg & 0x7FU);
     return m3_ac97_wait();
+}
+
+static bool m3_ac97_write(uint8_t reg, uint16_t value) {
+    if (!m3_ac97_write_once(reg, value)) return false;
+
+    /*
+     * El codec AC'97 integrado de algunos ES1988 necesita que MASTER se
+     * escriba dos veces para que el cambio se enganche. Es el mismo quirk
+     * que conserva snd-maestro3 de Linux (codec 0x45838308).
+     */
+    if (g_m3.codec_id == 0x45838308U &&
+        reg == M3_AC97_MASTER_VOLUME)
+        return m3_ac97_write_once(reg, value);
+    return true;
+}
+
+static void m3_apply_codec_quirks(void) {
+    if (g_m3.codec_id == M3_AC97_STAC9721_ID) {
+        uint16_t analog = m3_ac97_read(M3_AC97_SIGMATEL_ANALOG);
+
+        /*
+         * Linux patch_sigmatel_stac9721(): when ANALOG comes up as zero the
+         * codec needs its CIC/bias network explicitly initialized. Without
+         * this the digital stream can be correct while the laptop's analog
+         * output stage sounds badly biased/noisy/distorted.
+         */
+        if (analog == 0U) {
+            (void)m3_ac97_write(M3_AC97_SIGMATEL_CIC1, 0xABBAU);
+            (void)m3_ac97_write(M3_AC97_SIGMATEL_CIC2, 0x4000U);
+            (void)m3_ac97_write(M3_AC97_SIGMATEL_BIAS1, 0xABBAU);
+            (void)m3_ac97_write(M3_AC97_SIGMATEL_BIAS2, 0x0002U);
+        }
+        (void)m3_ac97_write(M3_AC97_SIGMATEL_MULTICHN, 0x0000U);
+
+        /* Linux's common SigmaTel setup clears the DAC/ADC 6 dB attenuation
+         * bits by default. Preserve every other vendor bit. */
+        analog = m3_ac97_read(M3_AC97_SIGMATEL_ANALOG);
+        if (analog != 0xFFFFU)
+            (void)m3_ac97_write(M3_AC97_SIGMATEL_ANALOG,
+                                (uint16_t)(analog & ~0x0003U));
+
+        kprintf("[M3] STAC9721/23: analog CIC/bias quirk aplicado\n");
+    }
+}
+
+static bool m3_codec_mixer_init(uint16_t *vendor1, uint16_t *vendor2) {
+    uint16_t v1 = m3_ac97_read(M3_AC97_VENDOR_ID1);
+    uint16_t v2 = m3_ac97_read(M3_AC97_VENDOR_ID2);
+
+    if (v1 == 0U || v1 == 0xFFFFU) return false;
+    g_m3.codec_id = ((uint32_t)v1 << 16) | (uint32_t)v2;
+    m3_apply_codec_quirks();
+
+    /*
+     * snd-maestro3 hace esta secuencia porque ciertos codecs quedan en un
+     * estado analogo incorrecto si PCM pasa directamente a 0 dB tras reset:
+     * mute + 15 pasos, espera, y recien entonces PCM normal.
+     */
+    if (!m3_ac97_write(M3_AC97_PCM_VOLUME, 0x8F0FU))
+        return false;
+    m3_delay_ms(100U);
+
+    if (!m3_ac97_write(M3_AC97_MASTER_VOLUME, 0x0000U))
+        return false;
+    if (!m3_ac97_write(M3_AC97_PCM_VOLUME, 0x0000U))
+        return false;
+    m3_delay_ms(10U);
+
+    if (vendor1) *vendor1 = v1;
+    if (vendor2) *vendor2 = v2;
+    return true;
 }
 
 static void m3_assp_firmware_init(void) {
@@ -233,10 +331,16 @@ static void m3_chip_configure(void) {
     uint8_t clock;
     legacy &= (uint16_t)~(M3_SOUND_BLASTER_ENABLE | M3_FM_SYNTHESIS_ENABLE |
                           M3_MPU401_IO_ENABLE | M3_MPU401_IRQ_ENABLE |
-                          M3_ALIAS_10BIT_IO);
+                          M3_ALIAS_10BIT_IO | M3_DISABLE_LEGACY);
     m3_cfg_write16(M3_PCI_LEGACY_AUDIO_CTRL, legacy);
 
     config = m3_cfg32(M3_PCI_ALLEGRO_CONFIG);
+    /* No heredar del BIOS el control de volumen por hardware. Linux
+     * limpia estos bits antes de aplicar quirks del equipo; BlesKernOS
+     * por ahora no maneja esos botones por IRQ, asi que dejarlos vivos
+     * puede modificar el codec por fuera del mixer del OS. */
+    config &= ~(M3_HV_CTRL_ENABLE | M3_HV_BUTTON_FROM_GD |
+                M3_REDUCED_DEBOUNCE);
     config |= M3_REDUCED_DEBOUNCE | M3_PM_CTRL_ENABLE |
               M3_CLK_DIV_BY_49 | M3_USE_PCI_TIMING;
     m3_cfg_write32(M3_PCI_ALLEGRO_CONFIG, config);
@@ -387,9 +491,14 @@ static void m3_setup_playback(void) {
         m3_assp_write(M3_MEM_INTERNAL_DATA,
                       (uint16_t)(M3_DAC_DATA + g_m3_play_init[i].offset),
                       g_m3_play_init[i].value);
-    m3_assp_write(M3_MEM_INTERNAL_DATA, M3_DAC_DATA + M3_SRC3_MODE, 1U);
+    /*
+     * Use the hardware's native-quality path: stereo + 16-bit. The public
+     * BlesKernOS API remains U8; conversion happens in m3_render().
+     * Linux snd-maestro3 programs +1 as mono flag and +2 as 8-bit flag.
+     */
+    m3_assp_write(M3_MEM_INTERNAL_DATA, M3_DAC_DATA + M3_SRC3_MODE, 0U);
     m3_assp_write(M3_MEM_INTERNAL_DATA,
-                  M3_DAC_DATA + M3_SRC3_WORD_LENGTH, 1U);
+                  M3_DAC_DATA + M3_SRC3_WORD_LENGTH, 0U);
     m3_assp_write(M3_MEM_INTERNAL_DATA, M3_DAC_DATA + M3_CDATA_FREQUENCY,
                   0x7FFFU);
     m3_assp_write(M3_MEM_INTERNAL_DATA, M3_KDATA_INSTANCE0_MINISRC,
@@ -406,64 +515,162 @@ static bool m3_any_voice(void) {
     return false;
 }
 
-static uint8_t m3_mix_sample(void) {
+static int16_t m3_mix_sample_s16(void) {
     int mixed = 0;
-    bool any = false;
+    uint32_t contributors = 0;
+
     for (uint32_t i = 0; i < M3_VOICE_COUNT; i++) {
         m3_voice_t *voice = &g_m3_voices[i];
         uint32_t pos, next, fraction;
-        int first, second, sample;
+        int first, second, sample8;
+
         if (!voice->active) continue;
         pos = (uint32_t)(voice->position_fp >> 16);
         if (pos >= voice->length) {
             voice->active = false;
             continue;
         }
+
         next = pos + 1U < voice->length ? pos + 1U : pos;
         fraction = (uint32_t)voice->position_fp & 0xFFFFU;
+
+        /*
+         * Interpolate while still in signed 8-bit scale.  Doing the
+         * interpolation after shifting to 16 bits can overflow a 32-bit int
+         * for a full-scale edge (-32768 -> +32512).
+         */
         first = (int)voice->samples[pos] - 128;
         second = (int)voice->samples[next] - 128;
-        sample = first + ((second - first) * (int)fraction) / 65536;
-        mixed += sample * (int)voice->volume / 255;
+        sample8 = first + ((second - first) * (int)fraction) / 65536;
+
+        mixed += (sample8 << 8) * (int)voice->volume / 255;
+        contributors++;
+
         voice->position_fp += voice->step_fp;
         if ((voice->position_fp >> 16) >= voice->length)
             voice->active = false;
-        any = true;
     }
-    if (!any) return 128U;
-    if (mixed < -128) mixed = -128;
-    if (mixed > 127) mixed = 127;
-    return (uint8_t)(mixed + 128);
+
+    if (!contributors) return 0;
+
+    /* Preserve full level for one sound; prevent hard clipping when voices mix. */
+    if (contributors > 1U)
+        mixed /= (int)contributors;
+
+    if (mixed < -32768) mixed = -32768;
+    if (mixed > 32767) mixed = 32767;
+    return (int16_t)mixed;
 }
 
 static void m3_render(uint32_t offset, uint32_t count) {
-    for (uint32_t i = 0; i < count; i++)
-        g_m3_ring[(offset + i) & M3_RING_MASK] = m3_mix_sample();
+    uint32_t frames;
+    uint32_t byte_offset;
+
+    /*
+     * The DSP host pointer is expressed in bytes.  S16LE stereo uses four
+     * bytes per frame, so only refill complete frames. Maestro3 reports an
+     * aligned pointer for this format; align defensively anyway.
+     */
+    byte_offset = offset & M3_RING_MASK;
+    byte_offset &= ~(M3_FRAME_BYTES - 1U);
+    count &= ~(M3_FRAME_BYTES - 1U);
+    frames = count / M3_FRAME_BYTES;
+
+    for (uint32_t i = 0; i < frames; i++) {
+        int16_t sample = m3_mix_sample_s16();
+        uint16_t word = (uint16_t)sample;
+        uint32_t pos = (byte_offset + i * M3_FRAME_BYTES) & M3_RING_MASK;
+
+        /* Duplicate mono software mix to left and right channels. */
+        g_m3_ring[pos] = (uint8_t)(word & 0xFFU);
+        g_m3_ring[(pos + 1U) & M3_RING_MASK] = (uint8_t)(word >> 8);
+        g_m3_ring[(pos + 2U) & M3_RING_MASK] = (uint8_t)(word & 0xFFU);
+        g_m3_ring[(pos + 3U) & M3_RING_MASK] = (uint8_t)(word >> 8);
+    }
+
     __asm__ volatile ("" : : : "memory");
 }
 
-static uint32_t m3_hardware_offset(void) {
-    uint16_t high1, high2, low;
-    uint32_t address;
-    do {
+static uint32_t m3_hardware_address(void) {
+    uint16_t high1 = 0U, high2 = 0U, low = 0U;
+
+    /* Same stable high/low/high sampling used by snd-maestro3. */
+    for (uint32_t retry = 0; retry < 10U; retry++) {
         high1 = m3_assp_read(M3_MEM_INTERNAL_DATA,
                              M3_DAC_DATA + M3_CDATA_HOST_CUR_HI);
         low = m3_assp_read(M3_MEM_INTERNAL_DATA,
                            M3_DAC_DATA + M3_CDATA_HOST_CUR_LO);
         high2 = m3_assp_read(M3_MEM_INTERNAL_DATA,
                              M3_DAC_DATA + M3_CDATA_HOST_CUR_HI);
-    } while (high1 != high2);
-    address = (uint32_t)low | ((uint32_t)high2 << 16);
+        if (high1 == high2) break;
+    }
+    return (uint32_t)low | ((uint32_t)high2 << 16);
+}
+
+static uint32_t m3_rate_word(uint16_t rate) {
+    uint32_t value;
+    value = (uint32_t)((((uint64_t)rate << 15) + 24000U) / 48000U);
+    if (value) value--;
+    return value;
+}
+
+static void m3_program_runtime_window(uint32_t dma, uint32_t length,
+                                      uint16_t rate, bool stereo,
+                                      bool sixteen_bit) {
+    uint32_t end = dma + length;
+
+    m3_assp_write(M3_MEM_INTERNAL_DATA, M3_DAC_DATA + M3_CDATA_READY, 0U);
+    m3_assp_write(M3_MEM_INTERNAL_DATA,
+                  M3_DAC_DATA + M3_CDATA_HOST_ADDR_LO, (uint16_t)dma);
+    m3_assp_write(M3_MEM_INTERNAL_DATA,
+                  M3_DAC_DATA + M3_CDATA_HOST_ADDR_HI, (uint16_t)(dma >> 16));
+    m3_assp_write(M3_MEM_INTERNAL_DATA,
+                  M3_DAC_DATA + M3_CDATA_HOST_END_LO, (uint16_t)end);
+    m3_assp_write(M3_MEM_INTERNAL_DATA,
+                  M3_DAC_DATA + M3_CDATA_HOST_END_HI, (uint16_t)(end >> 16));
+    m3_assp_write(M3_MEM_INTERNAL_DATA,
+                  M3_DAC_DATA + M3_CDATA_HOST_CUR_LO, (uint16_t)dma);
+    m3_assp_write(M3_MEM_INTERNAL_DATA,
+                  M3_DAC_DATA + M3_CDATA_HOST_CUR_HI, (uint16_t)(dma >> 16));
+
+    /* Reset MiniSRC's per-stream interpolation history just as prepare() does. */
+    for (uint32_t i = 0;
+         i < sizeof(g_m3_play_init) / sizeof(g_m3_play_init[0]); i++)
+        m3_assp_write(M3_MEM_INTERNAL_DATA,
+                      (uint16_t)(M3_DAC_DATA + g_m3_play_init[i].offset),
+                      g_m3_play_init[i].value);
+
+    /* +1 is MONO, +2 is 8BIT: zero means stereo / 16-bit. */
+    m3_assp_write(M3_MEM_INTERNAL_DATA, M3_DAC_DATA + M3_SRC3_MODE,
+                  stereo ? 0U : 1U);
+    m3_assp_write(M3_MEM_INTERNAL_DATA, M3_DAC_DATA + M3_SRC3_WORD_LENGTH,
+                  sixteen_bit ? 0U : 1U);
+    m3_assp_write(M3_MEM_INTERNAL_DATA, M3_DAC_DATA + M3_CDATA_FREQUENCY,
+                  (uint16_t)m3_rate_word(rate));
+    m3_assp_write(M3_MEM_INTERNAL_DATA,
+                  M3_DAC_DATA + M3_SRC3_DIRECTION + 22U,
+                  rate > 45000U ? 0x00FFU : 0U);
+}
+
+static uint32_t m3_hardware_offset(void) {
+    uint32_t address = m3_hardware_address();
     if (address < (uint32_t)(uintptr_t)g_m3_ring ||
         address >= (uint32_t)(uintptr_t)g_m3_ring + M3_RING_SIZE)
         return M3_RING_SIZE;
-    return address - (uint32_t)(uintptr_t)g_m3_ring;
+    return (address - (uint32_t)(uintptr_t)g_m3_ring) &
+           ~(M3_FRAME_BYTES - 1U);
 }
 
 static void m3_stream_start(void) {
+    m3_program_runtime_window((uint32_t)(uintptr_t)g_m3_ring, M3_RING_SIZE,
+                              M3_OUTPUT_RATE, true, true);
     m3_render(0, M3_RING_SIZE);
-    g_m3.last_hw = 0;
-    g_m3.silent_refill = m3_any_voice() ? 0U : M3_RING_SIZE;
+    g_m3.last_hw = 0U;
+    /* El prefill puede consumir por completo un sonido corto. Eso no
+     * significa que el ring ya sea silencio: esos bytes todavia deben
+     * pasar por el DAC. Contar silencio solo a partir de lo que el
+     * hardware vaya consumiendo despues de arrancar. */
+    g_m3.silent_refill = 0U;
     g_m3.last_progress_tick = pit_get_ticks();
     m3_assp_write(M3_MEM_INTERNAL_DATA, M3_KDATA_TIMER_RELOAD, 240U);
     m3_assp_write(M3_MEM_INTERNAL_DATA, M3_KDATA_TIMER_CURRENT, 240U);
@@ -489,49 +696,89 @@ static void m3_stream_stop(void) {
     g_m3.silent_refill = 0;
 }
 
+static void m3_service_stream_locked(void) {
+    if (!g_m3.present) return;
+
+    if (!g_m3.streaming) {
+        if (m3_any_voice())
+            m3_stream_start();
+        return;
+    }
+
+    {
+        uint32_t hw = m3_hardware_offset();
+
+        if (hw >= M3_RING_SIZE) {
+            kprintf("[M3] puntero DMA invalido; deteniendo PCM\n");
+            m3_stream_stop();
+            return;
+        }
+
+        {
+            uint32_t consumed = (hw - g_m3.last_hw) & M3_RING_MASK;
+
+            if (consumed) {
+                bool had_voice = m3_any_voice();
+
+                /*
+                 * Refill exactamente la región que el DSP ya consumió. Esta
+                 * función puede ejecutarse desde IRQ0: a 300 Hz normalmente
+                 * son ~160 frames S16 estéreo por tick, suficientemente poco
+                 * trabajo para no alargar de forma importante la interrupción.
+                 */
+                m3_render(g_m3.last_hw, consumed);
+                g_m3.last_hw = hw;
+                g_m3.last_progress_tick = pit_get_ticks();
+
+                if (had_voice || m3_any_voice())
+                    g_m3.silent_refill = 0U;
+                else
+                    g_m3.silent_refill += consumed;
+
+                if (g_m3.silent_refill >= M3_RING_SIZE)
+                    m3_stream_stop();
+            } else {
+                uint32_t elapsed =
+                    pit_get_ticks() - g_m3.last_progress_tick;
+                uint32_t hz = pit_get_frequency_hz();
+
+                if (!hz) hz = 100U;
+                if (elapsed >=
+                    (M3_STALL_MS * hz + 999U) / 1000U) {
+                    g_m3.stalls++;
+                    kprintf("[M3] DMA sin progreso (%u); reinicio de canal\n",
+                            g_m3.stalls);
+                    m3_stream_stop();
+                }
+            }
+        }
+    }
+}
+
 static void m3_worker(void *argument UNUSED) {
     while (true) {
         bool active = false;
-        if (g_m3.present) {
-            task_preempt_disable();
-            if (!g_m3.streaming && m3_any_voice()) {
-                m3_stream_start();
-            } else if (g_m3.streaming) {
-                uint32_t hw = m3_hardware_offset();
-                if (hw >= M3_RING_SIZE) {
-                    kprintf("[M3] puntero DMA invalido; deteniendo PCM\n");
-                    m3_stream_stop();
-                } else {
-                    uint32_t consumed = (hw - g_m3.last_hw) & M3_RING_MASK;
-                    if (consumed) {
-                        bool had_voice = m3_any_voice();
-                        m3_render(g_m3.last_hw, consumed);
-                        g_m3.last_hw = hw;
-                        g_m3.last_progress_tick = pit_get_ticks();
-                        if (had_voice || m3_any_voice()) g_m3.silent_refill = 0;
-                        else g_m3.silent_refill += consumed;
-                        if (g_m3.silent_refill >= M3_RING_SIZE)
-                            m3_stream_stop();
-                    } else {
-                        uint32_t elapsed = pit_get_ticks() - g_m3.last_progress_tick;
-                        uint32_t hz = pit_get_frequency_hz();
-                        if (!hz) hz = 100U;
-                        if (elapsed >= (M3_STALL_MS * hz + 999U) / 1000U) {
-                            g_m3.stalls++;
-                            kprintf("[M3] DMA sin progreso (%u); reinicio de canal\n",
-                                    g_m3.stalls);
-                            m3_stream_stop();
-                        }
-                    }
-                }
-            }
+
+        if (g_m3.present && m3_service_try_lock()) {
+            /*
+             * Respaldo, no reloj primario. El camino determinista es m3_poll()
+             * desde IRQ0; este task sólo recupera estado si algún tick tuvo
+             * que saltarse porque la API estaba modificando una voz.
+             */
+            m3_service_stream_locked();
             active = g_m3.streaming || m3_any_voice();
-            task_preempt_enable();
+            m3_service_unlock();
         }
-        /* El mezclador necesita granularidad fina sólo mientras reproduce.
-         * En silencio, sondear 300 veces/s no observa ningún estado nuevo. */
-        task_sleep(active ? 1U :
-                   ((pit_get_frequency_hz() + 99U) / 100U));
+
+        {
+            uint32_t hz = pit_get_frequency_hz();
+            uint32_t ticks;
+            if (!hz) hz = 100U;
+            ticks = active ? ((hz + 99U) / 100U)
+                           : ((hz + 49U) / 50U);
+            if (!ticks) ticks = 1U;
+            task_sleep(ticks);
+        }
     }
 }
 
@@ -549,12 +796,19 @@ static void m3_clear_voices(void) {
 static bool m3_add_voice(const uint8_t *samples, uint32_t length,
                          uint16_t rate, uint8_t volume) {
     uint32_t slot = M3_VOICE_COUNT;
+
     if (!g_m3.present || !samples || !length || rate < 4000U ||
-        rate > 48000U) return false;
-    task_preempt_disable();
+        rate > 48000U)
+        return false;
+
+    m3_service_lock();
     for (uint32_t i = 0; i < M3_VOICE_COUNT; i++) {
-        if (!g_m3_voices[i].active) { slot = i; break; }
+        if (!g_m3_voices[i].active) {
+            slot = i;
+            break;
+        }
     }
+
     if (slot < M3_VOICE_COUNT) {
         m3_voice_t *voice = &g_m3_voices[slot];
         voice->samples = samples;
@@ -564,9 +818,27 @@ static bool m3_add_voice(const uint8_t *samples, uint32_t length,
         if (!voice->step_fp) voice->step_fp = 1U;
         voice->volume = volume;
         voice->active = true;
+
+        /*
+         * No esperar al scheduler para iniciar el DSP. El próximo IRQ0 hará
+         * el primer refill, pero el buffer inicial puede empezar ahora mismo.
+         */
+        if (!g_m3.streaming)
+            m3_stream_start();
     }
-    task_preempt_enable();
+
+    m3_service_unlock();
     return slot < M3_VOICE_COUNT;
+}
+
+static bool m3_play_pcm_u8(const uint8_t *samples, uint32_t length,
+                           uint16_t rate, uint8_t volume) {
+    if (!g_m3.present) return false;
+    /* El DMA U8 directo depende de detalles de MiniSRC que cambian entre
+     * revisiones ES198x. En el Latitude C600 avanzaba, pero deformaba las
+     * muestras. El ring S16 estéreo usa memoria/alineación controladas y el
+     * mismo resampling estable que los efectos cortos. */
+    return m3_add_voice(samples, length, rate, volume);
 }
 
 static void m3_pc_play(uint32_t frequency_hz) {
@@ -588,10 +860,10 @@ static void m3_stop(void) {
     __asm__ volatile ("inb $0x61, %0" : "=a"(speaker));
     speaker &= 0xFCU;
     __asm__ volatile ("outb %0, $0x61" : : "a"(speaker));
-    task_preempt_disable();
+    m3_service_lock();
     m3_clear_voices();
     if (g_m3.streaming) m3_stream_stop();
-    task_preempt_enable();
+    m3_service_unlock();
 }
 
 static bool m3_start_tone(uint32_t frequency_hz, uint32_t duration_ms) {
@@ -615,10 +887,37 @@ static void m3_beep(uint32_t frequency_hz, uint32_t duration_ms) {
     while (g_m3.streaming || m3_any_voice()) task_sleep(1U);
 }
 
-static void m3_poll(void) {}
+static void m3_poll(void) {
+    /* The Latitude C600's Maestro3 used to take the service lock from every
+       300 Hz PIT interrupt even while audio was completely idle.  Avoid the
+       lock/ASSP path until there is actual stream work to service. */
+    if (!g_m3.present ||
+        (!g_m3.streaming && !m3_any_voice()))
+        return;
+    /*
+     * PIT IRQ0 llama sound_poll() antes de entrar al scheduler. Maestro3
+     * necesita que este sea el reloj de refill principal; depender de un task
+     * que hace task_sleep() produjo audio entrecortado en silicio real y la
+     * frecuencia aparente cambiaba al generar IRQs con el mouse.
+     *
+     * Nunca esperar por el lock dentro de una interrupción: si la API estaba
+     * agregando/parando una voz, saltamos este tick y recuperamos en el próximo.
+     */
+    if (!m3_service_try_lock())
+        return;
+    m3_service_stream_locked();
+    m3_service_unlock();
+}
+
 static bool m3_pcm_available(void) { return g_m3.present; }
+
 static bool m3_pcm_busy(void) {
-    return g_m3.present && (g_m3.streaming || m3_any_voice());
+    bool busy;
+    if (!g_m3.present) return false;
+    m3_service_lock();
+    busy = g_m3.streaming || m3_any_voice();
+    m3_service_unlock();
+    return busy;
 }
 static bool m3_has_sb16(void) { return false; }
 static bool m3_sb16_tone(uint32_t hz UNUSED, uint32_t ms UNUSED) {
@@ -646,7 +945,7 @@ static const pci_device_t *m3_find(void) {
 
 static bool m3_driver_init(void) {
     static const sound_driver_ops_t ops = {
-        m3_poll, m3_pc_play, m3_stop, m3_beep, m3_start_tone, m3_add_voice,
+        m3_poll, m3_pc_play, m3_stop, m3_beep, m3_start_tone, m3_play_pcm_u8,
         m3_pcm_available, m3_pcm_busy, m3_has_sb16, m3_sb16_tone,
         m3_sb16_busy, m3_pcm_name, 300U
     };
@@ -692,14 +991,15 @@ static bool m3_driver_init(void) {
         return false;
     }
     m3_amp_enable(true);
-    (void)m3_ac97_write(M3_AC97_MASTER_VOLUME, 0);
-    (void)m3_ac97_write(M3_AC97_PCM_VOLUME, 0);
-    codec1 = m3_ac97_read(M3_AC97_VENDOR_ID1);
-    codec2 = m3_ac97_read(M3_AC97_VENDOR_ID2);
+    if (!m3_codec_mixer_init(&codec1, &codec2)) {
+        kprintf("[M3] inicializacion estable del mixer AC97 fallo\n");
+        return false;
+    }
     m3_setup_playback();
     m3_assp_continue();
 
     m3_clear_voices();
+    g_m3_service_lock = 0U;
     g_m3.streaming = false;
     g_m3.stalls = 0;
     g_m3.present = true;
@@ -714,9 +1014,10 @@ static bool m3_driver_init(void) {
     kprintf("[M3] ESS %x:%x SUBSYS=%x:%x IO=%x codec=%x:%x\n",
             M3_VENDOR_ESS, g_m3.device_id, g_m3.subsystem_vendor,
             g_m3.subsystem_device, g_m3.io, codec1, codec2);
-    kprintf("[M3] DSP cargado (%u+%u bytes), PCM U8 mono 48000 Hz, DMA=%x\n",
+    kprintf("[M3] DSP cargado (%u+%u bytes), DMA interno S16LE stereo 48000 Hz, DMA=%x\n",
             m3_assp_kernel_firmware_len, m3_assp_minisrc_firmware_len,
             (uint32_t)(uintptr_t)g_m3_ring);
+    kprintf("[M3] silicon audio fix v5: STAC9721 + S16LE ring estable\n");
     if (g_m3.irda_workaround)
         kprintf("[M3] quirk Dell Inspiron IrDA activado\n");
     return true;
@@ -735,6 +1036,7 @@ const bk_driver_module_t *bleskernos_driver_query(void) {
     static const bk_driver_module_t module = {
         BK_DRIVER_ABI_VERSION,
         sizeof(bk_driver_module_t),
+        1U, 0U,
         "maestro3",
         "ESS Allegro/Maestro3 DSP audio (ES1988/ES199x)",
         m3_driver_init,

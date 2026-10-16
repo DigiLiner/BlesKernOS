@@ -1,0 +1,21 @@
+make: Entering directory '/home/lucas/.cache/bleskernos-wine-memory/pic-build/obj'
+gcc -m32 -c -o dlls/winex11.drv/init.o /home/lucas/.cache/bleskernos-wine-memory/pic-build/wine-wine-11.0/dlls/winex11.drv/init.c \
+  -Idlls/winex11.drv \
+  -I/home/lucas/.cache/bleskernos-wine-memory/pic-build/wine-wine-11.0/dlls/winex11.drv -Iinclude \
+  -I/home/lucas/.cache/bleskernos-wine-memory/pic-build/wine-wine-11.0/include -D__WINESRC__ \
+  -DWINE_UNIX_LIB -Wall -pipe -fcf-protection=none -fvisibility=hidden -fno-stack-protector \
+  -fno-strict-aliasing -Wdeclaration-after-statement -Wempty-body -Wignored-qualifiers -Winit-self \
+  -Wlogical-op -Wno-packed-not-aligned -Wpointer-arith -Wshift-overflow=2 -Wstrict-prototypes \
+  -Wtype-limits -Wunused-but-set-parameter -Wvla -Wwrite-strings -Wno-misleading-indentation -fPIC \
+  -fasynchronous-unwind-tables -I/home/lucas/.cache/bleskernos-wine-memory/pic-build/oss-headers \
+  -I/usr/include/freetype2 -O2 -march=pentium3 -mfpmath=387 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
+gcc -m32 -o dlls/winex11.drv/winex11.so -shared -Wl,-Bsymbolic -Wl,-soname,winex11.so -Wl,-z,defs dlls/winex11.drv/bitblt.o \
+  dlls/winex11.drv/brush.o dlls/winex11.drv/clipboard.o dlls/winex11.drv/desktop.o \
+  dlls/winex11.drv/display.o dlls/winex11.drv/event.o dlls/winex11.drv/graphics.o \
+  dlls/winex11.drv/init.o dlls/winex11.drv/keyboard.o dlls/winex11.drv/mouse.o \
+  dlls/winex11.drv/opengl.o dlls/winex11.drv/palette.o dlls/winex11.drv/pen.o \
+  dlls/winex11.drv/vulkan.o dlls/winex11.drv/window.o dlls/winex11.drv/wintab.o \
+  dlls/winex11.drv/x11drv_main.o dlls/winex11.drv/xim.o dlls/winex11.drv/xinerama.o \
+  dlls/winex11.drv/xrandr.o dlls/winex11.drv/xrender.o dlls/winex11.drv/xvidmode.o \
+  dlls/ntdll/ntdll.so dlls/win32u/win32u.so -lXext -lX11 -lm -L/home/lucas/.cache/bleskernos-wine-memory/devlib32 -Wl,-rpath-link,/usr/lib/i386-linux-gnu
+make: Leaving directory '/home/lucas/.cache/bleskernos-wine-memory/pic-build/obj'

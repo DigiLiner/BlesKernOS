@@ -240,7 +240,7 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     state->desktop = desktop;
     state->have_icon = bk_graphics_icon_load("HelpBook", &state->icon);
     state->have_open_icon =
-        bk_graphics_icon_load("Open", &state->open_icon);
+        bk_graphics_icon_load("16/Open", &state->open_icon);
     help_detect_edition(state);
     state->window = bk_gui_create_window(desktop, 90, 55, 620, 430,
                                          "Bles Help Center");

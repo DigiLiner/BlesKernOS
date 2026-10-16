@@ -2,10 +2,10 @@
 #include "control_common.h"
 #include <math.h>
 
-#define DATETIME_WINDOW_W   486
+#define DATETIME_WINDOW_W   560
 #define DATETIME_WINDOW_H   338
-#define DATETIME_TAB_LEFT    12
-#define DATETIME_TAB_TOP      8
+#define DATETIME_TAB_LEFT    16
+#define DATETIME_TAB_TOP      6
 #define DATETIME_TAB_COUNT    2
 
 typedef enum {
@@ -280,6 +280,43 @@ static void datetime_draw_mini_calendar(gui_surface_t *surface,
 static void datetime_draw_analog_clock(gui_surface_t *surface,
                                        gui_rect_t rect,
                                        const rtc_time_t *time) {
+#if defined(BLES_ARCH_ARM32_RPI3)
+    static const int16_t sine60[60] = {
+          0, 107, 213, 316, 416, 512, 602, 685, 761, 828,
+        887, 935, 974,1002,1018,1024,1018,1002, 974, 935,
+        887, 828, 761, 685, 602, 512, 416, 316, 213, 107,
+          0,-107,-213,-316,-416,-512,-602,-685,-761,-828,
+       -887,-935,-974,-1002,-1018,-1024,-1018,-1002,-974,-935,
+       -887,-828,-761,-685,-602,-512,-416,-316,-213,-107
+    };
+    int cx = rect.x + rect.w / 2;
+    int cy = rect.y + rect.h / 2 - 10;
+    int radius = rect.w < rect.h ? rect.w / 2 - 18 : rect.h / 2 - 18;
+    int hour_tick, minute_tick, second_tick;
+    if (!surface || !time || radius < 16) return;
+    cpl_draw_bevel(surface, rect, 0x00F3F3EE, true);
+    for (int tick = 0; tick < 60; tick++) {
+        int inner_r = radius - ((tick % 5) == 0 ? 8 : 4);
+        int sx = sine60[tick], sy = -sine60[(tick + 15) % 60];
+        bk_gui_gfx_draw_line(surface, cx + sx * inner_r / 1024,
+            cy + sy * inner_r / 1024, cx + sx * radius / 1024,
+            cy + sy * radius / 1024,
+            (tick % 5) == 0 ? CPL_DARK : CPL_SHADOW);
+    }
+    hour_tick = ((time->hour % 12) * 5 + time->minute / 12 + 45) % 60;
+    minute_tick = (time->minute + 45) % 60;
+    second_tick = (time->second + 45) % 60;
+    bk_gui_gfx_draw_line(surface, cx, cy,
+        cx + sine60[(hour_tick + 15) % 60] * (radius - 22) / 1024,
+        cy + sine60[hour_tick] * (radius - 22) / 1024, 0x002C3440);
+    bk_gui_gfx_draw_line(surface, cx, cy,
+        cx + sine60[(minute_tick + 15) % 60] * (radius - 14) / 1024,
+        cy + sine60[minute_tick] * (radius - 14) / 1024, 0x000080A0);
+    bk_gui_gfx_draw_line(surface, cx, cy,
+        cx + sine60[(second_tick + 15) % 60] * (radius - 10) / 1024,
+        cy + sine60[second_tick] * (radius - 10) / 1024, 0x00802020);
+    bk_gui_gfx_fill_rect(surface, (gui_rect_t){cx - 2, cy - 2, 5, 5}, CPL_DARK);
+#else
     const double pi = 3.14159265358979323846;
     int cx = rect.x + rect.w / 2;
     int cy = rect.y + rect.h / 2 - 10;
@@ -322,6 +359,7 @@ static void datetime_draw_analog_clock(gui_surface_t *surface,
         cy + (int)(sin(second_angle) * (radius - 10)),
         0x00802020);
     bk_gui_gfx_fill_rect(surface, (gui_rect_t){cx - 2, cy - 2, 5, 5}, CPL_DARK);
+#endif
 }
 
 static void datetime_paint_view_tab(datetime_state_t *st,
@@ -389,6 +427,7 @@ static void datetime_paint(gui_window_t *window,
     gui_rect_t page = datetime_page_rect(st);
     gui_rect_t status = datetime_status_rect(st);
 
+    cpl_draw_bevel(surface, client, CPL_FACE, false);
     cpl_draw_tabs(surface, client, g_datetime_tabs, DATETIME_TAB_COUNT,
                   st->current_tab, page, DATETIME_TAB_LEFT, DATETIME_TAB_TOP);
 

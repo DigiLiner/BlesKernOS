@@ -1,0 +1,297 @@
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA FAIL
+[BKBOOT t=0] STARTING KERNEL
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=1572347 KiB top=1572732 KiB
+  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000
+  [MM] RAM usable: 1536 MB
+  [MM] Heap dinamico: 0xc00000 - 0x1ffdf000 (511868 KB)
+  [MM] VM frames: 0x1ffdf000 - 0x5ffdf000 (1048576 KiB, 262144 paginas)
+  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)
+  [MM] Vista PE fija: 0x400000 - 0x800000
+[PAGING] Ring 3 permitido: 0x400000-0x800000 y heap 0xc00000-0x1ffdf000
+[COMPAT] perfil=normal RAM_top=1572732 KiB heap=511868 KiB tareas=128 CPU=fam6/mod122 GUI=60FPS TIMER=300Hz
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 6 dispositivos detectados
+  [LPT] LPT1 base=0x0378 status=0xD9 listo
+  [ATA] canales IDE normalizados despues del probe
+[AHCI] PCI 0x0:0x3.0x0 ABAR=0xfebf1000 ports=0x3f
+[AHCI] ahci0: port=0 sectors=1572864 DMA ready
+[BKBOOT t=33] STORAGE DRIVERS
+[BKBOOT t=33] MOUNTING FILESYSTEM
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=1
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 1
+[FAT] dev[0]=ahci0 tipo=6 sectores=1572864
+Intentando montar ahci0...
+fat_set_active(ahci0)
+No es particion, buscando ahci0
+Dispositivo encontrado
+fat_try_mount_device OK
+fat_set_active OK
+Montado ahci0 OK
+[VFS] /TEMP listo
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[AC97] controlador ICH-compatible no detectado
+[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=6 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+  [USBCLASS] HID boot/report, hubs USB 1.1 y printers cargados
+[DVR] usbclass: cargado (/SYSTEM/DRIVERS/USBCLASS.DVR)
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado
+[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo
+[SVGA.DVR] dispositivo 15AD:0405 no detectado
+[DVR] /SYSTEM/DRIVERS/VMWARESVGA.DVR: ERROR: init del driver fallo
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 10 modulo(s) cargado(s)
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA OK mode=800x600x32 pitch=3200 fb=0xfd000000
+[GFXRES] boot icons 9/9 precargados
+[SOUND:EVENT] sin backend PCM; sonidos GUI desactivados en esta sesion
+[BKBOOT t=495] LOADING PRINT SERVICE
+[PRINT] spooler iniciado en segundo plano, pid=3
+[[BKBOOT t=509] STARTING VISION
+[VISION] servicio lanzado pid=4
+[PRINT] PrintSpool Ring 3 listo
+VISION] ownership grafico adquirido pid=4
+[BKBOOT t=551] PREPARING DESKTOP
+[BKBOOT t=551] LOADING DESKTOP ICONS
+[BKBOOT t=552] ICONPAK preload begin
+[BKBOOT t=552] LOADING ICON CACHE
+[BKBOOT t=553] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=562] DESKMANAGER read desktop config
+[BKBOOT t=563] DESKMANAGER desktop config loaded
+[DESKBAR] alloc state bytes=17108
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load BlesKernOS Start icon
+[DESKBAR:STARTICON] stat /ICONS/BLESKERNOS.BMP type=1 size=16522
+[DESKBAR:STARTICON] read OK /ICONS/BLESKERNOS.BMP bytes=16522
+[DESKBAR:STARTICON] hdr sig=BM off=138 dib=124 64x64 bpp=32 comp=3
+[DESKBAR:STARTICON] decode OK /ICONS/BLESKERNOS.BMP -> 64x64
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[TASK] entrada Ring 3 no accesible: 0x166179 (screensaverd)
+[THREAD] no se pudo crear worker proceso=4 entry=0x166179 nombre=screensaverd
+[VISION] [BKBOOT t=936] kernel_main: Vision READY
+[BKBOOT t=936] DISABLE SPLASH / ENTER GUI
+[BKBOOT] QUEUE STARTUP SOUND
+[SOUND] Sin PCM; seREADY: motor, escritorio y compositor bajo Vision
+ omite el sonido de inicio
+[SMP] escritorio listo; iniciando procesadores secundarios
+[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000
+[SMP] iniciando CPU1 APIC=1...
+[SMP] CPU1 online
+[SMP] 2/2 CPU(s) online; timer LAPIC=224391 cuentas/tick
+[LOCK] inversion[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (124 slots libres)
+ CPU0 tid=4: gui despues de legacy (se ocultan repeticiones)
+[LOCK] inversion CPU0 tid=4: gfx despues de legacy (se ocultan repeticiones)
+[SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI
+[BKBOOT] VISION ONLINE pid=4
+[W3P:START] tick=1087 hz=300
+[GATE:ASSOC] path=/SYSTEM/WINE/windows/syste[LOCK] inversion CPU0 tid=4: wine despues de legacy (se ocultan repeticiones)
+[[MM] proceso 6: 1 KiB recuperados
+WINE:DESKTOP] rootless start /SYSTEM/WINE/windows/system32/notepad.exe
+m32/notepad.exe started=1
+[LOCK] inversion CPU0 tid=4: vfs despues de le[VgM:FIXEDa-cFyR E(Es]e  poicdu=8l base=0x60442000 len=0x1000 prot=0x3
+tan repeticiones)
+_XSERVTransTransNoListen: unable to find transport: tcp
+scheduling timer: Function not implemented
+[WINE:DESKTOP] TinyX rootless ready on :17 pid=8
+[WINE:TIME] x-ready ms=296
+[WINE:STAGE] PREFIX ready marker=1
+[WINE:TIME] prefix-ready ms=410 delta_ms=114
+[WINE:STAGE] THEME ready marker=1
+[WINE:TIME] theme-ready ms=463 delta_ms=53
+[WINE:STAGE] TARGET begin path=/SYSTEM/WINE/windows/system32/notepad.exe kind=exe
+[WINE:TIME] target-begin ms=490
+[WINE:STAGE] TARGET spawned pid=10
+[WINE:TIME] target-spawned ms=570 delta_ms=80
+[VM:FIXED-FREE] pid=17 base=0x60844000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=17 base=0x60a27000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=20 base=0x60846000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=20 base=0x60a29000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=23 base=0x6083c000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=23 base=0x60a1f000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=26 base=0x6084b000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=26 base=0x60a2e000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=30 base=0x6082d000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=30 base=0x60a10000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=44 base=0x6082d000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=44 base=0x60a10000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=53 base=0x6082e000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=53 base=0x60a11000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=60 base=0x6082d000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=60 base=0x60a10000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=74 base=0x60830000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=74 base=0x60a13000 len=0x2000 prot=0x3
+[VM:FIXED-FREE] pid=10 base=0x60845000 len=0x3000 prot=0x3
+[VM:FIXED-FREE] pid=10 base=0x60a28000 len=0x2000 prot=0x3
+[WINE:TIME] first-surface ms=16653 title=notepad.exe
+[WINE:PERF] ready total_ms=16653 x_ms=296 prefix_ms=410 theme_ms=463 target_begin_ms=490 spawn_ms=570 spawn_to_surface_ms=16083
+[WINE:VM-PERF] phase=spawn-to-surface mmap=3620 file=2561 cached=558 hits=541 misses=17 fallback=2003 file_io_kib=374070 file_io_ms=2280
+[LINUX:EXIT] pid=87 proc=87 ppid=86 name=wine-preloader status=256 thread=0
+[LINUX:EXIT] pid=89 proc=89 ppid=88 name=wine-preloader status=256 thread=0
+[W3P:END] elapsed_ms=45210
+[W3P] id=1 n=10 ms=2 max_ms=2 bytes=0 bins=0,0,0,0,0
+[W3P] id=3 n=56366 ms=141600 max_ms=11974 bytes=97641782 bins=53775,1888,73,152,478
+[W3P] id=4 n=26440 ms=853 max_ms=285 bytes=3574017 bins=25977,441,21,0,0
+[W3P] id=5 n=20 ms=1 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=6 n=3930 ms=581 max_ms=127 bytes=0 bins=0,0,0,0,0
+[W3P] id=9 n=12 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=10 n=21 ms=151 max_ms=37 bytes=0 bins=0,0,0,0,0
+[W3P] id=11 n=17 ms=54 max_ms=9 bytes=0 bins=0,0,0,0,0
+[W3P] id=12 n=4 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=15 n=2 ms=20 max_ms=20 bytes=0 bins=0,0,0,0,0
+[W3P] id=20 n=64 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=33 n=58 ms=1 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=37 n=2 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=38 n=3 ms=41 max_ms=20 bytes=0 bins=0,0,0,0,0
+[W3P] id=39 n=8 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=41 n=549 ms=1 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=45 n=100 ms=18 max_ms=2 bytes=0 bins=0,0,0,0,0
+[W3P] id=54 n=42678 ms=335 max_ms=11 bytes=0 bins=0,0,0,0,0
+[W3P] id=60 n=24 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=63 n=20 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=64 n=1 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=65 n=1 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=66 n=10 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=77 n=286 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=83 n=2 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=85 n=5254 ms=65 max_ms=4 bytes=0 bins=0,0,0,0,0
+[W3P] id=91 n=808 ms=12 max_ms=2 bytes=0 bins=0,0,0,0,0
+[W3P] id=97 n=55 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=102 n=13003 ms=401 max_ms=174 bytes=0 bins=0,0,0,0,0
+[W3P] id=104 n=1 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=114 n=1763 ms=1281 max_ms=287 bytes=0 bins=0,0,0,0,0
+[W3P] id=116 n=17 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=120 n=69 ms=1845 max_ms=283 bytes=0 bins=0,0,0,0,0
+[W3P] id=122 n=768 ms=5 max_ms=1 bytes=0 bins=0,0,0,0,0
+[W3P] id=125 n=3769 ms=32 max_ms=1 bytes=0 bins=0,0,0,0,0
+[W3P] id=133 n=120 ms=1 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=140 n=111 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=146 n=17615 ms=122 max_ms=5 bytes=0 bins=0,0,0,0,0
+[W3P] id=158 n=286 ms=2 max_ms=1 bytes=0 bins=0,0,0,0,0
+[W3P] id=163 n=3 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=168 n=16629 ms=39800 max_ms=303 bytes=0 bins=0,0,0,0,0
+[W3P] id=172 n=20 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=173 n=2 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=174 n=201 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=175 n=53748 ms=33 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=180 n=2330 ms=408 max_ms=8 bytes=277257 bins=2329,1,0,0,0
+[W3P] id=181 n=3 ms=1 max_ms=1 bytes=3 bins=3,0,0,0,0
+[W3P] id=183 n=1 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=186 n=53 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=191 n=17 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=192 n=57422 ms=3621 max_ms=101 bytes=0 bins=0,0,0,0,0
+[W3P] id=194 n=24 ms=27 max_ms=4 bytes=0 bins=0,0,0,0,0
+[W3P] id=199 n=164 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=200 n=150 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=201 n=152 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=202 n=150 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=209 n=150 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=220 n=628 ms=670 max_ms=13 bytes=0 bins=0,0,0,0,0
+[W3P] id=221 n=1557 ms=1 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=224 n=53 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=229 n=1018 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=231 n=12 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=240 n=386 ms=1 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=241 n=52 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=242 n=17 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=243 n=77 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=252 n=16 ms=11 max_ms=5 bytes=0 bins=0,0,0,0,0
+[W3P] id=254 n=1 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=258 n=14 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=267 n=1751 ms=9 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=269 n=203 ms=2 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=295 n=4600 ms=820 max_ms=34 bytes=0 bins=0,0,0,0,0
+[W3P] id=308 n=3542 ms=47017 max_ms=327 bytes=0 bins=0,0,0,0,0
+[W3P] id=311 n=82 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=331 n=167 ms=38 max_ms=8 bytes=0 bins=0,0,0,0,0
+[W3P] id=340 n=65 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=355 n=61 ms=1 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=374 n=10 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=383 n=6884 ms=2833 max_ms=34 bytes=0 bins=0,0,0,0,0
+[W3P] id=386 n=14 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=403 n=41067 ms=5492 max_ms=10 bytes=0 bins=0,0,0,0,0
+[W3P] id=406 n=10 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=435 n=8 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=439 n=56 ms=1 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=512 n=79348 ms=641 max_ms=3 bytes=0 bins=0,0,0,0,0
+[W3P] id=513 n=4609 ms=532 max_ms=31 bytes=0 bins=0,0,0,0,0
+[W3P] id=514 n=5657 ms=2962 max_ms=97 bytes=415794985 bins=2565,1072,772,490,758
+[W3P] id=515 n=694 ms=23 max_ms=3 bytes=1941830 bins=232,441,21,0,0
+[W3P] id=516 n=34 ms=4 max_ms=4 bytes=0 bins=0,0,0,0,0
+[W3P] id=517 n=3725 ms=542 max_ms=127 bytes=0 bins=0,0,0,0,0
+[W3P] id=518 n=11609 ms=332 max_ms=34 bytes=0 bins=0,0,0,0,0
+[W3P] id=526 n=3524 ms=2129 max_ms=14 bytes=182837248 bins=0,1875,162,135,1352
+[W3P] id=527 n=420 ms=1241 max_ms=26 bytes=4315136 bins=0,390,0,6,24
+[W3P] id=528 n=5320 ms=2420 max_ms=14 bytes=187152384 bins=0,2277,178,2865,0
+[W3P] id=529 n=420 ms=944 max_ms=25 bytes=0 bins=0,0,0,0,0
+[W3P] id=531 n=618269 ms=1580654 max_ms=327 bytes=0 bins=0,0,0,0,0
+[W3P] id=532 n=67579 ms=141378 max_ms=11974 bytes=92729546 bins=54159,12753,47,620,0
+[W3P] id=533 n=60489 ms=162 max_ms=8 bytes=40931530 bins=59691,136,41,621,0
+[W3P] id=534 n=104 ms=5 max_ms=1 bytes=0 bins=0,0,0,0,0

@@ -1,0 +1,13 @@
+{
+  "ports/wine/README.md": "fc2604ff167df8885ab3465eca8ab068f8c406a7a51ddad60a14f779b6dea380",
+  "ports/wine/graphics/README.md": "d61afcccb7b2d833297c0ec3178f3e3fd3b57f059a00331d0fb3f079fe97f178",
+  "ports/wine/graphics/glx.c": "a33c6ab690d4c0191f5e04bbc2ddf8fc49d022b7fc970d00d2d6f28bf9a5a625",
+  "ports/wine/graphics/build-gallium.py": "333380d562974f3c5d1bcfa47703a479c895bcf5107c88a5376eb1573d91ede6",
+  "ports/wine/graphics/mesa-blesk-frontend.patch": "8d661edeef3b1b9baa33462e8fc62f5bd0c863c02ee308664d810d65125a618c",
+  "ports/wine/graphics/test-glx.c": "e4cd0e2e50f88afc360d05ca3d09c55e5892e04b9103f5cd607f3970d8df185a",
+  "ports/wine/tests/games32.c": "3caf0cfa7613356f59272ebaf1949d4cbedb70acddbccca78d4c9c646ee645d4",
+  "ports/wine/tests/games32-launch.c": "ac71f962eea6805616ffa70ca2d615ef9cee875450655de84308ef7401c604ce",
+  "tests/kernel/run_wine_games32.py": "9e3dece09e26ead33ca5047d48d29fbebbb3fca5571c91a58b648a64446f2e93",
+  "tests/desktop/test_glx_drawables.py": "40dadfb7662cf87009c066e2e4123d625f0451b1a194f963cda75c7352dc9459",
+  "tests/desktop/test_gallium_package.py": "43cd8871ea90e2504c3c0198546b1934bc5f1371b7433285e3ad0807872ec12f"
+}

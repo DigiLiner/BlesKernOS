@@ -189,7 +189,16 @@ static void runbox_execute(runbox_state_t *st) {
         return;
     }
 
-    if (bk_app_is_object(path)) {
+    if (runbox_ext_is(ext, ".EXE", ".exe") ||
+        runbox_ext_is(ext, ".BAT", ".bat")) {
+        if (bk_app_execute_path_arg(st->desktop,
+                "/SYSTEM/PROGRAMS/WINE.BEX", path))
+            runbox_set_status_path(st, "Ejecutado con Wine: ", path);
+        else runbox_set_status_path(st, "No se pudo ejecutar: ", path);
+        return;
+    }
+    if (bk_app_is_object(path) || runbox_name_is(ext, ".BEX") ||
+        bk_app_is_win32(path)) {
         if (bk_app_execute_path(st->desktop, path)) {
             runbox_set_status_path(st, "Ejecutado: ", path);
             return;
@@ -410,9 +419,9 @@ static void runbox_main(void *arg) {
 
     st->focused = true;
     st->button_icon_loaded[0] =
-        bk_graphics_icon_load("Runonce106", &st->button_icons[0]);
+        bk_graphics_icon_load("16/Runonce106", &st->button_icons[0]);
     st->button_icon_loaded[1] =
-        bk_graphics_icon_load("Close", &st->button_icons[1]);
+        bk_graphics_icon_load("16/Close", &st->button_icons[1]);
     runbox_copy(st->status, sizeof(st->status),
                 "@H7F4FCECA");
 
@@ -426,7 +435,7 @@ static void runbox_main(void *arg) {
     st->window->dirty = true;
     bk_gui_request_paint();
 
-    while (!bk_proc_exit_requested()) {
+    while (!bk_proc_exit_requested() && st->window && st->window->listed) {
         bk_sys_sleep_ticks(20);
     }
 

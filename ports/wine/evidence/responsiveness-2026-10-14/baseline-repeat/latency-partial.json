@@ -1,0 +1,114 @@
+[
+  {
+    "key_to_glyph_ms": 282.9203330038581,
+    "injection_ms": 2.4754379992373288,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 282.0476159977261,
+    "injection_ms": 1.3620769896078855,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 292.51463699620217,
+    "injection_ms": 2.6552790077403188,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 233.30721200909466,
+    "injection_ms": 3.5363280039746314,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 281.2670720159076,
+    "injection_ms": 1.4358939952217042,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 260.1554019784089,
+    "injection_ms": 3.1099019979592413,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 245.88171500363387,
+    "injection_ms": 1.3129140133969486,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 217.83436101395637,
+    "injection_ms": 2.629053022246808,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 248.30746298539452,
+    "injection_ms": 1.903505006339401,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 281.37160500045866,
+    "injection_ms": 1.3995289918966591,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 257.97649499145336,
+    "injection_ms": 1.5309650043491274,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 297.15490600210615,
+    "injection_ms": 1.335323991952464,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 279.91521600051783,
+    "injection_ms": 1.6127009876072407,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 230.98780098371208,
+    "injection_ms": 1.7379159980919212,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 295.71653800667264,
+    "injection_ms": 1.544430007925257,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 247.26564201409929,
+    "injection_ms": 1.4594719978049397,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  }
+]

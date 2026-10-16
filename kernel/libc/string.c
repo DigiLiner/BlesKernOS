@@ -1,6 +1,6 @@
-#include "../string.h"
-#include "../strings.h"
-#include "../ctype.h"
+#include "include/string.h"
+#include "include/strings.h"
+#include "include/ctype.h"
 #include "../include/memory.h"
 
 void *memcpy(void *dst, const void *src, size_t n) {

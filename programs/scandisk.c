@@ -329,9 +329,9 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     memory_zero(state, sizeof(*state));
     state->desktop = desktop;
     state->button_icon_loaded[0] =
-        bk_graphics_icon_load("Scandskw1", &state->button_icons[0]);
+        bk_graphics_icon_load("16/Scandskw1", &state->button_icons[0]);
     state->button_icon_loaded[1] =
-        bk_graphics_icon_load("Qfecheck111", &state->button_icons[1]);
+        bk_graphics_icon_load("16/Qfecheck111", &state->button_icons[1]);
     if (!bk_device_volume_info(&state->volume)) {
         for (int i = 0; i < 2; i++)
             if (state->button_icon_loaded[i])

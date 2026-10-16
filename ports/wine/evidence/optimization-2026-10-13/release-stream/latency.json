@@ -1,0 +1,71 @@
+{
+  "samples": [
+    {
+      "key_to_glyph_ms": 2571.152528980747,
+      "injection_ms": 13.788565003778785,
+      "native_route_ms": 17.541647976031527,
+      "tinyx_consume_ms": 94.14999798173085,
+      "stream_publish_ms": 2562.652486987645
+    },
+    {
+      "key_to_glyph_ms": 221.32777600199915,
+      "injection_ms": 1.3837319856975228,
+      "native_route_ms": 28.38571899337694,
+      "tinyx_consume_ms": 28.38571899337694,
+      "stream_publish_ms": 213.7430559960194
+    },
+    {
+      "key_to_glyph_ms": 274.46489699650556,
+      "injection_ms": 1.4579469861928374,
+      "native_route_ms": 24.858274002326652,
+      "tinyx_consume_ms": 24.858274002326652,
+      "stream_publish_ms": 244.99694199766964
+    },
+    {
+      "key_to_glyph_ms": 473.667990998365,
+      "injection_ms": 6.879764987388626,
+      "native_route_ms": 71.27496600151062,
+      "tinyx_consume_ms": 71.27496600151062,
+      "stream_publish_ms": 456.8654840113595
+    },
+    {
+      "key_to_glyph_ms": 361.3695719977841,
+      "injection_ms": 12.28303398238495,
+      "native_route_ms": 18.668451986741275,
+      "tinyx_consume_ms": 78.70792699395679,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 293.89429101138376,
+      "injection_ms": 2.026247006142512,
+      "native_route_ms": 6.484973011538386,
+      "tinyx_consume_ms": 39.44324600161053,
+      "stream_publish_ms": 269.35176900587976
+    },
+    {
+      "key_to_glyph_ms": 231.03053699014708,
+      "injection_ms": 1.7431929882150143,
+      "native_route_ms": 5.521747982129455,
+      "tinyx_consume_ms": 30.89303697925061,
+      "stream_publish_ms": 222.94270899146795
+    },
+    {
+      "key_to_glyph_ms": 269.8686479998287,
+      "injection_ms": 1.6942680231295526,
+      "native_route_ms": 29.953329009003937,
+      "tinyx_consume_ms": 29.953329009003937,
+      "stream_publish_ms": 261.57792401500046
+    }
+  ],
+  "p50_ms": 284.17959400394466,
+  "p95_ms": 2571.152528980747,
+  "max_ms": 2571.152528980747,
+  "capture_p50_ms": 10.356679485994391,
+  "capture_max_ms": 47.534364013699815,
+  "ram_mib": 1536,
+  "smp": 2,
+  "vga": "vmware",
+  "tinyx": "None",
+  "framebuffer": "0xfd000000",
+  "method": "host monotonic from QMP key-down until new glyph ink in displayed VRAM scanlines; no guest stop while timing; includes VRAM query and QMP overhead"
+}

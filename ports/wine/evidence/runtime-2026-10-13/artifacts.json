@@ -1,0 +1,47 @@
+[
+  {
+    "path": "build/bleskernos-ata-user.img",
+    "bytes": 805306368,
+    "sha256": "9862b84f5c38b3b60587710722f96076a6cf1a294e9b533d4da1d9d8052e6d0b"
+  },
+  {
+    "path": "build/kernel.bin",
+    "bytes": 837676,
+    "sha256": "138cc1d44f8023da57a63aa34e302acd1ddd2343ec640620f6a35c24473a75fe"
+  },
+  {
+    "path": "/tmp/blesk-wine-diagnosis-20261013/run3/stage2-kernel/kernel-test.bin",
+    "bytes": 837676,
+    "sha256": "72eee4f343baf451a8e8e49bca097ea48059ed43ba15c845d043fc15b973677f"
+  },
+  {
+    "path": "/tmp/blesk-wine-diagnosis-20261013/run2/stage2-kernel/kernel-test.bin",
+    "bytes": 845868,
+    "sha256": "eb6e486871b818a37d9e78016f2e2e3dd226a1eb9ba0e8c4001f0fcdbf933638"
+  },
+  {
+    "path": "/tmp/blesk-wine-diagnosis-20261013/wine-launch-diag",
+    "bytes": 48108,
+    "sha256": "6d1f78d62acc8f00600f3af1f0815e3a9b70cb8065e769b35ced5aa7a90f2ef3"
+  },
+  {
+    "path": "ports/tinyx/wine-launch.c",
+    "bytes": 60664,
+    "sha256": "d71da04ce20752252d086eb13c8bf9e6ab622324be3d0e98a44ce319c1cbd2d3"
+  },
+  {
+    "path": "kernel/mm/paging.c",
+    "bytes": 64015,
+    "sha256": "f79cc2c1ae6383f240de7094f3ee9876f0b6f5f95904113b4f4858cf64c4c3d5"
+  },
+  {
+    "path": "kernel/sched/scheduler_smp.c",
+    "bytes": 13198,
+    "sha256": "cec0687c97e9db5a0252abe1d4c11eed4dea8eb93b4d7959e1c4d44d412dc6ac"
+  },
+  {
+    "path": "kernel/core/compat_mode.c",
+    "bytes": 9399,
+    "sha256": "e2997cc5d749b39460b45c73d4822ec56187a519e94154b043c5453c75c8ccbd"
+  }
+]

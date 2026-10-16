@@ -1,0 +1,1046 @@
+--- /dev/null
++++ b/kernel/linux/i386_inotify.inc
+@@ -0,0 +1,241 @@
++/* Linux inotify ABI over successful VFS operations. Included after devices.
++ * Queue/watch storage is allocated only for an open instance. No user copies,
++ * VFS lookups, allocation or scheduler calls occur under linux_io_lock. */
++#include <string.h>
++#define LINUX_INOTIFY_WATCHES 64U
++#define LINUX_INOTIFY_BYTES 8192U
++#define LINUX_IN_ALL_EVENTS 0x00000fffU
++#define LINUX_IN_IGNORED 0x00008000U
++#define LINUX_IN_OVERFLOW 0x00004000U
++#define LINUX_IN_ISDIR 0x40000000U
++#define LINUX_IN_ONESHOT 0x80000000U
++typedef struct {int32_t wd;uint32_t mask,cookie,length;} linux_inotify_event;
++typedef struct {
++    uint64_t device,inode;
++    uint32_t wd,mask;
++    bool directory;
++    char path[VFS_MAX_PATH];
++} linux_inotify_watch;
++struct linux_inotify {
++    uint32_t used,last,next_wd;
++    bool overflow;
++    linux_inotify_watch watches[LINUX_INOTIFY_WATCHES];
++    uint8_t queue[LINUX_INOTIFY_BYTES];
++};
++static volatile uint32_t linux_inotify_instances;
++static uint32_t linux_inotify_cookie;
++
++static bool linux_inotify_prefix(const char *a,const char *b,uint32_t length) {
++    for(uint32_t i=0;i<length;i++) {
++        unsigned char x=a[i],y=b[i];
++        if(x>='A' && x<='Z')x+='a'-'A';
++        if(y>='A' && y<='Z')y+='a'-'A';
++        if(x!=y || !x)return false;
++    }
++    return true;
++}
++static bool linux_inotify_equal(const char *a,const char *b) {
++    uint32_t n=kstrlen(a);return n==kstrlen(b) && linux_inotify_prefix(a,b,n);
++}
++static const char *linux_inotify_child(const char *parent,const char *path) {
++    uint32_t n=kstrlen(parent);
++    if(!linux_inotify_prefix(parent,path,n))return NULL;
++    const char *name;
++    if(n==1 && parent[0]=='/')name=path+1;
++    else {if(path[n]!='/')return NULL;name=path+n+1;}
++    if(!*name)return NULL;
++    for(const char *p=name;*p;p++)if(*p=='/')return NULL;
++    return name;
++}
++/* Reserve one header for a visible overflow event, never silently truncate a
++ * variable-length name. Consecutive identical unread events coalesce. */
++static bool linux_inotify_enqueue(struct linux_inotify *s,int32_t wd,
++                                  uint32_t mask,uint32_t cookie,const char *name) {
++    uint32_t length=name?(kstrlen(name)+1U+3U)&~3U:0U;
++    uint32_t size=sizeof(linux_inotify_event)+length;
++    linux_inotify_event e={wd,mask,cookie,length};
++    if(s->used) {
++        linux_inotify_event *last=(void *)(s->queue+s->last);
++        if(last->wd==wd && last->mask==mask && last->cookie==cookie && last->length==length &&
++           (!name || !kmemcmp(last+1,name,kstrlen(name)+1U)))return false;
++    }
++    if(s->used>LINUX_INOTIFY_BYTES-sizeof(e) ||
++       size>LINUX_INOTIFY_BYTES-sizeof(e)-s->used) {
++        if(s->overflow)return false;
++        s->last=s->used;e=(linux_inotify_event){-1,LINUX_IN_OVERFLOW,0,0};
++        kmemcpy(s->queue+s->used,&e,sizeof(e));s->used+=sizeof(e);s->overflow=true;
++        return true;
++    }
++    s->last=s->used;kmemcpy(s->queue+s->used,&e,sizeof(e));
++    if(length) {
++        kmemset(s->queue+s->used+sizeof(e),0,length);
++        kmemcpy(s->queue+s->used+sizeof(e),name,kstrlen(name));
++    }
++    s->used+=size;return true;
++}
++static bool linux_inotify_drop(struct linux_inotify *s,linux_inotify_watch *w) {
++    bool changed=linux_inotify_enqueue(s,w->wd,LINUX_IN_IGNORED,0,NULL);
++    w->wd=0;return changed;
++}
++static bool linux_inotify_emit(struct linux_inotify *s,linux_inotify_watch *w,
++                               uint32_t mask,uint32_t cookie,const char *name,bool directory) {
++    if(!(w->mask&mask))return false;
++    bool changed=linux_inotify_enqueue(s,w->wd,mask|(directory?LINUX_IN_ISDIR:0),cookie,name);
++    if(w->mask&LINUX_IN_ONESHOT)changed|=linux_inotify_drop(s,w);
++    return changed;
++}
++static void linux_inotify_changed(const char *path,const char *renamed,
++                                  uint32_t mask,bool directory) {
++    if(!linux_inotify_instances)return;
++    bool changed=false;
++    uint32_t lock=kspin_lock_irqsave(&linux_io_lock),cookie=0;
++    if(renamed){if(!++linux_inotify_cookie)++linux_inotify_cookie;cookie=linux_inotify_cookie;}
++    for(unsigned i=0;i<128;i++) {
++        linux_device *d=&linux_devices[i];struct linux_inotify *s=d->inotify;
++        if(!d->refs || d->kind!=6 || !s)continue;
++        for(unsigned j=0;j<LINUX_INOTIFY_WATCHES;j++) {
++            linux_inotify_watch *w=&s->watches[j];if(!w->wd)continue;
++            bool self=linux_inotify_equal(w->path,path);
++            const char *child=w->directory?linux_inotify_child(w->path,path):NULL;
++            if(renamed) {
++                if(child)changed|=linux_inotify_emit(s,w,VFS_NOTIFY_MOVED_FROM,cookie,child,directory);
++                if(!w->wd)continue;
++                const char *next=w->directory?linux_inotify_child(w->path,renamed):NULL;
++                if(next)changed|=linux_inotify_emit(s,w,VFS_NOTIFY_MOVED_TO,cookie,next,directory);
++                if(w->wd && self)changed|=linux_inotify_emit(s,w,VFS_NOTIFY_MOVE_SELF,0,NULL,directory);
++                if(!w->wd)continue;
++                uint32_t old=kstrlen(path),n=kstrlen(renamed),tail=kstrlen(w->path);
++                if(tail>=old && linux_inotify_prefix(w->path,path,old) &&
++                   (tail==old || w->path[old]=='/')) {
++                    if(n+tail-old>=sizeof(w->path))changed|=linux_inotify_drop(s,w);
++                    else {
++                        memmove(w->path+n,w->path+old,tail-old+1U);
++                        kmemcpy(w->path,renamed,n);
++                    }
++                }
++            } else {
++                if(child && mask!=VFS_NOTIFY_DELETE_SELF)
++                    changed|=linux_inotify_emit(s,w,mask,0,child,directory);
++                if(w->wd && self) {
++                    uint32_t event=mask==VFS_NOTIFY_DELETE?VFS_NOTIFY_DELETE_SELF:mask;
++                    changed|=linux_inotify_emit(s,w,event,0,NULL,w->directory);
++                    if(w->wd && event==VFS_NOTIFY_DELETE_SELF)changed|=linux_inotify_drop(s,w);
++                }
++            }
++        }
++    }
++    kspin_unlock_irqrestore(&linux_io_lock,lock);
++    if(changed)task_event_signal(linux_io_event_key());
++}
++
++static int32_t linux_inotify_init(uint32_t flags) {
++    if(flags&~(0x800U|0x80000U))return -BK_EINVAL;
++    syscall_resources_t *r=resource_for(task_current_process_id(),true);
++    if(!r)return -BK_ENOMEM;
++    int fd;
++    for(fd=0;fd<SYSCALL_FD_SLOTS+3;fd++)if(resource_fd(r,fd)<0)break;
++    if(fd==SYSCALL_FD_SLOTS+3)return -BK_EMFILE;
++    struct linux_inotify *s=kzalloc(sizeof(*s));if(!s)return -BK_ENOMEM;
++    (void)mm_set_allocation_owner(s,0U);s->next_wd=1;
++    int raw=linux_device_open(6,flags&0x800U);
++    if(raw<0){kfree(s);return raw;}
++    uint32_t lock=kspin_lock_irqsave(&linux_io_lock);
++    linux_device_for(raw)->inotify=s;linux_inotify_instances++;
++    kspin_unlock_irqrestore(&linux_io_lock,lock);
++    vfs_observe_changes(linux_inotify_changed);
++    if(fd<3)r->stdio_fds[fd]=raw;else r->fds[fd-3]=raw;
++    r->linux_fd_flags[fd]=(flags&0x80000U)?1:0;
++    r->linux_open_flags[fd]=0;
++    return fd;
++}
++static int32_t linux_inotify_add(registers_t *regs) {
++    int raw=resource_fd(resource_for(task_current_process_id(),false),regs->ebx);
++    linux_device *d=linux_device_for(raw);
++    if(!d || d->kind!=6)return raw<0?-BK_EBADF:-BK_EINVAL;
++    uint32_t mask=regs->edx;
++    if(!(mask&LINUX_IN_ALL_EVENTS) || (mask&~0xb7000fffU) ||
++       (mask&0x30000000U)==0x30000000U)return -BK_EINVAL;
++    char input[VFS_MAX_PATH],path[VFS_MAX_PATH];
++    int32_t result=linux_at_path(regs,-100,(void *)(uintptr_t)regs->ecx,input);
++    if(result<0)return result;
++    bool nofollow=(mask&0x02000000U)!=0;
++    if(!(nofollow?vfs_normalize_nofollow(input,path):vfs_normalize_path(input,path)))return -40;
++    vfs_dir_entry_t entry;char target[VFS_MAX_PATH];
++    bool link=nofollow && vfs_readlink(path,target,sizeof(target))>=0;
++    if(!link && !vfs_stat(path,&entry))return -BK_ENOENT;
++    bool directory=!link && entry.type==VFS_NODE_DIR;
++    if((mask&0x01000000U) && !directory)return -20;
++    uint64_t device,inode;
++    if(!(nofollow?vfs_identity_nofollow(path,&device,&inode):vfs_identity(path,&device,&inode)))return -BK_ENOENT;
++    uint32_t lock=kspin_lock_irqsave(&linux_io_lock);
++    struct linux_inotify *s=d->inotify;linux_inotify_watch *slot=NULL;
++    result=-28; /* ENOSPC: bounded watch table. */
++    for(unsigned i=0;i<LINUX_INOTIFY_WATCHES;i++) {
++        linux_inotify_watch *w=&s->watches[i];
++        if(w->wd && w->device==device && w->inode==inode) {
++            if(mask&0x10000000U){result=-17;goto done;}
++            w->mask=(mask&0x20000000U)?w->mask|(mask&(LINUX_IN_ALL_EVENTS|LINUX_IN_ONESHOT))
++                :mask&(LINUX_IN_ALL_EVENTS|LINUX_IN_ONESHOT);
++            result=w->wd;goto done;
++        }
++        if(!w->wd && !slot)slot=w;
++    }
++    if(slot && s->next_wd<=0x7fffffffU) {
++        *slot=(linux_inotify_watch){.device=device,.inode=inode,.wd=s->next_wd++,
++            .mask=mask&(LINUX_IN_ALL_EVENTS|LINUX_IN_ONESHOT),.directory=directory};
++        kstrcpy(slot->path,path);result=slot->wd;
++    }
++done:
++    kspin_unlock_irqrestore(&linux_io_lock,lock);return result;
++}
++static int32_t linux_inotify_remove(uint32_t fd,uint32_t wd) {
++    int raw=resource_fd(resource_for(task_current_process_id(),false),fd);
++    linux_device *d=linux_device_for(raw);
++    if(!d || d->kind!=6)return raw<0?-BK_EBADF:-BK_EINVAL;
++    bool changed=false;int32_t result=-BK_EINVAL;
++    uint32_t lock=kspin_lock_irqsave(&linux_io_lock);
++    for(unsigned i=0;i<LINUX_INOTIFY_WATCHES;i++) {
++        linux_inotify_watch *w=&d->inotify->watches[i];
++        if(w->wd && w->wd==wd){changed=linux_inotify_drop(d->inotify,w);result=0;break;}
++    }
++    kspin_unlock_irqrestore(&linux_io_lock,lock);
++    if(changed)task_event_signal(linux_io_event_key());
++    return result;
++}
++static int32_t linux_inotify_read(int raw,void *buffer,uint32_t length) {
++    if(length<sizeof(linux_inotify_event))return -BK_EINVAL;
++    uint32_t pid=task_current_process_id();
++    if(!pager_pin(pid,(uint32_t)(uintptr_t)buffer,length,true))return -BK_EFAULT;
++    if(!user_access_ok(buffer,length,true) || !sys_raw_retain(raw)) {
++        pager_unpin(pid,(uint32_t)(uintptr_t)buffer,length);return -BK_EFAULT;
++    }
++    int32_t result;uint32_t empty_rounds=0,key=linux_io_event_key();
++    for(;;) {
++        bool armed=linux_io_wait_arm(key);
++        uint32_t lock=kspin_lock_irqsave(&linux_io_lock);
++        linux_device *d=linux_device_for(raw);struct linux_inotify *s=d->inotify;
++        if(s->used) {
++            uint32_t take=0;
++            while(take<s->used) {
++                linux_inotify_event *e=(void *)(s->queue+take);
++                uint32_t size=sizeof(*e)+e->length;
++                if(size>length-take)break;
++                if(e->mask==LINUX_IN_OVERFLOW)s->overflow=false;
++                take+=size;
++            }
++            result=take?(int32_t)take:-BK_EINVAL;
++            if(take) {
++                kmemcpy(buffer,s->queue,take);s->used-=take;
++                memmove(s->queue,s->queue+take,s->used);s->last=0;
++                for(uint32_t n=0;n<s->used;) {
++                    s->last=n;linux_inotify_event *e=(void *)(s->queue+n);n+=sizeof(*e)+e->length;
++                }
++            }
++        } else result=(d->flags&0x800U)?-BK_EAGAIN:0;
++        kspin_unlock_irqrestore(&linux_io_lock,lock);
++        if(result) {linux_io_wait_cancel(armed,key);break;}
++        if(task_linux_signal_pending()){linux_io_wait_cancel(armed,key);result=-4;break;}
++        linux_io_wait(&empty_rounds,armed,key,pit_get_frequency_hz());
++    }
++    sys_raw_close(raw);pager_unpin(pid,(uint32_t)(uintptr_t)buffer,length);return result;
++}
+--- /dev/null
++++ b/ports/wine/tests/inotify.c
+@@ -0,0 +1,137 @@
++#define _GNU_SOURCE
++#include <sys/inotify.h>
++#include <sys/ioctl.h>
++#include <sys/socket.h>
++#include <sys/stat.h>
++#include <sys/wait.h>
++#include <sys/syscall.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <poll.h>
++#include <signal.h>
++#include <errno.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#define CHECK(x) do{if(!(x)){printf("[INOTIFY] line=%d errno=%d FAIL\n",__LINE__,errno);return 1;}}while(0)
++static unsigned char events[16384];static int bytes;
++static int collect(int fd){
++ bytes=read(fd,events,sizeof events);
++ if(bytes<0)return 0;
++ for(unsigned at=0;at<(unsigned)bytes;){
++  if((unsigned)bytes-at<sizeof(struct inotify_event))return 0;
++  struct inotify_event *e=(void *)(events+at);
++  if(e->len%4 || e->len>(unsigned)bytes-at-sizeof *e || (e->len && !memchr(e->name,0,e->len)))return 0;
++  at+=sizeof(*e)+e->len;
++ }
++ return 1;
++}
++static unsigned matches(int wd,unsigned mask,const char *name,unsigned *cookie){
++ unsigned count=0;
++ for(unsigned at=0;at<(unsigned)bytes;){
++  struct inotify_event *e=(void *)(events+at);
++  if((wd<0 || e->wd==wd) && (e->mask&mask)==mask &&
++     (!name || (e->len && !strcmp(e->name,name)))){count++;if(cookie)*cookie=e->cookie;}
++  at+=sizeof(*e)+e->len;
++ }
++ return count;
++}
++static int make(const char *path){int fd=open(path,O_WRONLY|O_CREAT|O_TRUNC,0600);if(fd<0)return -1;return close(fd);}
++static volatile sig_atomic_t signalled;
++static void signal_handler(int sig){(void)sig;signalled=1;}
++int main(void){
++ setbuf(stdout,NULL);
++ const char *dir="/WINEGATE/notify-abi",*moved="/WINEGATE/notify-moved";
++ char a[128],b[128],link[128],resolved[260];
++ snprintf(a,sizeof a,"%s/a",dir);snprintf(b,sizeof b,"%s/b",dir);
++ CHECK(mkdir(dir,0700)==0);
++ CHECK(inotify_init1(1)==-1 && errno==EINVAL);
++ int fd=inotify_init1(IN_NONBLOCK|IN_CLOEXEC);CHECK(fd>=0);
++ CHECK(fcntl(fd,F_GETFD)==FD_CLOEXEC && (fcntl(fd,F_GETFL)&O_NONBLOCK));
++ CHECK(inotify_add_watch(-1,dir,IN_CREATE)==-1 && errno==EBADF);
++ int plain=open("/dev/null",O_RDONLY);CHECK(plain>=0);
++ CHECK(inotify_add_watch(plain,dir,IN_CREATE)==-1 && errno==EINVAL);CHECK(close(plain)==0);
++ CHECK(inotify_add_watch(fd,dir,0)==-1 && errno==EINVAL);
++ CHECK(inotify_add_watch(fd,"/WINEGATE/missing-notify",IN_CREATE)==-1 && errno==ENOENT);
++ CHECK(read(fd,events,sizeof events)==-1 && errno==EAGAIN);
++ struct pollfd p={fd,POLLIN|POLLOUT,0};CHECK(poll(&p,1,0)==0);
++ int available=-1;CHECK(ioctl(fd,FIONREAD,&available)==0 && available==0);
++ int wd=inotify_add_watch(fd,dir,IN_ALL_EVENTS|IN_ONLYDIR);CHECK(wd>=0);
++ CHECK(make(a)==0);p.revents=0;CHECK(poll(&p,1,0)==1 && p.revents==POLLIN);
++ CHECK(ioctl(fd,FIONREAD,&available)==0 && available>16);
++ CHECK(read(fd,events,15)==-1 && errno==EINVAL);
++ CHECK(read(fd,events,16)==-1 && errno==EINVAL);
++ CHECK(syscall(SYS_read,fd,(void *)1,4096)==-1 && errno==EFAULT);
++ int after=0;CHECK(ioctl(fd,FIONREAD,&after)==0 && after==available);
++ CHECK(collect(fd) && matches(wd,IN_CREATE,"a",NULL)==1 && matches(wd,IN_OPEN,"a",NULL)==1 && matches(wd,IN_CLOSE_WRITE,"a",NULL)==1);
++ puts("[INOTIFY] flags/errors, poll, FIONREAD, whole padded events and nondestructive invalid reads PASS");
++ int file=open(a,O_WRONLY);CHECK(file>=0 && collect(fd));
++ CHECK(write(file,"A",1)==1 && write(file,"B",1)==1);
++ CHECK(collect(fd) && matches(wd,IN_MODIFY,"a",NULL)==1); /* consecutive unread events coalesce */
++ CHECK(close(file)==0 && collect(fd));
++ int fw=inotify_add_watch(fd,a,IN_MOVE_SELF|IN_MODIFY|IN_DELETE_SELF);CHECK(fw>=0);
++ CHECK(inotify_add_watch(fd,a,IN_CREATE|IN_ONLYDIR)==-1 && errno==ENOTDIR);
++ CHECK(rename(a,b)==0 && collect(fd));
++ unsigned from=0,to=0;
++ CHECK(matches(wd,IN_MOVED_FROM,"a",&from)==1 && matches(wd,IN_MOVED_TO,"b",&to)==1 && from && from==to);
++ CHECK(matches(fw,IN_MOVE_SELF,NULL,NULL)==1);
++ file=open(b,O_WRONLY);CHECK(file>=0 && write(file,"C",1)==1 && close(file)==0 && collect(fd));
++ CHECK(matches(fw,IN_MODIFY,NULL,NULL)==1 && matches(wd,IN_MODIFY,"b",NULL)==1);
++ CHECK(unlink(b)==0 && collect(fd) && matches(wd,IN_DELETE,"b",NULL)==1);
++ CHECK(matches(fw,IN_DELETE_SELF,NULL,NULL)==1 && matches(fw,IN_IGNORED,NULL,NULL)==1);
++ CHECK(inotify_rm_watch(fd,fw)==-1 && errno==EINVAL);
++ puts("[INOTIFY] write coalescing, rename cookies, moved file identity and deletion/ignored PASS");
++ CHECK(inotify_add_watch(fd,dir,IN_CREATE)==wd);
++ CHECK(inotify_add_watch(fd,dir,IN_DELETE|IN_MASK_ADD)==wd);
++ CHECK(inotify_add_watch(fd,dir,IN_CREATE|IN_MASK_CREATE)==-1 && errno==EEXIST);
++ CHECK(inotify_add_watch(fd,dir,IN_CREATE|IN_MASK_CREATE|IN_MASK_ADD)==-1 && errno==EINVAL);
++ CHECK(make(a)==0 && unlink(a)==0 && collect(fd));
++ CHECK(matches(wd,IN_CREATE,"a",NULL)==1 && matches(wd,IN_DELETE,"a",NULL)==1 && !matches(wd,IN_OPEN,"a",NULL));
++ CHECK(inotify_add_watch(fd,dir,IN_CREATE|IN_ONESHOT)==wd);
++ CHECK(make(a)==0 && collect(fd) && matches(wd,IN_CREATE,"a",NULL)==1 && matches(wd,IN_IGNORED,NULL,NULL)==1);
++ CHECK(inotify_rm_watch(fd,wd)==-1 && errno==EINVAL);
++ CHECK(unlink(a)==0 && read(fd,events,sizeof events)==-1 && errno==EAGAIN);
++ wd=inotify_add_watch(fd,dir,IN_OPEN|IN_CLOSE_NOWRITE);CHECK(wd>0);
++ CHECK(make(a)==0); /* write-close does not match this mask; discard its OPEN */
++ CHECK(collect(fd));
++ for(unsigned i=0;i<400;i++){file=open(a,O_RDONLY);CHECK(file>=0 && close(file)==0);}
++ CHECK(collect(fd) && matches(-1,IN_Q_OVERFLOW,NULL,NULL)==1);
++ CHECK(read(fd,events,sizeof events)==-1 && errno==EAGAIN);
++ file=open(a,O_RDONLY);CHECK(file>=0 && close(file)==0 && collect(fd));
++ CHECK(matches(wd,IN_OPEN,"a",NULL)==1 && matches(wd,IN_CLOSE_NOWRITE,"a",NULL)==1);
++ CHECK(unlink(a)==0);
++ puts("[INOTIFY] mask replacement/add/create, oneshot, bounded queue overflow and recovery PASS");
++ int directory=open(dir,O_RDONLY|O_DIRECTORY);CHECK(directory>=0);
++ snprintf(link,sizeof link,"/proc/self/fd/%d",directory);
++ CHECK(inotify_add_watch(fd,link,IN_CREATE|IN_DELETE|IN_MOVE_SELF)==wd);
++ struct stat st,alias;CHECK(fstat(directory,&st)==0 && stat(link,&alias)==0 && st.st_ino==alias.st_ino && st.st_dev==alias.st_dev);
++ int n=readlink(link,resolved,sizeof resolved-1);CHECK(n>0);resolved[n]=0;CHECK(!strcmp(resolved,dir));
++ CHECK(rename(dir,moved)==0 && collect(fd) && matches(wd,IN_MOVE_SELF,NULL,NULL)==1);
++ CHECK(inotify_add_watch(fd,link,IN_CREATE|IN_DELETE|IN_MOVE_SELF)==wd);
++ n=readlink(link,resolved,sizeof resolved-1);CHECK(n>0);resolved[n]=0;CHECK(!strcmp(resolved,moved));
++ snprintf(a,sizeof a,"%s/child",moved);CHECK(make(a)==0 && collect(fd) && matches(wd,IN_CREATE,"child",NULL)==1);
++ CHECK(unlink(a)==0 && collect(fd));
++ char parent[160];snprintf(parent,sizeof parent,"%s/..",link);CHECK(stat(parent,&alias)==0 && stat("/WINEGATE",&st)==0 && alias.st_ino==st.st_ino);
++ CHECK(close(directory)==0);
++ CHECK(stat(link,&alias)==-1 && errno==ENOENT);
++ CHECK(inotify_rm_watch(fd,wd)==0 && collect(fd) && matches(wd,IN_IGNORED,NULL,NULL)==1);
++ CHECK(rmdir(moved)==0 && close(fd)==0);
++ puts("[INOTIFY] live /proc/self/fd paths, stat/readlink/.. and renamed directory watches PASS");
++ CHECK(mkdir(dir,0700)==0);fd=inotify_init();CHECK(fd>=0 && !(fcntl(fd,F_GETFL)&O_NONBLOCK));
++ wd=inotify_add_watch(fd,dir,IN_CREATE);CHECK(wd>=0);
++ int duplicate=fcntl(fd,F_DUPFD_CLOEXEC,300);CHECK(duplicate>=300 && fcntl(duplicate,F_GETFD)==FD_CLOEXEC);
++ snprintf(a,sizeof a,"%s/wakeup",dir);
++ pid_t child=fork();CHECK(child>=0);
++ if(!child){close(fd);close(duplicate);usleep(30000);_exit(make(a)?1:0);}
++ CHECK(collect(duplicate) && matches(wd,IN_CREATE,"wakeup",NULL)==1);
++ int status;CHECK(waitpid(child,&status,0)==child && WIFEXITED(status) && WEXITSTATUS(status)==0);
++ struct sigaction sa={0};sa.sa_handler=signal_handler;sigemptyset(&sa.sa_mask);CHECK(sigaction(SIGUSR1,&sa,NULL)==0);
++ child=fork();CHECK(child>=0);
++ if(!child){close(fd);close(duplicate);usleep(30000);_exit(kill(getppid(),SIGUSR1)?1:0);}
++ CHECK(read(duplicate,events,sizeof events)==-1 && errno==EINTR && signalled);
++ CHECK(waitpid(child,&status,0)==child && WIFEXITED(status) && !WEXITSTATUS(status));
++ CHECK(close(fd)==0 && close(duplicate)==0 && unlink(a)==0 && rmdir(dir)==0);
++ for(unsigned i=0;i<256;i++){fd=inotify_init1(IN_NONBLOCK);CHECK(fd>=0 && close(fd)==0);}
++ puts("[INOTIFY] blocking wake, dup/fork shared queue, EINTR and repeated instance cleanup PASS");
++ puts("[INOTIFY] ALL PASS");return 0;
++}
+--- /dev/null
++++ b/ports/wine/tests/directory-notify.c
+@@ -0,0 +1,76 @@
++/* Windows integration regression for Wine's Linux inotify backend. */
++#define WIN32_LEAN_AND_MEAN
++#include <windows.h>
++#include <stdio.h>
++#include <string.h>
++#define CHECK(x) do {if(!(x)){printf("[WIN-NOTIFY] line=%d error=%lu FAIL\n",__LINE__,GetLastError());return 1;}}while(0)
++static const char *root="Z:\\WINEGATE\\notify-win32";
++static int arm(HANDLE directory,HANDLE event,OVERLAPPED *ov,void *buffer,BOOL subtree){
++ memset(ov,0,sizeof *ov);ov->hEvent=event;ResetEvent(event);
++ return ReadDirectoryChangesW(directory,buffer,4096,subtree,
++  FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_DIR_NAME|FILE_NOTIFY_CHANGE_LAST_WRITE,
++  NULL,ov,NULL);
++}
++static int found(HANDLE directory,OVERLAPPED *ov,void *buffer,DWORD action,const wchar_t *name){
++ DWORD n=0;if(WaitForSingleObject(ov->hEvent,5000)!=WAIT_OBJECT_0)return 0;
++ if(!GetOverlappedResult(directory,ov,&n,FALSE) || !n)return 0;
++ for(DWORD at=0;at+12<=n;){
++  FILE_NOTIFY_INFORMATION *info=(void *)((BYTE *)buffer+at);
++  if(info->FileNameLength>n-at-12)return 0;
++  size_t len=wcslen(name);
++  if(info->Action==action && info->FileNameLength==len*sizeof(wchar_t) &&
++     !memcmp(info->FileName,name,info->FileNameLength))return 1;
++  if(!info->NextEntryOffset || info->NextEntryOffset>n-at)break;
++  at+=info->NextEntryOffset;
++ }
++ return 0;
++}
++int main(void){
++ setbuf(stdout,NULL);CreateDirectoryA(root,NULL);
++ char a[MAX_PATH],b[MAX_PATH],sub[MAX_PATH],nested[MAX_PATH];
++ snprintf(a,sizeof a,"%s\\before.txt",root);snprintf(b,sizeof b,"%s\\after.txt",root);
++ snprintf(sub,sizeof sub,"%s\\sub",root);snprintf(nested,sizeof nested,"%s\\sub\\deep.txt",root);
++ DeleteFileA(a);DeleteFileA(b);DeleteFileA(nested);RemoveDirectoryA(sub);
++ HANDLE dir=CreateFileA(root,FILE_LIST_DIRECTORY,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
++  NULL,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OVERLAPPED,NULL);
++ CHECK(dir!=INVALID_HANDLE_VALUE);puts("[WIN-NOTIFY] directory-open PASS");
++ HANDLE event=CreateEventA(NULL,TRUE,FALSE,NULL);CHECK(event);
++ OVERLAPPED ov;BYTE data[4096];
++ CHECK(arm(dir,event,&ov,data,FALSE));
++ HANDLE f=CreateFileA(a,GENERIC_WRITE,FILE_SHARE_READ|FILE_SHARE_WRITE,NULL,CREATE_ALWAYS,0,NULL);
++ CHECK(f!=INVALID_HANDLE_VALUE);CloseHandle(f);
++ CHECK(found(dir,&ov,data,FILE_ACTION_ADDED,L"before.txt"));
++ puts("[WIN-NOTIFY] create / ReadDirectoryChangesW PASS");
++ CHECK(arm(dir,event,&ov,data,FALSE));
++ CHECK(MoveFileA(a,b));CHECK(found(dir,&ov,data,FILE_ACTION_RENAMED_OLD_NAME,L"before.txt"));
++ puts("[WIN-NOTIFY] rename PASS");
++ CHECK(arm(dir,event,&ov,data,FALSE));
++ f=CreateFileA(b,GENERIC_WRITE,FILE_SHARE_READ|FILE_SHARE_WRITE,NULL,OPEN_EXISTING,0,NULL);CHECK(f!=INVALID_HANDLE_VALUE);
++ DWORD written;CHECK(WriteFile(f,"updated",7,&written,NULL) && written==7);CloseHandle(f);
++ CHECK(found(dir,&ov,data,FILE_ACTION_MODIFIED,L"after.txt"));
++ puts("[WIN-NOTIFY] modification PASS");
++ CHECK(arm(dir,event,&ov,data,FALSE));CHECK(DeleteFileA(b));
++ CHECK(found(dir,&ov,data,FILE_ACTION_REMOVED,L"after.txt"));
++ puts("[WIN-NOTIFY] delete PASS");
++ /* Wine keeps the filter/subtree configuration from the first request on a handle. */
++ CloseHandle(dir);
++ dir=CreateFileA(root,FILE_LIST_DIRECTORY,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
++  NULL,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS|FILE_FLAG_OVERLAPPED,NULL);
++ CHECK(dir!=INVALID_HANDLE_VALUE);
++ CHECK(CreateDirectoryA(sub,NULL));CHECK(arm(dir,event,&ov,data,TRUE));
++ /* Opening the existing child lets Wine register its recursive inode watch. */
++ HANDLE child=CreateFileA(sub,FILE_LIST_DIRECTORY,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
++  NULL,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS,NULL);CHECK(child!=INVALID_HANDLE_VALUE);
++ f=CreateFileA(nested,GENERIC_WRITE,FILE_SHARE_READ|FILE_SHARE_WRITE,NULL,CREATE_ALWAYS,0,NULL);CHECK(f!=INVALID_HANDLE_VALUE);CloseHandle(f);
++ CHECK(found(dir,&ov,data,FILE_ACTION_ADDED,L"sub\\deep.txt"));
++ CloseHandle(child);
++ puts("[WIN-NOTIFY] recursive opened directory PASS");
++ CloseHandle(event);CloseHandle(dir);DeleteFileA(nested);RemoveDirectoryA(sub);
++ HANDLE change=FindFirstChangeNotificationA(root,FALSE,FILE_NOTIFY_CHANGE_FILE_NAME);CHECK(change!=INVALID_HANDLE_VALUE);
++ f=CreateFileA(a,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);CHECK(f!=INVALID_HANDLE_VALUE);CloseHandle(f);
++ CHECK(WaitForSingleObject(change,5000)==WAIT_OBJECT_0 && FindNextChangeNotification(change));
++ CHECK(WaitForSingleObject(change,0)==WAIT_TIMEOUT);CHECK(DeleteFileA(a));
++ CHECK(WaitForSingleObject(change,5000)==WAIT_OBJECT_0 && FindCloseChangeNotification(change));
++ CHECK(RemoveDirectoryA(root));puts("[WIN-NOTIFY] FindFirst/NextChangeNotification and reset PASS");
++ puts("[WIN-NOTIFY] ALL PASS");return 0;
++}
+--- /dev/null
++++ b/ports/wine/tests/directory-notify-launch.c
+@@ -0,0 +1,11 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <sys/wait.h>
++int main(void){
++ setbuf(stdout,NULL);setenv("WINEDEBUG","-all",1);
++ pid_t p=fork();if(p<0)return 1;
++ if(!p){execl("/WINEGATE/bin/wine-tool.ELF","wine-tool","/WINEGATE/bin/directory-notify.exe",NULL);perror("wine-tool");_exit(127);}
++ int status;if(waitpid(p,&status,0)!=p || !WIFEXITED(status))return 2;
++ printf("[WIN-NOTIFY-LAUNCH] status=%d\n",WEXITSTATUS(status));return WEXITSTATUS(status);
++}
+--- /dev/null
++++ b/tests/kernel/test_inotify_queue.py
+@@ -0,0 +1,92 @@
++#!/usr/bin/env python3
++"""Exercise the production inotify queue and watch transitions under ASan/UBSan."""
++from pathlib import Path
++import subprocess,tempfile
++root=Path(__file__).resolve().parents[2]
++s=(root/'kernel/linux/i386_inotify.inc').read_text();part=s[:s.index('static int32_t linux_inotify_init(')]
++constants='\n'.join(l for l in (root/'kernel/include/vfs.h').read_text().splitlines() if l.startswith('#define VFS_NOTIFY_'))
++code=r'''
++#include <stdint.h>
++#include <stdbool.h>
++#include <stddef.h>
++#include <assert.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#define VFS_MAX_PATH 260
++#define kmemcpy memcpy
++#define kmemset memset
++#define kmemcmp memcmp
++#define kstrlen strlen
++#define kstrcpy strcpy
++typedef struct {unsigned refs,kind;struct linux_inotify *inotify;} linux_device;
++static linux_device linux_devices[128];
++static unsigned linux_io_lock,locked,wakes;
++static unsigned kspin_lock_irqsave(unsigned *p){(void)p;assert(!locked);locked=1;return 1;}
++static void kspin_unlock_irqrestore(unsigned *p,unsigned f){(void)p;assert(locked && f==1);locked=0;}
++static unsigned linux_io_event_key(void){return 71;}
++static void task_event_signal(unsigned key){assert(!locked && key==71);wakes++;}
++'''+constants+'\n'+part+r'''
++static void seed(struct linux_inotify *s,unsigned wd,const char *path,unsigned mask,bool dir){
++ for(unsigned i=0;i<64;i++)if(!s->watches[i].wd){
++  linux_inotify_watch *w=&s->watches[i];w->wd=wd;w->mask=mask;w->directory=dir;strcpy(w->path,path);return;
++ }assert(0);
++}
++static unsigned scan(struct linux_inotify *s,unsigned mask,int wd,const char *name,unsigned *cookie){
++ unsigned found=0;
++ assert(s->used<=LINUX_INOTIFY_BYTES);
++ for(unsigned at=0;at<s->used;){
++  assert(s->used-at>=16);linux_inotify_event *e=(void *)(s->queue+at);
++  assert(e->length%4==0 && e->length<=s->used-at-16);
++  if(e->length)assert(memchr(e+1,0,e->length));
++  if((e->mask&mask)==mask && e->wd==wd && (!name || (e->length && !strcmp((char *)(e+1),name)))){found++;if(cookie)*cookie=e->cookie;}
++  at+=16+e->length;
++ }return found;
++}
++int main(void){
++ struct linux_inotify *s=calloc(1,sizeof *s);assert(s);
++ linux_devices[0]=(linux_device){1,6,s};linux_inotify_instances=1;
++ seed(s,1,"/WATCH",LINUX_IN_ALL_EVENTS,true);
++ seed(s,2,"/watch/child",LINUX_IN_ALL_EVENTS,true);
++ seed(s,3,"/watch/child/file",LINUX_IN_ALL_EVENTS,false);
++ linux_inotify_changed("/watch/a",NULL,VFS_NOTIFY_CREATE,false);
++ assert(scan(s,VFS_NOTIFY_CREATE,1,"a",NULL)==1 && wakes==1);
++ linux_inotify_changed("/watch/a",NULL,VFS_NOTIFY_CREATE,false);assert(wakes==1);
++ linux_inotify_changed("/watch/a/deep",NULL,VFS_NOTIFY_CREATE,false);assert(wakes==1); /* one level only */
++ linux_inotify_changed("/watch/child","/watch/new",VFS_NOTIFY_MOVE_SELF,true);
++ unsigned from=0,to=0;
++ assert(scan(s,VFS_NOTIFY_MOVED_FROM|LINUX_IN_ISDIR,1,"child",&from)==1);
++ assert(scan(s,VFS_NOTIFY_MOVED_TO|LINUX_IN_ISDIR,1,"new",&to)==1 && from && from==to);
++ assert(scan(s,VFS_NOTIFY_MOVE_SELF,2,NULL,NULL)==1);
++ assert(!strcmp(s->watches[1].path,"/watch/new") && !strcmp(s->watches[2].path,"/watch/new/file"));
++ linux_inotify_changed("/watch/new/file",NULL,VFS_NOTIFY_MODIFY,false);
++ assert(scan(s,VFS_NOTIFY_MODIFY,2,"file",NULL)==1 && scan(s,VFS_NOTIFY_MODIFY,3,NULL,NULL)==1);
++ linux_inotify_changed("/watch/new/file",NULL,VFS_NOTIFY_DELETE,false);
++ assert(scan(s,VFS_NOTIFY_DELETE_SELF,3,NULL,NULL)==1 && scan(s,LINUX_IN_IGNORED,3,NULL,NULL)==1 && !s->watches[2].wd);
++ memset(s,0,sizeof *s);seed(s,7,"/watch",VFS_NOTIFY_CREATE|LINUX_IN_ONESHOT,true);
++ linux_inotify_changed("/watch/sub",NULL,VFS_NOTIFY_CREATE,true);
++ assert(scan(s,VFS_NOTIFY_CREATE|LINUX_IN_ISDIR,7,"sub",NULL)==1 && scan(s,LINUX_IN_IGNORED,7,NULL,NULL)==1);
++ assert(!s->watches[0].wd);
++ memset(s,0,sizeof *s);
++ char name[256];memset(name,'n',255);name[255]=0;
++ for(unsigned i=0;i<10000;i++)assert(linux_inotify_enqueue(s,1+i,VFS_NOTIFY_MODIFY,0,name)==(i<=30));
++ assert(s->overflow && scan(s,LINUX_IN_OVERFLOW,-1,NULL,NULL)==1 && s->used<=8192);
++ /* A completely full queue including its overflow record must not make the
++    reserve-space subtraction wrap and permit an out-of-bounds append. */
++ memset(s,0,sizeof *s);
++ for(unsigned i=0;i<511;i++)assert(linux_inotify_enqueue(s,i+1,VFS_NOTIFY_MODIFY,0,NULL));
++ assert(s->used==8176);assert(linux_inotify_enqueue(s,999,VFS_NOTIFY_CREATE,0,"long-enough"));
++ assert(s->overflow && s->used==8192);
++ for(unsigned i=0;i<10000;i++)linux_inotify_enqueue(s,1000+i,VFS_NOTIFY_CREATE,0,name);
++ assert(s->used==8192 && scan(s,LINUX_IN_OVERFLOW,-1,NULL,NULL)==1);
++ /* Suppressed/closed instances leave other resources untouched. */
++ linux_inotify_instances=0;unsigned before=wakes;linux_inotify_changed("/watch/a",NULL,VFS_NOTIFY_CREATE,false);assert(wakes==before);
++ free(s);puts("PASS production queue bounds/coalescing/overflow, rename pairing/descendants, masks, oneshot, ignored and wake-after-unlock");
++}
++'''
++# Exercise the target's 32-bit layout as well as native host sanitizer layout.
++with tempfile.TemporaryDirectory(prefix='bk-inotify-') as folder:
++ p=Path(folder);(p/'test.c').write_text(code)
++ for flags in [[],['-m32']]:
++  subprocess.run(['gcc',*flags,'-O2','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',str(p/'test.c'),'-o',str(p/'test')],check=True)
++  subprocess.run([str(p/'test')],check=True)
+--- /dev/null
++++ b/tests/kernel/run_wine_notify.py
+@@ -0,0 +1,34 @@
++#!/usr/bin/env python3
++"""Exercise Linux directory watches and Windows directory notifications in a disposable guest."""
++import argparse,hashlib,json,subprocess,sys
++from pathlib import Path
++root=Path(__file__).resolve().parents[2]
++sys.path.insert(0,str(root/'tools'))
++from bfs4_update import Editor
++p=argparse.ArgumentParser(description=__doc__)
++p.add_argument('--base',type=Path,default=root/'build/bleskernos-wine-responsive.img')
++p.add_argument('--out',type=Path,required=True)
++p.add_argument('--windows-only',action='store_true',help='skip the native inotify ABI regression')
++p.add_argument('--expect-failure',action='store_true',help='record the unsupported baseline; requires an actual guest test failure')
++a=p.parse_args();out=a.out.resolve();out.mkdir(parents=True,exist_ok=True)
++image=out/'fixture-base.img'
++if image.exists() or (out/'guest').exists():p.error('use a new output directory')
++pe=out/'directory-notify.exe'
++subprocess.run(['i686-w64-mingw32-gcc','-O2','-Wall','-Wextra','-Werror',str(root/'ports/wine/tests/directory-notify.c'),'-o',str(pe)],check=True)
++subprocess.run(['cp','--reflink=auto',str(a.base.resolve()),str(image)],check=True)
++e=Editor(image);e.update('/WINEGATE/bin/directory-notify.exe',pe.read_bytes());e.finish()
++try:
++ cmd=[sys.executable,str(root/'tests/kernel/run_futex_bench.py'),'--base',str(image),'--out',str(out/'guest'),'--launch-delay','10']
++ if not a.windows_only:cmd+=['--program','inotify']
++ cmd+=['--program','directory-notify-launch']
++ with (out/'runner.log').open('w') as log:r=subprocess.run(cmd,cwd=root,stdout=log,stderr=subprocess.STDOUT)
++ serial=(out/'guest/serial.log').read_text(errors='replace') if (out/'guest/serial.log').exists() else ''
++ passed=r.returncode==0 and '[WIN-NOTIFY] ALL PASS' in serial
++ observed_failure='[WIN-NOTIFY] directory-open PASS' in serial and 'FAIL' in serial and '[FUTEX-SUITE] FAIL' in serial
++ result={'result':'PASS' if passed else 'FAIL','expected_failure':a.expect_failure,'observed_guest_failure':observed_failure,
++         'pe_sha256':hashlib.sha256(pe.read_bytes()).hexdigest(),'native_test':not a.windows_only,
++         'source_kernel_sha256':hashlib.sha256((root/'build/kernel.bin').read_bytes()).hexdigest()}
++ (out/'result.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))
++ if a.expect_failure:assert observed_failure and not passed,'baseline did not reach the expected guest failure; see runner.log'
++ else:assert passed,'directory notification regression failed; see guest/serial.log and runner.log'
++finally:image.unlink(missing_ok=True)
+--- a/kernel/include/vfs.h
++++ b/kernel/include/vfs.h
+@@ -16,6 +16,25 @@
+ #define VFS_O_CREATE 0x0010
+ #define VFS_O_TRUNC  0x0020
+ #define VFS_O_DIRECTORY 0x0040
++
++/* Successful namespace/data operations, observed while KDOMAIN_VFS is held.
++ * A sink must not block or call back into VFS. renamed is non-NULL for a
++ * completed rename; consumers can correlate its old and new names. */
++#define VFS_NOTIFY_ACCESS      0x001U
++#define VFS_NOTIFY_MODIFY      0x002U
++#define VFS_NOTIFY_ATTRIB      0x004U
++#define VFS_NOTIFY_CLOSE_WRITE 0x008U
++#define VFS_NOTIFY_CLOSE_READ  0x010U
++#define VFS_NOTIFY_OPEN        0x020U
++#define VFS_NOTIFY_MOVED_FROM  0x040U
++#define VFS_NOTIFY_MOVED_TO    0x080U
++#define VFS_NOTIFY_CREATE      0x100U
++#define VFS_NOTIFY_DELETE      0x200U
++#define VFS_NOTIFY_DELETE_SELF 0x400U
++#define VFS_NOTIFY_MOVE_SELF   0x800U
++typedef void (*vfs_change_sink_t)(const char *path,const char *renamed,
++                                  uint32_t mask,bool directory);
++void vfs_observe_changes(vfs_change_sink_t sink);
+ 
+ typedef enum {
+     VFS_NODE_NONE = 0,
+--- a/kernel/api/syscall.c
++++ b/kernel/api/syscall.c
+@@ -2160,7 +2160,44 @@
+     kprintf("[LINUX:INSTALL-VOLUME] missing pid=%u path=%s\n",task_current_process_id(),path);
+ }
+ 
++/* Wine's directory-notification backend names a live directory descriptor
++ * through /proc/self/fd/N, also appending child names and /.. to that link.
++ * Resolve only our own live VFS descriptions; never alias an unlinked old
++ * description to a replacement file that now occupies the same pathname. */
++static int32_t linux_resolve_proc_fd(const char *path,char *full,bool *direct) {
++    static const char prefix[]="/proc/self/fd/";
++    if(direct)*direct=false;
++    if(kstrncmp(path,prefix,sizeof(prefix)-1U)) {
++        if(path!=full)kstrcpy(full,path);
++        return 0;
++    }
++    const char *tail=path+sizeof(prefix)-1U;
++    if(*tail<'0' || *tail>'9')return -BK_ENOENT;
++    uint32_t fd=0;
++    do {
++        if(fd>(SYSCALL_FD_SLOTS+3U)/10U)return -BK_ENOENT;
++        fd=fd*10U+(uint32_t)(*tail++-'0');
++    }while(*tail>='0' && *tail<='9');
++    if((*tail && *tail!='/') || fd>=SYSCALL_FD_SLOTS+3U)return -BK_ENOENT;
++    int raw=resource_fd(resource_for(task_current_process_id(),false),fd);
++    const char *base=raw>=0 && raw<LINUX_IO_BASE?vfs_fd_path(raw):NULL;
++    if(!base)return -BK_ENOENT;
++    uint64_t d,i,actual_d,actual_i;
++    if(!vfs_fd_identity(raw,&d,&i) || !vfs_identity(base,&actual_d,&actual_i) ||
++       d!=actual_d || i!=actual_i)return -BK_ENOENT;
++    if(*tail && !vfs_is_directory(raw))return -20;
++    if(kstrlen(base)+kstrlen(tail)>=VFS_MAX_PATH)return -36;
++    char expanded[VFS_MAX_PATH];kstrcpy(expanded,base);kstrcat(expanded,tail);
++    if(!vfs_normalize_nofollow(expanded,full))return -40;
++    if(direct)*direct=!*tail;
++    return 0;
++}
++
+ static int32_t linux_stat_path(const char *path, void *user_status) {
++    char resolved[VFS_MAX_PATH];
++    int32_t result=linux_resolve_proc_fd(path,resolved,NULL);
++    if(result<0)return result;
++    path=resolved;
+     vfs_dir_entry_t entry;
+     linux_i386_stat64_t status;
+     if(linux_unix_stat(path,&status))return copy_to_user(user_status,&status,sizeof(status))?0:-BK_EFAULT;
+@@ -2871,7 +2908,18 @@
+             break;
+         }
+         case SYS_LINUX_IOCTL:
+-            if (((regs->ecx>>8)&255U)=='P' || ((regs->ecx>>8)&255U)=='X') {
++            if(regs->ecx==0x541bU) { /* FIONREAD on an inotify queue. */
++                int raw=resource_fd(resource_for(task_current_process_id(),false),regs->ebx);
++                linux_device *device=linux_device_for(raw);
++                if(raw<0)regs->eax=(uint32_t)-BK_EBADF;
++                else if(!device || device->kind!=6)regs->eax=(uint32_t)-BK_ENOTTY;
++                else {
++                    uint32_t lock=kspin_lock_irqsave(&linux_io_lock);
++                    uint32_t bytes=device->inotify->used;
++                    kspin_unlock_irqrestore(&linux_io_lock,lock);
++                    regs->eax=copy_to_user((void *)(uintptr_t)regs->edx,&bytes,4)?0U:(uint32_t)-BK_EFAULT;
++                }
++            } else if (((regs->ecx>>8)&255U)=='P' || ((regs->ecx>>8)&255U)=='X') {
+                 syscall_resources_t *resource=resource_for(task_current_process_id(),false);
+                 linux_device *device=linux_device_for(resource_fd(resource,regs->ebx));
+                 regs->eax=device && (device->kind==4 || device->kind==5)
+--- a/kernel/linux/i386_fs.inc
++++ b/kernel/linux/i386_fs.inc
+@@ -3,6 +3,9 @@
+     char path[VFS_MAX_PATH], joined[VFS_MAX_PATH];
+     if (!copy_user_string(regs,user_path,path,sizeof(path))) return -BK_EFAULT;
+     if (!path[0]) return -BK_ENOENT;
++    int32_t expanded=linux_resolve_proc_fd(path,joined,NULL);
++    if(expanded<0)return expanded;
++    kstrcpy(path,joined);
+     if (path[0]!='/' && dirfd!=-100) {
+         int raw=resource_fd(resource_for(task_current_process_id(),false),dirfd);
+         const char *base=vfs_fd_path(raw);
+--- a/kernel/linux/i386_translate.inc
++++ b/kernel/linux/i386_translate.inc
+@@ -8,6 +8,15 @@
+     uint32_t linux_number = regs->eax;
+ 
+     switch (linux_number) {
++        case 291U: case 332U: case 292U: case 293U: {
++            kernel_domains_enter(KDOMAIN_VFS);
++            int32_t result;
++            if(linux_number==292U)result=linux_inotify_add(regs);
++            else if(linux_number==293U)result=linux_inotify_remove(regs->ebx,regs->ecx);
++            else result=linux_inotify_init(linux_number==332U?regs->ebx:0U);
++            kernel_domains_exit(KDOMAIN_VFS);
++            regs->eax=(uint32_t)result;return false;
++        }
+         case 123U:
+             regs->eax=(uint32_t)sys_linux_modify_ldt(regs,regs->ebx,regs->ecx,regs->edx);
+             return false;
+@@ -20,7 +29,13 @@
+                 result=linux_at_path(regs,linux_number==85?-100:(int32_t)regs->ebx,
+                     (void *)(linux_number==85?regs->ebx:regs->ecx),path);
+                 if(!result) {
+-                    char target[VFS_MAX_PATH];result=vfs_readlink(path,target,sizeof(target));
++                    char target[VFS_MAX_PATH],original[VFS_MAX_PATH];bool direct=false;
++                    const char *user_path=(void *)(linux_number==85?regs->ebx:regs->ecx);
++                    if(!copy_user_string(regs,user_path,original,sizeof(original)))result=-BK_EFAULT;
++                    else {
++                        result=linux_resolve_proc_fd(original,target,&direct);
++                        if(!result)result=direct?(int32_t)kstrlen(target):vfs_readlink(path,target,sizeof(target));
++                    }
+                     if(result>=0) {
+                         if((uint32_t)result>size)result=size;
+                         if(!copy_to_user((void *)(linux_number==85?regs->ecx:regs->edx),target,result))result=-BK_EFAULT;
+--- a/kernel/linux/i386_ipc.inc
++++ b/kernel/linux/i386_ipc.inc
+@@ -130,6 +130,7 @@
+ typedef struct {
+     uint32_t refs,flags; unsigned kind; bles_gfx_context *gfx;
+     uint8_t *pcm; uint32_t pcm_rate,pcm_format,pcm_channels,pcm_read,pcm_count,pcm_inflight,pcm_serial;
++    struct linux_inotify *inotify;
+ } linux_device;
+ static linux_device linux_devices[128];
+ static uint32_t linux_pcm_serial;
+@@ -172,6 +173,8 @@
+     if(raw<0 && gfx)kfree(gfx);
+     return raw;
+ }
++
++#include "i386_inotify.inc"
+ 
+ static bles_gfx_context *bles_gfx_find_instance(uint32_t instance_id) {
+     if(!instance_id)return NULL;
+@@ -830,8 +833,14 @@
+         d->refs=last && d->gfx?0xffffffffU:d->refs-1U;
+         bles_gfx_context *gfx=last?d->gfx:NULL;
+         uint8_t *pcm=last?d->pcm:NULL;
++        struct linux_inotify *inotify=last?d->inotify:NULL;
++        if(inotify) {
++            d->inotify=NULL;
++            if(!--linux_inotify_instances)vfs_observe_changes(NULL);
++        }
+         if(last)d->pcm=NULL;
+         kspin_unlock_irqrestore(&linux_io_lock,lock);
++        if(inotify)kfree(inotify);
+         if(pcm)kfree(pcm);
+         if(gfx) {
+             bles_gfx_launch_busy(gfx,false);
+@@ -1085,6 +1094,7 @@
+     linux_device *d=linux_device_for(fd);
+     if(d) {
+         if((d->flags&3)==1) return -BK_EBADF;
++        if(d->kind==6)return linux_inotify_read(fd,buffer,length);
+         if(d->kind==2) return 0;
+         if(d->kind==3 || d->kind==4 || d->kind==5) return -BK_EINVAL;
+         kernel_domain_snapshot_t snapshot;kernel_domains_drop_current(&snapshot);
+@@ -1108,6 +1118,7 @@
+ static uint32_t linux_poll_raw(int raw,uint32_t requested) {
+     linux_device *d=linux_device_for(raw);
+     if(d) {
++        if(d->kind==6)return d->inotify && d->inotify->used?(requested&1U):0U;
+         uint32_t ready=(d->flags&3)?4U:(d->kind==2?1U:0U);
+         /* KDrive can watch the native input queue alongside its X sockets.
+          * Level readiness lasts until BLES_GFX_EVENT drains the queue. */
+--- a/kernel/drivers/core/vfs.c
++++ b/kernel/drivers/core/vfs.c
+@@ -77,6 +77,13 @@
+ };
+ static vfs_page_reference_t *g_page_references;
+ static vfs_file_t g_files[VFS_MAX_OPEN_FILES];
++static vfs_change_sink_t g_vfs_change_sink;
++void vfs_observe_changes(vfs_change_sink_t sink) {
++    g_vfs_change_sink=sink;
++}
++static void vfs_notify(const char *path,const char *renamed,uint32_t mask,bool directory) {
++    if(g_vfs_change_sink)g_vfs_change_sink(path,renamed,mask,directory);
++}
+ static bool vfs_page_resize_allowed(uint64_t device,uint64_t inode,uint32_t size) {
+     for(vfs_page_reference_t *r=g_page_references;r;r=r->next)
+         if(r->file.device==device && r->file.inode==inode &&
+@@ -774,6 +781,7 @@
+     if(fat_resolve_path(&fs,inner,&entry))return -17;
+     if(!fat_write_path(&fs,inner,target,kstrlen(target)))return -5;
+     if(!fat_set_posix_mode(&fs,inner,0120777U)) {fat_remove_path(&fs,inner);return -5;}
++    vfs_notify(full,NULL,VFS_NOTIFY_CREATE,false);
+     return 0;
+ }
+ 
+@@ -1065,6 +1073,8 @@
+         if (!fat_resolve_path(&fs, fat_path, &entry))
+             return vfs_open_failure(full, flags,
+                                     "created file could not be resolved");
++        if(!exists)vfs_notify(full,NULL,VFS_NOTIFY_CREATE,false);
++        else if(flags&VFS_O_TRUNC)vfs_notify(full,NULL,VFS_NOTIFY_MODIFY,false);
+ 
+         for (int i = 0; i < VFS_MAX_OPEN_FILES; i++) {
+             if (!g_files[i].used) {
+@@ -1084,6 +1094,7 @@
+                     file->cache_append_only = true;
+                 }
+                 g_vfs_last_error = "none";
++                vfs_notify(full,NULL,VFS_NOTIFY_OPEN,false);
+                 return i;
+             }
+         }
+@@ -1108,6 +1119,7 @@
+                 file->entry.iso = iso_entry;
+                 kstrncpy(file->path, full, sizeof(file->path) - 1U);
+                 g_vfs_last_error = "none";
++                vfs_notify(full,NULL,VFS_NOTIFY_OPEN,iso_entry.is_directory);
+                 return i;
+             }
+         }
+@@ -1135,6 +1147,7 @@
+             file->entry.fat.fs = fs;
+             kstrncpy(file->path, full, sizeof(file->path) - 1U);
+             g_vfs_last_error = "none";
++            vfs_notify(full,NULL,VFS_NOTIFY_OPEN,entry.is_directory);
+             return i;
+         }
+     }
+@@ -1152,7 +1165,7 @@
+     g_files[fd].flags=(g_files[fd].flags&~0x800U)|(flags&0x800);return true;
+ }
+ 
+-int vfs_read(int fd, void *buffer, uint32_t size) {
++static int vfs_read_internal(int fd, void *buffer, uint32_t size) {
+     W3P_SCOPE(W3P_VFS_READ, size);
+     vfs_file_t *file;
+     uint32_t bytes_read = 0U;
+@@ -1214,6 +1227,13 @@
+     return (int)bytes_read;
+ }
+ 
++int vfs_read(int fd,void *buffer,uint32_t size) {
++    int result=vfs_read_internal(fd,buffer,size);
++    if(result>0 && !g_files[fd].unlinked)
++        vfs_notify(g_files[fd].path,NULL,VFS_NOTIFY_ACCESS,false);
++    return result;
++}
++
+ static bool vfs_stream_file(const vfs_file_t *file, uint32_t size) {
+     /* Wine's registry is written in small stdio chunks. Streaming as soon
+      * as it crosses 1 MiB journals every subsequent chunk separately. Keep
+@@ -1303,7 +1323,10 @@
+                 (void)mm_set_allocation_subsystem(r->file.cache,MM_SUBSYSTEM_VFS);
+             }
+     int result=vfs_write_internal(fd,buffer,size);
+-    if(result>0)vfs_page_written(&g_files[fd],offset,buffer,(uint32_t)result);
++    if(result>0) {
++        vfs_page_written(&g_files[fd],offset,buffer,(uint32_t)result);
++        if(!g_files[fd].unlinked)vfs_notify(g_files[fd].path,NULL,VFS_NOTIFY_MODIFY,false);
++    }
+     return result;
+ }
+ 
+@@ -1335,6 +1358,10 @@
+         return true;
+     }
+     ok = vfs_flush_file(&g_files[fd]);
++    if(!g_files[fd].unlinked)
++        vfs_notify(g_files[fd].path,NULL,
++                   vfs_flags_writable(g_files[fd].flags)?VFS_NOTIFY_CLOSE_WRITE:VFS_NOTIFY_CLOSE_READ,
++                   vfs_is_directory(fd));
+     vfs_drop_cache(&g_files[fd]);
+     vfs_drop_dir_cache(&g_files[fd]);
+     kmemset(&g_files[fd], 0, sizeof(g_files[fd]));
+@@ -1467,7 +1494,7 @@
+                               : file->entry.fat.entry.size));
+ }
+ 
+-bool vfs_truncate(int fd, uint32_t size) {
++static bool vfs_truncate_internal(int fd, uint32_t size) {
+     vfs_file_t *file;
+     uint32_t old_size;
+     if (fd < 0 || fd >= VFS_MAX_OPEN_FILES || !g_files[fd].used) return false;
+@@ -1507,6 +1534,14 @@
+     return true;
+ }
+ 
++bool vfs_truncate(int fd,uint32_t size) {
++    int32_t before=vfs_size(fd);
++    bool ok=vfs_truncate_internal(fd,size);
++    if(ok && before!=(int32_t)size && !g_files[fd].unlinked)
++        vfs_notify(g_files[fd].path,NULL,VFS_NOTIFY_MODIFY,false);
++    return ok;
++}
++
+ bool vfs_stat(const char *path, vfs_dir_entry_t *out) {
+     W3P_SCOPE(W3P_VFS_STAT, 0U);
+     fat_fs_t fs;
+@@ -1836,6 +1871,7 @@
+         (void)fat_remove_path(&fs, fat_path);
+         return false;
+     }
++    vfs_notify(full,NULL,VFS_NOTIFY_CREATE,true);
+     return true;
+ }
+ 
+@@ -1883,7 +1919,9 @@
+         !vfs_sync_path(full, NULL) || vfs_iso_path(full, &iso_path) ||
+         !vfs_select_fat(full, &fs, &inner) || vfs_fat_path_is_root(inner) ||
+         !fat_resolve_path(&fs, inner, &entry)) return false;
+-    return fat_set_posix_mode(&fs, inner, (uint16_t)(mode & 07777U));
++    bool ok=fat_set_posix_mode(&fs, inner, (uint16_t)(mode & 07777U));
++    if(ok)vfs_notify(full,NULL,VFS_NOTIFY_ATTRIB,entry.is_directory);
++    return ok;
+ }
+ 
+ bool vfs_fd_mode(int fd, uint16_t *mode) {
+@@ -1906,8 +1944,10 @@
+         !vfs_sync_path(full, NULL) || vfs_iso_path(full, &iso_path) ||
+         !vfs_select_fat(full, &fs, &inner) || vfs_fat_path_is_root(inner) ||
+         !fat_resolve_path(&fs, inner, &entry)) return false;
+-    return fat_set_times(&fs, inner, set_access, access_seconds,
++    bool ok=fat_set_times(&fs, inner, set_access, access_seconds,
+                          set_modify, modify_seconds);
++    if(ok && (set_access || set_modify))vfs_notify(full,NULL,VFS_NOTIFY_ATTRIB,entry.is_directory);
++    return ok;
+ }
+ 
+ bool vfs_get_times(const char *path, uint32_t *access_seconds,
+@@ -1933,6 +1973,8 @@
+         !vfs_select_fat(full, &fs, &fat_path)) return false;
+     uint64_t device=0,position=0;
+     if (g_identities && !vfs_disk_identity(full,&device,&position))return false;
++    fat_dir_entry_t removed;
++    bool directory=g_vfs_change_sink && fat_resolve_path(&fs,fat_path,&removed) && removed.is_directory;
+     /* Wine unlinks its temporary section files before mmap. Keep open
+      * descriptions alive and never recreate their names when later flushed. */
+     for(int i=0;i<VFS_MAX_OPEN_FILES;i++) {
+@@ -1960,6 +2002,7 @@
+         for(unsigned i=0;i<VFS_IDENTITIES;i++)
+             if(chunk->entries[i].device==device && chunk->entries[i].position==position)
+                 chunk->entries[i].inode=0;
++    vfs_notify(full,NULL,VFS_NOTIFY_DELETE,directory);
+     return true;
+ }
+ 
+@@ -2004,6 +2047,8 @@
+         old_fs.device != new_fs.device || old_fs.volume_lba != new_fs.volume_lba)
+         return false;
+     if (path_component_equals_ci(old_full, new_full)) return true;
++    fat_dir_entry_t source_entry;
++    bool directory=g_vfs_change_sink && fat_resolve_path(&old_fs,old_inner,&source_entry) && source_entry.is_directory;
+     bool replacing = fat_resolve_path(&new_fs, new_inner, &replaced_entry);
+     uint64_t replaced_device = 0, replaced_position = 0;
+     if (replacing) {
+@@ -2036,6 +2081,7 @@
+     if(replacing && !vfs_page_snapshot(new_full))return false;
+     if(!fat_rename_path(&old_fs, old_inner, new_inner))return false;
+     if (replacing) {
++        vfs_notify(new_full,NULL,VFS_NOTIFY_DELETE_SELF,false);
+         for(vfs_page_reference_t *r=g_page_references;r;r=r->next)
+             if(!r->file.unlinked && path_component_equals_ci(r->file.path,new_full))r->file.unlinked=true;
+         for(unsigned i=0;i<VFS_PRIVATE_MAP_SLOTS;i++)
+@@ -2074,6 +2120,7 @@
+     for(vfs_page_reference_t *r=g_page_references;r;r=r->next)
+         if(!r->file.unlinked && vfs_renamed_path(r->file.path,old_full,new_full,renamed))
+             kstrcpy(r->file.path,renamed);
++    vfs_notify(old_full,new_full,VFS_NOTIFY_MOVE_SELF,directory);
+     return true;
+ }
+ 
+@@ -2141,8 +2188,12 @@
+         if(m->references && m->fd>=0 && !m->unlinked &&
+            path_component_equals_ci(g_files[m->fd].path,full) && m->size!=size)return false;
+     }
++    fat_dir_entry_t previous;
++    bool existed=!g_vfs_change_sink || fat_resolve_path(&fs,fat_path,&previous);
+     ok = fat_write_path(&fs, fat_path, buffer, size);
+     if (ok) {
++        if(!existed)vfs_notify(full,NULL,VFS_NOTIFY_CREATE,false);
++        vfs_notify(full,NULL,VFS_NOTIFY_MODIFY,false);
+         for(unsigned i=0;i<VFS_PRIVATE_MAP_SLOTS;i++) {
+             vfs_shared_mapping_t *m=&g_private_maps[i];
+             if(!m->backing || m->unlinked || !path_component_equals_ci(m->path,full))continue;
+--- a/tests/kernel/test_gfx_poll.py
++++ b/tests/kernel/test_gfx_poll.py
+@@ -14,7 +14,8 @@
+ #include <stdio.h>
+ #define LINUX_IO_BASE 100
+ typedef struct {uint8_t read_pos,write_pos;} bles_gfx_context;
+-typedef struct {unsigned flags,kind;bles_gfx_context *gfx;} linux_device;
++struct linux_inotify {unsigned used;};
++typedef struct {unsigned flags,kind;bles_gfx_context *gfx;struct linux_inotify *inotify;} linux_device;
+ typedef struct {unsigned refs,pending,used;bool listen,read_closed,write_closed;} linux_endpoint;
+ typedef struct {bool connected,pipe;unsigned capacity;} linux_io_pair;
+ static linux_device device;
+@@ -24,15 +25,18 @@
+ static linux_endpoint *linux_endpoint_for(int raw){return raw>=100 && raw<=101?&endpoints[raw-100]:NULL;}
+ ''' + body + r'''
+ int main(void){
+- bles_gfx_context gfx={0};device=(linux_device){2,3,&gfx};
++ bles_gfx_context gfx={0};device=(linux_device){.flags=2,.kind=3,.gfx=&gfx};
+  assert(linux_poll_raw(50,1)==0);assert(linux_poll_raw(50,4)==4);
+  gfx.write_pos=1;assert(linux_poll_raw(50,1)==1);assert(linux_poll_raw(50,5)==5);
+  gfx.read_pos=1;assert(linux_poll_raw(50,1)==0);
+  gfx.read_pos=63;gfx.write_pos=0;assert(linux_poll_raw(50,1)==1);
+  gfx.read_pos=0;assert(linux_poll_raw(50,1)==0);
+  device.gfx=NULL;assert(linux_poll_raw(50,1)==0);
+- device=(linux_device){0,2,NULL};assert(linux_poll_raw(50,5)==1);
+- device=(linux_device){1,1,NULL};assert(linux_poll_raw(50,5)==4);
++ device=(linux_device){.kind=2};assert(linux_poll_raw(50,5)==1);
++ device=(linux_device){.flags=1,.kind=1};assert(linux_poll_raw(50,5)==4);
++ struct linux_inotify notify={0};device=(linux_device){.kind=6,.inotify=&notify};
++ assert(!linux_poll_raw(50,5));notify.used=32;assert(linux_poll_raw(50,5)==1);
++ assert(!linux_poll_raw(50,4));device.inotify=NULL;assert(!linux_poll_raw(50,1));
+  assert(linux_poll_raw(-1,5)==32);assert(linux_poll_raw(3,5)==5);
+  pair=(linux_io_pair){true,false,64};endpoints[0].refs=endpoints[1].refs=1;
+  assert(linux_poll_raw(100,5)==4);endpoints[0].used=1;assert(linux_poll_raw(100,5)==5);

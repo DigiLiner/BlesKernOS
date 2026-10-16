@@ -1,0 +1,21 @@
+{
+  "build/travelmate250/audio-verified/256m-std-smoke-audio-rtl8139/desktop.png": {
+    "classic_pixels_checked": 2500,
+    "mismatches": 0
+  },
+  "build/travelmate250/savers/SSPIPES-closed.png": {
+    "classic_pixels_checked": 2500,
+    "mismatches": 0
+  },
+  "build/travelmate250/savers/SSBALLS-closed.png": {
+    "classic_pixels_checked": 2500,
+    "mismatches": 0
+  },
+  "deskbar": {
+    "screen_width": 800,
+    "left": 90,
+    "right": 709,
+    "width": 620,
+    "fixed_minimum": true
+  }
+}

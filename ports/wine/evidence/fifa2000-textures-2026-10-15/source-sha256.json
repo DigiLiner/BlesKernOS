@@ -1,0 +1,11 @@
+{
+  "ports/wine/graphics/virgl-winsys.c": "9d1844a77f14f93f39cb3ea1ff06851c8f09e03df5ea9112c15d498c18809f50",
+  "ports/wine/graphics/mesa-blesk-staging.patch": "c5cd8548840af5221cf7d5258f745a90dda52eb302e50b622d1a70a76e5b0fb3",
+  "ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesvirgl.h": "83bce85867c66bbed61058e7b4fb99f36fd19e4a790310fdb0cd873dc432fece",
+  "ports/wine/graphics/test-glx.c": "fecf44f3c2b52a3d966b74dce9b124dc085389ce3016d41bc56ff190b4ed03ff",
+  "ports/wine/tests/games32.c": "ffab1bbbaf62547fcec68aaea4de7442e19c80e56db5a86ebd0d10b0adf76173",
+  "ports/wine/tests/gl-buffer-reuse.h": "e967b59011c1893ccd4047f077012501d76b30da1b5316c8770316a3a746c238",
+  "tests/desktop/test_virgl_buffer_reuse.py": "957926fd40a62df74ccc65500712449837a03d8294d9c091d7a502245438131e",
+  "tests/desktop/test_virgl_async.py": "6eca7bc9a9d703e1d74e58d4c490c1ff04780473bc7abe158daa9b413746a6e6",
+  "tests/desktop/test_virgl_ranges.py": "f6d80e7b0eb83252dbe09133b066fa735155718a3e03dd6042b8e27be01d1ecd"
+}

@@ -1,0 +1,1 @@
+PASS both ET_REL loaders: valid input, tiny relocation, bounded strings, malformed alignment/tables, overflow and OOM cleanup

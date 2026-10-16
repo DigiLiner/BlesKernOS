@@ -1,0 +1,15 @@
+--- a/dlls/winex11.drv/mouse.c
++++ b/dlls/winex11.drv/mouse.c
+@@ -387,8 +387,10 @@
+     if (!xinput2_available)
+     {
+         WARN( "XInput2 not supported, refusing to clip to %s\n", wine_dbgstr_rect(clip) );
+-        NtUserClipCursor( NULL );
+-        return TRUE;
++        /* Do not enqueue an unclip event here: win32u retries fullscreen
++         * clipping after that event, producing a clip/unclip feedback loop
++         * on servers without XInput2 (e.g. TinyX). Report failure instead. */
++        return FALSE;
+     }
+ 
+     /* enable XInput2 unless we are already clipping */

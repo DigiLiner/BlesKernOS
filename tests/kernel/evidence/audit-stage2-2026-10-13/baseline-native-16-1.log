@@ -1,0 +1,47 @@
+/SYSTEM/DRIVERS/PS2MOUSE.DVR 7140 bytes; mode 0o100644
+/SYSTEM/SERVICES/VISION.BEX 255152 bytes; mode 0o100644
+/SYSTEM/CONTROL/DISPLAY.CPL 2299376 bytes; mode 0o100644
+/SYSTEM/CONTROL/MOUSE.CPL 19952 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/FILE.BEX 59196 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/TEXTEDITOR.BEX 14372 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/PROCESSMANAGER.BEX 24176 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/GFXALLOC.ELF 8812 bytes; mode 0o100755
+/SYSTEM/PROGRAMS/RAMTEST.BEX 4516 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/STARTUP.INI 77 bytes; mode 0o100755
+{
+  "ram_mib": 16,
+  "backend": "std",
+  "desktop_started": true,
+  "completed": false,
+  "kernel_sha256": "018f28042a78177a8182e5478a6e288761bb64d34fa089dd4a87df41d4ab2de5",
+  "wine_boot_started": false,
+  "smoke_pass": false,
+  "memory": {
+    "DESKTOP": {
+      "installed_kib": 15871,
+      "managed_kib": 12160,
+      "used_kib": 9688,
+      "free_kib": 2471,
+      "unmanaged_kib": 3711,
+      "heap_used_kib": 9560,
+      "heap_free_kib": 1575,
+      "vm_free_kib": 896
+    },
+    "IDLE": {
+      "installed_kib": 15871,
+      "managed_kib": 12160,
+      "used_kib": 11124,
+      "free_kib": 1035,
+      "unmanaged_kib": 3711,
+      "heap_used_kib": 10996,
+      "heap_free_kib": 139,
+      "vm_free_kib": 896
+    }
+  },
+  "depths": []
+}
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/run_ram_smoke.py", line 152, in <module>
+    assert done and result['desktop_started'],'Desktop/test did not finish'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Desktop/test did not finish

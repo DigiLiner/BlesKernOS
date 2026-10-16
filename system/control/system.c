@@ -1,23 +1,35 @@
 #include "control_common.h"
 #include "kernel/include/api.h"
 
-#define SYSTEM_WINDOW_W        560
-#define SYSTEM_WINDOW_H        430
-#define SYSTEM_TAB_LEFT         12
-#define SYSTEM_TAB_TOP           8
-#define SYSTEM_TAB_COUNT         2
-#define SYSTEM_DEVICE_ROW_H     13
-#define SYSTEM_REPORT_PATH      "/SYSTEM/USER/CONFIG/DEVICES.TXT"
+#define SYSTEM_WINDOW_W         628
+#define SYSTEM_WINDOW_H         462
+#define SYSTEM_TAB_LEFT          16
+#define SYSTEM_TAB_TOP            6
+#define SYSTEM_TAB_COUNT          6
+#define SYSTEM_BUILD_VERSION    "0.9"
+#define SYSTEM_LABEL_W          104
+
+#if defined(BLES_ARCH_ARM32_RPI3)
+#define SYSTEM_ARCH_NAME        "ARM32 (Raspberry Pi)"
+#else
+#define SYSTEM_ARCH_NAME        "IA-32 / x86"
+#endif
+
+#define SYSTEM_BUILD_STAMP      __DATE__ " " __TIME__
 
 typedef enum {
-    SYSTEM_TAB_GENERAL = 0,
-    SYSTEM_TAB_DEVICES = 1,
+    SYSTEM_TAB_SUMMARY = 0,
+    SYSTEM_TAB_KERNEL = 1,
+    SYSTEM_TAB_HARDWARE = 2,
+    SYSTEM_TAB_DEVICES = 3,
+    SYSTEM_TAB_DRIVERS = 4,
 } system_tab_t;
 
 typedef struct {
     gui_desktop_t *desktop;
     gui_window_t *window;
     uint8_t current_tab;
+    bool request_recovery,request_admin,request_events;
 
     system_memory_info_t memory;
     gfx_info_t gfx;
@@ -32,26 +44,22 @@ typedef struct {
     uint32_t uptime_ms;
     uint32_t processes;
     uint32_t api_version;
+    uint32_t cpu_count;
+    uint32_t block_count;
+    uint32_t pci_count;
     uint32_t last_refresh_ms;
 
     uint32_t *icon;
-    gui_gif_animation_t logo;
-    uint16_t logo_frame;
-    uint32_t logo_next_tick;
-
-    gui_widget_t *refresh_button;
-    gui_widget_t *beep_button;
-    gui_widget_t *report_button;
-    bool tone_ran;
-    bool tone_ok;
-    bool report_ran;
-    bool report_ok;
     char status[96];
 } system_cpl_state_t;
 
 static const cpl_tab_spec_t g_system_tabs[SYSTEM_TAB_COUNT] = {
-    {"@H5561FD0B", 82},
-    {"@H619D37EF", 108},
+    {"Resumen", 92},
+    {"Kernel", 82},
+    {"Hardware", 92},
+    {"Dispositivos", 106},
+    {"Drivers", 82},
+    {"Administrar", 110},
 };
 
 static void system_set_status(system_cpl_state_t *st, const char *text) {
@@ -68,7 +76,7 @@ static gui_rect_t system_client_rect(const system_cpl_state_t *st) {
 static gui_rect_t system_page_rect(const system_cpl_state_t *st) {
     gui_rect_t client = system_client_rect(st);
     return (gui_rect_t){client.x + 8, client.y + 30,
-                        client.w - 16, client.h - 50};
+                        client.w - 16, client.h - 54};
 }
 
 static gui_rect_t system_status_rect(const system_cpl_state_t *st) {
@@ -77,41 +85,46 @@ static gui_rect_t system_status_rect(const system_cpl_state_t *st) {
                         client.w - 16, 15};
 }
 
-static uint32_t system_logo_delay_ticks(const system_cpl_state_t *st,
-                                        uint16_t frame) {
-    uint32_t hz;
-    uint32_t delay_cs;
-    uint32_t ticks;
-
-    if (!st || !st->logo.delays_cs || frame >= st->logo.frame_count) return 1;
-    hz = bk_sys_tick_frequency();
-    if (!hz) hz = 100;
-    delay_cs = st->logo.delays_cs[frame];
-    if (!delay_cs) delay_cs = 10;
-    ticks = (delay_cs * hz + 99U) / 100U;
-    return ticks ? ticks : 1U;
-}
-
-static bool system_advance_logo(system_cpl_state_t *st, uint32_t now) {
-    bool advanced = false;
-
-    if (!st || st->logo.frame_count <= 1) return false;
-    if (!st->logo_next_tick)
-        st->logo_next_tick = now + system_logo_delay_ticks(st, st->logo_frame);
-
-    while ((int32_t)(now - st->logo_next_tick) >= 0) {
-        st->logo_frame =
-            (uint16_t)((st->logo_frame + 1U) % st->logo.frame_count);
-        st->logo_next_tick += system_logo_delay_ticks(st, st->logo_frame);
-        advanced = true;
+static const char *system_tab_status(uint8_t tab) {
+    switch (tab) {
+        case SYSTEM_TAB_SUMMARY: return "Resumen general del sistema.";
+        case SYSTEM_TAB_KERNEL: return "Informacion del kernel y del entorno de ejecucion.";
+        case SYSTEM_TAB_HARDWARE: return "Hardware principal, video, audio y reloj.";
+        case SYSTEM_TAB_DEVICES: return "Inventario de dispositivos fisicos detectados.";
+        case SYSTEM_TAB_DRIVERS: return "Controladores instalados, version y estado.";
+        default: return "Listo.";
     }
-    return advanced;
 }
 
-static const gui_image_t *system_current_logo(const system_cpl_state_t *st) {
-    if (!st || !st->logo.frames || !st->logo.frame_count) return NULL;
-    if (st->logo_frame >= st->logo.frame_count) return &st->logo.frames[0];
-    return &st->logo.frames[st->logo_frame];
+static const char *system_gfx_mode_name(uint32_t mode) {
+    switch (mode) {
+        case GFX_MODE_TEXT: return "Texto";
+        case GFX_MODE_VGA_13H: return "VGA 320x200x8";
+        case GFX_MODE_VGA_12H: return "VGA 640x480x4";
+        case GFX_MODE_VESA_LFB: return "VESA LFB";
+        case GFX_MODE_VMWARE_SVGA: return "VMware SVGA-II";
+        case GFX_MODE_VIRTIO_GPU: return "VirtIO GPU";
+        case GFX_MODE_ATI_RAGE128: return "ATI Rage 128";
+        case GFX_MODE_INTEL_GMA9XX: return "Intel GMA9xx";
+        case GFX_MODE_RPI_FRAMEBUFFER: return "Framebuffer Raspberry Pi";
+        default: return "Desconocido";
+    }
+}
+
+static void system_format_uptime(char *buffer, size_t capacity,
+                                 uint32_t uptime_ms) {
+    uint32_t total_seconds = uptime_ms / 1000U;
+    uint32_t days = total_seconds / 86400U;
+    uint32_t hours = (total_seconds / 3600U) % 24U;
+    uint32_t minutes = (total_seconds / 60U) % 60U;
+    uint32_t seconds = total_seconds % 60U;
+
+    if (!buffer || !capacity) return;
+    if (days)
+        snprintf(buffer, capacity, "%u d %02u:%02u:%02u",
+                 days, hours, minutes, seconds);
+    else snprintf(buffer, capacity, "%02u:%02u:%02u",
+                  hours, minutes, seconds);
 }
 
 static void system_refresh(system_cpl_state_t *st) {
@@ -126,102 +139,268 @@ static void system_refresh(system_cpl_state_t *st) {
     st->uptime_ms = bk_sys_uptime_ms();
     st->processes = bk_proc_count();
     st->api_version = bk_sys_api_version();
+    st->cpu_count = bk_proc_cpu_count();
+    st->block_count = bk_device_block_count();
+    st->pci_count = bk_device_pci_count();
     st->last_refresh_ms = st->uptime_ms;
     if (st->window) st->window->dirty = true;
-}
-
-static void system_sync_widgets(system_cpl_state_t *st) {
-    bool devices;
-
-    if (!st) return;
-    devices = st->current_tab == SYSTEM_TAB_DEVICES;
-    if (st->refresh_button) st->refresh_button->visible = devices;
-    if (st->beep_button) st->beep_button->visible = devices;
-    if (st->report_button) st->report_button->visible = devices;
 }
 
 static void system_switch_tab(system_cpl_state_t *st, uint8_t tab) {
     if (!st || tab >= SYSTEM_TAB_COUNT || st->current_tab == tab) return;
     st->current_tab = tab;
-    system_sync_widgets(st);
-    system_set_status(st, tab == SYSTEM_TAB_GENERAL
-        ? "@H48A09BB3"
-        : "@HC9E12E30");
+    system_set_status(st, system_tab_status(tab));
     if (st->window) st->window->dirty = true;
 }
 
 static void system_draw_logo(gui_surface_t *s, system_cpl_state_t *st,
                              int x, int y, int w) {
-    const gui_image_t *logo = system_current_logo(st);
-    int logo_w = logo ? (int)logo->width : 48;
-    int logo_x = x + (w - logo_w) / 2;
-
-    if (logo_x < x) logo_x = x;
-    if (logo && logo->pixels) {
-        bk_app_draw_icon(s, logo_x, y, logo->pixels,
-                                 logo->width, logo->height);
-    } else if (st && st->icon) {
-        bk_app_draw_icon(s, logo_x, y, st->icon, 48, 48);
+    int icon_x = x + (w - 32) / 2;
+    if (icon_x < x) icon_x = x;
+    if (st && st->icon) {
+        bk_app_draw_icon(s, icon_x, y, st->icon, 32, 32);
     } else {
-        cpl_draw_bevel(s, (gui_rect_t){logo_x, y, 48, 48}, 0x00204070, false);
-        bk_gui_font_draw_string_scaled(s, logo_x + 14, y + 13, "B",
-                                    CPL_WHITE, 3);
+        cpl_draw_bevel(s, (gui_rect_t){icon_x, y, 32, 32}, CPL_FACE, false);
+        bk_gui_font_draw_string_scaled(s, icon_x + 9, y + 8, "B", CPL_TEXT, 2);
     }
 }
 
-static void system_draw_label(gui_surface_t *s, int x, int y,
-                              const char *label, const char *value,
-                              gui_rect_t clip) {
-    bk_gui_font_draw_string(s, x, y, label, 0x00203040, 0, false);
-    bk_gui_font_draw_string_clipped(s, x + 92, y, value ? value : "",
-                                 0x00203040, clip);
+static void system_draw_main_tabs(gui_surface_t *surface,
+                                  gui_rect_t client,
+                                  gui_rect_t page,
+                                  int active) {
+    cpl_draw_tabs(surface, client, g_system_tabs, SYSTEM_TAB_COUNT,
+                  active, page, SYSTEM_TAB_LEFT, SYSTEM_TAB_TOP);
 }
 
-static void system_paint_general(system_cpl_state_t *st, gui_surface_t *s) {
+static gui_rect_t system_draw_header_box(gui_surface_t *s,
+                                         system_cpl_state_t *st,
+                                         gui_rect_t page,
+                                         const char *title,
+                                         const char *subtitle) {
+    gui_rect_t header = {page.x + 12, page.y + 12, page.w - 24, 48};
+    gui_rect_t icon_box = {header.x + 8, header.y + 8, 32, 32};
+    gui_rect_t text_clip = {header.x + 52, header.y + 6,
+                            header.w - 60, 26};
+
+    cpl_draw_bevel(s, header, CPL_FACE, true);
+    cpl_draw_bevel(s, icon_box, CPL_WHITE, true);
+    system_draw_logo(s, st, icon_box.x, icon_box.y, icon_box.w);
+    bk_gui_font_draw_string_scaled(s, header.x + 52, header.y + 7,
+                                   title, CPL_TEXT, 2);
+    bk_gui_font_draw_string_clipped(s, header.x + 53, header.y + 23,
+                                    subtitle, CPL_TEXT, text_clip);
+    return header;
+}
+
+static gui_rect_t system_draw_body_panel(gui_surface_t *s,
+                                          gui_rect_t page,
+                                          gui_rect_t header) {
+    gui_rect_t body = {page.x + 14, header.y + header.h + 10,
+                       page.w - 28,
+                       page.y + page.h - 8 - (header.y + header.h + 10)};
+
+    cpl_draw_bevel(s, body, CPL_WHITE, true);
+    return (gui_rect_t){body.x + 10, body.y + 9,
+                        body.w - 20, body.h - 18};
+}
+
+/*
+ * Encabezado de seccion tipo System Profiler: texto y una linea grabada.
+ * Las pestañas son la unica navegacion; dentro de cada una se muestra todo.
+ */
+static int system_draw_section_title(gui_surface_t *s, gui_rect_t inner,
+                                     int y, const char *title) {
+    int line_x;
+    int line_y;
+    int text_w;
+
+    if (!title || y + 12 > inner.y + inner.h) return y;
+    bk_gui_font_draw_string(s, inner.x + 2, y, title, CPL_TEXT, 0, false);
+    text_w = (int)bk_gui_font_text_width(title);
+    line_x = inner.x + 10 + text_w;
+    line_y = y + 5;
+    if (line_x < inner.x + inner.w - 2) {
+        bk_gui_gfx_draw_line(s, line_x, line_y,
+                             inner.x + inner.w - 2, line_y, CPL_SHADOW);
+        bk_gui_gfx_draw_line(s, line_x, line_y + 1,
+                             inner.x + inner.w - 2, line_y + 1, CPL_LIGHT);
+    }
+    return y + 16;
+}
+
+static int system_draw_value_row(gui_surface_t *s, gui_rect_t inner,
+                                 int y, const char *label,
+                                 const char *value) {
+    gui_rect_t value_clip;
+    int value_x = inner.x + SYSTEM_LABEL_W;
+
+    if (y + 12 > inner.y + inner.h) return y;
+    value_clip = (gui_rect_t){value_x, y, inner.x + inner.w - value_x, 13};
+    bk_gui_font_draw_string(s, inner.x + 8, y, label, CPL_TEXT, 0, false);
+    bk_gui_font_draw_string_clipped(s, value_x, y,
+                                    value ? value : "",
+                                    CPL_TEXT, value_clip);
+    return y + 14;
+}
+
+static int system_draw_section_gap(gui_rect_t inner, int y) {
+    int limit = inner.y + inner.h;
+    y += 3;
+    return y < limit ? y : limit;
+}
+
+static void system_paint_summary(system_cpl_state_t *st, gui_surface_t *s) {
     gui_rect_t page = system_page_rect(st);
-    gui_rect_t box;
-    gui_rect_t clip;
-    char line[96];
-    int x = page.x + 18;
-    int y = page.y + 14;
-    int w = page.w - 36;
-    int logo_h;
-    const gui_image_t *logo = system_current_logo(st);
+    gui_rect_t header;
+    gui_rect_t inner;
+    int y;
+    char uptime[96], version[32], arch[96];
+    char cpus[32], usage[32];
+    char total[32], used[32], free_mem[32];
 
-    logo_h = logo ? (int)logo->height : 48;
-    if (logo_h > 128) logo_h = 128;
-    system_draw_logo(s, st, x, y, w);
-    y += logo_h + 12;
+    header = system_draw_header_box(s, st, page, "Perfil del sistema",
+                                    "Informacion general del equipo y del sistema.");
+    inner = system_draw_body_panel(s, page, header);
+    y = inner.y;
 
-    box = (gui_rect_t){x + 8, y, w - 16, 106};
-    cpl_draw_group(s, box, "@HAF21B997");
-    clip = (gui_rect_t){box.x + 16, box.y + 16, box.w - 32, box.h - 24};
-
-    snprintf(line, sizeof(line), "v%u", st->api_version);
-    system_draw_label(s, box.x + 16, box.y + 20, "@H95A9FAAB", line, clip);
-    snprintf(line, sizeof(line), "@H8507053D", st->uptime_ms / 1000U);
-    system_draw_label(s, box.x + 16, box.y + 39, "Uptime:", line, clip);
-    snprintf(line, sizeof(line), "@H2631FC47", st->processes);
-    system_draw_label(s, box.x + 16, box.y + 58, "Procesos:", line, clip);
-    snprintf(line, sizeof(line), "@H295943D3",
-             (uint32_t)(st->memory.total_bytes / 1024U),
+    system_format_uptime(uptime, sizeof(uptime), st->uptime_ms);
+    snprintf(version, sizeof(version), "%s", SYSTEM_BUILD_VERSION);
+    snprintf(arch, sizeof(arch), "%s", SYSTEM_ARCH_NAME);
+    snprintf(cpus, sizeof(cpus), "%u", st->cpu_count);
+    snprintf(usage, sizeof(usage), "%u%%", bk_proc_cpu_usage());
+    snprintf(total, sizeof(total), "%u KB",
+             (uint32_t)(st->memory.total_bytes / 1024U));
+    snprintf(used, sizeof(used), "%u KB",
+             (uint32_t)(st->memory.used_bytes / 1024U));
+    snprintf(free_mem, sizeof(free_mem), "%u KB",
              (uint32_t)(st->memory.free_bytes / 1024U));
-    system_draw_label(s, box.x + 16, box.y + 77, "Memoria:", line, clip);
 
-    y += 122;
-    box = (gui_rect_t){x + 8, y, w - 16, 56};
-    cpl_draw_group(s, box, "Multimedia");
-    snprintf(line, sizeof(line), "%ux%ux%u",
+    y = system_draw_section_title(s, inner, y, "Sistema");
+    y = system_draw_value_row(s, inner, y, "Sistema:", "BlesKernOS");
+    y = system_draw_value_row(s, inner, y, "Version:", version);
+    y = system_draw_value_row(s, inner, y, "Arquitectura:", arch);
+    y = system_draw_value_row(s, inner, y, "Uptime:", uptime);
+
+    y = system_draw_section_gap(inner, y);
+    y = system_draw_section_title(s, inner, y, "Procesador");
+    y = system_draw_value_row(s, inner, y, "CPU online:", cpus);
+    y = system_draw_value_row(s, inner, y, "Uso total:", usage);
+
+    y = system_draw_section_gap(inner, y);
+    y = system_draw_section_title(s, inner, y, "Memoria");
+    y = system_draw_value_row(s, inner, y, "Total:",
+                              st->memory_ok ? total : "No disponible");
+    y = system_draw_value_row(s, inner, y, "Usada:",
+                              st->memory_ok ? used : "No disponible");
+    (void)system_draw_value_row(s, inner, y, "Libre:",
+                                st->memory_ok ? free_mem : "No disponible");
+}
+
+static void system_paint_kernel(system_cpl_state_t *st, gui_surface_t *s) {
+    gui_rect_t page = system_page_rect(st);
+    gui_rect_t header;
+    gui_rect_t inner;
+    int y;
+    char build[96], ticks[32], pit[32], processes[32], cpu[32];
+    char api[32], caps[32];
+
+    header = system_draw_header_box(s, st, page, "Kernel",
+                                    "Nucleo, temporizacion, procesos y API publica.");
+    inner = system_draw_body_panel(s, page, header);
+    y = inner.y;
+
+    snprintf(build, sizeof(build), "%s", SYSTEM_BUILD_STAMP);
+    snprintf(ticks, sizeof(ticks), "%u", bk_sys_ticks());
+    snprintf(pit, sizeof(pit), "%u Hz", bk_sys_tick_frequency());
+    snprintf(processes, sizeof(processes), "%u", st->processes);
+    snprintf(cpu, sizeof(cpu), "%u", bk_proc_current_cpu());
+    snprintf(api, sizeof(api), "v%u", st->api_version);
+    snprintf(caps, sizeof(caps), "0x%08X", bk_sys_capabilities());
+
+    y = system_draw_section_title(s, inner, y, "Identidad del kernel");
+    y = system_draw_value_row(s, inner, y, "Nucleo:", "BlesKernOS kernel");
+    y = system_draw_value_row(s, inner, y, "Modo:", "32-bit protected mode");
+    y = system_draw_value_row(s, inner, y, "Compilado:", build);
+
+    y = system_draw_section_gap(inner, y);
+    y = system_draw_section_title(s, inner, y, "Temporizacion");
+    y = system_draw_value_row(s, inner, y, "Ticks PIT:", ticks);
+    y = system_draw_value_row(s, inner, y, "Frecuencia PIT:", pit);
+
+    y = system_draw_section_gap(inner, y);
+    y = system_draw_section_title(s, inner, y, "Procesos");
+    y = system_draw_value_row(s, inner, y, "Procesos activos:", processes);
+    y = system_draw_value_row(s, inner, y, "CPU del panel:", cpu);
+
+    y = system_draw_section_gap(inner, y);
+    y = system_draw_section_title(s, inner, y, "API publica");
+    y = system_draw_value_row(s, inner, y, "Version API:", api);
+    (void)system_draw_value_row(s, inner, y, "Capacidades:", caps);
+}
+
+static void system_paint_hardware(system_cpl_state_t *st, gui_surface_t *s) {
+    gui_rect_t page = system_page_rect(st);
+    gui_rect_t header;
+    gui_rect_t inner;
+    int y;
+    char backend[96], resolution[96], pitch[96], framebuffer[96];
+    char mouse_state[32], packet[32], position[48], storage[32], rtc[96];
+
+    header = system_draw_header_box(s, st, page, "Hardware",
+                                    "Video, audio, entrada, almacenamiento y reloj.");
+    inner = system_draw_body_panel(s, page, header);
+    y = inner.y;
+
+    snprintf(backend, sizeof(backend), "%s", system_gfx_mode_name(st->gfx.mode));
+    snprintf(resolution, sizeof(resolution), "%ux%ux%u",
              st->gfx.width, st->gfx.height, st->gfx.bpp);
-    system_draw_label(s, box.x + 16, box.y + 20, "Video:", line,
-                      (gui_rect_t){box.x + 16, box.y + 16, box.w - 32, 44});
-    snprintf(line, sizeof(line), "%s", st->pcm_name ? st->pcm_name : "@HE9405393");
-    system_draw_label(s, box.x + 16, box.y + 38, "Audio:", line,
-                      (gui_rect_t){box.x + 16, box.y + 16, box.w - 32, 44});
+    snprintf(pitch, sizeof(pitch), "%u bytes", st->gfx.pitch);
+    snprintf(framebuffer, sizeof(framebuffer), "0x%08X", st->gfx.framebuffer);
+    snprintf(mouse_state, sizeof(mouse_state), "%s",
+             st->mouse.present ? "Presente" : "No detectado");
+    snprintf(packet, sizeof(packet), "%u bytes", st->mouse.packet_size);
+    snprintf(position, sizeof(position), "(%d, %d)",
+             (int)st->mouse.x, (int)st->mouse.y);
+    snprintf(storage, sizeof(storage), "%u", st->block_count);
+    if (st->rtc_ok) {
+        snprintf(rtc, sizeof(rtc), "%04u-%02u-%02u %02u:%02u:%02u",
+                 st->now.date.year, st->now.date.month, st->now.date.day,
+                 st->now.time.hour, st->now.time.minute, st->now.time.second);
+    } else {
+        snprintf(rtc, sizeof(rtc), "No disponible");
+    }
 
-    bk_gui_font_draw_string_clipped(s, x + 8, page.y + page.h - 16,
-        "@HFF8073CA",
-        CPL_SHADOW, (gui_rect_t){x + 8, page.y + page.h - 18, w - 16, 16});
+    y = system_draw_section_title(s, inner, y, "Pantalla");
+    y = system_draw_value_row(s, inner, y, "Backend:", backend);
+    y = system_draw_value_row(s, inner, y, "Resolucion:", resolution);
+    y = system_draw_value_row(s, inner, y, "Pitch:", pitch);
+    y = system_draw_value_row(s, inner, y, "Framebuffer:", framebuffer);
+    y = system_draw_value_row(s, inner, y, "Estado:",
+                              st->gfx_ok ? "Activo" : "No disponible");
+
+    y = system_draw_section_gap(inner, y);
+    y = system_draw_section_title(s, inner, y, "Audio");
+    y = system_draw_value_row(s, inner, y, "PCM:",
+                              st->pcm_available ? "Disponible" : "No disponible");
+    y = system_draw_value_row(s, inner, y, "Dispositivo:",
+                              st->pcm_name ? st->pcm_name : "No disponible");
+    y = system_draw_value_row(s, inner, y, "SB16:",
+                              st->sb16_present ? "Detectado" : "No detectado");
+
+    y = system_draw_section_gap(inner, y);
+    y = system_draw_section_title(s, inner, y, "Entrada");
+    y = system_draw_value_row(s, inner, y, "Mouse:", mouse_state);
+    y = system_draw_value_row(s, inner, y, "Paquete:", packet);
+    y = system_draw_value_row(s, inner, y, "Posicion:", position);
+
+    y = system_draw_section_gap(inner, y);
+    y = system_draw_section_title(s, inner, y, "Almacenamiento");
+    y = system_draw_value_row(s, inner, y, "Unidades detectadas:", storage);
+
+    y = system_draw_section_gap(inner, y);
+    y = system_draw_section_title(s, inner, y, "Reloj");
+    (void)system_draw_value_row(s, inner, y, "RTC:", rtc);
 }
 
 static uint32_t system_status_color(int status) {
@@ -231,135 +410,183 @@ static uint32_t system_status_color(int status) {
     return 0x00909090;
 }
 
-static const char *system_status_text(int status) {
-    if (status == 1) return "OK";
-    if (status == 2) return "WARN";
-    if (status == 3) return "FALLO";
-    return "?";
-}
+static int system_draw_device_line(gui_surface_t *s, gui_rect_t inner,
+                                   int y, const char *name,
+                                   const char *detail, int status) {
+    gui_rect_t line = {inner.x + 6, y, inner.w - 12, 14};
 
-static int system_draw_device_row(gui_surface_t *s, int x, int y, int w,
-                                  const char *name, const char *detail,
-                                  int status) {
-    char line[128];
-    uint32_t color = system_status_color(status);
-
-    bk_gui_gfx_fill_rect(s, (gui_rect_t){x, y + 4, 7, 7}, color);
-    bk_gui_gfx_draw_rect(s, (gui_rect_t){x, y + 4, 7, 7}, CPL_DARK);
-    snprintf(line, sizeof(line), "@H32906DE7",
-             system_status_text(status), name, detail ? detail : "");
-    bk_gui_font_draw_string_clipped(s, x + 14, y + 1, line, CPL_TEXT,
-                                 (gui_rect_t){x + 14, y, w - 14,
-                                              SYSTEM_DEVICE_ROW_H});
-    return y + SYSTEM_DEVICE_ROW_H;
-}
-
-static int system_draw_device_header(gui_surface_t *s, int x, int y, int w,
-                                     const char *title) {
-    bk_gui_gfx_fill_rect(s, (gui_rect_t){x, y, w, 16}, 0x00E4EEF7);
-    bk_gui_gfx_draw_rect(s, (gui_rect_t){x, y, w, 16}, 0x0090A0A8);
-    bk_gui_font_draw_string_clipped(s, x + 6, y + 4, title, 0x00002060,
-                                 (gui_rect_t){x + 4, y, w - 8, 16});
-    return y + 19;
+    if (line.y + line.h > inner.y + inner.h) return y;
+    bk_gui_gfx_fill_rect(s, (gui_rect_t){line.x + 2, line.y + 4, 5, 5},
+                         system_status_color(status));
+    bk_gui_font_draw_string_clipped(s, line.x + 12, line.y + 2,
+                                    name, CPL_TEXT,
+                                    (gui_rect_t){line.x + 12, line.y,
+                                                 118, line.h});
+    bk_gui_font_draw_string_clipped(s, line.x + 128, line.y + 2,
+                                    detail ? detail : "", CPL_TEXT,
+                                    (gui_rect_t){line.x + 128, line.y,
+                                                 line.w - 128, line.h});
+    return y + 14;
 }
 
 static void system_paint_devices(system_cpl_state_t *st, gui_surface_t *s) {
     gui_rect_t page = system_page_rect(st);
-    char detail[96];
-    int x = page.x + 18;
-    int y = page.y + 12;
-    int w = page.w - 36;
-    int list_h = page.h - 62;
-    uint32_t count;
+    gui_rect_t header;
+    gui_rect_t inner;
+    int y;
+    char a[128], b[128];
+    uint32_t shown;
 
-    bk_gui_gfx_fill_rect(s, (gui_rect_t){x - 4, y - 4, w + 8, list_h},
-                      0x00FFFFFF);
-    bk_gui_gfx_draw_rect(s, (gui_rect_t){x - 4, y - 4, w + 8, list_h},
-                      0x008090A0);
+    header = system_draw_header_box(s, st, page, "Dispositivos",
+                                    "Inventario fisico detectado por el sistema.");
+    inner = system_draw_body_panel(s, page, header);
+    y = inner.y;
 
-    y = system_draw_device_header(s, x, y, w, "Almacenamiento");
-    count = bk_device_block_count();
-    snprintf(detail, sizeof(detail), "@HD948B502", count);
-    y = system_draw_device_row(s, x + 10, y, w - 20,
-                               "@H43E10BCF", detail,
-                               count ? 1 : 2);
-    for (uint32_t i = 0; i < count && i < 3; i++) {
+    y = system_draw_section_title(s, inner, y, "Almacenamiento");
+    shown = 0;
+    for (uint32_t i = 0; i < st->block_count && shown < 4U; i++) {
         bk_block_info_t dev;
         if (!bk_device_block_info(i, &dev)) continue;
-        snprintf(detail, sizeof(detail), "@H2D6C35CF",
+        snprintf(a, sizeof(a), "%s, %u sectores%s",
                  dev.type_name, dev.sector_count,
-                 dev.read_only ? "@H95E5221C" : "");
-        y = system_draw_device_row(s, x + 10, y, w - 20,
-                                   dev.name, detail, 1);
+                 dev.read_only ? ", solo lectura" : "");
+        y = system_draw_device_line(s, inner, y, dev.name, a, 1);
+        shown++;
+    }
+    if (!shown)
+        y = system_draw_device_line(s, inner, y,
+                                    "Almacenamiento", "No detectado", 2);
+    else if (st->block_count > shown) {
+        snprintf(a, sizeof(a), "%u unidad(es) mas", st->block_count - shown);
+        y = system_draw_device_line(s, inner, y, "...", a, 0);
     }
 
-    y += 3;
-    y = system_draw_device_header(s, x, y, w, "@H9EE6DF3B");
-    snprintf(detail, sizeof(detail), "@H7EDA3267",
-             st->gfx.width, st->gfx.height, st->gfx.bpp);
-    y = system_draw_device_row(s, x + 10, y, w - 20,
-                               "@H48894648", detail,
-                               st->gfx_ok ? 1 : 3);
-    y = system_draw_device_row(s, x + 10, y, w - 20,
-                               "@H17912F88",
-                               st->sb16_present ? "detectado" : "@HDC0AAE01",
-                               st->sb16_present ? 1 : 2);
-    y = system_draw_device_row(s, x + 10, y, w - 20,
-                               "@H4691F881",
-                               st->pcm_available ? st->pcm_name : "@HE9405393",
-                               st->pcm_available ? 1 : 3);
-
-    y += 3;
-    y = system_draw_device_header(s, x, y, w, "@HBB52E289");
-    snprintf(detail, sizeof(detail), "@H92E4222F",
+    y = system_draw_section_gap(inner, y);
+    y = system_draw_section_title(s, inner, y, "Entrada");
+    snprintf(a, sizeof(a), "id=%u packet=%u irq=%u",
              (uint32_t)st->mouse.device_id,
              (uint32_t)st->mouse.packet_size,
-             (int)st->mouse.x, (int)st->mouse.y,
              st->mouse.irq_count);
-    y = system_draw_device_row(s, x + 10, y, w - 20,
-                               "@H9DC4AFC4", detail,
-                               st->mouse.present ? 1 : 3);
-    y = system_draw_device_row(s, x + 10, y, w - 20,
-                               "@H544D0602", "@H5497557B",
-                               1);
-    if (st->rtc_ok) {
-        snprintf(detail, sizeof(detail), "@H84B357B3",
-                 st->now.date.year, st->now.date.month, st->now.date.day,
-                 st->now.time.hour, st->now.time.minute, st->now.time.second);
-    } else {
-        snprintf(detail, sizeof(detail), "@HE9405393");
-    }
-    y = system_draw_device_row(s, x + 10, y, w - 20, "RTC", detail,
-                               st->rtc_ok ? 1 : 3);
+    y = system_draw_device_line(s, inner, y, "Mouse", a,
+                                st->mouse.present ? 1 : 3);
+    y = system_draw_device_line(s, inner, y, "Teclado",
+                                "Controlador PS/2 / GUI", 1);
 
-    y += 3;
-    y = system_draw_device_header(s, x, y, w, "@H4D54EE26");
-    snprintf(detail, sizeof(detail), "@H4579E6DC",
-             bk_device_pci_count());
-    y = system_draw_device_row(s, x + 10, y, w - 20,
-                               "@H6532D26D", detail,
-                               bk_device_pci_count() ? 1 : 0);
-    for (uint32_t i = 0; i < bk_device_pci_count() && i < 1; i++) {
+    y = system_draw_section_gap(inner, y);
+    y = system_draw_section_title(s, inner, y, "PCI");
+    shown = 0;
+    for (uint32_t i = 0; i < st->pci_count && shown < 7U; i++) {
         bk_pci_info_t dev;
         if (!bk_device_pci_info(i, &dev)) continue;
-        snprintf(detail, sizeof(detail), "@H7FCB885D",
+        snprintf(a, sizeof(a), "%04X:%04X bus=%u slot=%u irq=%u",
                  dev.vendor_id, dev.device_id, dev.bus, dev.slot,
                  dev.interrupt_line);
-        y = system_draw_device_row(s, x + 10, y, w - 20,
-                                   dev.class_name, detail, 1);
+        snprintf(b, sizeof(b), "%s", dev.class_name);
+        y = system_draw_device_line(s, inner, y, b, a, 1);
+        shown++;
     }
-    snprintf(detail, sizeof(detail), "@H27DE078E",
-             st->last_refresh_ms);
-    y = system_draw_device_row(s, x + 10, y, w - 20, "Panel", detail, 1);
-
-    bk_gui_gfx_fill_rect(s,
-                      (gui_rect_t){page.x + 2, page.y + page.h - 44,
-                                   page.w - 4, 28},
-                      CPL_FACE);
-    bk_gui_gfx_draw_line(s, page.x + 4, page.y + page.h - 46,
-                      page.x + page.w - 5, page.y + page.h - 46,
-                      CPL_SHADOW);
+    if (!shown)
+        y = system_draw_device_line(s, inner, y, "PCI", "Sin dispositivos", 2);
+    else if (st->pci_count > shown) {
+        snprintf(a, sizeof(a), "%u dispositivo(s) mas", st->pci_count - shown);
+        y = system_draw_device_line(s, inner, y, "...", a, 0);
+    }
     (void)y;
+}
+
+static const char *system_driver_filename(const char *path) {
+    const char *name = path ? path : "";
+    if (!path) return name;
+    for (const char *p = path; *p; p++) {
+        if (*p == '/' || *p == '\\') name = p + 1;
+    }
+    return name;
+}
+
+static void system_paint_drivers(system_cpl_state_t *st, gui_surface_t *s) {
+    gui_rect_t page = system_page_rect(st);
+    gui_rect_t header;
+    gui_rect_t inner;
+    uint32_t total = bk_device_driver_count();
+    uint32_t active = 0;
+    char subtitle[96];
+    char version[16];
+    int row_y;
+    const int row_h = 16;
+    const int name_x = 8;
+    const int version_x = 166;
+    const int state_x = 232;
+    const int file_x = 302;
+
+    for (uint32_t i = 0; i < total; i++) {
+        bk_driver_info_t info;
+        if (bk_device_driver_info(i, &info) && info.active) active++;
+    }
+    snprintf(subtitle, sizeof(subtitle),
+             "%u controladores instalados; %u activos.", total, active);
+    header = system_draw_header_box(s, st, page, "Drivers", subtitle);
+    inner = system_draw_body_panel(s, page, header);
+    row_y = system_draw_section_title(s, inner, inner.y,
+                                      "Controladores del sistema");
+
+    if (row_y + 18 <= inner.y + inner.h) {
+        bk_gui_gfx_fill_rect(s,
+            (gui_rect_t){inner.x, row_y, inner.w, 18}, CPL_FACE);
+        cpl_draw_bevel(s,
+            (gui_rect_t){inner.x, row_y, inner.w, 18}, CPL_FACE, false);
+        bk_gui_font_draw_string(s, inner.x + name_x, row_y + 5,
+                                "Nombre", CPL_TEXT, 0, false);
+        bk_gui_font_draw_string(s, inner.x + version_x, row_y + 5,
+                                "Version", CPL_TEXT, 0, false);
+        bk_gui_font_draw_string(s, inner.x + state_x, row_y + 5,
+                                "Estado", CPL_TEXT, 0, false);
+        bk_gui_font_draw_string(s, inner.x + file_x, row_y + 5,
+                                "Archivo", CPL_TEXT, 0, false);
+    }
+
+    row_y += 22;
+    for (uint32_t i = 0; i < total; i++) {
+        bk_driver_info_t info;
+        gui_rect_t row;
+        uint32_t marker;
+        const char *state;
+        const char *filename;
+
+        if (!bk_device_driver_info(i, &info)) continue;
+        if (row_y + row_h > inner.y + inner.h) break;
+        row = (gui_rect_t){inner.x, row_y, inner.w, row_h};
+        if (i & 1U)
+            bk_gui_gfx_fill_rect(s, row, 0x00F4F4F4);
+        marker = info.active ? 0x0000A040 : CPL_SHADOW;
+        state = info.active ? "Activo" : "Inactivo";
+        filename = system_driver_filename(info.path);
+        snprintf(version, sizeof(version), "%u.%u",
+                 (uint32_t)info.version_major,
+                 (uint32_t)info.version_minor);
+
+        bk_gui_gfx_fill_rect(s,
+            (gui_rect_t){row.x + 2, row.y + 5, 6, 6}, marker);
+        bk_gui_gfx_draw_rect(s,
+            (gui_rect_t){row.x + 2, row.y + 5, 6, 6}, CPL_DARK);
+        bk_gui_font_draw_string_clipped(s, row.x + name_x + 6, row.y + 3,
+                                        info.name, CPL_TEXT,
+                                        (gui_rect_t){row.x + name_x + 6, row.y,
+                                                     version_x - name_x - 10,
+                                                     row.h});
+        bk_gui_font_draw_string_clipped(s, row.x + version_x, row.y + 3,
+                                        version, CPL_TEXT,
+                                        (gui_rect_t){row.x + version_x, row.y,
+                                                     60, row.h});
+        bk_gui_font_draw_string_clipped(s, row.x + state_x, row.y + 3,
+                                        state, CPL_TEXT,
+                                        (gui_rect_t){row.x + state_x, row.y,
+                                                     64, row.h});
+        bk_gui_font_draw_string_clipped(s, row.x + file_x, row.y + 3,
+                                        filename, CPL_TEXT,
+                                        (gui_rect_t){row.x + file_x, row.y,
+                                                     row.w - file_x, row.h});
+        row_y += row_h;
+    }
 }
 
 static void system_paint(gui_window_t *window UNUSED, gui_surface_t *s,
@@ -374,83 +601,42 @@ static void system_paint(gui_window_t *window UNUSED, gui_surface_t *s,
     page = system_page_rect(st);
     status = system_status_rect(st);
 
-    cpl_draw_tabs(s, client, g_system_tabs, SYSTEM_TAB_COUNT,
-                  st->current_tab, page, SYSTEM_TAB_LEFT, SYSTEM_TAB_TOP);
-    if (st->current_tab == SYSTEM_TAB_GENERAL)
-        system_paint_general(st, s);
-    else
-        system_paint_devices(st, s);
-
-    bk_gui_gfx_fill_rect(s, status, 0x00E8E8E0);
-    bk_gui_font_draw_string_clipped(s, status.x + 4, status.y + 3,
-                                 st->status[0] ? st->status : "Listo.",
-                                 CPL_SHADOW, status);
-}
-
-static void system_write_report(system_cpl_state_t *st) {
-    char report[768];
-    uint32_t len = 0;
-
-    if (!st) return;
-    system_refresh(st);
-    snprintf(report, sizeof(report),
-             "BlesKernOS System Report\r\n"
-             "api=%u\r\n"
-             "tasks=%u\r\n"
-             "uptime_ms=%u\r\n"
-             "memory_total_kb=%u\r\n"
-             "memory_used_kb=%u\r\n"
-             "memory_free_kb=%u\r\n"
-             "screen=%ux%ux%u\r\n"
-             "sb16=%u\r\n"
-             "pcm=%u\r\n"
-             "mouse_present=%u\r\n"
-             "mouse_packets=%u\r\n"
-             "rtc_ok=%u\r\n"
-             "block_devices=%u\r\n"
-             "pci_devices=%u\r\n",
-             st->api_version,
-             st->processes,
-             st->uptime_ms,
-             (uint32_t)(st->memory.total_bytes / 1024U),
-             (uint32_t)(st->memory.used_bytes / 1024U),
-             (uint32_t)(st->memory.free_bytes / 1024U),
-             st->gfx.width, st->gfx.height, st->gfx.bpp,
-             st->sb16_present ? 1U : 0U,
-             st->pcm_available ? 1U : 0U,
-             st->mouse.present ? 1U : 0U,
-             st->mouse.packets,
-             st->rtc_ok ? 1U : 0U,
-             bk_device_block_count(),
-             bk_device_pci_count());
-    while (len < sizeof(report) && report[len]) len++;
-    st->report_ran = true;
-    st->report_ok = bk_file_write_all(SYSTEM_REPORT_PATH, report, len);
-    system_set_status(st, st->report_ok
-        ? "Reporte escrito en " SYSTEM_REPORT_PATH
-        : "@H0CB0F2AF");
-}
-
-static void system_button(gui_window_t *window, uint32_t id) {
-    system_cpl_state_t *st = window
-        ? (system_cpl_state_t *)window->content_context : NULL;
-
-    if (!st) return;
-    if (st->refresh_button && id == st->refresh_button->id) {
-        system_refresh(st);
-        system_set_status(st, "@HCCDFC20C");
-    } else if (st->beep_button && id == st->beep_button->id) {
-        st->tone_ran = true;
-        st->tone_ok = bk_sound_tone(880, 120);
-        system_set_status(st, st->tone_ok
-            ? "@H2CD60457"
-            : "@HA6F92402");
-    } else if (st->report_button && id == st->report_button->id) {
-        system_write_report(st);
+    cpl_draw_bevel(s, client, CPL_FACE, false);
+    system_draw_main_tabs(s, client, page, st->current_tab);
+    switch (st->current_tab) {
+        case SYSTEM_TAB_SUMMARY:
+            system_paint_summary(st, s);
+            break;
+        case SYSTEM_TAB_KERNEL:
+            system_paint_kernel(st, s);
+            break;
+        case SYSTEM_TAB_HARDWARE:
+            system_paint_hardware(st, s);
+            break;
+        case SYSTEM_TAB_DEVICES:
+            system_paint_devices(st, s);
+            break;
+        case SYSTEM_TAB_DRIVERS:
+            system_paint_drivers(st, s);
+            break;
+        case 5: {
+            gui_rect_t p=system_page_rect(st);bk_memory_detail_t m;bk_memory_detail(&m);char line[160];
+            snprintf(line,sizeof(line),"Kernel %s | API %u | heap %u / %u KiB",SYSTEM_BUILD_VERSION,st->api_version,m.heap_used/1024,m.heap_total/1024);
+            cpl_draw_text_clipped(s,(gui_rect_t){p.x+16,p.y+24,p.w-32,24},line,CPL_TEXT);
+            snprintf(line,sizeof(line),"Frames VM libres %u KiB | reservada %u KiB",m.vm_free/1024,m.reserved/1024);
+            cpl_draw_text_clipped(s,(gui_rect_t){p.x+16,p.y+54,p.w-32,24},line,CPL_TEXT);
+            const char *labels[]={"Servicios y programas de inicio","Visor de eventos","Recuperacion en el proximo arranque"};
+            for(int i=0;i<3;i++){gui_rect_t r={p.x+16,p.y+104+i*46,p.w-32,32};cpl_draw_bevel(s,r,CPL_FACE,false);cpl_draw_text_clipped(s,cpl_inset(r,8),labels[i],CPL_TEXT);}
+            cpl_draw_text_wrapped(s,(gui_rect_t){p.x+16,p.y+262,p.w-32,65},"Los ajustes de inicio se aplican al reiniciar. Recuperacion abre una consola antes de drivers opcionales y del escritorio.",CPL_SHADOW,16,4);
+            break;
+        }
+        default: break;
     }
 
-    if (st->window) st->window->dirty = true;
-    bk_gui_request_paint();
+    cpl_draw_bevel(s, status, CPL_FACE, true);
+    bk_gui_font_draw_string_clipped(s, status.x + 4, status.y + 3,
+                                    st->status[0] ? st->status : "Listo.",
+                                    CPL_SHADOW, status);
 }
 
 static bool system_event(gui_window_t *window UNUSED,
@@ -461,6 +647,7 @@ static bool system_event(gui_window_t *window UNUSED,
 
     if (!st || !event) return false;
     if (event->type == GUI_EVENT_MOUSE_DOWN) {
+        if(st->current_tab==5){gui_rect_t p=system_page_rect(st);for(int i=0;i<3;i++){gui_rect_t r={p.x+16,p.y+104+i*46,p.w-32,32};if(bk_gui_rect_contains(r,event->x,event->y)){if(i==0)st->request_admin=true;else if(i==1)st->request_events=true;else st->request_recovery=true;return true;}}}
         tab_hit = cpl_hit_tab(system_client_rect(st), g_system_tabs,
                               SYSTEM_TAB_COUNT, SYSTEM_TAB_LEFT,
                               SYSTEM_TAB_TOP, event->x, event->y);
@@ -469,10 +656,12 @@ static bool system_event(gui_window_t *window UNUSED,
             return true;
         }
     }
-    if (event->type == GUI_EVENT_KEY && event->key == '\t') {
-        system_switch_tab(st,
-            (uint8_t)((st->current_tab + 1U) % SYSTEM_TAB_COUNT));
-        return true;
+    if (event->type == GUI_EVENT_KEY) {
+        if (event->key == '	') {
+            system_switch_tab(st,
+                (uint8_t)((st->current_tab + 1U) % SYSTEM_TAB_COUNT));
+            return true;
+        }
     }
     return false;
 }
@@ -485,68 +674,49 @@ void bleskernos_program_main(gui_desktop_t *desktop) {
     st = (system_cpl_state_t *)bk_sys_alloc_zero(sizeof(*st));
     if (!st) return;
     st->desktop = desktop;
-    st->current_tab = SYSTEM_TAB_GENERAL;
-    system_set_status(st, "@H48A09BB3");
+    st->current_tab = SYSTEM_TAB_SUMMARY;
+    system_set_status(st, system_tab_status(st->current_tab));
 
-    st->window = bk_gui_create_window(desktop, 88, 48,
-                                           SYSTEM_WINDOW_W, SYSTEM_WINDOW_H,
-                                           "@HAF21B997");
+    st->window = bk_gui_create_window(desktop, 72, 42,
+                                      SYSTEM_WINDOW_W, SYSTEM_WINDOW_H,
+                                      "Sistema");
     if (!st->window) {
         bk_sys_free(st);
         return;
     }
 
-    (void)bk_about_attach(st->window, desktop, &(bk_about_info_t){
-        "@HAF21B997", "@H1C1E4EC2", "@HCCCF3973",
-        "@H7A28E1E5", "/ICONS/SYSTEM.BMP"});
 
     bk_gui_set_window_min_size(st->window, SYSTEM_WINDOW_W, SYSTEM_WINDOW_H);
+    st->window->bg_color = CPL_FACE;
     bk_gui_set_window_content(st->window, system_paint, st);
     bk_gui_set_window_event_handler(st->window, system_event, st);
     st->window->owner_pid = bk_sys_getpid();
     bk_proc_bind_window(st->window);
 
-    st->icon = bk_app_load_icon("/ICONS/SYSTEM.BMP", 48, 48);
-    (void)bk_gui_gif_load_animation(&st->logo, "/ABOUNT.GIF");
-
-    st->refresh_button = bk_gui_widget_create_button(
-        desktop, st->window, (gui_rect_t){316, 366, 82, 22},
-        "@H7CC1E2B3", system_button);
-    st->beep_button = bk_gui_widget_create_button(
-        desktop, st->window, (gui_rect_t){406, 366, 52, 22},
-        "Beep", system_button);
-    st->report_button = bk_gui_widget_create_button(
-        desktop, st->window, (gui_rect_t){466, 366, 70, 22},
-        "Reporte", system_button);
-    (void)bk_gui_widget_set_icon(st->refresh_button, "Refresh");
-    (void)bk_gui_widget_set_icon(st->beep_button, "Mmsys101");
-    (void)bk_gui_widget_set_icon(st->report_button, "FileText");
-    system_sync_widgets(st);
+    st->icon = bk_app_load_icon("/ICONS/SYSTEM.BMP", 32, 32);
 
     system_refresh(st);
     next_refresh = bk_sys_uptime_ms() + 1000U;
     bk_gui_request_paint();
 
     while (!bk_proc_exit_requested() && st->window->listed) {
+        if(st->request_admin){st->request_admin=false;bk_app_launch("/SYSTEM/PROGRAMS/PROCESSMANAGER.BEX", "--tab inicio");}
+        if(st->request_events){st->request_events=false;bk_app_launch("/SYSTEM/PROGRAMS/EVENT_VIEWER.BEX",NULL);}
+        if(st->request_recovery){st->request_recovery=false;bool ok=bk_file_write_all("/SYSTEM/USER/CONFIG/RECOVERY.NEXT","1\n",2);system_set_status(st,ok?"Recuperacion preparada. Reinicie para entrar a la consola.":"No se pudo preparar recuperacion.");st->window->dirty=true;}
         uint32_t now = bk_sys_uptime_ms();
-        bool dirty = false;
-
-        if (system_advance_logo(st, bk_sys_ticks())) dirty = true;
         if ((int32_t)(now - next_refresh) >= 0) {
             system_refresh(st);
             next_refresh = now + 1000U;
-            dirty = true;
-        }
-        if (dirty && st->window) {
-            st->window->dirty = true;
-            bk_gui_request_paint();
+            if (st->window) {
+                st->window->dirty = true;
+                bk_gui_request_paint();
+            }
         }
         bk_sys_sleep_ticks(4);
     }
 
     cpl_destroy_window(st->desktop, st->window);
     if (st->icon) bk_sys_free(st->icon);
-    bk_gui_gif_animation_free(&st->logo);
     bk_sys_free(st);
     bk_proc_exit();
 }

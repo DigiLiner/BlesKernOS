@@ -1,0 +1,187 @@
+[
+  {
+    "host_s": 201274.575476818,
+    "key_to_native_pixel_ms": 265.8990920172073,
+    "changed": true
+  },
+  {
+    "host_s": 201275.148680475,
+    "key_to_native_pixel_ms": 616.6073100175709,
+    "changed": true
+  },
+  {
+    "host_s": 201276.077800623,
+    "key_to_native_pixel_ms": 263.55101400986314,
+    "changed": true
+  },
+  {
+    "host_s": 201276.647565223,
+    "key_to_native_pixel_ms": 97.69108102773316,
+    "changed": true
+  },
+  {
+    "host_s": 201277.049236495,
+    "key_to_native_pixel_ms": 107.27549300645478,
+    "changed": true
+  },
+  {
+    "host_s": 201277.465919581,
+    "key_to_native_pixel_ms": 317.1901890018489,
+    "changed": true
+  },
+  {
+    "host_s": 201278.101335782,
+    "key_to_native_pixel_ms": 391.50453300680965,
+    "changed": true
+  },
+  {
+    "host_s": 201278.80588324,
+    "key_to_native_pixel_ms": 77.82637799391523,
+    "changed": true
+  },
+  {
+    "host_s": 201279.191612807,
+    "key_to_native_pixel_ms": 151.1085830279626,
+    "changed": true
+  },
+  {
+    "host_s": 201279.664608331,
+    "key_to_native_pixel_ms": 126.94914400344715,
+    "changed": true
+  },
+  {
+    "host_s": 201280.101325897,
+    "key_to_native_pixel_ms": 110.85175699554384,
+    "changed": true
+  },
+  {
+    "host_s": 201280.542815331,
+    "key_to_native_pixel_ms": 116.39315300271846,
+    "changed": true
+  },
+  {
+    "host_s": 201280.973083976,
+    "key_to_native_pixel_ms": 363.5209269996267,
+    "changed": true
+  },
+  {
+    "host_s": 201281.65233501,
+    "key_to_native_pixel_ms": 210.2606059925165,
+    "changed": true
+  },
+  {
+    "host_s": 201282.1699018,
+    "key_to_native_pixel_ms": 119.50970199541189,
+    "changed": true
+  },
+  {
+    "host_s": 201282.597843206,
+    "key_to_native_pixel_ms": 203.00333001068793,
+    "changed": true
+  },
+  {
+    "host_s": 201283.120284949,
+    "key_to_native_pixel_ms": 193.66017100401223,
+    "changed": true
+  },
+  {
+    "host_s": 201283.620134213,
+    "key_to_native_pixel_ms": 179.21078100334853,
+    "changed": true
+  },
+  {
+    "host_s": 201284.114832331,
+    "key_to_native_pixel_ms": 150.9837100165896,
+    "changed": true
+  },
+  {
+    "host_s": 201284.583329735,
+    "key_to_native_pixel_ms": 181.13527598325163,
+    "changed": true
+  },
+  {
+    "host_s": 201285.086780519,
+    "key_to_native_pixel_ms": 125.00771699706092,
+    "changed": true
+  },
+  {
+    "host_s": 201285.515428679,
+    "key_to_native_pixel_ms": 62.93955899309367,
+    "changed": true
+  },
+  {
+    "host_s": 201285.882179383,
+    "key_to_native_pixel_ms": 76.91907498519868,
+    "changed": true
+  },
+  {
+    "host_s": 201286.265231345,
+    "key_to_native_pixel_ms": 64.17704600607976,
+    "changed": true
+  },
+  {
+    "host_s": 201286.63728045,
+    "key_to_native_pixel_ms": 60.89589500334114,
+    "changed": true
+  },
+  {
+    "host_s": 201287.007987591,
+    "key_to_native_pixel_ms": 79.30562298861332,
+    "changed": true
+  },
+  {
+    "host_s": 201287.394059566,
+    "key_to_native_pixel_ms": 73.31829200848006,
+    "changed": true
+  },
+  {
+    "host_s": 201287.77220179,
+    "key_to_native_pixel_ms": 65.5451949860435,
+    "changed": true
+  },
+  {
+    "host_s": 201288.141495037,
+    "key_to_native_pixel_ms": 92.93863899074495,
+    "changed": true
+  },
+  {
+    "host_s": 201288.545530782,
+    "key_to_native_pixel_ms": 89.73989999503829,
+    "changed": true
+  },
+  {
+    "host_s": 201288.941739692,
+    "key_to_native_pixel_ms": 50.14817099436186,
+    "changed": true
+  },
+  {
+    "host_s": 201289.299271724,
+    "key_to_native_pixel_ms": 25.626069982536137,
+    "changed": true
+  },
+  {
+    "host_s": 201289.632550135,
+    "key_to_native_pixel_ms": 2001.6535650065634,
+    "changed": false
+  },
+  {
+    "host_s": 201291.939333334,
+    "key_to_native_pixel_ms": 2008.9600649953354,
+    "changed": false
+  },
+  {
+    "host_s": 201294.259188788,
+    "key_to_native_pixel_ms": 2009.4694109866396,
+    "changed": false
+  },
+  {
+    "host_s": 201296.575469812,
+    "key_to_native_pixel_ms": 2002.3705330095254,
+    "changed": false
+  },
+  {
+    "host_s": 201298.883853691,
+    "key_to_native_pixel_ms": 2004.439579002792,
+    "changed": false
+  }
+]

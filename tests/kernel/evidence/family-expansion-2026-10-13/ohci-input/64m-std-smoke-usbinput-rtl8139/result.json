@@ -1,0 +1,11 @@
+{
+  "ram_mib": 64,
+  "backend": "std",
+  "desktop_started": false,
+  "completed": false,
+  "kernel_sha256": "cb0ba6f9babca6d3eceebd9a4551f30c3863b0712214bc8ed5e94e37ea0fca09",
+  "wine_boot_started": false,
+  "smoke_pass": false,
+  "memory": {},
+  "depths": []
+}

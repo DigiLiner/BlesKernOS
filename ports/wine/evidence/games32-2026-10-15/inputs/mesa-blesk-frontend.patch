@@ -1,0 +1,194 @@
+--- a/src/gallium/frontends/osmesa/osmesa.c
++++ b/src/gallium/frontends/osmesa/osmesa.c
+@@ -105,6 +105,7 @@
+ struct osmesa_context
+ {
+    struct st_context *st;
++   bool double_buffer;
+ 
+    bool ever_used;     /*< Has this context ever been current? */
+ 
+@@ -358,7 +359,7 @@
+    unsigned bpp;
+    int dst_stride;
+ 
+-   if (statt != ST_ATTACHMENT_FRONT_LEFT)
++   if (statt != ST_ATTACHMENT_FRONT_LEFT || !res)
+       return false;
+ 
+    if (osmesa->pp) {
+@@ -440,7 +441,7 @@
+        * attachment, since that's all we specified for the visual in
+        * osmesa_init_st_visual().
+        */
+-      if (statts[i] == ST_ATTACHMENT_FRONT_LEFT) {
++      if (statts[i] == ST_ATTACHMENT_FRONT_LEFT || statts[i] == ST_ATTACHMENT_BACK_LEFT) {
+          format = osbuffer->visual.color_format;
+          bind = PIPE_BIND_RENDER_TARGET;
+       }
+@@ -459,9 +460,12 @@
+ 
+       templat.format = format;
+       templat.bind = bind;
+-      pipe_resource_reference(&out[i], NULL);
+-      out[i] = osbuffer->textures[statts[i]] =
+-         screen->resource_create(screen, &templat);
++      /* The drawable owns a reference independently of the state tracker.
++       * Copy-swap may allocate front before Mesa asks to read/draw it. */
++      if (!osbuffer->textures[statts[i]])
++         osbuffer->textures[statts[i]] = screen->resource_create(screen, &templat);
++      pipe_resource_reference(&out[i], osbuffer->textures[statts[i]]);
++      if (!out[i]) return false;
+    }
+ 
+    return true;
+@@ -503,6 +507,8 @@
+     * is no longer valid.
+     */
+    st_api_destroy_drawable(&osbuffer->base);
++   for (unsigned i = 0; i < ST_ATTACHMENT_COUNT; i++)
++      pipe_resource_reference(&osbuffer->textures[i], NULL);
+ 
+    FREE(osbuffer);
+ }
+@@ -570,7 +576,7 @@
+    GLenum format = GL_RGBA;
+    int depthBits = 0, stencilBits = 0, accumBits = 0;
+    int profile = OSMESA_COMPAT_PROFILE, version_major = 1, version_minor = 0;
+-   int i;
++   int i, context_flags = 0, double_buffer = 0;
+ 
+    if (sharelist) {
+       st_shared = sharelist->st;
+@@ -581,6 +587,13 @@
+ 
+    for (i = 0; attribList[i]; i += 2) {
+       switch (attribList[i]) {
++      case 0x1001: /* OSMESA_BLES_DOUBLE_BUFFER */
++         double_buffer = !!attribList[i+1];
++         break;
++      case 0x1000: /* OSMESA_BLES_CONTEXT_FLAGS */
++         context_flags = attribList[i+1];
++         if (context_flags & ~3) return NULL;
++         break;
+       case OSMESA_FORMAT:
+          format = attribList[i+1];
+          switch (format) {
+@@ -658,6 +671,35 @@
+       osmesa->depth_stencil_format = PIPE_FORMAT_Z16_UNORM;
+    }
+ 
++   /* Hardware drivers need not support the software frontend's preferred
++    * byte order. Choose a real depth/stencil format with sufficient precision. */
++   struct pipe_screen *screen = get_st_manager()->screen;
++   if (osmesa->depth_stencil_format != PIPE_FORMAT_NONE &&
++       !screen->is_format_supported(screen, osmesa->depth_stencil_format,
++                                   PIPE_TEXTURE_RECT, 0, 0, PIPE_BIND_DEPTH_STENCIL)) {
++      const enum pipe_format alternatives[] = {
++         PIPE_FORMAT_S8_UINT_Z24_UNORM, PIPE_FORMAT_Z24_UNORM_S8_UINT,
++         PIPE_FORMAT_Z32_FLOAT_S8X24_UINT, PIPE_FORMAT_Z24X8_UNORM,
++         PIPE_FORMAT_X8Z24_UNORM, PIPE_FORMAT_Z32_FLOAT, PIPE_FORMAT_Z16_UNORM,
++         PIPE_FORMAT_S8_UINT
++      };
++      osmesa->depth_stencil_format = PIPE_FORMAT_NONE;
++      for (unsigned n = 0; n < ARRAY_SIZE(alternatives); n++) {
++         enum pipe_format f = alternatives[n];
++         if (util_format_get_component_bits(f, UTIL_FORMAT_COLORSPACE_ZS, 0) < depthBits ||
++             util_format_get_component_bits(f, UTIL_FORMAT_COLORSPACE_ZS, 1) < stencilBits)
++            continue;
++         if (screen->is_format_supported(screen, f, PIPE_TEXTURE_RECT, 0, 0, PIPE_BIND_DEPTH_STENCIL)) {
++            osmesa->depth_stencil_format = f;
++            break;
++         }
++      }
++      if (osmesa->depth_stencil_format == PIPE_FORMAT_NONE) {
++         FREE(osmesa);
++         return NULL;
++      }
++   }
++
+    /*
+     * Create the rendering context
+     */
+@@ -666,7 +708,7 @@
+       ? API_OPENGL_CORE : API_OPENGL_COMPAT;
+    attribs.major = version_major;
+    attribs.minor = version_minor;
+-   attribs.flags = 0;  /* ST_CONTEXT_FLAG_x */
++   attribs.flags = context_flags; /* DEBUG=1, FORWARD_COMPATIBLE=2 */
+    attribs.options.force_glsl_extensions_warn = false;
+    attribs.options.disable_blend_func_extended = false;
+    attribs.options.disable_glsl_line_continuations = false;
+@@ -676,6 +718,9 @@
+                          PIPE_FORMAT_NONE,
+                          osmesa->depth_stencil_format,
+                          osmesa->accum_format);
++
++   osmesa->double_buffer = double_buffer;
++   if (double_buffer) attribs.visual.buffer_mask |= ST_ATTACHMENT_BACK_LEFT_MASK;
+ 
+    osmesa->st = st_api_create_context(get_st_manager(),
+                                          &attribs, &st_error, st_shared);
+@@ -705,6 +750,7 @@
+ {
+    if (osmesa) {
+       pp_free(osmesa->pp);
++      if (osmesa->current_buffer) osmesa_destroy_buffer(osmesa->current_buffer);
+       st_destroy_context(osmesa->st);
+       free(osmesa->zs);
+       FREE(osmesa);
+@@ -774,6 +820,7 @@
+ 
+    struct osmesa_buffer *osbuffer = osmesa->current_buffer;
+ 
++   if (osmesa->double_buffer) osbuffer->visual.buffer_mask |= ST_ATTACHMENT_BACK_LEFT_MASK;
+    osbuffer->width = width;
+    osbuffer->height = height;
+    osbuffer->map = buffer;
+@@ -1027,3 +1074,46 @@
+       debug_warning("Calling OSMesaPostprocess() after OSMesaMakeCurrent()\n");
+    }
+ }
++
++GLAPI OSMesaContext GLAPIENTRY OSMesaBleskCreateContextAttribs(const int *, OSMesaContext);
++GLAPI OSMesaContext GLAPIENTRY
++OSMesaBleskCreateContextAttribs(const int *attributes, OSMesaContext share)
++{ return OSMesaCreateContextAttribs(attributes, share); }
++
++/* Copy-swap: front and back are distinct GPU resources. Retain back-buffer
++ * contents. Queue the copy after Mesa drains its vertices, but before the
++ * one pipe flush, rather than synchronously submitting draws and copy apart. */
++struct bles_swap { OSMesaContext osmesa; bool ok; };
++static void osmesa_bles_copy_front(void *data)
++{
++   struct bles_swap *swap = data;
++   OSMesaContext osmesa = swap->osmesa;
++   struct osmesa_buffer *b = osmesa->current_buffer;
++   if (osmesa->double_buffer) {
++      struct pipe_resource *front=b->textures[ST_ATTACHMENT_FRONT_LEFT];
++      struct pipe_resource *back=b->textures[ST_ATTACHMENT_BACK_LEFT];
++      if (!back) return;
++      if (!front) {
++         enum st_attachment_type attachment=ST_ATTACHMENT_FRONT_LEFT;
++         struct pipe_resource *created=NULL;
++         if (!osmesa_st_framebuffer_validate(osmesa->st, &b->base, &attachment, 1, &created, NULL))
++            return;
++         pipe_resource_reference(&created, NULL);
++         front=b->textures[ST_ATTACHMENT_FRONT_LEFT];
++      }
++      struct pipe_box box={.x=0,.y=0,.z=0,.width=b->width,.height=b->height,.depth=1};
++      osmesa->st->pipe->resource_copy_region(osmesa->st->pipe,front,0,0,0,0,back,0,&box);
++   }
++   swap->ok = true;
++}
++
++GLAPI GLboolean GLAPIENTRY OSMesaBleskSwapBuffers(OSMesaContext);
++GLAPI GLboolean GLAPIENTRY OSMesaBleskSwapBuffers(OSMesaContext osmesa)
++{
++   if (!osmesa || osmesa != OSMesaGetCurrentContext() || !osmesa->current_buffer)
++      return GL_FALSE;
++   struct bles_swap swap = {osmesa, false};
++   st_context_flush(osmesa->st, ST_FLUSH_END_OF_FRAME, NULL, osmesa_bles_copy_front, &swap);
++   if (!swap.ok) return GL_FALSE;
++   return osmesa_st_framebuffer_flush_front(osmesa->st,&osmesa->current_buffer->base,ST_ATTACHMENT_FRONT_LEFT);
++}

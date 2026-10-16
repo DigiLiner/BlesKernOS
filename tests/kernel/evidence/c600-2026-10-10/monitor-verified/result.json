@@ -1,0 +1,22 @@
+{
+  "desktop_wall_seconds": 30.675220079996507,
+  "reads": [
+    {
+      "pass": 0,
+      "bytes": 1048576,
+      "ticks": 293,
+      "hz": 100,
+      "valid": 1
+    },
+    {
+      "pass": 1,
+      "bytes": 1048576,
+      "ticks": 100,
+      "hz": 100,
+      "valid": 1
+    }
+  ],
+  "pass": true,
+  "root_usb": true,
+  "monitor_changed_pixels": 1445
+}

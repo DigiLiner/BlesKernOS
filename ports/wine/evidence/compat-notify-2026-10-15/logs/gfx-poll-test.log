@@ -1,0 +1,1 @@
+PASS graphics poll: idle/data/drained/wrapped queues, write-only requests, missing context, ordinary devices and socket EOF

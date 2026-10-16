@@ -1,0 +1,31 @@
+{
+  "result": "FAIL",
+  "host_seconds": 33.93255961500108,
+  "command": [
+    "qemu-system-i386",
+    "-accel",
+    "kvm",
+    "-cpu",
+    "host",
+    "-smp",
+    "2",
+    "-m",
+    "1536",
+    "-drive",
+    "file=/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine-games32/glx-baseline3/test.img,format=raw,if=ide",
+    "-vga",
+    "none",
+    "-device",
+    "virtio-vga-gl",
+    "-display",
+    "egl-headless,rendernode=/dev/dri/renderD128",
+    "-serial",
+    "file:/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine-games32/glx-baseline3/serial.log",
+    "-no-reboot",
+    "-no-shutdown"
+  ],
+  "pe_sha256": "1d9ee36d30da96dce920e05abd53e3d7ebb0a5988ea428ea43615d8bb3f14c3e",
+  "checks": [
+    "[GLX-PROBE] GPU load FAILED: libdrm.so.2: cannot open shared object file: No such file or directory"
+  ]
+}

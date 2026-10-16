@@ -11,6 +11,19 @@ typedef struct {
 void deskmanager_install(gui_desktop_t *desktop);
 void deskmanager_install_setup(gui_desktop_t *desktop, const char *wallpaper_path);
 void deskbar_install(gui_desktop_t *desktop);
+gui_rect_t deskbar_clock_rect(const gui_desktop_t *desktop);
+bool deskbar_window_button_rect(const gui_desktop_t *desktop,
+                                const gui_window_t *target, gui_rect_t *out);
+#ifdef BLES_VISION_SERVICE
+/* Vision owns one full-desktop Ring-3 gui_program.  Deskbar is embedded as a
+ * layer inside DeskManager so two independent full-screen caches cannot
+ * overwrite each other. */
+void vision_deskbar_overlay_rects(gui_program_t *program, gui_desktop_t *desktop);
+void vision_deskbar_paint_layer(gui_desktop_t *desktop, gui_surface_t *surface);
+bool vision_deskbar_handle_event_layer(gui_desktop_t *desktop,
+                                       const gui_event_t *event);
+void vision_deskbar_shutdown_layer(void);
+#endif
 
 void filebrowser_install(gui_desktop_t *desktop);
 void filebrowser_open_from_desktop(gui_desktop_t *desktop);
@@ -36,8 +49,6 @@ void midamp_open_from_desktop(gui_desktop_t *desktop);
 void imageviewer_install(gui_desktop_t *desktop);
 void imageviewer_open(gui_desktop_t *desktop, const char *path);
 void imageviewer_open_from_desktop(gui_desktop_t *desktop);
-void games_install(gui_desktop_t *desktop);
-void games_open_from_desktop(gui_desktop_t *desktop);
 void gears_install(gui_desktop_t *desktop);
 void gears_open_from_desktop(gui_desktop_t *desktop);
 void paint_install(gui_desktop_t *desktop);
@@ -48,6 +59,7 @@ uint32_t screensaver_get_timeout_seconds(void);
 void screensaver_set_enabled(bool enabled);
 void screensaver_set_timeout_seconds(uint32_t seconds);
 const char *screensaver_get_path(void);
+bool screensaver_copy_path(char *buffer, uint32_t capacity);
 void screensaver_set_path(const char *path);
 bool screensaver_preview(gui_desktop_t *desktop);
 void bk_input_mouse_set_sensitivity(uint8_t sensitivity);
@@ -72,6 +84,12 @@ bool program_is_win32_executable(const char *path);
 bool program_execute_path(gui_desktop_t *desktop, const char *path);
 bool program_execute_path_arg(gui_desktop_t *desktop, const char *path,
                               const char *launch_arg);
+/* Desktop/UI launches must not perform disk I/O and ELF/PE relocation while
+ * the GUI event transaction is still active.  These helpers hand the load to
+ * a short-lived kernel worker and return as soon as the request is queued. */
+bool program_execute_path_async(gui_desktop_t *desktop, const char *path);
+bool program_execute_path_async_arg(gui_desktop_t *desktop, const char *path,
+                                    const char *launch_arg);
 const char *program_launch_arg(void);
 uint32_t *program_load_bmp_icon(const char *path);
 uint32_t *program_load_bmp_icon_scaled(const char *path,

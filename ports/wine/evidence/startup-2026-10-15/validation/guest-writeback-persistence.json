@@ -1,0 +1,7 @@
+{
+  "result": "PASS",
+  "bytes": 4194321,
+  "sha256": "7f3c7f1fcc24e17e5f43893e7975ea8becf045028970f9ee2ed20cfcc9a1eb42",
+  "mode": "0o100600",
+  "checks": "exact deterministic 4 MiB+17 bytes after guest fsync/close/reopen/rename; unaligned 3000-byte overwrite; read after QEMU exit"
+}

@@ -1,0 +1,13 @@
+/tmp/bk-swap-pager-jvakd8jw/test.c:21:13: warning: ‘mm_set_allocation_subsystem’ defined but not used [-Wunused-function]
+   21 | static bool mm_set_allocation_subsystem(void *p,uint8_t subsystem){assert(p && subsystem==MM_SUBSYSTEM_VM);return true;}
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/tmp/bk-swap-pager-jvakd8jw/test.c:20:13: warning: ‘mm_set_allocation_owner’ defined but not used [-Wunused-function]
+   20 | static bool mm_set_allocation_owner(void *p,uint32_t pid){assert(p && !pid);return true;}
+      |             ^~~~~~~~~~~~~~~~~~~~~~~
+/tmp/bk-swap-pager-jvakd8jw/test.c:19:13: warning: ‘kfree’ defined but not used [-Wunused-function]
+   19 | static void kfree(void *p){assert(p && heap_nodes);heap_nodes--;free(p);}
+      |             ^~~~~
+/tmp/bk-swap-pager-jvakd8jw/test.c:18:14: warning: ‘kzalloc’ defined but not used [-Wunused-function]
+   18 | static void *kzalloc(uint32_t n){if(fail_metadata_heap)return NULL;void *p=calloc(1,n);if(p)heap_nodes++;return p;}
+      |              ^~~~~~~
+PASS supervisor metadata/table reserve, validated disk, slot exhaustion/reuse, actual pressure/integrity, failed swapoff, I/O rollback, TLB refusal, permissions, pin rollback, fork isolation, split unmap and process cleanup

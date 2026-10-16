@@ -1,0 +1,28 @@
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=261631 KiB top=262016 KiB
+  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000
+  [MM] RAM usable: 256 MB
+  [MM] Heap dinamico: 0x2000000 - 0xa000000 (131072 KB)
+  [MM] VM frames: 0xa000000 - 0xffe0000 (98176 KiB, 24544 paginas)
+  [MM] Vista PE fija: 0x400000 - 0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2000000-0xa000000
+[COMPAT] perfil=normal RAM_top=262016 KiB heap=131072 KiB tareas=128 CPU=fam6/mod122 GUI=60FPS TIMER=300Hz
+[GFX:TRACE] INIT boot_magic=0x31414756 registered=(ninguno) ops=0x0
+[BKBOOT t=0] STARTING KERNEL
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 6 dispositivos detectados
+  [LPT] LPT1 base=0x0378 status=0xD9 listo
+[ATA:PROBE] io=0x1f0 slave=0 ausente (status=0x0)
+[ATA:PROBE] io=0x1f0 slave=1 ausente (status=0x0)
+  [ATAPI] cd0: 275595 bloques de 2048 bytes
+[ATA:PROBE] io=0x170 slave=1 ausente (status=0x0)
+  [ATA] canales IDE normalizados despues del probe
+  [FDC] fd0: 1.44MB CHS 80/2/18 DMA lectura/escritura
+[BKBOOT t=2446] STORAGE DRIVERS
+[BKBOOT t=2446] MOUNTING FILESYSTEM
+[BKBOOT t=2447] DISABLE SPLASH / ENTER GUI
+[SETUP] Instalador CD ISO9660 detectado.

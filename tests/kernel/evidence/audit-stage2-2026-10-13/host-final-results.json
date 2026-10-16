@@ -1,0 +1,122 @@
+[
+  {
+    "test": "kernel/test_vm_metadata.py",
+    "exit_code": 0,
+    "seconds": 2.542
+  },
+  {
+    "test": "kernel/test_pager_ranges.py",
+    "exit_code": 0,
+    "seconds": 1.358
+  },
+  {
+    "test": "kernel/test_swap_pager.py",
+    "exit_code": 0,
+    "seconds": 2.428
+  },
+  {
+    "test": "kernel/test_pager_lookup.py",
+    "exit_code": 0,
+    "seconds": 0.943
+  },
+  {
+    "test": "kernel/test_paging_map.py",
+    "exit_code": 0,
+    "seconds": 0.658
+  },
+  {
+    "test": "kernel/test_paging_tlb.py",
+    "exit_code": 0,
+    "seconds": 1.252
+  },
+  {
+    "test": "kernel/test_memory_accounting.py",
+    "exit_code": 0,
+    "seconds": 0.294
+  },
+  {
+    "test": "kernel/test_guarded_allocation.py",
+    "exit_code": 0,
+    "seconds": 0.413
+  },
+  {
+    "test": "kernel/test_heap_realloc.py",
+    "exit_code": 0,
+    "seconds": 0.841
+  },
+  {
+    "test": "kernel/test_smp_sleep_handoff.py",
+    "exit_code": 0,
+    "seconds": 0.658
+  },
+  {
+    "test": "kernel/test_signal_return.py",
+    "exit_code": 0,
+    "seconds": 0.412
+  },
+  {
+    "test": "kernel/test_signal_copy_lock.py",
+    "exit_code": 0,
+    "seconds": 0.329
+  },
+  {
+    "test": "kernel/test_native_api_abi.py",
+    "exit_code": 0,
+    "seconds": 0.335
+  },
+  {
+    "test": "kernel/test_upcall_cleanup.py",
+    "exit_code": 0,
+    "seconds": 0.358
+  },
+  {
+    "test": "desktop/test_vm_protect.py",
+    "exit_code": 0,
+    "seconds": 0.405
+  },
+  {
+    "test": "desktop/test_vm_auto_reservations.py",
+    "exit_code": 0,
+    "seconds": 0.318
+  },
+  {
+    "test": "kernel/test_block_writes.py",
+    "exit_code": 0,
+    "seconds": 0.499
+  },
+  {
+    "test": "kernel/test_ata_swap_writes.py",
+    "exit_code": 0,
+    "seconds": 0.24
+  },
+  {
+    "test": "kernel/test_ata_dma_writes.py",
+    "exit_code": 0,
+    "seconds": 0.355
+  },
+  {
+    "test": "storage/test_recovery.py",
+    "exit_code": 0,
+    "seconds": 3.312
+  },
+  {
+    "test": "storage/test_smp.py",
+    "exit_code": 0,
+    "seconds": 5.065
+  },
+  {
+    "test": "storage/test_journal.py",
+    "exit_code": 0,
+    "seconds": 24.503
+  },
+  {
+    "test": "storage/test_swap_file.py",
+    "exit_code": 0,
+    "seconds": 12.397
+  },
+  {
+    "test": "kernel/test_tlb_generation_wrap.py",
+    "exit_code": 0,
+    "seconds": 1.173
+  }
+]

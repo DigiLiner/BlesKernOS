@@ -1,0 +1,42 @@
+{
+  "version": "11.0",
+  "tag": "wine-11.0",
+  "source_url": "https://codeload.github.com/wine-mirror/wine/tar.gz/refs/tags/wine-11.0",
+  "source_sha256": "f09e8153aa46a581d2b56a5b1363b04832070b9409d9244a68cf482b243ff14a",
+  "source_directory": "wine-wine-11.0",
+  "prefix": "/opt/wine",
+  "patches": [
+    "patches/0001-wineboot-allow-30-minutes.patch",
+    "patches/0002-ntdll-recognize-fat-case-insensitivity.patch",
+    "patches/0003-ntdll-bleskernos-force-utf8-paths.patch",
+    "patches/0004-winex11-local-glx-backend.patch",
+    "patches/0005-winex11-no-xinput2-clip-loop.patch",
+    "patches/0006-mountmgr-identify-optical-directory-maps.patch",
+    "patches/0007-winex11-local-front-pixmap.patch",
+    "patches/0009-winex11-explicit-offscreen-present.patch"
+  ],
+  "configure_args": [
+    "--prefix=/opt/wine",
+    "--without-mingw",
+    "--disable-tests",
+    "--with-x",
+    "--with-freetype",
+    "--with-fontconfig",
+    "--without-wayland",
+    "--without-vulkan",
+    "--without-gstreamer",
+    "--without-ffmpeg",
+    "--without-udev",
+    "--without-usb",
+    "--without-v4l2",
+    "--without-sane",
+    "--without-gphoto",
+    "--without-cups",
+    "--without-pulse",
+    "--without-dbus",
+    "--without-xshm",
+    "--without-xcomposite",
+    "--without-xxf86vm",
+    "--with-oss"
+  ]
+}

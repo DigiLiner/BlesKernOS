@@ -4,7 +4,7 @@
 #include "../../include/rtc.h"
 #include "../../include/pit.h"
 #include "../../include/vga.h"
-#include "../../string.h"
+#include "../../libc/include/string.h"
 #include "bearssl.h"
 
 /* Bundle Mozilla generado con `brssl ta` desde curl.se/ca/cacert.pem. */
@@ -69,8 +69,10 @@ static bool tls_entropy(uint8_t output[32]) {
             bool ready = false;
             for (uint32_t attempt = 0; attempt < 10U; attempt++) {
                 uint8_t carry;
-                __asm__ volatile ("rdrand %0; setc %1"
-                                  : "=r"(value), "=qm"(carry));
+                /* Emit RDRAND EAX explicitly: TinyCC's i386 assembler does
+                 * not know this post-i686 mnemonic, while GAS does. */
+                __asm__ volatile (".byte 0x0f,0xc7,0xf0; setc %1"
+                                  : "=a"(value), "=qm"(carry));
                 if (carry) { ready = true; break; }
             }
             if (!ready) { complete = false; break; }
@@ -358,17 +360,27 @@ static bool tls_connection_open(tls_connection_t *connection,
     tls_spin_unlock(&g_dns_busy);
     if (!i) {
         g_last_error = TLS_ERROR_DNS;
+        kprintf("[TLS] DNS fallo host=%s\n", host);
         return false;
     }
     connection->socket = network_socket_open(NET_SOCKET_TCP);
     if (connection->socket < 0 ||
         !network_socket_connect(connection->socket, address, port, timeout_ms)) {
         g_last_error = TLS_ERROR_CONNECT;
+        kprintf("[TLS] TCP fallo host=%s ip=%u.%u.%u.%u port=%u socket=%d\n",
+                host, address[0], address[1], address[2], address[3],
+                (uint32_t)port, connection->socket);
         tls_connection_close(connection);
         return false;
     }
     tls = (tls_context_t *)kmalloc(sizeof(*tls));
-    if (!tls) { g_last_error = TLS_ERROR_MEMORY; tls_connection_close(connection); return false; }
+    if(tls)(void)mm_set_allocation_subsystem(tls,MM_SUBSYSTEM_NETWORK);
+    if (!tls) {
+        g_last_error = TLS_ERROR_MEMORY;
+        kprintf("[TLS] sin memoria host=%s\n", host);
+        tls_connection_close(connection);
+        return false;
+    }
     connection->tls = tls;
     kmemset(tls, 0, sizeof(*tls));
     br_ssl_client_init_full(&tls->client, &tls->x509, TAs, TAs_NUM);
@@ -376,6 +388,7 @@ static bool tls_connection_open(tls_connection_t *connection,
         uint8_t entropy[32];
         if (!tls_entropy(entropy)) {
             g_last_error = TLS_ERROR_ENTROPY;
+            kprintf("[TLS] entropia fallo host=%s\n", host);
             tls_connection_close(connection);
             return false;
         }
@@ -384,6 +397,7 @@ static bool tls_connection_open(tls_connection_t *connection,
     }
     if (!tls_set_clock(&tls->x509)) {
         g_last_error = TLS_ERROR_CLOCK;
+        kprintf("[TLS] reloj invalido host=%s\n", host);
         tls_connection_close(connection);
         return false;
     }
@@ -391,6 +405,8 @@ static bool tls_connection_open(tls_connection_t *connection,
                              sizeof(tls->buffer), 1);
     if (!br_ssl_client_reset(&tls->client, host, 0)) {
         g_last_error = br_ssl_engine_last_error(&tls->client.eng);
+        kprintf("[TLS] client_reset fallo host=%s bearssl=%d\n", host,
+                g_last_error);
         tls_connection_close(connection);
         return false;
     }
@@ -441,7 +457,12 @@ static int32_t tls_https_exchange(const char *url, const void *request,
         return -1;
     }
     connection = tls_connection_acquire(host, port);
-    if (!connection) { g_last_error = TLS_ERROR_BUSY; return -1; }
+    if (!connection) {
+        g_last_error = TLS_ERROR_BUSY;
+        kprintf("[TLS] conexiones ocupadas host=%s port=%u\n", host,
+                (uint32_t)port);
+        return -1;
+    }
     for (attempt = 0U; attempt < 2U; attempt++) {
         if (connection->active &&
             (strcmp(connection->host, host) != 0 || connection->port != port))
@@ -455,6 +476,8 @@ static int32_t tls_https_exchange(const char *url, const void *request,
             br_sslio_flush(&connection->tls->io) < 0) {
             g_last_error = br_ssl_engine_last_error(&connection->tls->client.eng);
             if (!g_last_error) g_last_error = TLS_ERROR_IO;
+            kprintf("[TLS] escritura fallo host=%s bearssl=%d reused=%u\n",
+                    host, g_last_error, reused ? 1U : 0U);
             tls_connection_close(connection);
             if (reused && attempt == 0U) continue;
             goto done;
@@ -485,6 +508,8 @@ static int32_t tls_https_exchange(const char *url, const void *request,
             total += (uint32_t)received;
             complete = response_complete((const uint8_t *)data, total,
                                          &must_close);
+            if(request_length>=5U && !kmemcmp(request,"HEAD ",5U) &&
+               response_header_end((const uint8_t *)data,total))complete=true;
             if (complete)
                 break;
         }
@@ -575,7 +600,7 @@ static void tls_shutdown(void) {
 
 const bk_driver_module_t *bleskernos_driver_query(void) {
     static const bk_driver_module_t module = {
-        BK_DRIVER_ABI_VERSION, sizeof(bk_driver_module_t),
+        BK_DRIVER_ABI_VERSION, sizeof(bk_driver_module_t), 1U, 0U,
         "tls-bearssl", "TLS 1.2 con BearSSL y CA de Mozilla",
         tls_init, tls_shutdown
     };

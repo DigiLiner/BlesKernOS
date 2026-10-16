@@ -1,0 +1,226 @@
+[
+  {
+    "key_to_glyph_ms": 157.47619699686766,
+    "injection_ms": 1.6980799846351147,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 244.30281299282797,
+    "injection_ms": 1.790851994883269,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 131.62195001496002,
+    "injection_ms": 1.4514799986500293,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 272.62036001775414,
+    "injection_ms": 1.5579269966110587,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 318.56666001840495,
+    "injection_ms": 1.8149650131817907,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 283.1513260025531,
+    "injection_ms": 1.9074089941568673,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 266.6633510089014,
+    "injection_ms": 2.102252998156473,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 182.37578301341273,
+    "injection_ms": 1.5565869980491698,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 191.15950498962775,
+    "injection_ms": 3.511231014272198,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 97.6087230083067,
+    "injection_ms": 2.6072110049426556,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 75.3112520033028,
+    "injection_ms": 1.5183590003289282,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 205.87935802177526,
+    "injection_ms": 6.582479021744803,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 82.86747001693584,
+    "injection_ms": 2.0928700105287135,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 139.49402701109648,
+    "injection_ms": 2.285861992277205,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 153.68873201077804,
+    "injection_ms": 1.6007540107239038,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 136.09355801600032,
+    "injection_ms": 2.672261995030567,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 127.67747900215909,
+    "injection_ms": 2.23759698565118,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 97.3003680119291,
+    "injection_ms": 1.740291016176343,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 94.87806001561694,
+    "injection_ms": 1.4621530135627836,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 126.7825449758675,
+    "injection_ms": 1.502837985754013,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 101.25108200008981,
+    "injection_ms": 1.9458990136627108,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 87.61231700191274,
+    "injection_ms": 2.2800180013291538,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 129.65997701394372,
+    "injection_ms": 1.4626439951825887,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 117.68240600940771,
+    "injection_ms": 2.0371779974084347,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 92.18831898760982,
+    "injection_ms": 1.5996319998521358,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 69.98403900070116,
+    "injection_ms": 2.3682919854763895,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 92.38623399869539,
+    "injection_ms": 2.1223129879217595,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 89.62390798842534,
+    "injection_ms": 2.229023986728862,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 98.06803497485816,
+    "injection_ms": 2.285932976519689,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 97.14403402176686,
+    "injection_ms": 2.371720998780802,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 69.93628302006982,
+    "injection_ms": 2.3046980204526335,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 99.71008502179757,
+    "injection_ms": 2.2503630025312304,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  }
+]

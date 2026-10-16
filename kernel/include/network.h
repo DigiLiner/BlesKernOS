@@ -90,6 +90,11 @@ void netdev_receive(const void *frame, uint16_t length);
 void netdev_set_rx_handler(net_rx_handler_t handler);
 void netdev_get_info(net_info_t *info);
 
+#include "../../sdk/include/bleskernos_socket_info.h"
+typedef uint32_t (*net_socket_inspector_t)(bk_socket_info_t *,uint32_t);
+void network_register_socket_inspector(net_socket_inspector_t inspect);
+uint32_t network_socket_snapshot(bk_socket_info_t *out,uint32_t capacity);
+
 /* Proxy pequeño usado por la shell; los protocolos permanecen externos. */
 bool network_register_stack(const net_stack_ops_t *ops);
 void network_unregister_stack(const net_stack_ops_t *ops);

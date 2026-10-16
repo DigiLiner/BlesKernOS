@@ -20,6 +20,7 @@
  */
 
 #include "../../include/types.h"
+#include "../../include/perfmon.h"
 #include "../../include/memory.h"
 #include "../../include/driver.h"
 #include "../../include/gfx.h"
@@ -28,18 +29,22 @@
 #include "../../include/pci.h"
 #include "../../include/rage128_engine.h"
 #include "ati_rage128_cce_ucode.h"
-#include "../../stdio.h"
+#include "../../libc/include/stdio.h"
 
 #define ATI_VENDOR_ID                   0x1002U
 #define ATI_RAGE128_LF_DEVICE_ID        0x4C46U
 
-#define R1283D_MAX_SURFACES             16U
+#define R1283D_MAX_SURFACES             64U
 #define R1283D_PAGE_SIZE                4096U
 #define R1283D_MAX_PAGES                2048U
 #define R1283D_PAGE_WORDS               (R1283D_MAX_PAGES / 32U)
 #define R1283D_TOP_RESERVE              (64U * 1024U)
 #define R1283D_TIMEOUT                  3000000U
 #define R1283D_MAX_VERTICES             384U
+/* Rage128 encodings, shared with Mesa r128_state/r128_texstate. */
+#define R128_ALPHA_TEST_ENABLE           (1U << 10)
+#define R128_COMB_BLEND_TEXTURE          9U
+#define R128_COMB_ALPHA_COPY_INP          (2U << 14)
 #define R1283D_PIO_FIFO_DWORDS          192U
 #define R1283D_EXPERIMENTAL_Z16          1U
 
@@ -48,7 +53,8 @@
      GFX3D_CAP_VERTEX_BUFFERS | GFX3D_CAP_PRESENT | \
      GFX3D_CAP_ALPHA_BLEND | GFX3D_CAP_TEXTURES | GFX3D_CAP_TINYGL | \
      GFX3D_CAP_DEPTH_FUNCS | GFX3D_CAP_BLEND_ADDITIVE | \
-     GFX3D_CAP_TEXTURE_REGION_UPLOAD)
+     GFX3D_CAP_TEXTURE_REGION_UPLOAD | GFX3D_CAP_ALPHA_TEST | \
+     GFX3D_CAP_TEXTURE_DECAL | GFX3D_CAP_TEXTURE_MIPMAPS)
 #if R1283D_EXPERIMENTAL_Z16
 #define R1283D_CAPABILITIES \
     (R1283D_BASE_CAPABILITIES | GFX3D_CAP_DEPTH_BUFFER | \
@@ -229,6 +235,7 @@ typedef struct {
     uint32_t pitch;
     uint32_t size;
     uint32_t offset;
+    uint32_t mip_levels, mip_offset[11];
     uint32_t page_first;
     uint32_t page_count;
     uint32_t depth_offset;
@@ -351,13 +358,31 @@ static bool r1283d_detect_pci(void) {
     return false;
 }
 
+/* Timings here exclude the subsequent cache flush; they measure host-side
+ * polling, not a GPU timestamp. Keep the original iteration bound. */
+static bool r1283d_poll(uint32_t reg, uint32_t free_mask, uint32_t slots,
+                         uint32_t busy_mask, perf_scope_id_t scope) {
+    uint64_t started = perfmon_scope_begin();
+    uint32_t polls = 0U;
+    bool ok = false;
+    while (polls < R1283D_TIMEOUT) {
+        uint32_t stat = r1283d_read(reg);
+        polls++;
+        if ((stat & free_mask) >= slots && !(stat & busy_mask)) {
+            ok = true;
+            break;
+        }
+    }
+    perfmon_scope_end(scope, started);
+    perfmon_scope_note(scope, 0U, polls, !ok);
+    return ok;
+}
+
 static bool r1283d_flush_pixel_cache(void) {
     uint32_t cache = r1283d_read(R128_PC_NGUI_CTLSTAT);
     r1283d_write(R128_PC_NGUI_CTLSTAT, cache | R128_PC_FLUSH_ALL);
-    for (uint32_t i = 0; i < R1283D_TIMEOUT; i++)
-        if (!(r1283d_read(R128_PC_NGUI_CTLSTAT) & R128_PC_BUSY))
-            return true;
-    return false;
+    return r1283d_poll(R128_PC_NGUI_CTLSTAT, 0U, 0U,
+                       R128_PC_BUSY, PERF_SCOPE_ATI_CACHE);
 }
 
 /* The 2D GUI FIFO and the PM4 CCE FIFO are different engines.  Linux's
@@ -365,30 +390,20 @@ static bool r1283d_flush_pixel_cache(void) {
  * PM4_STAT after commands have been submitted.  Mixing both checks made the
  * first revision reject a perfectly idle chip while PM4 was still disabled. */
 static bool r1283d_wait_2d_idle(void) {
-    for (uint32_t i = 0; i < R1283D_TIMEOUT; i++) {
-        uint32_t stat = r1283d_read(R128_GUI_STAT);
-        if ((stat & R128_GUI_FIFOCNT_MASK) >= 64U &&
-            !(stat & R128_GUI_ACTIVE))
-            return r1283d_flush_pixel_cache();
-    }
-    return false;
+    return r1283d_poll(R128_GUI_STAT, R128_GUI_FIFOCNT_MASK, 64U,
+                       R128_GUI_ACTIVE, PERF_SCOPE_ATI_IDLE) &&
+           r1283d_flush_pixel_cache();
 }
 
 static bool r1283d_wait_cce_idle(void) {
-    for (uint32_t i = 0; i < R1283D_TIMEOUT; i++) {
-        uint32_t stat = r1283d_read(R128_PM4_STAT);
-        if ((stat & R128_PM4_FIFOCNT_MASK) >= R1283D_PIO_FIFO_DWORDS &&
-            !(stat & (R128_PM4_BUSY | R128_PM4_GUI_ACTIVE)))
-            return r1283d_flush_pixel_cache();
-    }
-    return false;
+    return r1283d_poll(R128_PM4_STAT, R128_PM4_FIFOCNT_MASK, R1283D_PIO_FIFO_DWORDS,
+                       R128_PM4_BUSY | R128_PM4_GUI_ACTIVE, PERF_SCOPE_ATI_IDLE) &&
+           r1283d_flush_pixel_cache();
 }
 
 static bool r1283d_wait_pio_slots(uint32_t slots) {
-    for (uint32_t i = 0; i < R1283D_TIMEOUT; i++)
-        if ((r1283d_read(R128_PM4_STAT) & R128_PM4_FIFOCNT_MASK) >= slots)
-            return true;
-    return false;
+    return r1283d_poll(R128_PM4_STAT, R128_PM4_FIFOCNT_MASK, slots,
+                       0U, PERF_SCOPE_ATI_PIO);
 }
 
 static void r1283d_engine_reset(void) {
@@ -458,16 +473,25 @@ static void r1283d_perf_report(const char *reason) {
 static bool r1283d_cce_start(void) {
     if (g_r1283d.cce_running && r1283d_cce_active_hw()) return true;
     g_r1283d.cce_running = false;
-    if (!r1283d_load_microcode() || !r1283d_wait_2d_idle()) return false;
+    uint64_t started = perfmon_scope_begin();
+    if (!r1283d_load_microcode() || !r1283d_wait_2d_idle()) {
+        perfmon_scope_end(PERF_SCOPE_ATI_START, started);
+        return false;
+    }
     g_r1283d.saved_pm4_buffer_cntl = r1283d_read(R128_PM4_BUFFER_CNTL);
     g_r1283d.saved_pm4_micro_cntl = r1283d_read(R128_PM4_MICRO_CNTL);
     r1283d_write(R128_PM4_BUFFER_CNTL,
                  R128_PM4_192PIO | R128_PM4_BUFFER_CNTL_NOUPDATE);
     (void)r1283d_read(R128_PM4_BUFFER_ADDR);
     r1283d_write(R128_PM4_MICRO_CNTL, R128_PM4_MICRO_FREERUN);
-    if (!r1283d_wait_pio_slots(2U)) return false;
+    if (!r1283d_wait_pio_slots(2U)) {
+        perfmon_scope_end(PERF_SCOPE_ATI_START, started);
+        return false;
+    }
+    perfmon_scope_end(PERF_SCOPE_ATI_START, started);
     g_r1283d.cce_running = true;
     g_r1283d.stat_cce_starts++;
+    perfmon_scope_note(PERF_SCOPE_ATI_START, 0U, 0U, 0U);
     return true;
 }
 
@@ -509,17 +533,25 @@ static bool r1283d_wait_for_cpu_vram(void) {
 static bool r1283d_submit_words(const uint32_t *words, uint32_t count) {
     uint32_t i = 0U;
     if (!words || !count) return false;
-    while (i + 1U < count) {
-        if (!r1283d_wait_pio_slots(2U)) return false;
-        r1283d_write(R128_PM4_FIFO_DATA_EVEN, words[i++]);
-        r1283d_write(R128_PM4_FIFO_DATA_ODD, words[i++]);
+    uint64_t started = perfmon_scope_begin();
+    bool ok = true;
+    while (i < count) {
+        uint32_t remaining = count - i;
+        uint32_t slots = remaining < R1283D_PIO_FIFO_DWORDS ?
+                         (remaining + 1U) & ~1U : R1283D_PIO_FIFO_DWORDS;
+        /* Reserve a bounded, even burst. Only this owner writes the FIFO;
+         * the GPU can only free additional slots during these writes.
+         * Never retain a reservation across calls or ownership changes. */
+        if (!r1283d_wait_pio_slots(slots)) { ok = false; break; }
+        for (uint32_t n = 0U; n < slots; n += 2U) {
+            r1283d_write(R128_PM4_FIFO_DATA_EVEN, words[i++]);
+            r1283d_write(R128_PM4_FIFO_DATA_ODD,
+                         i < count ? words[i++] : R128_CCE_PACKET2);
+        }
     }
-    if (i < count) {
-        if (!r1283d_wait_pio_slots(2U)) return false;
-        r1283d_write(R128_PM4_FIFO_DATA_EVEN, words[i]);
-        r1283d_write(R128_PM4_FIFO_DATA_ODD, R128_CCE_PACKET2);
-    }
-    return true;
+    perfmon_scope_end(PERF_SCOPE_ATI_SUBMIT, started);
+    perfmon_scope_note(PERF_SCOPE_ATI_SUBMIT, i, 0U, 0U);
+    return ok;
 }
 
 static bool r1283d_page_used(uint32_t page) {
@@ -591,7 +623,7 @@ static uint32_t r1283d_bpp(gfx3d_format_t format) {
 
 static bool r1283d_create_surface(const gfx3d_surface_desc_t *desc,
                                   gfx3d_surface_handle_t *handle_out) {
-    uint32_t bpp, pitch, size;
+    uint32_t bpp, pitch, size, levels, offsets[11]={0};
     if (handle_out) *handle_out = GFX3D_SURFACE_INVALID;
     if (!g_r1283d.ready || !desc || !handle_out ||
         !desc->width || !desc->height) return false;
@@ -600,6 +632,20 @@ static bool r1283d_create_surface(const gfx3d_surface_desc_t *desc,
     pitch = ALIGN_UP((uint32_t)desc->width * bpp, 32U);
     size = pitch * (uint32_t)desc->height;
     if (size / pitch != desc->height) return false;
+    levels=1U+((desc->flags>>8U)&15U);
+    if(levels>11U)return false;
+    if(levels>1U){
+        uint32_t w=desc->width,h=desc->height;
+        uint32_t largest=w>h?w:h;
+        if(bpp!=4U||w<8U||h<8U||w>1024U||h>1024U||
+           (w&(w-1U))||(h&(h-1U))||(largest>>(levels-1U))==0U)
+            return false;
+        for(uint32_t level=1U;level<levels;level++){
+            w=w>1U?w>>1U:1U;h=h>1U?h>>1U:1U;
+            offsets[level]=ALIGN_UP(size,32U);
+            size=offsets[level]+w*h*4U;
+        }
+    }
 
     for (uint32_t i = 0; i < R1283D_MAX_SURFACES; i++) {
         r1283d_surface_t *surface;
@@ -622,6 +668,8 @@ static bool r1283d_create_surface(const gfx3d_surface_desc_t *desc,
         surface->pitch = pitch;
         surface->size = size;
         surface->offset = offset;
+        surface->mip_levels=levels;
+        for(uint32_t level=0;level<levels;level++)surface->mip_offset[level]=offsets[level];
         surface->page_first = first;
         surface->page_count = pages;
         *handle_out = r1283d_handle(i, generation);
@@ -633,21 +681,19 @@ static bool r1283d_create_surface(const gfx3d_surface_desc_t *desc,
 static bool r1283d_destroy_surface(gfx3d_surface_handle_t handle) {
     r1283d_surface_t *surface = r1283d_surface_from_handle(handle);
     if (!surface) return false;
-    if (g_r1283d.current_target == handle) {
-        if (g_r1283d.cce_running && !r1283d_wait_cce_idle())
-            return false;
-        g_r1283d.completed_fence = g_r1283d.last_fence;
-        g_r1283d.current_target = GFX3D_SURFACE_INVALID;
-        if (g_r1283d.engine_acquired) {
-            g_r1283d.engine_acquired = false;
-            r128_engine_release_3d();
-        }
+    bool acquired_here = false;
+    /* Pending draws can read textures as well as write render targets. */
+    if (!r1283d_engine_enter(&acquired_here)) return false;
+    if (!r1283d_wait_for_cpu_vram()) {
+        r1283d_engine_leave(acquired_here);
+        return false;
     }
     r1283d_free_pages(surface->page_first, surface->page_count);
     if (surface->depth_page_count)
         r1283d_free_pages(surface->depth_page_first,
                           surface->depth_page_count);
     kmemset(surface, 0, sizeof(*surface));
+    r1283d_engine_leave(acquired_here);
     return true;
 }
 
@@ -683,8 +729,10 @@ static bool r1283d_upload_surface_locked(gfx3d_surface_handle_t handle,
     r1283d_surface_t *surface = r1283d_surface_from_handle(handle);
     gfx_rect_t rect;
     if (!surface || !pixels || surface->bytes_per_pixel != 4U ||
-        !source_pitch || !r1283d_rect_for_surface(surface, requested, &rect))
+        !source_pitch || !r1283d_rect_for_surface(surface, requested, &rect) ||
+        source_pitch < (uint32_t)(rect.x + rect.w))
         return false;
+    uint64_t started = perfmon_scope_begin();
     for (int32_t y = 0; y < rect.h; y++) {
         const uint8_t *src = (const uint8_t *)(pixels +
             (uint32_t)(rect.y + y) * source_pitch + (uint32_t)rect.x);
@@ -693,6 +741,8 @@ static bool r1283d_upload_surface_locked(gfx3d_surface_handle_t handle,
             (uint32_t)rect.x * 4U;
         kmemcpy((void *)dst, src, (uint32_t)rect.w * 4U);
     }
+    perfmon_scope_end(PERF_SCOPE_ATI_UPLOAD, started);
+    perfmon_scope_note(PERF_SCOPE_ATI_UPLOAD, (uint32_t)rect.w * (uint32_t)rect.h * 4U, 0U, 0U);
     return true;
 }
 
@@ -704,7 +754,9 @@ static bool r1283d_download_surface_locked(gfx3d_surface_handle_t handle,
     gfx_rect_t rect;
     if (!surface || !pixels || surface->bytes_per_pixel != 4U ||
         !destination_pitch ||
-        !r1283d_rect_for_surface(surface, requested, &rect)) return false;
+        !r1283d_rect_for_surface(surface, requested, &rect) ||
+        destination_pitch < (uint32_t)(rect.x + rect.w)) return false;
+    uint64_t started = perfmon_scope_begin();
     for (int32_t y = 0; y < rect.h; y++) {
         const volatile uint8_t *src = g_r1283d.vram + surface->offset +
             (uint32_t)(rect.y + y) * surface->pitch +
@@ -713,6 +765,8 @@ static bool r1283d_download_surface_locked(gfx3d_surface_handle_t handle,
             (uint32_t)(rect.y + y) * destination_pitch + (uint32_t)rect.x);
         kmemcpy(dst, (const void *)src, (uint32_t)rect.w * 4U);
     }
+    perfmon_scope_end(PERF_SCOPE_ATI_DOWNLOAD, started);
+    perfmon_scope_note(PERF_SCOPE_ATI_DOWNLOAD, (uint32_t)rect.w * (uint32_t)rect.h * 4U, 0U, 0U);
     return true;
 }
 
@@ -721,6 +775,7 @@ static bool r1283d_clear_surface_locked(gfx3d_surface_handle_t handle,
     r1283d_surface_t *surface = r1283d_surface_from_handle(handle);
     if (fence_out) *fence_out = 0U;
     if (!surface) return false;
+    uint64_t started = perfmon_scope_begin();
     if (surface->bytes_per_pixel == 4U) {
         for (uint32_t y = 0; y < surface->height; y++) {
             volatile uint32_t *row = (volatile uint32_t *)
@@ -737,6 +792,9 @@ static bool r1283d_clear_surface_locked(gfx3d_surface_handle_t handle,
     } else {
         return false;
     }
+    perfmon_scope_end(PERF_SCOPE_ATI_CLEAR, started);
+    perfmon_scope_note(PERF_SCOPE_ATI_CLEAR,
+        surface->width * surface->height * surface->bytes_per_pixel, 0U, 0U);
     g_r1283d.last_fence++;
     if (!g_r1283d.last_fence) g_r1283d.last_fence = 1U;
     if (fence_out) *fence_out = g_r1283d.last_fence;
@@ -756,6 +814,27 @@ static bool r1283d_upload_surface(gfx3d_surface_handle_t handle,
     return ok;
 }
 
+static bool r1283d_upload_mip(gfx3d_surface_handle_t handle,uint32_t level,
+        const uint32_t *pixels,uint32_t pitch){
+    r1283d_surface_t *s=r1283d_surface_from_handle(handle);
+    bool acquired=false,ok=false;uint32_t w,h;
+    if(!s||!pixels||s->bytes_per_pixel!=4U||level>=s->mip_levels)return false;
+    if(!level)return r1283d_upload_surface(handle,pixels,pitch,NULL);
+    w=s->width>>level;h=s->height>>level;
+    if(!w)w=1U;
+    if(!h)h=1U;
+    if(pitch<w||!r1283d_engine_enter(&acquired))return false;
+    if(r1283d_wait_for_cpu_vram()){
+        uint64_t started = perfmon_scope_begin();
+        for(uint32_t y=0;y<h;y++)kmemcpy((void *)(g_r1283d.vram+s->offset+
+            s->mip_offset[level]+y*w*4U),pixels+y*pitch,w*4U);
+        perfmon_scope_end(PERF_SCOPE_ATI_UPLOAD, started);
+        perfmon_scope_note(PERF_SCOPE_ATI_UPLOAD, w*h*4U, 0U, 0U);
+        ok=true;
+    }
+    r1283d_engine_leave(acquired);return ok;
+}
+
 static bool r1283d_upload_surface_region(gfx3d_surface_handle_t handle,
                                           const uint32_t *pixels,
                                           uint32_t source_pitch,
@@ -766,17 +845,21 @@ static bool r1283d_upload_surface_region(gfx3d_surface_handle_t handle,
     bool acquired_here, ok = false;
     if (!surface || !pixels || surface->bytes_per_pixel != 4U ||
         !source_pitch || source_pitch < width || !width || !height ||
-        destination_x + width > surface->width ||
-        destination_y + height > surface->height)
+        destination_x > surface->width || destination_y > surface->height ||
+        width > surface->width - destination_x ||
+        height > surface->height - destination_y)
         return false;
     if (!r1283d_engine_enter(&acquired_here)) return false;
     if (r1283d_wait_for_cpu_vram()) {
+        uint64_t started = perfmon_scope_begin();
         for (uint32_t y = 0; y < height; y++) {
             volatile uint8_t *dst = g_r1283d.vram + surface->offset +
                 (destination_y + y) * surface->pitch + destination_x * 4U;
             const uint8_t *src = (const uint8_t *)(pixels + y * source_pitch);
             kmemcpy((void *)dst, src, width * 4U);
         }
+        perfmon_scope_end(PERF_SCOPE_ATI_UPLOAD, started);
+        perfmon_scope_note(PERF_SCOPE_ATI_UPLOAD, width * height * 4U, 0U, 0U);
         ok = true;
     }
     r1283d_engine_leave(acquired_here);
@@ -815,6 +898,7 @@ static bool r1283d_depth_transfer(gfx3d_surface_handle_t handle,
         return false;
     if (!r1283d_engine_enter(&acquired_here)) return false;
     if (r1283d_wait_for_cpu_vram() && r1283d_ensure_depth(surface)) {
+        uint64_t started = perfmon_scope_begin();
         for (int32_t y = 0; y < rect.h; y++) {
             volatile uint16_t *gpu_row = (volatile uint16_t *)(
                 g_r1283d.vram + surface->depth_offset +
@@ -828,6 +912,9 @@ static bool r1283d_depth_transfer(gfx3d_surface_handle_t handle,
                 kmemcpy(cpu_row, (const void *)gpu_row,
                         (uint32_t)rect.w * sizeof(uint16_t));
         }
+        perf_scope_id_t scope = upload ? PERF_SCOPE_ATI_DEPTH_UP : PERF_SCOPE_ATI_DEPTH_DOWN;
+        perfmon_scope_end(scope, started);
+        perfmon_scope_note(scope, (uint32_t)rect.w * (uint32_t)rect.h * 2U, 0U, 0U);
         ok = true;
     }
     r1283d_engine_leave(acquired_here);
@@ -879,12 +966,20 @@ static void r1283d_clear_depth(r1283d_surface_t *target, float depth) {
     if (depth <= 0.0f) value = 0U;
     else if (depth >= 1.0f) value = 0xFFFFU;
     else value = (uint16_t)(depth * 65535.0f + 0.5f);
+    uint64_t started = perfmon_scope_begin();
     for (uint32_t y = 0; y < target->height; y++) {
         volatile uint16_t *row = (volatile uint16_t *)
             (g_r1283d.vram + target->depth_offset +
              y * target->depth_pitch);
-        for (uint32_t x = 0; x < target->width; x++) row[x] = value;
+        /* Depth rows/pages are DWORD aligned. Write two identical Z16
+         * samples per bus store; preserve the padding of odd-width rows. */
+        uint32_t packed = (uint32_t)value | ((uint32_t)value << 16);
+        volatile uint32_t *pairs = (volatile uint32_t *)row;
+        for (uint32_t x = 0; x < target->width / 2U; x++) pairs[x] = packed;
+        if (target->width & 1U) row[target->width - 1U] = value;
     }
+    perfmon_scope_end(PERF_SCOPE_ATI_CLEAR, started);
+    perfmon_scope_note(PERF_SCOPE_ATI_CLEAR, target->width * target->height * 2U, 0U, 0U);
 }
 
 #endif
@@ -895,8 +990,7 @@ static bool r1283d_begin_render(gfx3d_surface_handle_t target_handle,
     r1283d_surface_t *target = r1283d_surface_from_handle(target_handle);
     bool acquired_here = false;
 
-    if (!g_r1283d.ready || !target || g_r1283d.engine_acquired ||
-        g_r1283d.current_target != GFX3D_SURFACE_INVALID ||
+    if (!g_r1283d.ready || !target ||
         target->bytes_per_pixel != 4U ||
         !(target->flags & GFX3D_SURFACE_RENDER_TARGET)) return false;
     if (flags & (GFX3D_DRAW_DEPTH_TEST | GFX3D_DRAW_DEPTH_WRITE |
@@ -908,9 +1002,10 @@ static bool r1283d_begin_render(gfx3d_surface_handle_t target_handle,
 #endif
     }
 
-    /* Keep the shared owner for the complete begin/draw/end sequence.  This
-     * lets CCE commands remain queued without a GUI operation changing PM4
-     * underneath them. */
+    /* Mesa may keep a logical frame open while the GUI uses the engine.
+     * Ownership is scoped to each submission, never across public calls. */
+    if (!(flags & (GFX3D_DRAW_CLEAR_COLOR | GFX3D_DRAW_CLEAR_DEPTH)))
+        return true;
     if (!r1283d_engine_enter(&acquired_here) || !acquired_here)
         return false;
     if (!r1283d_wait_for_cpu_vram()) {
@@ -930,12 +1025,7 @@ static bool r1283d_begin_render(gfx3d_surface_handle_t target_handle,
 #else
     (void)clear_depth;
 #endif
-    g_r1283d.current_target = target_handle;
-    if (!r1283d_cce_start()) {
-        g_r1283d.current_target = GFX3D_SURFACE_INVALID;
-        r1283d_disable_after_hang("begin_render/cce_start");
-        return false;
-    }
+    r1283d_engine_leave(acquired_here);
     return true;
 }
 
@@ -1004,6 +1094,8 @@ static bool r1283d_program_state(r1283d_surface_t *target,
                        R128_ALPHA_FACTOR_TEX_ALPHA |
                        R128_INP_FACTOR_A_INT_ALPHA;
     uint32_t size_pitch = 0U;
+    uint32_t alpha = 0U;
+    bool mipmapped=texture&&texture->mip_levels>1U&&(flags&GFX3D_DRAW_MIPMAP_NEAREST);
 
     if (flags & GFX3D_DRAW_DEPTH_TEST) {
         tex_cntl |= R128_Z_ENABLE;
@@ -1012,13 +1104,24 @@ static bool r1283d_program_state(r1283d_surface_t *target,
     if (flags & GFX3D_DRAW_DEPTH_WRITE) tex_cntl |= R128_Z_WRITE_ENABLE;
     if (flags & GFX3D_DRAW_BLEND) {
         tex_cntl |= R128_ALPHA_ENABLE;
-        blend = (R128_ALPHA_BLEND_SRCALPHA << R128_ALPHA_BLEND_SRC_SHIFT) |
+        blend = (((flags & GFX3D_DRAW_PREMULTIPLIED) ? R128_ALPHA_BLEND_ONE :
+                  R128_ALPHA_BLEND_SRCALPHA) << R128_ALPHA_BLEND_SRC_SHIFT) |
                 (((flags & GFX3D_DRAW_BLEND_ADDITIVE) ?
                   R128_ALPHA_BLEND_ONE : R128_ALPHA_BLEND_INVSRCALPHA)
                  << R128_ALPHA_BLEND_DST_SHIFT);
     } else {
         blend = (R128_ALPHA_BLEND_ONE << R128_ALPHA_BLEND_SRC_SHIFT);
     }
+    if (flags & GFX3D_DRAW_ALPHA_TEST) {
+        static const uint8_t compare[8] = {0,1,3,2,5,6,4,7};
+        tex_cntl |= R128_ALPHA_TEST_ENABLE;
+        alpha = ((uint32_t)compare[(flags >> GFX3D_DRAW_ALPHA_FUNC_SHIFT) & 7U] << 24) |
+                ((flags >> GFX3D_DRAW_ALPHA_REF_SHIFT) & 255U);
+    }
+    if (flags & GFX3D_DRAW_TEXTURE_DECAL)
+        combine = R128_COMB_BLEND_TEXTURE | R128_COLOR_FACTOR_TEX |
+                  R128_INPUT_FACTOR_INT_COLOR | R128_COMB_ALPHA_COPY_INP |
+                  R128_ALPHA_FACTOR_TEX_ALPHA | R128_INP_FACTOR_A_INT_ALPHA;
     if (texture) {
         uint32_t log_width, log_height, log_size;
         if (!r1283d_valid_texture(texture) ||
@@ -1027,14 +1130,19 @@ static bool r1283d_program_state(r1283d_surface_t *target,
             return false;
         log_size = log_width > log_height ? log_width : log_height;
         tex_cntl |= R128_TEXMAP_ENABLE;
-        if (flags & GFX3D_DRAW_LINEAR)
+        if(mipmapped){
+            prim_tex &= ~R128_MIP_MAP_DISABLE;
+            prim_tex |= (flags&GFX3D_DRAW_LINEAR)?
+                ((4U<<1U)|R128_MAG_BLEND_LINEAR):(2U<<1U);
+        }else if (flags & GFX3D_DRAW_LINEAR)
             prim_tex |= R128_MIN_BLEND_LINEAR | R128_MAG_BLEND_LINEAR;
         prim_tex |= (flags & GFX3D_DRAW_REPEAT_U) ?
             R128_TEX_WRAP_S : R128_TEX_CLAMP_S_CLAMP;
         prim_tex |= (flags & GFX3D_DRAW_REPEAT_V) ?
             R128_TEX_WRAP_T : R128_TEX_CLAMP_T_CLAMP;
         size_pitch = log_width | (log_size << 4) |
-                     (log_height << 8) | (log_size << 12);
+                     (log_height << 8) |
+                     ((mipmapped?log_size-(texture->mip_levels-1U):log_size)<<12);
     }
 
     setup = R128_COLOR_GOURAUD | R128_PRIM_TYPE_TRI |
@@ -1053,7 +1161,7 @@ static bool r1283d_program_state(r1283d_surface_t *target,
           R128_GMC_CLR_CMP_CNTL_DIS | R128_GMC_AUX_CLIP_DIS |
           R128_GMC_WR_MSK_DIS;
 
-    return
+    bool ok=
         r1283d_emit_reg(R128_SCALE_3D_CNTL,
             R128_SCALE_3D_TEXMAP_SHADE | R128_SCALE_PIX_REPLICATE |
             R128_TEX_CACHE_SPLIT | R128_TEX_MAP_ALPHA_IN_TEXTURE |
@@ -1079,28 +1187,35 @@ static bool r1283d_program_state(r1283d_surface_t *target,
         r1283d_emit_reg(R128_MISC_3D_STATE_CNTL_REG,
             R128_MISC_SCALE_3D_TEXMAP_SHADE |
             R128_MISC_SCALE_PIX_REPLICATE |
-            R128_ALPHA_COMB_ADD_CLAMP | blend) &&
+            R128_ALPHA_COMB_ADD_CLAMP | blend | alpha) &&
         r1283d_emit_reg(R128_TEX_CNTL_C, tex_cntl) &&
         r1283d_emit_reg(R128_PRIM_TEX_CNTL_C, prim_tex) &&
         r1283d_emit_reg(R128_PRIM_TEXTURE_COMBINE_CNTL_C, combine) &&
         r1283d_emit_reg(R128_TEX_SIZE_PITCH_C, size_pitch) &&
-        r1283d_emit_reg(R128_PRIM_TEX_0_OFFSET_C,
-            texture ? texture->offset : 0U) &&
         r1283d_emit_reg(R128_PC_GUI_CTLSTAT, R128_PC_FLUSH_GUI);
+    /* Hardware offset registers count from the smallest selected mip up. */
+    /* Disabled texturing cannot sample these offsets. A subsequent textured
+     * draw always writes all eleven, including after a 2D context switch. */
+    for(uint32_t i=0;texture&&ok&&i<11U;i++){
+        uint32_t offset=texture?texture->offset:0U;
+        if(mipmapped&&i<texture->mip_levels)
+            offset+=texture->mip_offset[texture->mip_levels-i-1U];
+        ok=r1283d_emit_reg(R128_PRIM_TEX_0_OFFSET_C+i*4U,offset);
+    }
+    return ok;
 }
 
 static bool r1283d_submit_vertices(const gfx3d_vertex_t *vertices,
                                    uint32_t vertex_count, bool textured) {
-    uint32_t total_words;
     uint32_t stride = textured ? 7U : 5U;
-    uint32_t *words;
+    /* Serialized by the shared engine lock, including startup self-tests.
+     * PIO consumes these CPU words before return; this is not a DMA buffer. */
+    static uint32_t words[4U + R1283D_MAX_VERTICES * 7U];
     uint32_t pos = 0U;
     bool ok;
     if (!vertices || !vertex_count || vertex_count > R1283D_MAX_VERTICES)
         return false;
-    total_words = 3U + vertex_count * stride;
-    words = (uint32_t *)kmalloc((total_words + 1U) * sizeof(uint32_t));
-    if (!words) return false;
+    uint64_t started = perfmon_scope_begin();
     words[pos++] = CCE_PACKET3(R128_CCE_PACKET3_3D_RNDR_GEN_PRIM,
                                1U + vertex_count * stride);
     words[pos++] = R128_CCE_VC_FRMT_RHW |
@@ -1121,8 +1236,9 @@ static bool r1283d_submit_vertices(const gfx3d_vertex_t *vertices,
         }
     }
     if (pos & 1U) words[pos++] = R128_CCE_PACKET2;
+    perfmon_scope_end(PERF_SCOPE_ATI_ENCODE, started);
+    perfmon_scope_note(PERF_SCOPE_ATI_ENCODE, vertex_count, 0U, 0U);
     ok = r1283d_submit_words(words, pos);
-    kfree(words);
     return ok;
 }
 
@@ -1154,10 +1270,9 @@ static bool r1283d_draw_triangles(gfx3d_surface_handle_t target_handle,
     bool textured = (flags & GFX3D_DRAW_TEXTURED) != 0U;
     bool ok;
     if (fence_out) *fence_out = 0U;
-    if (!g_r1283d.ready || !g_r1283d.engine_acquired || !target ||
-        !vertices || vertex_count < 3U || (vertex_count % 3U) != 0U ||
-        vertex_count > R1283D_MAX_VERTICES ||
-        g_r1283d.current_target != target_handle) return false;
+    if (!g_r1283d.ready || !target ||
+        !(target->flags & GFX3D_SURFACE_RENDER_TARGET) ||
+        !vertices || vertex_count < 3U || (vertex_count % 3U) != 0U) return false;
     if (textured != (texture != GFX3D_SURFACE_INVALID) ||
         (textured && !r1283d_valid_texture(texture_surface))) return false;
     if (flags & (GFX3D_DRAW_DEPTH_TEST | GFX3D_DRAW_DEPTH_WRITE)) {
@@ -1168,29 +1283,46 @@ static bool r1283d_draw_triangles(gfx3d_surface_handle_t target_handle,
 #endif
     }
 
-    if (!g_r1283d.cce_running && !r1283d_cce_start()) {
+    bool acquired_here = false;
+    if (!r1283d_engine_enter(&acquired_here)) return false;
+    if (!r1283d_cce_start()) {
         r1283d_disable_after_hang("cce_start");
         return false;
     }
-    ok = r1283d_program_state(target, texture_surface, flags) &&
-         r1283d_submit_vertices(vertices, vertex_count, textured);
+    uint64_t state_started = perfmon_scope_begin();
+    ok = r1283d_program_state(target, texture_surface, flags);
+    perfmon_scope_end(PERF_SCOPE_ATI_STATE, state_started);
+    perfmon_scope_note(PERF_SCOPE_ATI_STATE, 0U, 0U, 0U);
+    for (uint32_t first = 0U; ok && first < vertex_count;) {
+        uint32_t count = vertex_count - first;
+        if (count > R1283D_MAX_VERTICES) count = R1283D_MAX_VERTICES;
+        ok = r1283d_submit_vertices(vertices + first, count, textured);
+        first += count;
+    }
+    /* The 2D bridge stops PM4 when it acquires the shared engine. PIO has
+     * copied the CPU vertex words, but that alone does not complete their
+     * rasterization. Drain CCE and its pixel cache before handing ownership
+     * to a possible 2D client, not merely at the later logical end(). */
+    if (ok) ok = r1283d_wait_cce_idle();
     if (!ok) {
         r1283d_disable_after_hang("draw_triangles");
         return false;
     }
     g_r1283d.last_fence++;
     if (!g_r1283d.last_fence) g_r1283d.last_fence = 1U;
+    g_r1283d.completed_fence = g_r1283d.last_fence;
     if (fence_out) *fence_out = g_r1283d.last_fence;
+    r1283d_engine_leave(acquired_here);
     return true;
 }
 
 static bool r1283d_end_render(gfx3d_surface_handle_t target,
                               uint32_t *fence_out) {
     if (fence_out) *fence_out = 0U;
-    if (!g_r1283d.ready || !g_r1283d.engine_acquired ||
-        target != g_r1283d.current_target ||
-        !r1283d_surface_from_handle(target)) return false;
-    if (!r1283d_wait_cce_idle()) {
+    bool acquired_here = false;
+    if (!g_r1283d.ready || !r1283d_surface_from_handle(target) ||
+        !r1283d_engine_enter(&acquired_here)) return false;
+    if (!r1283d_wait_for_cpu_vram()) {
         r1283d_disable_after_hang("end_render");
         return false;
     }
@@ -1201,8 +1333,7 @@ static bool r1283d_end_render(gfx3d_surface_handle_t target,
     g_r1283d.completed_fence = g_r1283d.last_fence;
     g_r1283d.current_target = GFX3D_SURFACE_INVALID;
     if (fence_out) *fence_out = g_r1283d.last_fence;
-    g_r1283d.engine_acquired = false;
-    r128_engine_release_3d();
+    r1283d_engine_leave(acquired_here);
     return true;
 }
 
@@ -1364,11 +1495,84 @@ static bool r1283d_internal_smoke_test(void) {
     return ok && changed;
 }
 
+/* Exercise the public semantics: interleaved clients, buffer rollover and
+ * texture state must produce pixels before advertising the new capabilities. */
+static bool r1283d_extended_selftest(void){
+    gfx3d_surface_desc_t rd={32,32,GFX3D_FORMAT_ARGB8888,GFX3D_SURFACE_RENDER_TARGET};
+    gfx3d_surface_desc_t td={8,8,GFX3D_FORMAT_ARGB8888,
+        GFX3D_SURFACE_TEXTURE|GFX3D_SURFACE_MIP_LEVELS(3)};
+    gfx3d_surface_handle_t a=0,b=0,t=0;
+    uint32_t pixels[32*32]={0},texels[64],f=0;bool ok=false;
+    gfx3d_vertex_t v[3]={{4,4,0.5f,1,0xFF00FF00U,0,0},
+        {28,4,0.5f,1,0xFF00FF00U,1,0},{16,28,0.5f,1,0xFF00FF00U,0.5f,1}};
+    if(!r1283d_create_surface(&rd,&a)||!r1283d_create_surface(&rd,&b)||
+       !r1283d_create_surface(&td,&t))goto done;
+    for(uint32_t func=0;func<8;func++)for(uint32_t ref=0;ref<3;ref++){
+        uint32_t reference=ref==0?64U:(ref==1?128U:192U);
+        bool expected=false;
+        switch(func){case 0:break;case 1:expected=128<reference;break;
+        case 2:expected=128==reference;break;case 3:expected=128<=reference;break;
+        case 4:expected=128>reference;break;case 5:expected=128!=reference;break;
+        case 6:expected=128>=reference;break;default:expected=true;}
+        for(uint32_t i=0;i<3;i++)v[i].color=0x8000FF00U;
+        if(!r1283d_begin_render(a,0xFF000000U,0,GFX3D_DRAW_CLEAR_COLOR)||
+           !r1283d_draw_triangles(a,0,v,3,GFX3D_DRAW_ALPHA(func,reference),&f)||
+           !r1283d_download_surface(a,pixels,32,NULL)||
+           ((pixels[12*32+16]&0xFFFFFFU)!=0U)!=expected)goto done;
+    }
+    kprintf("[R128:TEST] alpha comparisons=24 PASS\n");
+    for(uint32_t i=0;i<64;i++)texels[i]=0x00FF0000U;
+    for(uint32_t i=0;i<3;i++)v[i].color=0xFF00FF00U;
+    if(!r1283d_upload_mip(t,0,texels,8)||
+       !r1283d_begin_render(a,0xFF000000U,0,GFX3D_DRAW_CLEAR_COLOR)||
+       !r1283d_draw_triangles(a,t,v,3,GFX3D_DRAW_TEXTURED|GFX3D_DRAW_TEXTURE_DECAL,&f)||
+       !r1283d_download_surface(a,pixels,32,NULL)||pixels[12*32+16]!=0xFF00FF00U)goto done;
+    kprintf("[R128:TEST] DECAL alpha preserved PASS\n");
+    for(uint32_t level=0;level<3;level++){
+        for(uint32_t i=0;i<64;i++)texels[i]=level==0?0xFFFF0000U:
+            (level==1?0xFF00FF00U:0xFF0000FFU);
+        if(!r1283d_upload_mip(t,level,texels,8U>>level))goto done;
+    }
+    for(uint32_t i=0;i<3;i++){v[i].color=0xFFFFFFFFU;v[i].u*=32;v[i].v*=32;}
+    if(!r1283d_begin_render(a,0xFF000000U,0,GFX3D_DRAW_CLEAR_COLOR)||
+       !r1283d_draw_triangles(a,t,v,3,GFX3D_DRAW_TEXTURED|GFX3D_DRAW_MIPMAP_NEAREST,&f)||
+       !r1283d_download_surface(a,pixels,32,NULL)||pixels[12*32+16]!=0xFF0000FFU)goto done;
+    if(!r1283d_draw_triangles(a,t,v,3,GFX3D_DRAW_TEXTURED,&f)||
+       !r1283d_download_surface(a,pixels,32,NULL)||pixels[12*32+16]!=0xFFFF0000U||
+       r1283d_upload_mip(t,3,texels,1))goto done;
+    kprintf("[R128:TEST] native mip selection and disabled mip PASS\n");
+    if(!r1283d_begin_render(a,0xFF000000U,0,GFX3D_DRAW_CLEAR_COLOR)||
+       !r1283d_begin_render(b,0xFF000000U,0,GFX3D_DRAW_CLEAR_COLOR))goto done;
+    for(uint32_t draw=0;draw<240;draw++){
+        for(uint32_t i=0;i<3;i++)v[i].color=(draw&1)?0xFF00FF00U:0xFFFF0000U;
+        if(!r1283d_draw_triangles((draw&1)?b:a,0,v,3,0,&f)||
+           (f&&!r1283d_wait_fence(f)))goto done;
+    }
+    if(!r1283d_end_render(b,&f)||!r1283d_wait_fence(f)||!r1283d_end_render(a,&f)||
+       !r1283d_download_surface(a,pixels,32,NULL)||pixels[12*32+16]!=0xFFFF0000U||
+       !r1283d_download_surface(b,pixels,32,NULL)||pixels[12*32+16]!=0xFF00FF00U)goto done;
+    /* Exercise a public draw larger than the CCE packet budget. */
+    {uint32_t count=18000;gfx3d_vertex_t *large=kmalloc(count*sizeof(*large));
+     if(!large)goto done;
+     for(uint32_t i=0;i<count;i++)large[i]=v[i%3];
+     bool drawn=r1283d_draw_triangles(a,0,large,count,0,&f)&&r1283d_end_render(a,&f);
+     kfree(large);if(!drawn)goto done;}
+    if(!r1283d_download_surface(a,pixels,32,NULL)||pixels[12*32+16]!=0xFF00FF00U)goto done;
+    kprintf("[R128:TEST] interleaved targets + split 18000 vertices PASS\n");
+    ok=true;
+done:
+    if(!ok)kprintf("[R128:TEST] FAIL sample=0x%x\n",pixels[12*32+16]);
+    if(t)r1283d_destroy_surface(t);
+    if(b)r1283d_destroy_surface(b);
+    if(a)r1283d_destroy_surface(a);
+    return ok;
+}
+
 static bool r1283d_run_selftest(uint32_t *fence_out) {
     bool ok;
     if (fence_out) *fence_out = 0U;
     if (!g_r1283d.ready) return false;
-    ok = r1283d_internal_smoke_test();
+    ok = r1283d_internal_smoke_test() && r1283d_extended_selftest();
     if (ok && fence_out) *fence_out = g_r1283d.last_fence;
     return ok;
 }
@@ -1468,7 +1672,7 @@ static bool r1283d_prepare_for_mode(const gfx_info_t *info) {
     g_r1283d.ready = true;
     g_r1283d.disabled = false;
     g_r1283d.smoke_tested = true;
-    g_r1283d.smoke_ok = r1283d_internal_smoke_test();
+    g_r1283d.smoke_ok = r1283d_internal_smoke_test() && r1283d_extended_selftest();
     if (!g_r1283d.smoke_ok) {
         g_r1283d.ready = false;
         g_r1283d.disabled = true;
@@ -1542,7 +1746,8 @@ static bool ati_rage128_3d_driver_init(void) {
         r1283d_run_selftest,
         r1283d_upload_surface_region,
         r1283d_depth_upload,
-        r1283d_depth_download
+        r1283d_depth_download,
+        r1283d_upload_mip
     };
     if (!gfx3d_register_driver(&ops)) return false;
     kprintf("[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp\n");
@@ -1558,6 +1763,7 @@ const bk_driver_module_t *bleskernos_driver_query(void) {
     static const bk_driver_module_t module = {
         BK_DRIVER_ABI_VERSION,
         sizeof(bk_driver_module_t),
+        1U, 0U,
         "ati_rage128_3d",
         "ATI Rage 128 CCE 3D: Gouraud, Z16, textura ARGB, alfa y TinyGL",
         ati_rage128_3d_driver_init,

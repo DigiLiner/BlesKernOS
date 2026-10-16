@@ -1,0 +1,492 @@
+[
+  {
+    "host_s": 205269.351083962,
+    "key_to_native_pixel_ms": 94.2609389894642,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205269.76236692,
+    "key_to_native_pixel_ms": 720.6028199871071,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205270.802580615,
+    "key_to_native_pixel_ms": 993.2582949986681,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205272.116423892,
+    "key_to_native_pixel_ms": 302.6655639987439,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205272.733723429,
+    "key_to_native_pixel_ms": 150.25894599966705,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205273.210401389,
+    "key_to_native_pixel_ms": 218.95005099941045,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205273.746902813,
+    "key_to_native_pixel_ms": 237.0621250011027,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205274.331337401,
+    "key_to_native_pixel_ms": 299.76292498758994,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205274.949385382,
+    "key_to_native_pixel_ms": 305.531507008709,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205275.788551169,
+    "key_to_native_pixel_ms": 392.30715797748417,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205276.495929658,
+    "key_to_native_pixel_ms": 445.6584790023044,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205277.254517856,
+    "key_to_native_pixel_ms": 139.80143799562939,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205277.706986148,
+    "key_to_native_pixel_ms": 146.153828012757,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205278.174587042,
+    "key_to_native_pixel_ms": 228.46930898958817,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205278.720245232,
+    "key_to_native_pixel_ms": 189.4351149967406,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205279.26460676,
+    "key_to_native_pixel_ms": 380.6306130136363,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205279.981124899,
+    "key_to_native_pixel_ms": 266.2458859849721,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205280.562380077,
+    "key_to_native_pixel_ms": 250.7462239882443,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205281.127492853,
+    "key_to_native_pixel_ms": 448.0312289961148,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205281.890449667,
+    "key_to_native_pixel_ms": 361.49671699968167,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205282.55637704,
+    "key_to_native_pixel_ms": 166.19572500349022,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205283.028394634,
+    "key_to_native_pixel_ms": 76.44395701936446,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205283.418491617,
+    "key_to_native_pixel_ms": 133.1975540088024,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205283.870793597,
+    "key_to_native_pixel_ms": 706.9122410030104,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205284.954099999,
+    "key_to_native_pixel_ms": 67.63441397924908,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205285.335545951,
+    "key_to_native_pixel_ms": 123.47118998877704,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205285.792911875,
+    "key_to_native_pixel_ms": 117.26999800885096,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205286.222810126,
+    "key_to_native_pixel_ms": 82.84220099449158,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205286.611636535,
+    "key_to_native_pixel_ms": 89.1922959999647,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205287.006141365,
+    "key_to_native_pixel_ms": 93.69488898664713,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205287.405145077,
+    "key_to_native_pixel_ms": 135.4117379814852,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205287.851492061,
+    "key_to_native_pixel_ms": 86.20272402185947,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205288.249697023,
+    "key_to_native_pixel_ms": 147.36321999225765,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205288.703286443,
+    "key_to_native_pixel_ms": 67.52332701580599,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205289.079533885,
+    "key_to_native_pixel_ms": 69.26472499617375,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205289.453890112,
+    "key_to_native_pixel_ms": 78.15267099067569,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205289.839164719,
+    "key_to_native_pixel_ms": 82.9385370016098,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205290.229763479,
+    "key_to_native_pixel_ms": 59.34840798727237,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205290.597813833,
+    "key_to_native_pixel_ms": 44.169057975523174,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205290.953150481,
+    "key_to_native_pixel_ms": 131.9917860091664,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205291.392194214,
+    "key_to_native_pixel_ms": 60.77431602170691,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205291.774128563,
+    "key_to_native_pixel_ms": 73.22111100074835,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205292.152533313,
+    "key_to_native_pixel_ms": 71.01484198938124,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205292.534712051,
+    "key_to_native_pixel_ms": 212.498273991514,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205293.052291551,
+    "key_to_native_pixel_ms": 67.46417901013047,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205293.431097508,
+    "key_to_native_pixel_ms": 79.98646600754,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205293.816657285,
+    "key_to_native_pixel_ms": 61.17641300079413,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205294.182587821,
+    "key_to_native_pixel_ms": 56.91191498772241,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205294.548289746,
+    "key_to_native_pixel_ms": 70.17381500918418,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205294.931816646,
+    "key_to_native_pixel_ms": 64.01194899808615,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205295.301627821,
+    "key_to_native_pixel_ms": 99.87611300311983,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205295.710248732,
+    "key_to_native_pixel_ms": 82.14552898425609,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205296.097846832,
+    "key_to_native_pixel_ms": 60.219231992959976,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205296.465137601,
+    "key_to_native_pixel_ms": 62.42224702145904,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205296.833643397,
+    "key_to_native_pixel_ms": 69.23630699748173,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205297.215312825,
+    "key_to_native_pixel_ms": 215.9129480132833,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205297.743903448,
+    "key_to_native_pixel_ms": 218.3361840143334,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205298.269358078,
+    "key_to_native_pixel_ms": 107.55453602178022,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205298.686914238,
+    "key_to_native_pixel_ms": 105.66047599422745,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205299.106388305,
+    "key_to_native_pixel_ms": 74.33378099813126,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205299.494571361,
+    "key_to_native_pixel_ms": 83.07461100048386,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205299.884655014,
+    "key_to_native_pixel_ms": 87.37204398494214,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205300.27927996,
+    "key_to_native_pixel_ms": 54.66161298681982,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205300.643521175,
+    "key_to_native_pixel_ms": 83.94023799337447,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205301.037815663,
+    "key_to_native_pixel_ms": 122.3940379859414,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205301.469913431,
+    "key_to_native_pixel_ms": 78.65776200196706,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205301.866743345,
+    "key_to_native_pixel_ms": 168.60351600917056,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205302.35418591,
+    "key_to_native_pixel_ms": 165.4324480041396,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205302.842956934,
+    "key_to_native_pixel_ms": 65.56542799808085,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  },
+  {
+    "host_s": 205303.216222473,
+    "key_to_native_pixel_ms": 61.58897097338922,
+    "changed": true,
+    "exceeded_two_seconds": false,
+    "diagnostic": false
+  }
+]

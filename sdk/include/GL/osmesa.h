@@ -147,6 +147,10 @@ GLAPI GLboolean GLAPIENTRY
 OSMesaBleskGPUAvailable(OSMesaContext ctx);
 GLAPI GLboolean GLAPIENTRY
 OSMesaBleskResolve(OSMesaContext ctx);
+
+/* Resolve display pixels without downloading the GPU depth buffer. */
+GLAPI GLboolean GLAPIENTRY
+OSMesaBleskResolveColor(OSMesaContext ctx);
 GLAPI GLuint GLAPIENTRY
 OSMesaBleskGPUSurface(OSMesaContext ctx);
 GLAPI const char * GLAPIENTRY

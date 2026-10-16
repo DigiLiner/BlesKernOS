@@ -1,0 +1,33 @@
+{
+  "result": "PASS",
+  "runs": [
+    {
+      "run": 0,
+      "rounds": 1000,
+      "us": 2610000,
+      "waits_main": 964,
+      "waits_peer": 967,
+      "wakes_main": 967,
+      "wakes_peer": 964
+    },
+    {
+      "run": 1,
+      "rounds": 1000,
+      "us": 3760000,
+      "waits_main": 997,
+      "waits_peer": 994,
+      "wakes_main": 994,
+      "wakes_peer": 997
+    },
+    {
+      "run": 2,
+      "rounds": 1000,
+      "us": 2766667,
+      "waits_main": 972,
+      "waits_peer": 985,
+      "wakes_main": 985,
+      "wakes_peer": 972
+    }
+  ],
+  "path_lookup": []
+}

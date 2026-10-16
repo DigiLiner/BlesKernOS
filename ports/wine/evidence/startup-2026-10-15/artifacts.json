@@ -1,0 +1,12 @@
+{
+  "image": "build/bleskernos-wine-responsive.img",
+  "base_image": "build/bleskernos-wine-performance.img",
+  "kernel_sha256": "9f7be7cb4ba457b951f58df8eae5d6a2337ae252bfeef9effd83e9e9172e2b96",
+  "stage2_sha256": "74f16cbd46a57e93afecc273d275cc5e98e79705f399d5e42b9dd2f90d06da73",
+  "image_sha256": "c1a035ae6d9677b2665cacc79559eba2f8aea5d0d11d877852960a1099397f77",
+  "base_image_sha256": "a9ae2b555eb8eb4bff76fc0f652fcfc22eb8f183b21a2bfba1dc4ac5062bdca2",
+  "filesystem_sha256": "1798f654c088715d674e3994a61d1531af7594cc8b8e939f2238f2c55816522f",
+  "mbr_sha256": "5006b5ff0da347cf48146e7afc76282f25611247abbcda8acb6577592ed1ac8c",
+  "filesystem_and_mbr_identical_to_base": true,
+  "only_installed_changes": "Stage 2 and kernel boot sectors; no fixtures or test launcher"
+}

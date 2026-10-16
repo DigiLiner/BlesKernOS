@@ -1,0 +1,7 @@
+test: /tmp/bk-pager-ranges-1bwzveb2/test.c:116: main: Assertion `pager_pin(1,0xfffff000U,1,false)' failed.
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/test_pager_ranges.py", line 102, in <module>
+    subprocess.run([str(binary), case], check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/tmp/bk-pager-ranges-1bwzveb2/test', 'pin']' died with <Signals.SIGABRT: 6>.

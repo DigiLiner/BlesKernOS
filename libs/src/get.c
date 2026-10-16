@@ -1,12 +1,13 @@
 #include "msghandling.h"
 #include "zgl.h"
+#include "../tinygl/license_text.h"
 
 #define xstr(s) str(s)
 #define str(s) #s
 
 /* clang-format off */
 const GLubyte *license_string =
-    (const GLubyte *) ""; /* will be generated automatically */
+    (const GLubyte *) BK_TINYGL_LICENSE_TEXT;
 const GLubyte *vendor_string = (const GLubyte *) "Fabrice Bellard et alia.";
 const GLubyte *renderer_string = (const GLubyte *) "TinyGL";
 const GLubyte* version_string = (const GLubyte*)"" xstr(TINYGL_VERSION) " TinyGLv" xstr(TINYGL_VERSION) " "

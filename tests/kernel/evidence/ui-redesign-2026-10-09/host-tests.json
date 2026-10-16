@@ -1,0 +1,11 @@
+{
+  "test_admin.py": true,
+  "test_event_filter.py": true,
+  "test_gui_content.py": true,
+  "test_native_api_abi.py": true,
+  "test_process_graph_layout.py": true,
+  "test_process_menu_target.py": true,
+  "test_process_priority.py": true,
+  "test_scrollbar_domains.py": true,
+  "test_upcall_cleanup.py": true
+}

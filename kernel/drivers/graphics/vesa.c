@@ -434,6 +434,7 @@ const bk_driver_module_t *bleskernos_driver_query(void) {
     static const bk_driver_module_t module = {
         BK_DRIVER_ABI_VERSION,
         sizeof(bk_driver_module_t),
+        1U, 0U,
         "vesa",
         "Framebuffer lineal VESA y Bochs VBE",
         vesa_driver_init,

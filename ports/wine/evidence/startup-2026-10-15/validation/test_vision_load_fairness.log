@@ -1,0 +1,1 @@
+PASS actual frame entry announces a waiting desktop only across lock acquisition; no wait on rejected/nested entry, offline service or replacement owner

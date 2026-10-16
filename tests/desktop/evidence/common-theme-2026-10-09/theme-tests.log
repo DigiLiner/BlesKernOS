@@ -1,0 +1,6 @@
+PASS compact client allocation, nonzero origins, RGB332/full-color capture, slot exclusion and retained-buffer reuse
+PASS caller-owned scrollbar helpers avoid GUI/GFX inversion; window mutations remain guarded
+PASS 1..16 CPU panels remain separated and above the window midpoint
+PASS shell menus above windows, delayed geometry publication, damage clipping, closed-menu cleanup, bounded overlays and screensaver order
+PASS process, service, startup and event actions retain the menu's original target
+PASS strict process filter, empty results, source/severity/search and scroll anchoring

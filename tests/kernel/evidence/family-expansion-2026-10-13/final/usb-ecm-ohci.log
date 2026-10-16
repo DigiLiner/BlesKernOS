@@ -1,0 +1,25 @@
+/SYSTEM/PROGRAMS/GFXALLOC.ELF 8812 bytes; mode 0o100755
+/SYSTEM/PROGRAMS/RAMTEST.BEX 1528 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/STARTUP.INI 77 bytes; mode 0o100755
+{
+  "ram_mib": 64,
+  "backend": "std",
+  "desktop_started": true,
+  "completed": true,
+  "kernel_sha256": null,
+  "wine_boot_started": false,
+  "smoke_pass": true,
+  "memory": {
+    "DESKTOP": {
+      "installed_kib": 65023,
+      "managed_kib": 61312,
+      "used_kib": 11344,
+      "free_kib": 49967,
+      "unmanaged_kib": 3711,
+      "heap_used_kib": 11216,
+      "heap_free_kib": 34767,
+      "vm_free_kib": 15200
+    }
+  },
+  "depths": []
+}

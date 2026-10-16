@@ -1,0 +1,88 @@
+{
+  "image": "build/bleskernos-ata-user.img",
+  "backup": "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/bleskernos-ata-user.before-swapfile-20261011-033920.img",
+  "swap_file": "/SYSTEM/SWAP.BKS",
+  "swap_mib": 32,
+  "disks_required": 1,
+  "preserved_existing_inodes": 5542,
+  "kernel_sha256": "dd4e5110e65a3e0ace7babbfce5ca3212e9567dc62c4ce23eaa49699dc714965",
+  "guest_pressure": [
+    {
+      "path": "tests/kernel/evidence/swapfile-final16/16m-std-smoke-swap-file",
+      "result": {
+        "ram_mib": 16,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 15871,
+            "managed_kib": 12160,
+            "used_kib": 8271,
+            "free_kib": 3888,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 8267,
+            "heap_free_kib": 2868,
+            "vm_free_kib": 1020
+          },
+          "IDLE": {
+            "installed_kib": 15871,
+            "managed_kib": 12160,
+            "used_kib": 10352,
+            "free_kib": 1807,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 10348,
+            "heap_free_kib": 787,
+            "vm_free_kib": 1020
+          }
+        },
+        "depths": []
+      },
+      "counters": "[SWAPTEST] child=0 resident=0 swapped=0 slots_used=0 out=15687 in=11817 faults=14090 errors=0"
+    },
+    {
+      "path": "tests/kernel/evidence/swapfile-final-smp/32m-std-smoke-swap-file",
+      "result": {
+        "ram_mib": 32,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 8946,
+            "free_kib": 19597,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 8942,
+            "heap_free_kib": 17553,
+            "vm_free_kib": 2044
+          },
+          "IDLE": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 13322,
+            "free_kib": 15221,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 13318,
+            "heap_free_kib": 13177,
+            "vm_free_kib": 2044
+          }
+        },
+        "depths": []
+      },
+      "counters": "[SWAPTEST] child=0 resident=0 swapped=0 slots_used=0 out=14817 in=11203 faults=13732 errors=0"
+    }
+  ],
+  "installed_image_verification": {
+    "ram_mib": 16,
+    "desktop_started": true,
+    "swap_file_validated": true,
+    "disks": 1,
+    "heap_oom": false,
+    "seconds_after_ready": 20,
+    "snapshot": true
+  }
+}

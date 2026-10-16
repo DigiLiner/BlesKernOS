@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-13",
+  "change": "One source per Ethernet/audio chip family; common safe runtime retained",
+  "host_executables": 12,
+  "qemu_tests": [
+    {
+      "path": "64m-std-smoke-audio-rtl8139/result.json",
+      "pass": true
+    },
+    {
+      "path": "64m-std-smoke-network-e1000/result.json",
+      "pass": true
+    },
+    {
+      "path": "64m-std-smoke-network-ne2k_pci/result.json",
+      "pass": true
+    },
+    {
+      "path": "64m-std-smoke-network-pcnet/result.json",
+      "pass": true
+    },
+    {
+      "path": "64m-std-smoke-network-tulip/result.json",
+      "pass": true
+    }
+  ],
+  "module_sha256": {
+    "E1000": "644cb65fb76fa1cb57c305452e60627eee63b4f42f3f5d09e75dd687dee594dd",
+    "PCNET": "ea3268583183611fb77d7741edc946a1db00d860ba8fc29af89c762ec06c86ae",
+    "NE2KPCI": "376d90696906962543de0c96af8dfd721922884365300c77e9677f80472ccb3b",
+    "TULIP": "17b977b420e22a35faf2b3cf356bad61b5834299a6ae2b146f0daa472f4156e5",
+    "RHINE": "bf31c8c0c14fc90d455df0becf74867768c05d2b2ccc348591a74b0b4080205e",
+    "SIS900": "26f52e678dae4730a199bcb91dfa9f75c220c2efeb6c92852295133111808885",
+    "NATSEMI": "827552b5a18e2ef4cfaff4f0c88af2ae1db0ab63bf0c999b6e40dcfab1a84ee8",
+    "RTL8169": "2794dfbbde120925a7c197295ac20b9c511e128c60e0b59f6836c35cc6bcbae0",
+    "ES1370": "b4cf49beeaa79d3fa73f9304d3815f33305ce476e3c85d786da81d8e87088e68",
+    "CMIPCI": "a6217e05179d9f97f48733861a25f0aa2c31168155bd99675478c43985d31ed7",
+    "VIA686": "93bc9628790305d460647cdf0f63f90827c9d2f406b7974161be2d98e82aba9f",
+    "CS4281": "7b343142d9163151637251caeb84fa2d55684796373e46a1a906f678fce00314"
+  },
+  "compatibility_change": false
+}

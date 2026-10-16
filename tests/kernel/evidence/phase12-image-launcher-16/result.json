@@ -1,0 +1,12 @@
+{
+  "ram_mib": 16,
+  "launcher": "tools/run_16mb.sh",
+  "image": "build/bleskernos-ata-user.img",
+  "swap_image": "build/bleskernos-swap-32m.img",
+  "desktop_started": true,
+  "seconds_after_ready": 20,
+  "unresolved_symbols": false,
+  "heap_oom": false,
+  "swap_validated": true,
+  "snapshot": true
+}

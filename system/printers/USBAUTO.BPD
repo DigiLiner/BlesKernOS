@@ -1,0 +1,7 @@
+[Printer]
+Id=USBAUTO
+Name=USB capability-selected printer
+Language=AUTO
+Transport=LPT
+Port=USBPRN1
+DPI=300

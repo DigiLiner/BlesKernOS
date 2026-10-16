@@ -1,4 +1,6 @@
+#include "../sdk/include/bleskernos_theme.h"
 #include "../kernel/include/api.h"
+#include "../sdk/include/bleskernos_print.h"
 #include <string.h>
 
 #define EDIT_CAPACITY      4096
@@ -391,7 +393,7 @@ static void editor_content(gui_window_t *window UNUSED,
     if (has_selection) editor_selection_bounds(st, &sel_start, &sel_end);
 
     bk_gui_gfx_fill_rect(surface, layout.text_rect, 0x00FFFDF4);
-    bk_gui_gfx_draw_rect(surface, layout.text_rect, 0x00808078);
+    bk_gui_gfx_draw_rect(surface, layout.text_rect, BK_THEME_SHADOW);
 
     for (int row = 0; row < layout.visible_rows; row++) {
         uint32_t start;
@@ -416,7 +418,7 @@ static void editor_content(gui_window_t *window UNUSED,
                 bk_gui_gfx_fill_rect(surface,
                                   (gui_rect_t){cell_x, line_y,
                                                EDIT_CHAR_ADVANCE, 9},
-                                  0x002E6FD5);
+                                  BK_THEME_SELECTION);
             }
 
             bk_gui_font_draw_char(surface, cell_x, line_y, st->text[index],
@@ -445,11 +447,11 @@ static void editor_content(gui_window_t *window UNUSED,
         bk_gui_scrollbar_paint_vertical(surface, &scrollbar);
     }
 
-    bk_gui_gfx_fill_rect(surface, layout.status_rect, 0x00D0D0C8);
+    bk_gui_gfx_fill_rect(surface, layout.status_rect, BK_THEME_FACE);
     bk_gui_gfx_fill_rect(surface,
                       (gui_rect_t){layout.status_rect.x, layout.status_rect.y,
                                    layout.status_rect.w, 1},
-                      0x00808078);
+                      BK_THEME_SHADOW);
     bk_gui_font_draw_string_clipped(surface,
                                  layout.status_rect.x + 4,
                                  layout.status_rect.y + 4,
@@ -458,6 +460,61 @@ static void editor_content(gui_window_t *window UNUSED,
                                               layout.status_rect.y + 1,
                                               layout.status_rect.w - 4,
                                               layout.status_rect.h - 2});
+}
+
+/* Monospaced A4 output; wrapping also fits the HP1020 bitmap font. */
+static bool editor_print_line(bk_print_job_t *job, char *line, uint32_t count,
+                              uint32_t *y) {
+    if (*y > 756U) {
+        if (!print_end_page(job) ||
+            !print_begin_page(job, BK_PRINT_A4_WIDTH_POINTS,
+                              BK_PRINT_A4_HEIGHT_POINTS, 300U) ||
+            !print_set_font(job, BK_PRINT_FONT_MONO, 10U, 0U)) return false;
+        *y = 72U;
+    }
+    line[count] = '\0';
+    if (count && !print_text(job, 72, (int32_t)*y, line)) return false;
+    *y += 14U;
+    return true;
+}
+
+static void editor_print(editor_state_t *st) {
+    if (!st || !st->text) return;
+    if (!st->length) {editor_status(st, "Documento vacio");return;}
+    if (!(bk_sys_capabilities() & BK_API_CAP_PRINT)) {
+        editor_status(st, "Impresion no disponible");return;
+    }
+    bk_print_job_t *job = print_begin(st->path, NULL);
+    if (!job) {editor_status(st, "No se pudo crear la impresion");return;}
+    char line[46];
+    uint32_t used = 0, y = 72U;
+    if (!print_set_font(job, BK_PRINT_FONT_MONO, 10U, 0U)) goto failed;
+    for (uint32_t i = 0; i < st->length; i++) {
+        uint8_t c = (uint8_t)st->text[i];
+        if (c == '\r' || c == '\n') {
+            if (c == '\r' && i + 1U < st->length && st->text[i + 1U] == '\n') i++;
+            if (!editor_print_line(job, line, used, &y)) goto failed;
+            used = 0;
+            continue;
+        }
+        uint32_t repeat = c == '\t' ? 4U - (used & 3U) : 1U;
+        if (c == '\t' || c < 32U) c = ' ';
+        while (repeat--) {
+            if (used == 45U) {
+                if (!editor_print_line(job, line, used, &y)) goto failed;
+                used = 0;
+            }
+            line[used++] = (char)c;
+        }
+    }
+    if (used && !editor_print_line(job, line, used, &y)) goto failed;
+    /* Submission consumes job, including on failure. */
+    editor_status(st, print_submit(job) ? "Impresion enviada a la cola" :
+                                        "No se pudo enviar a la cola");
+    return;
+failed:
+    print_cancel(job);
+    editor_status(st, "No se pudo preparar la impresion");
 }
 
 static void editor_file_menu(gui_window_t *window UNUSED, uint32_t item_id,
@@ -479,6 +536,8 @@ static void editor_file_menu(gui_window_t *window UNUSED, uint32_t item_id,
             editor_status(st, "@H61578F1C");
         else
             editor_status(st, "@H2E377FEC");
+    } else if (item_id == 3) {
+        editor_print(st);
     }
     if (st->window) st->window->dirty = true;
 }
@@ -719,6 +778,8 @@ static void editor_main(void *argument) {
         bk_gui_add_menu_item(st->window, file_menu, 1, "@HA4C4AF58",
                                  editor_file_menu, st);
         bk_gui_add_menu_item(st->window, file_menu, 2, "@H291705DD",
+                                 editor_file_menu, st);
+        bk_gui_add_menu_item(st->window, file_menu, 3, "Imprimir",
                                  editor_file_menu, st);
         (void)bk_gui_add_menu(st->window, "@HC2C76CB1");
         (void)bk_about_attach(st->window, st->desktop, &(bk_about_info_t){

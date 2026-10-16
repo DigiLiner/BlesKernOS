@@ -1,0 +1,727 @@
+{
+  "environment": {
+    "host_cpu": "Intel Celeron N4020, 2 cores",
+    "host_gpu": "Intel UHD Graphics 600 (GLK 2)",
+    "guest_cpus": 2,
+    "guest_ram_mib": 1536,
+    "wine": "11.0",
+    "gallium": "24.3.4",
+    "qemu": "8.2.2",
+    "vmware": "Workstation 26",
+    "qemu_display": "SDL/OpenGL",
+    "game_renderer": "dx6",
+    "game_size": [
+      640,
+      480
+    ]
+  },
+  "benchmarks": {
+    "qemu_before": [
+      {
+        "phase": "render",
+        "size": "320x240",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.3845154820000971,
+        "host_presentations_per_second": 62.41621241142623,
+        "guest_microseconds": 356667
+      },
+      {
+        "phase": "present",
+        "size": "320x240",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 1.0223661840000204,
+        "host_presentations_per_second": 23.47495484064203,
+        "guest_microseconds": 983333
+      },
+      {
+        "phase": "render",
+        "size": "320x240",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.2844109819998266,
+        "host_presentations_per_second": 84.38492716154903,
+        "guest_microseconds": 246667
+      },
+      {
+        "phase": "present",
+        "size": "320x240",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.8752679179997358,
+        "host_presentations_per_second": 27.4201755901754,
+        "guest_microseconds": 843333
+      },
+      {
+        "phase": "render",
+        "size": "320x240",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.29129385499982163,
+        "host_presentations_per_second": 82.39102743864849,
+        "guest_microseconds": 260000
+      },
+      {
+        "phase": "present",
+        "size": "320x240",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.6971004239994727,
+        "host_presentations_per_second": 34.42832506442164,
+        "guest_microseconds": 660000
+      },
+      {
+        "phase": "render",
+        "size": "640x480",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.29169428500063077,
+        "host_presentations_per_second": 82.27792327144188,
+        "guest_microseconds": 263333
+      },
+      {
+        "phase": "present",
+        "size": "640x480",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.9869900260000577,
+        "host_presentations_per_second": 24.316355148252125,
+        "guest_microseconds": 950000
+      },
+      {
+        "phase": "render",
+        "size": "640x480",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.27125246200012043,
+        "host_presentations_per_second": 88.4784595982371,
+        "guest_microseconds": 233333
+      },
+      {
+        "phase": "present",
+        "size": "640x480",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 1.6739626449998468,
+        "host_presentations_per_second": 14.337237495524995,
+        "guest_microseconds": 1636666
+      },
+      {
+        "phase": "render",
+        "size": "640x480",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.32389733100080775,
+        "host_presentations_per_second": 74.09755407938248,
+        "guest_microseconds": 293333
+      },
+      {
+        "phase": "present",
+        "size": "640x480",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 1.020295070999964,
+        "host_presentations_per_second": 23.522607020416395,
+        "guest_microseconds": 990000
+      },
+      {
+        "phase": "render",
+        "size": "1024x768",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.2929688120002538,
+        "host_presentations_per_second": 81.91998266347616,
+        "guest_microseconds": 256666
+      },
+      {
+        "phase": "present",
+        "size": "1024x768",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 1.168500660999598,
+        "host_presentations_per_second": 20.539141141323032,
+        "guest_microseconds": 1123333
+      },
+      {
+        "phase": "render",
+        "size": "1024x768",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.3471030159998918,
+        "host_presentations_per_second": 69.14373800776045,
+        "guest_microseconds": 320000
+      },
+      {
+        "phase": "present",
+        "size": "1024x768",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 1.2480393470004856,
+        "host_presentations_per_second": 19.23016294132164,
+        "guest_microseconds": 1223334
+      },
+      {
+        "phase": "render",
+        "size": "1024x768",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.3968297290002738,
+        "host_presentations_per_second": 60.47933974216796,
+        "guest_microseconds": 366667
+      },
+      {
+        "phase": "present",
+        "size": "1024x768",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 1.2976479890003247,
+        "host_presentations_per_second": 18.49500034172518,
+        "guest_microseconds": 1273334
+      }
+    ],
+    "qemu_after": [
+      {
+        "phase": "render",
+        "size": "320x240",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.4159904710004412,
+        "host_presentations_per_second": 57.69362923694121,
+        "guest_microseconds": 373333
+      },
+      {
+        "phase": "present",
+        "size": "320x240",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.4164030609999827,
+        "host_presentations_per_second": 57.63646391639037,
+        "guest_microseconds": 376667
+      },
+      {
+        "phase": "render",
+        "size": "320x240",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.2904188950005846,
+        "host_presentations_per_second": 82.63925114084498,
+        "guest_microseconds": 260000
+      },
+      {
+        "phase": "present",
+        "size": "320x240",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.15788130500004627,
+        "host_presentations_per_second": 152.01293148668213,
+        "guest_microseconds": 133334
+      },
+      {
+        "phase": "render",
+        "size": "320x240",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.3004807700008314,
+        "host_presentations_per_second": 79.87199979530668,
+        "guest_microseconds": 276666
+      },
+      {
+        "phase": "present",
+        "size": "320x240",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.39238457300052687,
+        "host_presentations_per_second": 61.1644841602062,
+        "guest_microseconds": 353334
+      },
+      {
+        "phase": "render",
+        "size": "640x480",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.24361726700044528,
+        "host_presentations_per_second": 98.51518447563954,
+        "guest_microseconds": 216666
+      },
+      {
+        "phase": "present",
+        "size": "640x480",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.4109931479997613,
+        "host_presentations_per_second": 58.3951341203721,
+        "guest_microseconds": 376667
+      },
+      {
+        "phase": "render",
+        "size": "640x480",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.29793427499953395,
+        "host_presentations_per_second": 80.5546793836914,
+        "guest_microseconds": 253334
+      },
+      {
+        "phase": "present",
+        "size": "640x480",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.8898453210003936,
+        "host_presentations_per_second": 26.970979600160625,
+        "guest_microseconds": 830000
+      },
+      {
+        "phase": "render",
+        "size": "640x480",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.2705015629999252,
+        "host_presentations_per_second": 88.72407143912375,
+        "guest_microseconds": 246666
+      },
+      {
+        "phase": "present",
+        "size": "640x480",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.9848679229999107,
+        "host_presentations_per_second": 24.36874979834446,
+        "guest_microseconds": 950000
+      },
+      {
+        "phase": "render",
+        "size": "1024x768",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.3549247720002313,
+        "host_presentations_per_second": 67.61996313963782,
+        "guest_microseconds": 313333
+      },
+      {
+        "phase": "present",
+        "size": "1024x768",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.6235895979998531,
+        "host_presentations_per_second": 38.486851090812536,
+        "guest_microseconds": 593333
+      },
+      {
+        "phase": "render",
+        "size": "1024x768",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.27404593099981867,
+        "host_presentations_per_second": 87.57656029571146,
+        "guest_microseconds": 246667
+      },
+      {
+        "phase": "present",
+        "size": "1024x768",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.5616074570007186,
+        "host_presentations_per_second": 42.73447530090273,
+        "guest_microseconds": 523333
+      },
+      {
+        "phase": "render",
+        "size": "1024x768",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.32714580099946033,
+        "host_presentations_per_second": 73.36178525500803,
+        "guest_microseconds": 286666
+      },
+      {
+        "phase": "present",
+        "size": "1024x768",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.5926415469994026,
+        "host_presentations_per_second": 40.496654548629195,
+        "guest_microseconds": 566667
+      }
+    ],
+    "vmware_before": [
+      {
+        "phase": "render",
+        "size": "320x240",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.27404157599994505,
+        "host_presentations_per_second": 87.57795204040431,
+        "guest_microseconds": 273334
+      },
+      {
+        "phase": "present",
+        "size": "320x240",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.1353486919997522,
+        "host_presentations_per_second": 177.3197778671104,
+        "guest_microseconds": 136667
+      },
+      {
+        "phase": "render",
+        "size": "320x240",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.13654825699995854,
+        "host_presentations_per_second": 175.76203847118524,
+        "guest_microseconds": 126667
+      },
+      {
+        "phase": "present",
+        "size": "320x240",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.14647451499968156,
+        "host_presentations_per_second": 163.85102896604351,
+        "guest_microseconds": 150000
+      },
+      {
+        "phase": "render",
+        "size": "320x240",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.2436308120004469,
+        "host_presentations_per_second": 98.50970738445011,
+        "guest_microseconds": 236666
+      },
+      {
+        "phase": "present",
+        "size": "320x240",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.19140472699928068,
+        "host_presentations_per_second": 125.38875280802336,
+        "guest_microseconds": 193333
+      },
+      {
+        "phase": "render",
+        "size": "640x480",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.23313087999940763,
+        "host_presentations_per_second": 102.9464650931742,
+        "guest_microseconds": 233333
+      },
+      {
+        "phase": "present",
+        "size": "640x480",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.26145669400011684,
+        "host_presentations_per_second": 91.79340422620534,
+        "guest_microseconds": 260000
+      },
+      {
+        "phase": "render",
+        "size": "640x480",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.25544510200052173,
+        "host_presentations_per_second": 93.95365114478093,
+        "guest_microseconds": 256667
+      },
+      {
+        "phase": "present",
+        "size": "640x480",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.265485267999793,
+        "host_presentations_per_second": 90.40049634700902,
+        "guest_microseconds": 263333
+      },
+      {
+        "phase": "render",
+        "size": "640x480",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.29452398699959303,
+        "host_presentations_per_second": 81.48742058158123,
+        "guest_microseconds": 286667
+      },
+      {
+        "phase": "present",
+        "size": "640x480",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.30861399700006586,
+        "host_presentations_per_second": 77.76704956125135,
+        "guest_microseconds": 306666
+      },
+      {
+        "phase": "render",
+        "size": "1024x768",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.46939051100071083,
+        "host_presentations_per_second": 51.13013458417282,
+        "guest_microseconds": 466666
+      },
+      {
+        "phase": "present",
+        "size": "1024x768",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.46225901400066505,
+        "host_presentations_per_second": 51.91894429984111,
+        "guest_microseconds": 443333
+      },
+      {
+        "phase": "render",
+        "size": "1024x768",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.421463195000797,
+        "host_presentations_per_second": 56.94447411939402,
+        "guest_microseconds": 423333
+      },
+      {
+        "phase": "present",
+        "size": "1024x768",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.4769193379997887,
+        "host_presentations_per_second": 50.32297516107563,
+        "guest_microseconds": 473334
+      },
+      {
+        "phase": "render",
+        "size": "1024x768",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.4710772819998965,
+        "host_presentations_per_second": 50.94705458541996,
+        "guest_microseconds": 466667
+      },
+      {
+        "phase": "present",
+        "size": "1024x768",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.5093080460001147,
+        "host_presentations_per_second": 47.12275839442481,
+        "guest_microseconds": 496667
+      }
+    ],
+    "vmware_after": [
+      {
+        "phase": "render",
+        "size": "320x240",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.22500945799947658,
+        "host_presentations_per_second": 106.66218306279298,
+        "guest_microseconds": 220000
+      },
+      {
+        "phase": "present",
+        "size": "320x240",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.12692754099953163,
+        "host_presentations_per_second": 189.08425871173665,
+        "guest_microseconds": 116667
+      },
+      {
+        "phase": "render",
+        "size": "320x240",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.14707728699977451,
+        "host_presentations_per_second": 163.17951255136217,
+        "guest_microseconds": 146667
+      },
+      {
+        "phase": "present",
+        "size": "320x240",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.16730062700025883,
+        "host_presentations_per_second": 143.45433385592077,
+        "guest_microseconds": 166666
+      },
+      {
+        "phase": "render",
+        "size": "320x240",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.17825749500025267,
+        "host_presentations_per_second": 134.63669507958687,
+        "guest_microseconds": 166667
+      },
+      {
+        "phase": "present",
+        "size": "320x240",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.20401415200012707,
+        "host_presentations_per_second": 117.63889791324404,
+        "guest_microseconds": 200000
+      },
+      {
+        "phase": "render",
+        "size": "640x480",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.24240077300055418,
+        "host_presentations_per_second": 99.00958525386027,
+        "guest_microseconds": 233333
+      },
+      {
+        "phase": "present",
+        "size": "640x480",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.2215756979994694,
+        "host_presentations_per_second": 108.31512759155325,
+        "guest_microseconds": 216666
+      },
+      {
+        "phase": "render",
+        "size": "640x480",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.2864657129994157,
+        "host_presentations_per_second": 83.77965987171719,
+        "guest_microseconds": 283333
+      },
+      {
+        "phase": "present",
+        "size": "640x480",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.27570751900020696,
+        "host_presentations_per_second": 87.04876851756076,
+        "guest_microseconds": 266666
+      },
+      {
+        "phase": "render",
+        "size": "640x480",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.27567088500018144,
+        "host_presentations_per_second": 87.06033645876025,
+        "guest_microseconds": 270000
+      },
+      {
+        "phase": "present",
+        "size": "640x480",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.3006939869992493,
+        "host_presentations_per_second": 79.81536391700415,
+        "guest_microseconds": 296666
+      },
+      {
+        "phase": "render",
+        "size": "1024x768",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.4785672749994774,
+        "host_presentations_per_second": 50.14968898578827,
+        "guest_microseconds": 480000
+      },
+      {
+        "phase": "present",
+        "size": "1024x768",
+        "batches": 1,
+        "frames": 24,
+        "host_seconds": 0.48773393300052703,
+        "host_presentations_per_second": 49.20715655839773,
+        "guest_microseconds": 466667
+      },
+      {
+        "phase": "render",
+        "size": "1024x768",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.44561575899933814,
+        "host_presentations_per_second": 53.85805936013956,
+        "guest_microseconds": 450000
+      },
+      {
+        "phase": "present",
+        "size": "1024x768",
+        "batches": 128,
+        "frames": 24,
+        "host_seconds": 0.4915350569999646,
+        "host_presentations_per_second": 48.826629267262476,
+        "guest_microseconds": 483333
+      },
+      {
+        "phase": "render",
+        "size": "1024x768",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.47122162799951184,
+        "host_presentations_per_second": 50.93144833331984,
+        "guest_microseconds": 476666
+      },
+      {
+        "phase": "present",
+        "size": "1024x768",
+        "batches": 1024,
+        "frames": 24,
+        "host_seconds": 0.49583656400045584,
+        "host_presentations_per_second": 48.40304596814271,
+        "guest_microseconds": 496667
+      }
+    ]
+  },
+  "limits": [
+    "Synthetic benchmark measures GLX/X11 completion, not native screen scanout or game FPS.",
+    "24 measured frames per phase, four warmups, one execution per configuration; host scheduling makes short phases variable.",
+    "Game scenes/cameras are not identical across runs; no deterministic replay or full-match certification.",
+    "TinyX polls native presentation at 33 ms, roughly 30 Hz.",
+    "Wine Linux tasks currently share scheduler CPU1; native desktop runs separately.",
+    "VMware currently exposes classic GL 1.2, Mesa 3.5, no GLSL; Wine 11 FIFA2000 failed. A programmable Gallium SVGA backend is still required.",
+    "Virtual desktop 640x480 was rejected because keyboard input failed; it is not enabled by default.",
+    "GPU wait tests use deliberately delayed completions; waits remain for readback, public fences and resource reuse."
+  ],
+  "game_noaudio_before_tinyx": {
+    "host_seconds": 44.38733556999978,
+    "delta": {
+      "frames": 436,
+      "elapsed_us": 44393334,
+      "resolve_us": 4160008,
+      "present_us": 4636662,
+      "copy_us": 2016673
+    },
+    "host_presentations_per_second": 9.822621574399722,
+    "audio_device": false,
+    "window_scaled": true,
+    "serial": "fifa-match-noaudio.log",
+    "samples": "fifa-match-noaudio-wall.json"
+  },
+  "local_checks": {
+    "virgl_transport": "PASS",
+    "virgl_ranges": "PASS",
+    "virgl_async": "PASS",
+    "svga_vertex_ring": "PASS",
+    "glx_present": "PASS",
+    "tinyx_bilinear": "PASS",
+    "mesa_gpu_state": "PASS",
+    "wine_app_defaults": "PASS",
+    "audio_bridge": "PASS"
+  },
+  "rejected_runs": [
+    "tinyx-first-fence-failed",
+    "audio-host-fence-failed",
+    "noaudio-repeat-fence-failed"
+  ],
+  "audio_validation": "Failed host fence; no certified match with sound",
+  "checkpoint": {
+    "status": "stopped_at_user_request",
+    "user_image_updated_this_round": false,
+    "installed_files_hashes_preserved": 63,
+    "tinyx_fast_bilinear": "experimental; disabled at compile time by default; packaged binary restored",
+    "normal_check_image": "experimental candidate built before TinyX rollback; not a released image",
+    "host_fence_issue": "unresolved; failed trials excluded",
+    "vmware_fifa": "not working with the current GL 1.2 backend"
+  }
+}

@@ -1,0 +1,309 @@
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=1572351 KiB top=1572736 KiB
+  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000
+  [MM] RAM usable: 1536 MB
+  [MM] Heap dinamico: 0x2000000 - 0x1ffe0000 (491392 KB)
+  [MM] VM frames: 0x1ffe0000 - 0x5ffe0000 (1048576 KiB, 262144 paginas)
+  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)
+  [MM] Vista PE fija: 0x400000 - 0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2000000-0x1ffe0000
+[COMPAT] perfil=normal RAM_top=1572736 KiB heap=491392 KiB tareas=128 CPU=fam6/mod122 GUI=60FPS TIMER=300Hz
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:EARLY] BIOS LFB 800x600x32 pitch=3200 fb=0xfd000000
+[BKBOOT t=0] STARTING KERNEL
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 6 dispositivos detectados
+  [LPT] LPT1 base=0x0378 status=0xD9 listo
+  [ATA] ata0: 1572864 sectores de 512 bytes
+  [ATA] ata0: read burst=16 sectores
+  [ATA] ata0: PIO read width=32 bits
+[ATA:PROBE] io=0x1f0 slave=1 ausente (status=0x0)
+  [ATAPI] cd0: unidad detectada sin medio listo
+[ATA:PROBE] io=0x170 slave=1 ausente (status=0x0)
+  [ATA] canales IDE normalizados despues del probe
+  [ATA] ata0: QEMU PIIX DMA read/write enabled
+[BKBOOT t=425] STORAGE DRIVERS
+[BKBOOT t=426] MOUNTING FILESYSTEM
+[BKBOOT t=426] F8: RECOVERY MODE (2 SEC)
+[BOOT] Pulse F8 para entrar a recovery sin Vision ni servicios
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=2
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 2
+[FAT] dev[0]=ata0 tipo=1 sectores=1572864
+[FAT] dev[1]=cd0 tipo=3 sectores=0
+Intentando montar ata0...
+fat_set_active(ata0)
+No es particion, buscando ata0
+Dispositivo encontrado
+[BFS4:CACHE] slots=2048 bytes=8429568
+fat_try_mount_device OK
+fat_set_active OK
+Montado ata0 OK
+[VFS] /TEMP listo
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=6 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+[DVR] /SYSTEM/DRIVERS/USBCLASS.DVR: ERROR: init del driver fallo
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado
+[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo
+[SVGA.DVR] dispositivo 15AD:0405 no detectado
+[DVR] /SYSTEM/DRIVERS/VMWARESVGA.DVR: ERROR: init del driver fallo
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 9 modulo(s) cargado(s)
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA OK mode=800x600x32 pitch=3200 fb=0xfd000000
+.[GFXRES] boot icons 9/9 precargados
+[BKBOOT t=2327] LOADING PRINT SERVICE
+[PRINT] spooler iniciado en segundo plano, pid=4
+[BKBOOT t=2338] STARTING VISION
+[BKBOOT t=2339] VISION: LOADING ELF
+[VISION] servicio lanzado pid=5
+[BKBOOT t=2361] VISION: ENTER RING3
+[PRINT] PrintSpool Ring 3 listo
+[VISION] ownership grafico adquirido pid=5
+[BKBOOT t=2382] VISION: GRAPHICS ENGINE
+[BKBOOT t=2389] PREPARING DESKTOP
+[BKBOOT t=2390] VISION: ENGINE READY
+[BKBOOT t=2392] VISION: DESKTOP
+[BKBOOT t=2392] LOADING DESKTOP ICONS
+[BKBOOT t=2393] ICONPAK preload begin
+[BKBOOT t=2394] LOADING ICON CACHE
+[BKBOOT t=2402] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPR/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=2413] DESKMANAGER read desktop config
+[BKBOOT t=2413] DESKMANAGER desktop config loaded
+[BKBOOT t=2414] VISION: DESKBAR
+[DESKBAR] alloc state bytes=17116
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[BKBOOT t=2783] VISION: SCREENSAVER
+[BKBOOT t=2798] VISION: START SHELL
+[BKBOOT t=2799] VISION: READY
+[VISION] [BKBOOT t=2801] kernel_main: Vision READY
+[RAM:DESKTOP] installed_kib=1572351 managed_kib=1441664 used_kib=21126 free_kib=1420537 unmanaged_kib=130686 heap_used_kib=20998 heap_free_kib=437625 vm_free_kib=982912
+[SMP] escritorio listo; iniciando procesadores secundarios
+READY: motor, escritorio y compositor bajo Vision
+[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000
+[SMP] iniciando CPU1 APIC=1...
+[SMP] CPU1 online
+[SMP] 2/2 CPU(s) online; timer LAPIC=499566 cuentas/tick
+[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (122 slots libres)
+[S[VISION:SAVER] Ring 3 worker started
+MP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI
+[BKBOOT] VISION ONLINE pid=5
+[WINE:BOOT] deferred until Windows program launch
+[BKBOOT t=3087] DISABLE SPLASH / ENTER GUI
+[BKBOOT] DESKTOP RELEASED[VISION:ENGINE] compositor y ventanas CPL=3
+
+[BKBOOT] QUEUE STARTUP SOUND
+[RAM:IDLE] installed_kib=1572351 managed_kib=1441664 used_kib=25566 free_kib=1416097 unmanaged_kib=130686 heap_used_kib=25438 heap_free_kib=433185 vm_free_kib=982912
+[GATE:A] registros/ENOSYS/old_mmap PASS
+[RUNTIMETEST] ABI status=0
+[RUNTIMETEST] starting case=1
+[GATE:A] glibc real: main alcanzado
+[GATE:A] caso=1 PASS
+[RUNTIMETEST] case=1 status=0
+[RUNTIMETEST] starting case=2
+[GATE:A] glibc real: main alcanzado
+[GATE:A] caso=2 PASS
+[RUNTIMETEST] case=2 status=0
+[RUNTIMETEST] starting case=3
+[GATE:A] caso=3 PASS
+[RUNTIMETEST] case=3 status=0
+[RUNTIMETEST] starting case=4
+[GATE:A] caso=4 PASS
+[RUNTIMETEST] case=4 status=0
+[RUNTIMETEST] starting case=5
+[GATE:A] caso=5 PASS
+[RUNTIMETEST] case=5 status=0
+[RUNTIMETEST] starting case=6
+[THREAD] pthread_exit unwinds cleanup handlers PASS
+[GATE:A] caso=6 PASS
+[RUNTIMETEST] case=6 status=0
+[RUNTIMETEST] starting case=7
+[VM] incremental commits across adjacent VMAs preserve old data PASS
+[VM] growing texture heap preserves 128 incremental commits PASS
+[VM] kernel window rejects reservation and mprotect PASS
+[VM] kernel heap aliases protected; DOS window and hints PASS
+[GATE:A] caso=7 PASS
+[RUNTIMETEST] case=7 status=0
+[RUNTIMETEST] starting case=8
+[GATE:A] glibc real: main alcanzado
+[GATE:A] caso=1 PASS
+[GATE:A] caso=8 PASS
+[RUNTIMETEST] case=8 status=0
+[RUNTIMETEST] starting case=9
+[GATE:A] caso=9 PASS
+[RUNTIMETEST] case=9 status=0
+[RUNTIMETEST] starting case=10
+[GATE:A] caso=10 PASS
+[RUNTIMETEST] case=10 status=0
+[RUNTIMETEST] starting case=11
+[GATE:A] caso=11 PASS
+[RUNTIMETEST] case=11 status=0
+[RUNTIMETEST] starting case=12
+[GATE:A] caso=12 PASS
+[RUNTIMETEST] case=12 status=0
+[RUNTIMETEST] starting case=13
+[GATE:A] caso=13 PASS
+[RUNTIMETEST] case=13 status=0
+[RUNTIMETEST] starting case=14
+[GATE:A] caso=14 PASS
+[RUNTIMETEST] case=14 status=0
+[RUNTIMETEST] starting case=15
+[GATE:A] caso=15 PASS
+[RUNTIMETEST] case=15 status=0
+[RUNTIMETEST] starting case=16
+[GATE:A] caso=16 PASS
+[RUNTIMETEST] case=16 status=0
+[RUNTIMETEST] starting case=17
+[GATE:A] caso=17 PASS
+[RUNTIMETEST] case=17 status=0
+[RUNTIMETEST] starting case=18
+[RANDOM] distinct UUID-sized blocks within one getrandom call PASS
+[GATE:A] caso=18 PASS
+[RUNTIMETEST] case=18 status=0
+[RUNTIMETEST] starting case=19
+[SIGNAL] mascaras, pendientes, contexto, pila anidada, x87/XMM PASS
+[RUNTIMETEST] case=19 status=0
+[RUNTIMETEST] starting case=20
+[LINUX:FUTEX] INVALID pid=37 op=1 addr=0x804c055 val=0x1 flags=0x81 mask=0xffffffff
+[LINUX:FUTEX-ERROR] pid=37 tid=37 addr=0x804c055 op=0x81 value=0x1 result=-22
+[FUTEX] espera real, timeout, WAKE, clear_child_tid, EINTR PASS
+[RUNTIMETEST] case=20 status=0
+[RUNTIMETEST] starting case=21
+[LINUX:EXIT] pid=42 proc=42 ppid=41 name=CASE21.ELF status=1792 thread=0
+[LINUX:EXIT] pid=41 proc=41 ppid=40 name=CASE21.ELF status=9472 thread=0
+[LINUX:EXIT] pid=43 proc=43 ppid=40 name=CASE21.ELF status=15 thread=0
+[LINUX:EXIT] pid=46 proc=46 ppid=40 name=CASE21.ELF status=2304 thread=0
+[LINUX:EXIT] pid=47 proc=47 ppid=40 name=CASE21.ELF status=32512 thread=0
+[GATE:A] registros/ENOSYS/old_mmap PASS
+[GATE:A] registros/ENOSYS/old_mmap PASS
+[FORK] child VM and inherited cache survive parent reap PASS
+[VFORK] memoria compartida, FD separado, exit/exec y posix_spawn PASS
+[FORK] worker thread: TLS, both stacks, private copy, fork and exec PASS
+[FORK] memoria privada, TLS, permisos, FD compartido, wait/status PASS
+[RUNTIMETEST] case=21 status=0
+[RUNTIMETEST] starting case=22
+[EXEC] PID estable, argv/envp, CLOEXEC, acciones/mascara PASS
+[RUNTIMETEST] case=22 status=0
+[RUNTIMETEST] starting case=23
+[IPC] stderr transferido PASS[IPC] delayed read/poll/select, timeout, EOF and EINTR PASS
+[IPC] 56 live pipes, device separation and high-endpoint cycles PASS
+[IPC] 200 descriptors plus fd>=300 poll/select PASS
+[IPC] multi-pair poll/select, deadlines and shutdown EOF PASS
+[IPC] 300000-byte socket frame, ring wrap and backpressure PASS
+[IPC] backpressure, flags compartidos, fork, socketcall, SCM_RIGHTS y ciclos PASS
+[RUNTIMETEST] case=23 status=0
+[RUNTIMETEST] starting case=24
+[UNIX] bind/listen/accept, credenciales, pathname persistente y abstracto PASS
+[RUNTIMETEST] case=24 status=0
+[RUNTIMETEST] starting case=25
+[FS] replace existing hive with rename, preserve open descriptor PASS
+[FS] getdents reports symlink identity and type PASS
+[FS] statfs allocation/truncate/unlink coherency PASS
+[FS] UTF-8 names + statfs case-semantics contract PASS
+[FS:COUNTS] before=47284 allocated=47280 block=4096 expected=4
+[FS] exact free counts across rewrite and shrink PASS
+[FS] grow directory across clusters, enumerate and remove PASS
+[FS] tiny reads, distant offsets, cluster boundary and EOF PASS
+[FS] directorios, *at, cookies, identidades y rename PASS
+[RUNTIMETEST] case=25 status=0
+[RUNTIMETEST] starting case=26
+[ROBUST] muerte del propietario, EOWNERDEAD y recuperacion PASS
+[RUNTIMETEST] case=26 status=0
+[RUNTIMETEST] starting case=27
+[DLOPEN] identidad, referencias, TLS por hilo y recarga PASS
+[RUNTIMETEST] case=27 status=0
+[RUNTIMETEST] starting case=28
+[SHARED] private views stay coherent until write; COW and page permissions PASS
+[SHARED] unlink before mapping preserves contents and removes name PASS
+[SHARED] aliases, offsets, read/write, msync, unlink, fork y futex PASS
+[RUNTIMETEST] case=28 status=0
+[RUNTIMETEST] starting case=29
+[LOCK] identidad, conflicto, split, bloqueo, close/exit y rangos 64-bit PASS
+[RUNTIMETEST] case=29 status=0
+[RUNTIMETEST] starting case=30
+[SYMLINK] relativo, stat/lstat, NOFOLLOW, dangling, unlink PASS
+[REALPATH] readlink de archivo/directorio y realpath glibc PASS
+[RUNTIMETEST] case=30 status=0
+[RUNTIMETEST] starting case=31
+[PRIVATE-CACHE] 100 live images without retained FDs; COW isolation PASS
+[PRIVATE-CACHE] truncate/pending-write/shared-promotion/rename/unlink coherency PASS
+[PRIVATE-CACHE] cache pages released on final unmap and zero FD growth PASS
+[PRIVATE-CACHE] 9 MiB image uses two clean physical pages; closed FD and per-page COW PASS
+[RUNTIMETEST] case=31 status=0
+[RUNTIMETEST] starting case=32
+[FUTEX-MAPPING] private aliases stay separate; wake survives file COW without PRIVATE flag PASS
+[RUNTIMETEST] case=32 status=0
+[RUNTIMETEST] starting case=33
+[MADVISE] actual private RAM release, zero/refault, permissions, holes and shared data PASS
+[RUNTIMETEST] case=33 status=0
+wine-11.0
+[RUNTIMETEST] upstream Wine version status=0
+[RUNTIMETEST] DONE result=PASS

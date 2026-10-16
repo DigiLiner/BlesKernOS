@@ -1,0 +1,72 @@
+[
+  {
+    "path": "build/bleskernos-ata-user.img",
+    "bytes": 805306368,
+    "sha256": "9862b84f5c38b3b60587710722f96076a6cf1a294e9b533d4da1d9d8052e6d0b"
+  },
+  {
+    "path": "build/bleskernos-wine-optimized.img",
+    "bytes": 805306368,
+    "sha256": "4c842872df8d4c7c9a67c126b7fcca6471fbe257ea2900fc7226c34dbbb3180e"
+  },
+  {
+    "path": "build/kernel.bin",
+    "bytes": 837676,
+    "sha256": "742b881f8293a50dd81e13ca149327867b657b586d5c69e50c4e44959967c7d7"
+  },
+  {
+    "path": "build/stage2.bin",
+    "bytes": 4096,
+    "sha256": "a2bd05be5e97546fc72291aed3825b640d1b4d969cb6ccc7a9c83a243449cb22"
+  },
+  {
+    "path": "build/system/services/vision.o",
+    "bytes": 255152,
+    "sha256": "5123817a8ef998ef4ce96f549e62d182cb1a9264aefe0b71cb154f422718dadb"
+  },
+  {
+    "path": "build/system/drivers/PS2MOUSE.DVR",
+    "bytes": 7140,
+    "sha256": "b1a5d5d839de216f5bf255925e92e10e580a2c862f9c69dec8c82b0154ce10a8"
+  },
+  {
+    "path": "build/wine/wine-launch",
+    "bytes": 48100,
+    "sha256": "3c1508144b9a9979ce250fc1549dd720ae091348471d5f629701eadf54213d3d"
+  },
+  {
+    "path": "ports/wine/package/wine-11.0-i386/rootfs/WINEGATE/bin/XFBDEV",
+    "bytes": 818644,
+    "sha256": "bb12bcaf8414797d2ff726cf5e72800005ba2a6e71bcc3bb6950d8e7f566ea3c"
+  },
+  {
+    "path": "kernel/linux/i386_ipc.inc",
+    "bytes": 73763,
+    "sha256": "9caa9faaa9449f93751e5486850d7369d55140a807d047bad92101762d285335"
+  },
+  {
+    "path": "ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesos.c",
+    "bytes": 6994,
+    "sha256": "7c658d8155b5596d2b2b6ccd38a084432d46fbecde291f3d47024bdc385db512"
+  },
+  {
+    "path": "ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/bles_present.h",
+    "bytes": 1543,
+    "sha256": "0a74fbf2bfa6ba4b29251702920a410ac64079e421d719e4080d5350db94d903"
+  },
+  {
+    "path": "ports/tinyx/upstream/tinycorelinux-tinyx/fb/fbcompose.c",
+    "bytes": 121959,
+    "sha256": "6e1d958857761293e131d318b0ba175411a6b412421db66938eb61f3339ce6f0"
+  },
+  {
+    "path": "ports/tinyx/upstream/tinycorelinux-tinyx/fb/fb_bles_bilinear.h",
+    "bytes": 2402,
+    "sha256": "787f9bdf64e4102977d36873bdeb24aa4cee3bb6a5fdacb5c420a730db5ccb9b"
+  },
+  {
+    "path": "ports/wine/evidence/optimization-2026-10-13/inputs/XFBDEV-baseline",
+    "bytes": 814164,
+    "sha256": "797ebd4a431b5ac4c2112ddfdcbee97de1cf3d7680f7ed117a456310926cfe7a"
+  }
+]

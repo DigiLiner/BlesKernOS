@@ -1,6 +1,17 @@
 #include "platform.h"
 #include "css_engine.h"
 
+/*
+ * bleskernos_api.h exposes the application ABI bool as uint8_t.  Hubbub,
+ * pulled in by css_engine.h, includes the POSIX <stdbool.h>, whose C99
+ * compatibility macro maps bool to _Bool.  platform.h has already published
+ * this module's ABI with the BlesKernOS bool type, so keep the implementation
+ * on that same type instead of silently changing every following definition.
+ */
+#ifdef bool
+#undef bool
+#endif
+
 extern void bk_sys_log(const char *message);
 
 static void nsbk_report_progress(nsbk_document_t *document,
@@ -202,8 +213,14 @@ void nsbk_url_normalize(char *destination, uint32_t capacity,
            source[start + end - 1U] == '\n')) end--;
     if (!end) return;
     if (nsbk_prefix(source + start, "http://") ||
-        nsbk_prefix(source + start, "https://")) {
+        nsbk_prefix(source + start, "https://") || nsbk_prefix(source + start,"file://")) {
         nsbk_copy_range(destination, capacity, source + start, end);
+        return;
+    }
+    if (source[start]=='/') {
+        if(capacity<8U)return;
+        nsbk_copy(destination,capacity,"file://");
+        nsbk_copy_range(destination+7U,capacity>7U?capacity-7U:0U,source+start,end);
         return;
     }
     nsbk_copy(destination, capacity, "http://");
@@ -290,7 +307,7 @@ void nsbk_url_resolve(char *destination, uint32_t capacity,
         return;
     }
     if (nsbk_prefix(reference, "http://") ||
-        nsbk_prefix(reference, "https://")) {
+        nsbk_prefix(reference, "https://") || nsbk_prefix(reference,"file://")) {
         nsbk_copy(destination, capacity, reference);
         nsbk_collapse_url_path(destination, capacity);
         return;
@@ -618,6 +635,10 @@ static void nsbk_perf_log(const nsbk_document_t *document) {
     PERF_FIELD("ms layout=", document->timing_layout_ms);
     PERF_FIELD("ms req=", document->network_request_count);
     PERF_FIELD(" cache=", document->cache_hit_count);
+    PERF_FIELD(" items=", document->layout.item_count);
+    PERF_FIELD(" gzip=", document->content_gzip?1U:0U);
+    PERF_FIELD(" viewport=",document->viewport_width);
+    PERF_FIELD("x",document->viewport_height);
     (void)nsbk_request_append(line, sizeof(line), &used, "\n");
     bk_sys_log(line);
 #undef PERF_FIELD
@@ -626,7 +647,7 @@ static void nsbk_perf_log(const nsbk_document_t *document) {
 static bool nsbk_build_request(nsbk_document_t *document, const char *url,
                                const char *method, const char *body,
                                uint32_t body_length, char *request,
-                               uint32_t capacity, uint32_t *request_length) {
+                               uint32_t capacity, uint32_t *request_length, bool allow_gzip) {
     char authority[128], host[NSBK_COOKIE_DOMAIN_MAX], path[NSBK_URL_MAX];
     bool secure;
     uint32_t used = 0U, i;
@@ -645,12 +666,10 @@ static bool nsbk_build_request(nsbk_document_t *document, const char *url,
             " HTTP/1.1\r\nHost: ") ||
         !nsbk_request_append(request, capacity, &used, authority) ||
         !nsbk_request_append(request, capacity, &used,
-            "\r\nUser-Agent: NetSurf/3.11 (BlesKernOS 0.8)\r\n"
+            "\r\nUser-Agent: NetSurf/3.11 (BlesKernOS 0.9)\r\n"
             "Accept: text/html,application/xhtml+xml,text/css,image/png,image/jpeg,image/gif,image/bmp,*/*;q=0.2\r\n"
-            /* El inflater del port todavía no cubre de forma fiable todas las
-             * variantes producidas por CDNs modernos. Pedir identity evita
-             * rechazar una página completa y también ahorra CPU en QEMU. */
-            "Accept-Encoding: identity\r\n")) return false;
+            "Accept-Encoding: ")) return false;
+    if(!nsbk_request_append(request,capacity,&used,allow_gzip?"gzip\r\n":"identity\r\n"))return false;
     for (i = 0U; document && document->allow_cookies &&
          i < document->cookie_count; i++) {
         nsbk_cookie_t *cookie = &document->cookies[i];
@@ -793,7 +812,8 @@ static bool nsbk_hex_digit(char character, uint32_t *value) {
 }
 
 static bool nsbk_decode_chunked(char *data, uint32_t body_offset,
-                                uint32_t total_length, uint32_t *body_length) {
+                                uint32_t total_length, uint32_t *body_length,
+                                bool allow_partial) {
     uint32_t read = body_offset;
     uint32_t write = body_offset;
     if (!data || !body_length) return false;
@@ -813,20 +833,89 @@ static bool nsbk_decode_chunked(char *data, uint32_t body_offset,
             chunk = (chunk << 4) | digit;
             have_digit = true;
         }
-        if (!have_digit) return false;
-        if (read < total_length && data[read] == '\r') read++;
-        if (read < total_length && data[read] == '\n') read++;
+        if (!have_digit) {
+            if (!allow_partial) return false;
+            *body_length = write - body_offset;
+            data[write] = '\0';
+            return true;
+        }
+
+        /* Un buffer lleno puede cortar justo después del tamaño del chunk o
+         * en medio del CRLF. En ese caso todo lo ya decodificado sigue siendo
+         * HTML válido y no hay razón para descartar la página completa. */
+        if (read >= total_length) {
+            if (!allow_partial) return false;
+            *body_length = write - body_offset;
+            data[write] = '\0';
+            return true;
+        }
+        if (data[read] == '\r') {
+            read++;
+            if (read >= total_length) {
+                if (!allow_partial) return false;
+                *body_length = write - body_offset;
+                data[write] = '\0';
+                return true;
+            }
+            if (data[read] != '\n') return false;
+            read++;
+        } else if (data[read] == '\n') {
+            read++;
+        } else {
+            return false;
+        }
+
         if (chunk == 0U) {
             *body_length = write - body_offset;
             data[write] = '\0';
             return true;
         }
-        if (chunk > total_length - read) return false;
+
+        if (chunk > total_length - read) {
+            if (!allow_partial) return false;
+            /* El payload de un chunk no necesita estar completo para ser útil:
+             * sólo faltará su cola y el delimitador. Copiamos lo recibido y
+             * dejamos al parser HTML trabajar con el documento parcial. */
+            if (total_length > read) {
+                uint32_t partial = total_length - read;
+                memmove(data + write, data + read, partial);
+                write += partial;
+            }
+            *body_length = write - body_offset;
+            data[write] = '\0';
+            return true;
+        }
+
         memmove(data + write, data + read, chunk);
         write += chunk;
         read += chunk;
-        if (read < total_length && data[read] == '\r') read++;
-        if (read < total_length && data[read] == '\n') read++;
+
+        if (read >= total_length) {
+            if (!allow_partial) return false;
+            *body_length = write - body_offset;
+            data[write] = '\0';
+            return true;
+        }
+        if (data[read] == '\r') {
+            if (read + 1U >= total_length) {
+                if (!allow_partial) return false;
+                *body_length = write - body_offset;
+                data[write] = '\0';
+                return true;
+            }
+            if (data[read + 1U] != '\n') return false;
+            read += 2U;
+        } else if (data[read] == '\n') {
+            read++;
+        } else {
+            return false;
+        }
+    }
+
+    if (allow_partial) {
+        *body_length = write - body_offset;
+        data[write] = '\0';
+        return true;
     }
     return false;
 }
@@ -865,7 +954,8 @@ static bool nsbk_parse_response(char *data, uint32_t length,
     nsbk_content_charset(result->content_type, result->charset);
     if (nsbk_contains_nocase(transfer, "chunked")) {
         result->chunked = true;
-        if (!nsbk_decode_chunked(data, body, length, &result->body_length))
+        if (!nsbk_decode_chunked(data, body, length, &result->body_length,
+                                 result->truncated))
             return false;
     } else if (content_length[0]) {
         uint32_t declared = nsbk_parse_decimal(content_length);
@@ -985,12 +1075,51 @@ static bool nsbk_cache_has(const char *url) {
     return false;
 }
 
+/* Local documents share discovery, CSS, images, links and layout with HTTP. */
+static int nsbk_uri_hex(char c) {
+    if(c>='0'&&c<='9')return c-'0';
+    c=nsbk_lower(c);return c>='a'&&c<='f'?c-'a'+10:-1;
+}
+static bool nsbk_fetch_file(char *buffer,uint32_t capacity,const char *url,
+                             const char *method,nsbk_fetch_result_t *result) {
+    char path[NSBK_URL_MAX];uint32_t n=0;
+    if (!nsbk_equal_nocase(method,"GET") || !nsbk_prefix(url,"file:///")) return false;
+    for(uint32_t i=7;url[i] && url[i]!='?' && url[i]!='#';i++) {
+        char c=url[i];
+        if(c=='%') {
+            int a=nsbk_uri_hex(url[i+1]),b=url[i+1]?nsbk_uri_hex(url[i+2]):-1;
+            if(a<0||b<0 || !(a*16+b))return false;
+            c=(char)(a*16+b);i+=2;
+        }
+        if(n+1U>=sizeof(path))return false;
+        path[n++]=c;
+    }
+    path[n]=0;void *data=NULL;uint32_t bytes=0;
+    if(!bk_file_read_all(path,&data,&bytes))return false;
+    if(bytes>=capacity || (bytes&&!data)) {if(data)bk_sys_free(data);return false;}
+    if(bytes)memcpy(buffer,data,bytes);
+    if(data)bk_sys_free(data);
+    buffer[bytes]=0;memset(result,0,sizeof(*result));
+    result->status=200;result->body_length=bytes;result->total_length=bytes;
+    nsbk_copy(result->final_url,sizeof(result->final_url),url);
+    const char *ext=strrchr(path,'.');
+    const char *mime="text/html";
+    if(ext&&nsbk_equal_nocase(ext,".css"))mime="text/css";
+    else if(ext&&nsbk_equal_nocase(ext,".png"))mime="image/png";
+    else if(ext&&nsbk_equal_nocase(ext,".gif"))mime="image/gif";
+    else if(ext&&(nsbk_equal_nocase(ext,".jpg")||nsbk_equal_nocase(ext,".jpeg")))mime="image/jpeg";
+    else if(ext&&nsbk_equal_nocase(ext,".svg"))mime="image/svg+xml";
+    else if(ext&&nsbk_equal_nocase(ext,".bmp"))mime="image/bmp";
+    nsbk_copy(result->content_type,sizeof(result->content_type),mime);
+    return true;
+}
+
 static bool nsbk_fetch_follow(nsbk_document_t *document, char *buffer,
                               uint32_t capacity, char *decode_buffer,
                               uint32_t decode_capacity, const char *url,
                               const char *method, const char *body,
                               uint32_t body_length, uint32_t timeout_ms,
-                              nsbk_fetch_result_t *result, bool use_cache) {
+                              nsbk_fetch_result_t *result, bool use_cache, uint32_t resource_deadline) {
     char current[NSBK_URL_MAX];
     char active_method[8];
     const char *active_body = body;
@@ -1002,6 +1131,10 @@ static bool nsbk_fetch_follow(nsbk_document_t *document, char *buffer,
     nsbk_copy(active_method, sizeof(active_method),
               method && method[0] ? method : "GET");
     if (!current[0]) return false;
+    if(nsbk_prefix(current,"file://")) {
+        if(use_cache && document && !nsbk_prefix(document->base_url,"file://"))return false;
+        return nsbk_fetch_file(buffer,capacity,current,active_method,result);
+    }
     if (use_cache && nsbk_equal_nocase(active_method, "GET") &&
         !active_body_length && nsbk_cache_load(current, buffer, capacity,
                                                 result)) {
@@ -1013,14 +1146,26 @@ static bool nsbk_fetch_follow(nsbk_document_t *document, char *buffer,
         uint32_t request_length = 0U;
         int32_t received;
         uint32_t request_started;
+        bool allow_gzip=nsbk_equal_nocase(active_method,"GET");
+retry_request:
+        request_length=0U;
         memset(result, 0, sizeof(*result));
         result->secure = nsbk_prefix(current, "https://");
         if (!nsbk_build_request(document, current, active_method, active_body,
                                 active_body_length, request, sizeof(request),
-                                &request_length))
+                                &request_length,allow_gzip)) {
+            printf("[NETSURF][NET] request-build fallo url=%s\n", current);
             return false;
+        }
+        uint32_t deadline=use_cache && document?document->resource_deadline_ms:resource_deadline;
+        if(deadline) {
+            int32_t remaining=(int32_t)(deadline-bk_sys_uptime_ms());
+            if(remaining<=0 || nsbk_cancelled(document))return false;
+            if(timeout_ms>(uint32_t)remaining)timeout_ms=(uint32_t)remaining;
+            if(timeout_ms>8000U)timeout_ms=8000U;
+        }
         request_started = bk_sys_uptime_ms();
-        received = bk_net_http_exchange(current, request, request_length,
+        received = bk_net_http_exchange_quiet(current, request, request_length,
                                         buffer, capacity - 1U, timeout_ms);
         if (document) {
             document->timing_network_ms +=
@@ -1030,12 +1175,23 @@ static bool nsbk_fetch_follow(nsbk_document_t *document, char *buffer,
         if (received <= 0) {
             result->tls_error = result->secure ? bk_net_tls_last_error() : 0;
             nsbk_copy(result->final_url, sizeof(result->final_url), current);
+            printf("[NETSURF][NET] transporte fallo bytes=%d tls=%d url=%s\n",
+                   received, result->tls_error, current);
             return false;
         }
         result->truncated = (uint32_t)received == capacity - 1U;
         buffer[received] = '\0';
-        if (!nsbk_parse_response(buffer, (uint32_t)received, result))
+        if (!nsbk_parse_response(buffer, (uint32_t)received, result)) {
+            printf("[NETSURF][NET] HTTP parse fallo bytes=%d truncado=%u "
+                   "inicio=%.24s url=%s\n", received,
+                   result->truncated ? 1U : 0U, buffer, current);
             return false;
+        }
+        if (result->truncated)
+            printf("[NETSURF][NET] respuesta truncada aceptada bytes=%d "
+                   "status=%d chunked=%u body=%u url=%s\n", received,
+                   result->status, result->chunked ? 1U : 0U,
+                   result->body_length, current);
         result->secure = nsbk_prefix(current, "https://");
         result->redirects = redirect;
         nsbk_copy(result->final_url, sizeof(result->final_url), current);
@@ -1050,8 +1206,10 @@ static bool nsbk_fetch_follow(nsbk_document_t *document, char *buffer,
                                            result->body_length,
                                            decode_buffer, decode_capacity);
             if (decoded < 0 ||
-                (uint32_t)decoded > capacity - result->body_offset - 1U)
+                (uint32_t)decoded > capacity - result->body_offset - 1U) {
+                if(allow_gzip) {allow_gzip=false;goto retry_request;}
                 return false;
+            }
             memcpy(buffer + result->body_offset, decode_buffer,
                    (uint32_t)decoded);
             result->body_length = (uint32_t)decoded;
@@ -1062,6 +1220,8 @@ static bool nsbk_fetch_follow(nsbk_document_t *document, char *buffer,
         } else if (result->content_encoding[0] &&
                    !nsbk_contains_nocase(result->content_encoding,
                                          "identity")) {
+            printf("[NETSURF][NET] encoding no soportado=%s url=%s\n",
+                   result->content_encoding, current);
             return false;
         }
         if (!nsbk_redirect_status(result->status) || !result->location[0]) {
@@ -1157,7 +1317,7 @@ bool nsbk_document_init(nsbk_document_t *document) {
     memset(document, 0, sizeof(*document));
     document->network_data = (char *)bk_sys_alloc(NSBK_NETWORK_BUFFER_SIZE);
     document->resource_data = (char *)bk_sys_alloc(NSBK_RESOURCE_BUFFER_SIZE);
-    document->decode_data = (char *)bk_sys_alloc(NSBK_DECODE_BUFFER_SIZE);
+    document->decode_data = (char *)bk_sys_alloc(NSBK_DOCUMENT_DECODE_SIZE);
     document->text_data = (char *)bk_sys_alloc(NSBK_TEXT_BUFFER_SIZE);
     document->workspace = bk_sys_alloc(sizeof(nsbk_workspace_t));
     if (!document->network_data || !document->resource_data ||
@@ -1527,7 +1687,7 @@ static bool nsbk_load_one_stylesheet(nsbk_document_t *document,
     if (!nsbk_fetch_follow(document, document->resource_data,
             NSBK_RESOURCE_BUFFER_SIZE, document->decode_data,
             NSBK_DECODE_BUFFER_SIZE, absolute, "GET", NULL, 0U,
-            timeout_ms, &response, true)) {
+            timeout_ms, &response, true, 0U)) {
         document->stylesheet_failure_count++;
         nsbk_css_log("fallo de red", absolute, 0U, 0U);
         return false;
@@ -1589,6 +1749,7 @@ typedef struct {
     char *buffer;
     char *decode_buffer;
     uint32_t timeout_ms;
+    uint32_t deadline_ms;
     uint32_t elapsed_ms;
     nsbk_fetch_result_t response;
     volatile bool complete;
@@ -1603,7 +1764,7 @@ static void nsbk_css_fetch_worker(void *argument) {
     job->success = nsbk_fetch_follow(NULL, job->buffer,
         NSBK_RESOURCE_BUFFER_SIZE, job->decode_buffer,
         NSBK_DECODE_BUFFER_SIZE, job->url, "GET", NULL, 0U,
-        job->timeout_ms, &job->response, false);
+        job->timeout_ms, &job->response, false, job->deadline_ms);
     job->elapsed_ms = bk_sys_uptime_ms() - started;
     __sync_synchronize();
     job->complete = true;
@@ -1635,7 +1796,7 @@ static void nsbk_load_stylesheets(nsbk_document_t *document,
             nsbk_url_resolve(absolute, sizeof(absolute), document->base_url,
                              ref->href);
             if (!absolute[0] || nsbk_stylesheet_url_loaded(document, absolute) ||
-                nsbk_cache_has(absolute)) {
+                nsbk_cache_has(absolute) || nsbk_prefix(absolute,"file://")) {
                 nsbk_load_one_stylesheet(document, ref->href,
                                          document->base_url, ref->media,
                                          timeout_ms, false);
@@ -1650,6 +1811,7 @@ static void nsbk_load_stylesheets(nsbk_document_t *document,
             nsbk_copy(jobs[count].media, sizeof(jobs[count].media),
                       ref->media[0] ? ref->media : "all");
             jobs[count].timeout_ms = timeout_ms;
+            jobs[count].deadline_ms=document->resource_deadline_ms;
             jobs[count].buffer = (char *)bk_sys_alloc(NSBK_RESOURCE_BUFFER_SIZE);
             jobs[count].decode_buffer =
                 (char *)bk_sys_alloc(NSBK_DECODE_BUFFER_SIZE);
@@ -1788,7 +1950,7 @@ static bool nsbk_load_one_image(nsbk_document_t *document,
     if (!nsbk_fetch_follow(document, document->resource_data,
             NSBK_RESOURCE_BUFFER_SIZE, document->decode_data,
             NSBK_DECODE_BUFFER_SIZE, absolute, "GET", NULL, 0U,
-            timeout_ms, &response, true) || response.status < 200 ||
+            timeout_ms, &response, true, 0U) || response.status < 200 ||
         response.status >= 400 || !nsbk_decode_image(&loaded.image,
             (const uint8_t *)document->resource_data + response.body_offset,
             response.body_length)) {
@@ -1814,6 +1976,7 @@ typedef struct {
     char *buffer;
     char *decode_buffer;
     uint32_t timeout_ms;
+    uint32_t deadline_ms;
     nsbk_fetch_result_t response;
     volatile bool complete;
     bool success;
@@ -1825,7 +1988,7 @@ static void nsbk_image_fetch_worker(void *argument) {
     job->success = nsbk_fetch_follow(NULL, job->buffer,
         NSBK_RESOURCE_BUFFER_SIZE, job->decode_buffer,
         NSBK_DECODE_BUFFER_SIZE, job->url, "GET", NULL, 0U,
-        job->timeout_ms, &job->response, false);
+        job->timeout_ms, &job->response, false, job->deadline_ms);
     __sync_synchronize();
     job->complete = true;
 }
@@ -1896,7 +2059,7 @@ static void nsbk_load_discovered_images(nsbk_document_t *document,
             for (j = 0U; j < count; j++)
                 if (strcmp(jobs[j].url, absolute) == 0) break;
             if (j < count) continue;
-            if (nsbk_cache_has(absolute)) {
+            if (nsbk_cache_has(absolute) || nsbk_prefix(absolute,"file://")) {
                 nsbk_load_one_image(document, reference, document->base_url,
                                     timeout_ms, total_pixels, true);
                 continue;
@@ -1905,6 +2068,7 @@ static void nsbk_load_discovered_images(nsbk_document_t *document,
                       sizeof(jobs[count].reference), reference);
             nsbk_copy(jobs[count].url, sizeof(jobs[count].url), absolute);
             jobs[count].timeout_ms = timeout_ms;
+            jobs[count].deadline_ms=document->resource_deadline_ms;
             jobs[count].buffer = (char *)bk_sys_alloc(NSBK_RESOURCE_BUFFER_SIZE);
             jobs[count].decode_buffer =
                 (char *)bk_sys_alloc(NSBK_DECODE_BUFFER_SIZE);
@@ -2185,8 +2349,8 @@ bool nsbk_document_fetch_request(nsbk_document_t *document, const char *url,
     nsbk_report_progress(document, 15U, "@H58C183BA");
     if (!nsbk_fetch_follow(document, document->network_data,
                            NSBK_NETWORK_BUFFER_SIZE, document->decode_data,
-                           NSBK_DECODE_BUFFER_SIZE, url, method, body,
-                           body_length, timeout_ms, &response, false)) {
+                           NSBK_DOCUMENT_DECODE_SIZE, url, method, body,
+                           body_length, timeout_ms, &response, false, 0U)) {
         document->tls_error = response.tls_error;
         nsbk_copy(document->final_url, sizeof(document->final_url),
                   response.final_url);
@@ -2246,6 +2410,7 @@ bool nsbk_document_fetch_request(nsbk_document_t *document, const char *url,
        árbol Hubbub y posponemos CSS/layout hasta tener las hojas e imágenes. */
     parsed->layout = NULL;
     parsed->viewport_width = document->viewport_width;
+    parsed->viewport_height = document->viewport_height;
     stage_started = bk_sys_uptime_ms();
     parse_ok = nsbk_html_parse_retained(
         (const uint8_t *)document->network_data + response.body_offset,
@@ -2258,6 +2423,8 @@ bool nsbk_document_fetch_request(nsbk_document_t *document, const char *url,
 
     if (parse_ok) {
         nsbk_report_progress(document, 53U, "@HA406EE5E");
+        document->resource_deadline_ms=bk_sys_uptime_ms()+
+            (document->resource_budget_ms?document->resource_budget_ms:12000U);
         stage_started = bk_sys_uptime_ms();
         nsbk_load_stylesheets(document, parsed, timeout_ms);
         document->timing_css_ms += bk_sys_uptime_ms() - stage_started;
@@ -2290,6 +2457,7 @@ bool nsbk_document_fetch_request(nsbk_document_t *document, const char *url,
         parsed->text_capacity = NSBK_TEXT_BUFFER_SIZE;
         parsed->layout = &document->layout;
         parsed->viewport_width = document->viewport_width;
+    parsed->viewport_height = document->viewport_height;
         parsed->resources = environment;
         stage_started = bk_sys_uptime_ms();
         parse_ok = nsbk_html_render_retained(workspace->retained_tree, parsed);
@@ -2310,6 +2478,7 @@ bool nsbk_document_fetch_request(nsbk_document_t *document, const char *url,
         document->text_length = nsbk_strlen(document->text_data);
     }
     nsbk_report_progress(document, 100U, "@H44B39460");
+    document->layout_viewport_height=document->viewport_height;
     document->timing_total_ms = bk_sys_uptime_ms() - total_started;
     nsbk_perf_log(document);
     return true;
@@ -2331,13 +2500,23 @@ bool nsbk_document_reflow(nsbk_document_t *document, int32_t viewport_width) {
     bool ok;
     if (!document || !document->network_data || !document->workspace ||
         document->body_length == 0U || viewport_width < 160 ||
-        viewport_width == document->viewport_width)
+        (viewport_width == document->viewport_width &&
+         document->viewport_height == document->layout_viewport_height))
         return false;
     workspace = (nsbk_workspace_t *)document->workspace;
     parsed = &workspace->parsed;
     css_resources = workspace->css_resources;
     image_resources = workspace->image_resources;
     environment = &workspace->environment;
+    if(workspace->retained_tree)nsbk_css_forget_tree(workspace->retained_tree);
+    /* Viewport-dependent calc()/grid compatibility is compiled into sheets. */
+    for(uint32_t sheet=0;sheet<document->stylesheet_count;sheet++) {
+        if(document->stylesheets[sheet].compiled) {
+            nsbk_css_compiled_destroy(document->stylesheets[sheet].compiled);
+            document->stylesheets[sheet].compiled=NULL;
+        }
+    }
+    document->layout_viewport_height=document->viewport_height;
     document->viewport_width = viewport_width;
     if (document->image_count == 1U && !document->built_dom) {
         bk_gui_image_t saved = document->images[0].image;
@@ -2390,6 +2569,7 @@ bool nsbk_document_reflow(nsbk_document_t *document, int32_t viewport_width) {
     parsed->text_capacity = NSBK_TEXT_BUFFER_SIZE;
     parsed->layout = &document->layout;
     parsed->viewport_width = viewport_width;
+    parsed->viewport_height = document->viewport_height;
     parsed->resources = environment;
     ok = workspace->retained_tree &&
          nsbk_html_render_retained(workspace->retained_tree, parsed);

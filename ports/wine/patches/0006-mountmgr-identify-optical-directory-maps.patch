@@ -1,0 +1,54 @@
+--- a/dlls/mountmgr.sys/unixlib.h
++++ b/dlls/mountmgr.sys/unixlib.h
+@@ -85,6 +85,7 @@
+     const char *dev;
+     char *dest;
+     ULONG size;
++    BOOL *is_cdrom;
+ };
+ 
+ struct set_dosdev_symlink_params
+--- a/dlls/mountmgr.sys/unixlib.c
++++ b/dlls/mountmgr.sys/unixlib.c
+@@ -285,6 +285,17 @@
+     if (!(path = get_dosdevices_path( params->dev ))) return STATUS_NO_MEMORY;
+ 
+     ret = readlink( path, params->dest, params->size );
++    if (params->is_cdrom)
++    {
++        *params->is_cdrom = FALSE;
++#if defined(linux) && defined(HAVE_FSTATFS)
++        struct statfs fs;
++        /* Directory mappings can be optical mounts without a raw d:: device.
++         * Identify the real filesystem, never its path or allocation size. */
++        if (!statfs( path, &fs ))
++            *params->is_cdrom = fs.f_type == 0x9660 || fs.f_type == 0x15013346;
++#endif
++    }
+     free( path );
+     if (ret == -1) return STATUS_NO_SUCH_DEVICE;
+     if (ret == params->size) return STATUS_BUFFER_TOO_SMALL;
+--- a/dlls/mountmgr.sys/device.c
++++ b/dlls/mountmgr.sys/device.c
+@@ -1063,17 +1063,19 @@
+     {
+         char link[4096], unix_dev[4096];
+         char *device = NULL;
+-        struct get_dosdev_symlink_params params = { dosdev, link, sizeof(link) };
++        BOOL is_cdrom = FALSE;
++        struct get_dosdev_symlink_params params = { dosdev, link, sizeof(link), &is_cdrom };
+ 
+         dosdev[0] = 'a' + i;
+         dosdev[2] = 0;
+         if (MOUNTMGR_CALL( get_dosdev_symlink, &params )) continue;
+         dosdev[2] = ':';
++        params.is_cdrom = NULL;
+         params.dest = unix_dev;
+         params.size = sizeof(unix_dev);
+         if (!MOUNTMGR_CALL( get_dosdev_symlink, &params )) device = unix_dev;
+ 
+-        drive_type = i < 2 ? DEVICE_FLOPPY : DEVICE_HARDDISK_VOL;
++        drive_type = is_cdrom ? DEVICE_CDROM : i < 2 ? DEVICE_FLOPPY : DEVICE_HARDDISK_VOL;
+         if (drives_key)
+         {
+             WCHAR buffer[32];

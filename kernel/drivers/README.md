@@ -17,3 +17,26 @@ componentes residentes se enlazan dentro del kernel. Al mover o agregar un
 archivo hay que actualizar `KERNEL_SOURCES` o el target `.DVR` correspondiente
 en el `Makefile`.
 
+
+La ampliación de dispositivos de 1990/2000 incorpora E1000, PCNET, NE2KPCI,
+TULIP, RHINE, SIS900, NATSEMI, RTL8169, ES1370, CMIPCI, VIA686, CS4281 y
+LEGACYFB. Compilar con `make legacy-drivers`; pruebas host con
+`make test-legacy-drivers`. Cobertura, IDs, referencias, pruebas QEMU y límites
+en `docs/platform/legacy-drivers.md`. LEGACYFB depende de un modo BIOS/VBE
+válido; no programa modos nuevos ni ofrece aceleración.
+
+
+## Fuentes separadas por familia
+
+Los drivers Ethernet nuevos están en `network/e1000.c`, `pcnet.c`, `ne2k_pci.c`,
+`tulip.c`, `rhine.c`, `sis900.c`, `natsemi.c` y `rtl8169.c`.
+Los de sonido están en `audio/es1370.c`, `cmipci.c`, `via686.c` y `cs4281.c`.
+Cada archivo contiene la implementación del hardware; acceso a memoria,
+validaciones y ciclo de vida se comparten en los headers/runtime del subsistema.
+Mapas de fuentes y explicación para mantenerlos en `network/README.md` y
+`audio/README.md`. Los nombres de los módulos `.DVR` se mantienen.
+
+Los perfiles de impresora ya están separados por modelo en `system/printers`.
+LEGACYFB sigue siendo un único backend de firmware VBE: las diez familias usan
+el mismo framebuffer, sin diez motores distintos de programación del hardware.
+Los backends gráficos nativos ATI/Intel/VMware/VirtIO están separados.

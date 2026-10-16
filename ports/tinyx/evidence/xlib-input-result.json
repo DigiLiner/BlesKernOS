@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "mode": "normal",
+  "live_marker": null,
+  "live_stable": false,
+  "results": {
+    "/WINEGATE/bin/abi": 0,
+    "/WINEGATE/bin/case01": 0,
+    "/WINEGATE/bin/xlib-rectangle": 0
+  },
+  "observations": [
+    [
+      "/WINEGATE/bin/abi",
+      0
+    ],
+    [
+      "/WINEGATE/bin/case01",
+      0
+    ],
+    [
+      "/WINEGATE/bin/xlib-rectangle",
+      0
+    ]
+  ],
+  "fatal_faults": [],
+  "expected": [
+    "/WINEGATE/bin/abi",
+    "/WINEGATE/bin/case01",
+    "/WINEGATE/bin/xlib-rectangle"
+  ],
+  "elapsed": 41.0867009059948
+}

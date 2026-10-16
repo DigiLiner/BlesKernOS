@@ -1,0 +1,19 @@
+{
+  "ram_mib": 32,
+  "backend": "vmware",
+  "desktop_started": true,
+  "completed": true,
+  "smoke_pass": null,
+  "memory": {
+    "DESKTOP": {
+      "total_kib": 32255,
+      "used_kib": 15761,
+      "free_kib": 16493,
+      "reserved_kib": 3711,
+      "heap_used_kib": 12050,
+      "heap_free_kib": 14445,
+      "vm_free_kib": 2048
+    }
+  },
+  "depths": []
+}

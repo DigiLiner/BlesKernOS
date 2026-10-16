@@ -14,7 +14,6 @@ from pathlib import Path
 PROGRAMS = (
     ("CODEX.O", "codex"),
     ("HYPERZIP.O", "hyperzip"),
-    ("VIEWER.O", "viewer"),
     ("LEXINET.O", "lexinet"),
     ("CIV2.O", "civ2"),
 )

@@ -62,11 +62,20 @@ typedef struct __attribute__((packed)) {
 #define BK_CAP_DEPTH_FUNCS           (1U << 14)
 #define BK_CAP_BLEND_ADDITIVE        (1U << 15)
 #define BK_CAP_TEXTURE_REGION_UPLOAD (1U << 16)
+#define BK_CAP_ALPHA_TEST (1U << 17)
+#define BK_CAP_TEXTURE_DECAL (1U << 18)
+#define BK_DRAW_TEXTURE_DECAL (1U << 28)
 
 #define BK_DRAW_DEPTH_TEST     (1U << 0)
 #define BK_DRAW_DEPTH_WRITE    (1U << 1)
 #define BK_DRAW_BLEND          (1U << 2)
 #define BK_DRAW_TEXTURED       (1U << 3)
+#define BK_CAP_TEXTURE_MIPMAPS (1U << 19)
+#define BK_CAP_ORDERED_SUBMIT (1U << 20)
+#define BK_CAP_BLEND_MULTIPLY (1U << 21)
+#define BK_DRAW_BLEND_MULTIPLY (1U << 30)
+#define BK_DRAW_MIPMAP_NEAREST (1U << 29)
+#define BK_SURFACE_MIP_LEVELS(n) (((n) - 1U) << 8U)
 #define BK_DRAW_LINEAR         (1U << 4)
 #define BK_DRAW_CLEAR_COLOR    (1U << 5)
 #define BK_DRAW_CLEAR_DEPTH    (1U << 6)
@@ -84,6 +93,8 @@ extern bk_u32 gfx3d_capabilities(void);
 extern bk_bool gfx3d_surface_create(const bk_surface_desc *desc,
                                     bk_surface *handle_out);
 extern bk_bool gfx3d_surface_destroy(bk_surface handle);
+extern bk_bool gfx3d_surface_upload_mip(bk_surface handle, bk_u32 level,
+                                        const bk_u32 *pixels, bk_u32 source_pitch);
 extern bk_bool gfx3d_surface_upload(bk_surface handle,
                                     const bk_u32 *pixels,
                                     bk_u32 source_pitch,
@@ -120,8 +131,9 @@ typedef struct {
    struct gl_texture_object *owner;
    struct gl_texture_image *image;
    const void *data;
+   const struct gl_color_table *palette;
    bk_surface surface;
-   GLuint width, height;
+   GLuint width, height, mip_levels;
    GLuint last_use;
 } bkmesa_texture_slot;
 
@@ -134,6 +146,8 @@ typedef struct bkmesa_gpu_context {
    GLboolean yup;
    GLint requested_renderer;
    GLboolean supported;
+   GLboolean native_mipmaps, ordered_submit;
+   bk_u32 last_fence, capabilities;
    GLboolean render_gpu;
    GLboolean draw_open;
    GLboolean gpu_dirty;
@@ -143,6 +157,7 @@ typedef struct bkmesa_gpu_context {
    GLboolean software_locked;
    GLboolean strict_failed;
    GLint last_fallback;
+   GLuint reported_fallbacks;
    bk_u16 *depth_staging;
    GLuint depth_staging_count;
    bk_surface target;
@@ -151,7 +166,7 @@ typedef struct bkmesa_gpu_context {
    bk_u32 batch_flags;
    bk_surface batch_texture;
    bkmesa_texture_slot textures[BKMESA_TEXTURE_CACHE];
-   GLuint texture_clock;
+   GLuint texture_clock, texture_hint;
    bkmesa_gpu_stats stats;
 } bkmesa_gpu_context;
 
@@ -192,9 +207,31 @@ static const char *fallback_string(GLint reason)
    }
 }
 
+static GLboolean texture_supported(const GLcontext *ctx);
+static GLboolean blend_supported(const GLcontext *ctx, bk_u32 caps);
+
 static void mark_fallback(bkmesa_gpu_context *gpu, GLint reason)
 {
    if (!gpu) return;
+   if (reason > 0 && reason < 32 && !(gpu->reported_fallbacks & (1U << reason))) {
+      char message[192];
+      gpu->reported_fallbacks |= 1U << reason;
+      snprintf(message, sizeof(message), "[MESA35:FALLBACK] reason=%d %s alpha=%u fog=%u tricaps=0x%x tex=%u\n",
+         reason, fallback_string(reason), gpu->ctx->Color.AlphaEnabled,
+         gpu->ctx->Fog.Mode, gpu->ctx->_TriangleCaps, gpu->ctx->Texture._ReallyEnabled);
+      bk_sys_log(message);
+      if (reason == BKMESA_FALLBACK_UNSUPPORTED_STATE) {
+         const GLcontext *ctx = gpu->ctx;
+         const struct gl_texture_object *obj = ctx->Texture.Unit[0]._Current;
+         snprintf(message, sizeof(message), "[MESA35:STATE] stencil=%u smooth=%u/%u/%u mask=%u,%u,%u,%u tex_ok=%u blend_ok=%u min=%u env=%u\n",
+            ctx->Stencil.Enabled, ctx->Polygon.SmoothFlag, ctx->Line.SmoothFlag,
+            ctx->Point.SmoothFlag, ctx->Color.ColorMask[0], ctx->Color.ColorMask[1],
+            ctx->Color.ColorMask[2], ctx->Color.ColorMask[3],
+            texture_supported(ctx), blend_supported(ctx, gpu->capabilities), obj ? obj->MinFilter : 0U,
+            ctx->Texture.Unit[0].EnvMode);
+         bk_sys_log(message);
+      }
+   }
    gpu->stats.fallbacks++;
    gpu->last_fallback = reason;
    if (strict_mode(gpu)) {
@@ -232,6 +269,7 @@ static void destroy_target(bkmesa_gpu_context *gpu)
    }
    if (gpu->target) (void)gfx3d_surface_destroy(gpu->target);
    gpu->target = BK_SURFACE_INVALID;
+   gpu->last_fence = 0;
    if (gpu->depth_staging) FREE(gpu->depth_staging);
    gpu->depth_staging = NULL;
    gpu->depth_staging_count = 0;
@@ -254,6 +292,9 @@ static GLboolean create_target(bkmesa_gpu_context *gpu)
        gpu->rowlength < gpu->width || !gfx3d_available())
       return GL_FALSE;
    caps = gfx3d_capabilities();
+   gpu->capabilities = caps;
+   gpu->native_mipmaps = (caps & BK_CAP_TEXTURE_MIPMAPS) != 0U;
+   gpu->ordered_submit = (caps & BK_CAP_ORDERED_SUBMIT) != 0U;
    if ((caps & (BK_CAP_FIXED_FUNCTION | BK_CAP_RENDER_TARGETS |
                 BK_CAP_VERTEX_BUFFERS)) !=
        (BK_CAP_FIXED_FUNCTION | BK_CAP_RENDER_TARGETS |
@@ -288,13 +329,14 @@ static GLboolean end_draw(bkmesa_gpu_context *gpu)
             gpu->gpu_depth_dirty = GL_TRUE;
             gpu->cpu_depth_dirty = GL_FALSE;
          }
-         if (fence && !gfx3d_wait_fence(fence)) ok = GL_FALSE;
+         if (fence && !gpu->ordered_submit && !gfx3d_wait_fence(fence)) ok = GL_FALSE;
       }
       gpu->batch_count = 0;
    }
    fence = 0;
    if (!gfx3d_end(gpu->target, &fence)) ok = GL_FALSE;
-   if (fence && !gfx3d_wait_fence(fence)) ok = GL_FALSE;
+   if (fence) gpu->last_fence = fence;
+   if (fence && !gpu->ordered_submit && !gfx3d_wait_fence(fence)) ok = GL_FALSE;
    gpu->draw_open = GL_FALSE;
    if (ok) {
       gpu->gpu_dirty = GL_TRUE;
@@ -469,9 +511,9 @@ static void before_cpu(bkmesa_gpu_context *gpu)
    before_cpu_reason(gpu, BKMESA_FALLBACK_SOFTWARE_OPERATION);
 }
 
-static GLboolean blend_supported(const GLcontext *ctx)
+static GLboolean blend_supported(const GLcontext *ctx, bk_u32 caps)
 {
-   GLboolean normal, additive;
+   GLboolean normal, additive, multiply;
    if (!ctx->Color.BlendEnabled) return GL_TRUE;
    if (ctx->Color.BlendEquation != GL_FUNC_ADD) return GL_FALSE;
    normal = ctx->Color.BlendSrcRGB == GL_SRC_ALPHA &&
@@ -482,7 +524,12 @@ static GLboolean blend_supported(const GLcontext *ctx)
               ctx->Color.BlendDstRGB == GL_ONE &&
               ctx->Color.BlendSrcA == GL_SRC_ALPHA &&
               ctx->Color.BlendDstA == GL_ONE;
-   return normal || additive;
+   multiply = ctx->Color.BlendSrcRGB == GL_ZERO &&
+              ctx->Color.BlendDstRGB == GL_SRC_COLOR &&
+              ctx->Color.BlendSrcA == GL_ZERO &&
+              ctx->Color.BlendDstA == GL_SRC_COLOR &&
+              (caps & BK_CAP_BLEND_MULTIPLY);
+   return normal || additive || multiply;
 }
 
 static GLboolean texture_supported(const GLcontext *ctx)
@@ -496,7 +543,8 @@ static GLboolean texture_supported(const GLcontext *ctx)
    for (i = 1; i < ctx->Const.MaxTextureUnits; ++i)
       if (ctx->Texture.Unit[i]._ReallyEnabled) return GL_FALSE;
    unit = &ctx->Texture.Unit[0];
-   if (unit->EnvMode != GL_MODULATE && unit->EnvMode != GL_REPLACE)
+   if (unit->EnvMode != GL_MODULATE && unit->EnvMode != GL_REPLACE &&
+       unit->EnvMode != GL_DECAL)
       return GL_FALSE;
    obj = unit->_Current;
    if (!obj || !obj->Complete || obj->BorderColor[0] || obj->BorderColor[1] ||
@@ -507,6 +555,13 @@ static GLboolean texture_supported(const GLcontext *ctx)
    if (!img || !img->Data || img->Border || !img->FetchTexel ||
        img->Width2 < 1 || img->Height2 < 1 || img->Depth2 != 1)
       return GL_FALSE;
+   if (img->Format == GL_COLOR_INDEX) {
+      const struct gl_color_table *palette = ctx->Texture.SharedPalette ?
+         &ctx->Texture.Palette : &obj->Palette;
+      if (!palette->Table || palette->FloatTable || !palette->Size ||
+          (palette->Format != GL_RGB && palette->Format != GL_RGBA))
+         return GL_FALSE;
+   }
    if (obj->MinFilter != GL_NEAREST && obj->MinFilter != GL_LINEAR &&
        obj->MinFilter != GL_NEAREST_MIPMAP_NEAREST &&
        obj->MinFilter != GL_LINEAR_MIPMAP_NEAREST)
@@ -527,7 +582,7 @@ static GLboolean state_supported(bkmesa_gpu_context *gpu, GLcontext *ctx)
    if (!gpu || !ctx || !gpu->supported || !policy_allows_gpu(gpu) ||
        gpu->software_locked || gpu->strict_failed ||
        ctx->RenderMode != GL_RENDER || !ctx->Visual.rgbMode ||
-       ctx->Color.AlphaEnabled || ctx->Stencil.Enabled ||
+       ctx->Stencil.Enabled ||
        (ctx->Fog.Enabled && ctx->Fog.Mode != GL_LINEAR) ||
        ctx->Color.ColorLogicOpEnabled || ctx->Color.IndexLogicOpEnabled ||
        ctx->Color.MultiDrawBuffer || ctx->Polygon.SmoothFlag ||
@@ -540,10 +595,13 @@ static GLboolean state_supported(bkmesa_gpu_context *gpu, GLcontext *ctx)
        ctx->Color.ColorMask[0] != 0xff ||
        ctx->Color.ColorMask[1] != 0xff ||
        ctx->Color.ColorMask[2] != 0xff ||
-       ctx->Color.ColorMask[3] != 0xff || !blend_supported(ctx) ||
+       ctx->Color.ColorMask[3] != 0xff || !blend_supported(ctx, gpu->capabilities) ||
        !texture_supported(ctx))
       return GL_FALSE;
-   caps = gfx3d_capabilities();
+   caps = gpu->capabilities;
+   if (ctx->Texture._ReallyEnabled && ctx->Texture.Unit[0].EnvMode == GL_DECAL &&
+       !(caps & BK_CAP_TEXTURE_DECAL)) return GL_FALSE;
+   if (ctx->Color.AlphaEnabled && !(caps & BK_CAP_ALPHA_TEST)) return GL_FALSE;
    if (ctx->Depth.Test && !(caps & BK_CAP_DEPTH_BUFFER)) return GL_FALSE;
    if (ctx->Depth.Test && !(caps & BK_CAP_DEPTH_FUNCS) &&
        ctx->Depth.Func != GL_LESS && ctx->Depth.Func != GL_LEQUAL)
@@ -572,6 +630,11 @@ static void convert_vertex(const bkmesa_gpu_context *gpu,
    out->z = CLAMP(z, 0.0F, 1.0F);
    out->rhw = in->win[3];
    out->color = force_color ? forced_color : color_to_argb(in->color);
+   /* GL_REPLACE ignores primary color, including stale particle colors.
+    * The native texture shader multiplies by this vertex color. */
+   if (ctx->Texture._ReallyEnabled &&
+       ctx->Texture.Unit[0].EnvMode == GL_REPLACE)
+      out->color = 0xffffffffU;
    if (ctx->Fog.Enabled) {
       bk_u32 c = out->color;
       GLfloat f = CLAMP(in->fog, 0.0F, 1.0F);
@@ -586,6 +649,31 @@ static void convert_vertex(const bkmesa_gpu_context *gpu,
    }
    out->u = in->texcoord[0][0];
    out->v = in->texcoord[0][1];
+}
+
+/* COLOR_INDEX FetchTexel returns an index in component zero, not RGBA.
+ * Expand the selected (per-object or shared) palette before native upload. */
+static bk_u32 texture_pixel(const GLcontext *ctx,
+                            const struct gl_texture_object *obj,
+                            const struct gl_texture_image *image,
+                            GLint x, GLint y)
+{
+   GLchan rgba[4] = {0, 0, 0, 255};
+   image->FetchTexel(image, x, y, 0, rgba);
+   if (image->Format == GL_COLOR_INDEX) {
+      const struct gl_color_table *table = ctx->Texture.SharedPalette
+         ? &ctx->Texture.Palette : &obj->Palette;
+      GLuint index = rgba[0];
+      const GLchan *colors = (const GLchan *)table->Table;
+      if (!colors || table->FloatTable || index >= table->Size) return 0;
+      if (table->Format == GL_RGB) {
+         rgba[0] = colors[index * 3]; rgba[1] = colors[index * 3 + 1];
+         rgba[2] = colors[index * 3 + 2]; rgba[3] = 255;
+      } else if (table->Format == GL_RGBA) {
+         for (GLuint c = 0; c < 4; c++) rgba[c] = colors[index * 4 + c];
+      } else return 0; /* other palette formats use the software path */
+   }
+   return color_to_argb(rgba);
 }
 
 static bk_u32 depth_func_flag(GLenum func)
@@ -605,14 +693,21 @@ static bk_u32 depth_func_flag(GLenum func)
 static bk_u32 draw_flags(const GLcontext *ctx)
 {
    bk_u32 flags = 0;
+   if (ctx->Color.AlphaEnabled)
+      flags |= (1U << 16) | ((bk_u32)(ctx->Color.AlphaFunc - GL_NEVER) << 17U) |
+               ((bk_u32)ctx->Color.AlphaRef << 20U);
    const struct gl_texture_object *obj = ctx->Texture.Unit[0]._Current;
    if (ctx->Depth.Test) flags |= BK_DRAW_DEPTH_TEST | depth_func_flag(ctx->Depth.Func);
    if (ctx->Depth.Test && ctx->Depth.Mask) flags |= BK_DRAW_DEPTH_WRITE;
    if (ctx->Color.BlendEnabled) {
       flags |= BK_DRAW_BLEND;
       if (ctx->Color.BlendDstRGB == GL_ONE) flags |= BK_DRAW_BLEND_ADDITIVE;
+      if (ctx->Color.BlendSrcRGB == GL_ZERO &&
+          ctx->Color.BlendDstRGB == GL_SRC_COLOR)
+         flags |= BK_DRAW_BLEND_MULTIPLY;
    }
    if (ctx->Texture._ReallyEnabled) {
+      if (ctx->Texture.Unit[0].EnvMode == GL_DECAL) flags |= BK_DRAW_TEXTURE_DECAL;
       flags |= BK_DRAW_TEXTURED;
       if (!obj || obj->MinFilter == GL_LINEAR || obj->MagFilter == GL_LINEAR)
          flags |= BK_DRAW_LINEAR;
@@ -622,16 +717,36 @@ static bk_u32 draw_flags(const GLcontext *ctx)
    return flags;
 }
 
+static GLuint texture_levels(const bkmesa_gpu_context *gpu,
+                               const struct gl_texture_object *obj,
+                               const struct gl_texture_image *image)
+{
+   if (!gpu->native_mipmaps || image != obj->Image[obj->BaseLevel] ||
+       (obj->MinFilter != GL_NEAREST_MIPMAP_NEAREST &&
+        obj->MinFilter != GL_LINEAR_MIPMAP_NEAREST)) return 1U;
+   GLuint count = 1U;
+   while (count < 16U && obj->BaseLevel + count < MAX_TEXTURE_LEVELS &&
+          obj->BaseLevel + (GLint)count <= obj->_MaxLevel &&
+          obj->Image[obj->BaseLevel + count]) count++;
+   return count;
+}
+
 static bkmesa_texture_slot *find_texture(bkmesa_gpu_context *gpu,
                                          struct gl_texture_object *owner,
                                          struct gl_texture_image *image)
 {
    GLuint i;
    for (i = 0; i < BKMESA_TEXTURE_CACHE; ++i) {
-      bkmesa_texture_slot *slot = &gpu->textures[i];
+      /* Adjacent triangles usually share a texture. Check the last slot first. */
+      GLuint index = (gpu->texture_hint + i) % BKMESA_TEXTURE_CACHE;
+      bkmesa_texture_slot *slot = &gpu->textures[index];
       if (slot->owner == owner && slot->image == image &&
-          slot->data == image->Data && slot->surface)
-         return slot;
+          slot->data == image->Data && slot->surface &&
+          slot->mip_levels == texture_levels(gpu, owner, image) &&
+          slot->palette == (image->Format == GL_COLOR_INDEX
+             ? (gpu->ctx->Texture.SharedPalette ? &gpu->ctx->Texture.Palette : &owner->Palette)
+             : NULL))
+      { gpu->texture_hint = index; return slot; }
    }
    return NULL;
 }
@@ -659,7 +774,7 @@ static GLboolean flush_batch(bkmesa_gpu_context *gpu)
       mark_fallback(gpu, BKMESA_FALLBACK_DRAW_FAILED);
       return GL_FALSE;
    }
-   if (fence && !gfx3d_wait_fence(fence)) {
+   if (fence && !gpu->ordered_submit && !gfx3d_wait_fence(fence)) {
       gpu->batch_count = 0;
       mark_fallback(gpu, BKMESA_FALLBACK_DRAW_FAILED);
       return GL_FALSE;
@@ -682,12 +797,13 @@ static bk_surface sync_texture(bkmesa_gpu_context *gpu, GLcontext *ctx,
    bk_surface_desc desc;
    bk_rect rect;
    bk_u32 *pixels;
-   GLuint x, y;
+   GLuint x, y, levels;
    if (!ctx->Texture._ReallyEnabled) return BK_SURFACE_INVALID;
    obj = ctx->Texture.Unit[0]._Current;
    if (!obj) return BK_SURFACE_INVALID;
    img = selected ? selected : obj->Image[obj->BaseLevel];
    if (!img) return BK_SURFACE_INVALID;
+   levels = texture_levels(gpu, obj, img);
    slot = find_texture(gpu, obj, img);
    if (slot) {
       slot->last_use = ++gpu->texture_clock;
@@ -700,65 +816,92 @@ static bk_surface sync_texture(bkmesa_gpu_context *gpu, GLcontext *ctx,
    if (!pixels) return BK_SURFACE_INVALID;
    for (y = 0; y < img->Height2; ++y) {
       for (x = 0; x < img->Width2; ++x) {
-         GLchan rgba[4] = {0, 0, 0, 255};
-         img->FetchTexel(img, (GLint)x, (GLint)y, 0, rgba);
-         pixels[y * img->Width2 + x] = color_to_argb(rgba);
+         pixels[y * img->Width2 + x] = texture_pixel(ctx, obj, img, x, y);
       }
    }
    MEMSET(&desc, 0, sizeof(desc));
    desc.width = (bk_u16)img->Width2;
    desc.height = (bk_u16)img->Height2;
    desc.format = BK_FORMAT_ARGB8888;
-   desc.flags = BK_SURFACE_TEXTURE | BK_SURFACE_DYNAMIC;
+   desc.flags = BK_SURFACE_TEXTURE | BK_SURFACE_DYNAMIC | BK_SURFACE_MIP_LEVELS(levels);
    if (!gfx3d_surface_create(&desc, &slot->surface)) {
-      FREE(pixels);
-      return BK_SURFACE_INVALID;
+      bkmesa_texture_slot *victim = NULL;
+      for (GLuint i = 0U; i < BKMESA_TEXTURE_CACHE; i++) {
+         bkmesa_texture_slot *entry = &gpu->textures[i];
+         if (entry != slot && entry->surface &&
+             (!victim || entry->last_use < victim->last_use)) victim = entry;
+      }
+      if (victim) destroy_texture_slot(victim);
+      if (!victim || !gfx3d_surface_create(&desc, &slot->surface)) {
+         FREE(pixels);
+         return BK_SURFACE_INVALID;
+      }
    }
-   rect.x = 0; rect.y = 0; rect.w = img->Width2; rect.h = img->Height2;
-   if (!gfx3d_surface_upload(slot->surface, pixels, img->Width2, &rect)) {
-      FREE(pixels);
-      destroy_texture_slot(slot);
-      return BK_SURFACE_INVALID;
+   for (GLuint level = 0U; level < levels; level++) {
+      struct gl_texture_image *mip = level ? obj->Image[obj->BaseLevel + level] : img;
+      if (level) {
+         for (y = 0U; y < mip->Height2; y++)
+            for (x = 0U; x < mip->Width2; x++) {
+               pixels[y * mip->Width2 + x] = texture_pixel(ctx, obj, mip, x, y);
+            }
+      }
+      rect.x = 0; rect.y = 0; rect.w = mip->Width2; rect.h = mip->Height2;
+      bk_bool ok = levels > 1U
+         ? gfx3d_surface_upload_mip(slot->surface, level, pixels, mip->Width2)
+         : gfx3d_surface_upload(slot->surface, pixels, mip->Width2, &rect);
+      if (!ok) {
+         FREE(pixels);
+         destroy_texture_slot(slot);
+         return BK_SURFACE_INVALID;
+      }
    }
    FREE(pixels);
    slot->owner = obj;
    slot->image = img;
    slot->data = img->Data;
+   slot->palette = img->Format == GL_COLOR_INDEX
+      ? (ctx->Texture.SharedPalette ? &ctx->Texture.Palette : &obj->Palette) : NULL;
    slot->width = img->Width2;
    slot->height = img->Height2;
+   slot->mip_levels = levels;
    slot->last_use = ++gpu->texture_clock;
+   gpu->texture_hint = (GLuint)(slot - gpu->textures);
    gpu->stats.texture_uploads++;
    return slot->surface;
 }
 
 static struct gl_texture_image *select_texture_image(
-   GLcontext *ctx, const SWvertex *a, const SWvertex *b, const SWvertex *c)
+   const bkmesa_gpu_context *gpu, GLcontext *ctx,
+   const SWvertex *a, const SWvertex *b, const SWvertex *c)
 {
    struct gl_texture_object *obj = ctx->Texture.Unit[0]._Current;
    struct gl_texture_image *base;
    GLuint level, max_level;
-   GLfloat rho = 1.0F;
+   GLfloat rho_squared = 1.0F;
    const SWvertex *v[3] = {a, b, c};
    if (!obj) return NULL;
    level = (GLuint)obj->BaseLevel;
    base = obj->Image[level];
    if (!base) return NULL;
+   if (gpu->native_mipmaps) return base;
    if (obj->MinFilter != GL_NEAREST_MIPMAP_NEAREST &&
        obj->MinFilter != GL_LINEAR_MIPMAP_NEAREST) return base;
    for (GLuint i = 0; i < 3U; i++) {
       const SWvertex *p = v[i], *q = v[(i + 1U) % 3U];
       GLfloat dx = q->win[0] - p->win[0];
       GLfloat dy = q->win[1] - p->win[1];
-      GLfloat pixels = (GLfloat)sqrt((double)(dx * dx + dy * dy));
+      GLfloat pixels_squared = dx * dx + dy * dy;
       GLfloat du = (q->texcoord[0][0] - p->texcoord[0][0]) * base->Width2;
       GLfloat dv = (q->texcoord[0][1] - p->texcoord[0][1]) * base->Height2;
-      GLfloat texels = (GLfloat)sqrt((double)(du * du + dv * dv));
-      if (pixels > 0.001F && texels / pixels > rho) rho = texels / pixels;
+      GLfloat texels_squared = du * du + dv * dv;
+      if (pixels_squared > 0.000001F &&
+          texels_squared > rho_squared * pixels_squared)
+         rho_squared = texels_squared / pixels_squared;
    }
    max_level = obj->_MaxLevel >= obj->BaseLevel ?
       (GLuint)obj->_MaxLevel : (GLuint)obj->BaseLevel;
-   while (rho > 1.5F && level < max_level && level + 1U < MAX_TEXTURE_LEVELS) {
-      rho *= 0.5F;
+   while (rho_squared > 2.25F && level < max_level && level + 1U < MAX_TEXTURE_LEVELS) {
+      rho_squared *= 0.25F;
       level++;
    }
    return obj->Image[level] ? obj->Image[level] : base;
@@ -839,6 +982,17 @@ static GLuint clip_triangle_scissor(const bkmesa_gpu_context *gpu,
    GLuint n = 3U;
    a[0] = input[0]; a[1] = input[1]; a[2] = input[2];
    scissor_bounds(gpu, ctx, &xmin, &ymin, &xmax, &ymax);
+   /* Most triangles already passed Mesa's viewport clip. Avoid four
+    * polygon copies when all vertices lie within the scissor rectangle. */
+   if (input[0].x >= xmin && input[0].x <= xmax &&
+       input[0].y >= ymin && input[0].y <= ymax &&
+       input[1].x >= xmin && input[1].x <= xmax &&
+       input[1].y >= ymin && input[1].y <= ymax &&
+       input[2].x >= xmin && input[2].x <= xmax &&
+       input[2].y >= ymin && input[2].y <= ymax) {
+      output[0] = input[0]; output[1] = input[1]; output[2] = input[2];
+      return 3U;
+   }
    n = clip_polygon_edge(a, n, b, 0U, xmin);
    n = clip_polygon_edge(b, n, a, 1U, xmax);
    n = clip_polygon_edge(a, n, b, 2U, ymin);
@@ -994,7 +1148,9 @@ static GLboolean submit_triangle(GLcontext *ctx, const SWvertex *a,
          mark_fallback(gpu, BKMESA_FALLBACK_PROJECTIVE_TEXTURE);
          return GL_FALSE;
       }
-      image = select_texture_image(ctx, a, b, c);
+      image = select_texture_image(gpu, ctx, a, b, c);
+      if (texture_levels(gpu, ctx->Texture.Unit[0]._Current, image) > 1U)
+         flags |= BK_DRAW_MIPMAP_NEAREST;
       texture = sync_texture(gpu, ctx, image);
       if (!texture) { mark_fallback(gpu, BKMESA_FALLBACK_TEXTURE_UPLOAD); return GL_FALSE; }
    }
@@ -1142,8 +1298,9 @@ static void gpu_render_start(GLcontext *ctx)
 
 static void gpu_render_finish(GLcontext *ctx)
 {
-   bkmesa_gpu_context *gpu = lookup(ctx);
-   if (gpu && gpu->render_gpu) (void)end_draw(gpu);
+   /* glEnd finishes primitive assembly, not a frame. Vertices and raster
+    * flags have already been copied into our batch. Keep compatible batches
+    * across glBegin/glEnd; state/texture changes flush in append_vertices. */
    _swsetup_RenderFinish(ctx);
 }
 
@@ -1192,6 +1349,9 @@ void bkmesa_gpu_bind(GLcontext *ctx, void *buffer, GLint width, GLint height,
 {
    bkmesa_gpu_context *gpu = lookup(ctx);
    if (!gpu) return;
+   if (gpu->buffer == buffer && gpu->width == width && gpu->height == height &&
+       gpu->rowlength == rowlength && gpu->format == format && gpu->yup == yup)
+      return;
    (void)resolve_color(gpu);
    destroy_textures(gpu);
    destroy_target(gpu);
@@ -1235,6 +1395,11 @@ GLboolean bkmesa_gpu_try_clear(GLcontext *ctx, GLbitfield mask,
    bk_u32 flags = 0, fence = 0, color;
    GLboolean ok;
    (void)x; (void)y;
+   /* OpenGL ignores clears of buffers absent from this visual. In particular,
+    * COLOR|DEPTH|STENCIL on a stencil-less window must not force readback. */
+   if (!ctx->Visual.stencilBits) mask &= ~DD_STENCIL_BIT;
+   if (!ctx->Visual.accumRedBits) mask &= ~DD_ACCUM_BIT;
+   if (!ctx->Visual.depthBits) mask &= ~DD_DEPTH_BIT;
    if (!gpu || !gpu->supported || !policy_allows_gpu(gpu) || !all ||
        width != gpu->width || height != gpu->height || ctx->Scissor.Enabled ||
        (mask & ~(DD_FRONT_LEFT_BIT | DD_DEPTH_BIT)) ||
@@ -1243,13 +1408,15 @@ GLboolean bkmesa_gpu_try_clear(GLcontext *ctx, GLbitfield mask,
       return GL_FALSE;
    if ((mask & DD_DEPTH_BIT) && !ctx->Depth.Mask) mask &= ~DD_DEPTH_BIT;
    if (!mask) return GL_TRUE;
-   if (!upload_color(gpu)) return GL_FALSE;
+   if (!end_draw(gpu)) return GL_FALSE;
+   if (!(mask & DD_FRONT_LEFT_BIT) && !upload_color(gpu)) return GL_FALSE;
    if (mask & DD_FRONT_LEFT_BIT) flags |= BK_DRAW_CLEAR_COLOR;
    if (mask & DD_DEPTH_BIT) flags |= BK_DRAW_CLEAR_DEPTH;
    color = color_to_argb(ctx->Color.ClearColor);
    ok = gfx3d_begin(gpu->target, color, ctx->Depth.Clear, flags) &&
         gfx3d_end(gpu->target, &fence);
-   if (ok && fence) ok = gfx3d_wait_fence(fence);
+   if (fence) gpu->last_fence = fence;
+   if (ok && fence && !gpu->ordered_submit) ok = gfx3d_wait_fence(fence);
    if (!ok) {
       mark_fallback(gpu, BKMESA_FALLBACK_BEGIN_FAILED);
       return GL_FALSE;
@@ -1268,6 +1435,16 @@ GLboolean bkmesa_gpu_try_clear(GLcontext *ctx, GLbitfield mask,
    return GL_TRUE;
 }
 
+/* Display consumers need color only. Keep GPU depth authoritative until a
+ * CPU depth consumer or a software-rendering transition explicitly resolves
+ * it. In particular, do not clear gpu_depth_dirty here. */
+GLboolean bkmesa_gpu_resolve_color(GLcontext *ctx)
+{
+   bkmesa_gpu_context *gpu = lookup(ctx);
+   if (!gpu || gpu->strict_failed) return GL_FALSE;
+   return resolve_color(gpu);
+}
+
 GLboolean bkmesa_gpu_resolve(GLcontext *ctx)
 {
    bkmesa_gpu_context *gpu = lookup(ctx);
@@ -1278,13 +1455,15 @@ GLboolean bkmesa_gpu_resolve(GLcontext *ctx)
 void bkmesa_gpu_flush(GLcontext *ctx)
 {
    bkmesa_gpu_context *gpu = lookup(ctx);
-   if (gpu && gpu->draw_open) (void)flush_batch(gpu);
+   if (gpu && gpu->draw_open) (void)end_draw(gpu);
 }
 
 void bkmesa_gpu_finish(GLcontext *ctx)
 {
    bkmesa_gpu_context *gpu = lookup(ctx);
    if (gpu && gpu->draw_open) (void)end_draw(gpu);
+   if (gpu && gpu->last_fence && !gfx3d_wait_fence(gpu->last_fence))
+      mark_fallback(gpu, BKMESA_FALLBACK_DRAW_FAILED);
 }
 
 void bkmesa_gpu_texture_changed(GLcontext *ctx,
@@ -1293,9 +1472,23 @@ void bkmesa_gpu_texture_changed(GLcontext *ctx,
    bkmesa_gpu_context *gpu = lookup(ctx);
    GLuint i;
    if (!gpu || !texObj) return;
+   if (!end_draw(gpu)) return;
    for (i = 0; i < BKMESA_TEXTURE_CACHE; ++i)
       if (gpu->textures[i].owner == texObj)
          destroy_texture_slot(&gpu->textures[i]);
+}
+
+void bkmesa_gpu_palette_changed(GLcontext *ctx, struct gl_texture_object *obj)
+{
+   for (bkmesa_gpu_context *gpu = contexts; gpu; gpu = gpu->next) {
+      if (!obj && gpu->ctx != ctx) continue;
+      if (!end_draw(gpu)) continue;
+      for (GLuint i = 0; i < BKMESA_TEXTURE_CACHE; i++) {
+         bkmesa_texture_slot *slot = &gpu->textures[i];
+         if (slot->image && slot->image->Format == GL_COLOR_INDEX &&
+             (!obj || slot->owner == obj)) destroy_texture_slot(slot);
+      }
+   }
 }
 
 void bkmesa_gpu_texture_region_changed(GLcontext *ctx,
@@ -1311,6 +1504,13 @@ void bkmesa_gpu_texture_region_changed(GLcontext *ctx,
    if (!gpu || !texObj || !image || x < 0 || y < 0 || width <= 0 || height <= 0 ||
        x + width > (GLint)image->Width2 || y + height > (GLint)image->Height2)
       return;
+   /* A changed subimage may be a non-base mip in a single GPU surface.
+    * Flush old draws and rebuild the chain on next use to preserve ordering. */
+   for (GLuint i = 0U; i < BKMESA_TEXTURE_CACHE; i++)
+      if (gpu->textures[i].owner == texObj && gpu->textures[i].mip_levels > 1U) {
+         bkmesa_gpu_texture_changed(ctx, texObj);
+         return;
+      }
    slot = find_texture(gpu, texObj, image);
    if (!slot) return;
    if (!(gfx3d_capabilities() & BK_CAP_TEXTURE_REGION_UPLOAD) ||
@@ -1322,9 +1522,8 @@ void bkmesa_gpu_texture_region_changed(GLcontext *ctx,
    if (!pixels) { destroy_texture_slot(slot); return; }
    for (py = 0U; py < (GLuint)height; py++)
       for (px = 0U; px < (GLuint)width; px++) {
-         GLchan rgba[4] = {0, 0, 0, 255};
-         image->FetchTexel(image, x + (GLint)px, y + (GLint)py, 0, rgba);
-         pixels[py * (GLuint)width + px] = color_to_argb(rgba);
+         pixels[py * (GLuint)width + px] = texture_pixel(ctx, texObj, image,
+            x + (GLint)px, y + (GLint)py);
       }
    if (!gfx3d_surface_upload_region(slot->surface, pixels, (bk_u32)width,
                                     (bk_u32)x, (bk_u32)y,
@@ -1452,9 +1651,12 @@ void bkmesa_gpu_before_cpu(GLcontext *ctx) { (void)ctx; }
 GLboolean bkmesa_gpu_try_clear(GLcontext *ctx, GLbitfield m, GLboolean a,
                                GLint x, GLint y, GLint w, GLint h)
 { (void)ctx; (void)m; (void)a; (void)x; (void)y; (void)w; (void)h; return GL_FALSE; }
+GLboolean bkmesa_gpu_resolve_color(GLcontext *ctx) { (void)ctx; return GL_TRUE; }
 GLboolean bkmesa_gpu_resolve(GLcontext *ctx) { (void)ctx; return GL_TRUE; }
 void bkmesa_gpu_flush(GLcontext *ctx) { (void)ctx; }
 void bkmesa_gpu_finish(GLcontext *ctx) { (void)ctx; }
+void bkmesa_gpu_palette_changed(GLcontext *ctx, struct gl_texture_object *o)
+{ (void)ctx; (void)o; }
 void bkmesa_gpu_texture_changed(GLcontext *ctx, struct gl_texture_object *o)
 { (void)ctx; (void)o; }
 void bkmesa_gpu_texture_region_changed(GLcontext *ctx,

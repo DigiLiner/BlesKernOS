@@ -57,7 +57,7 @@ typedef struct {
     volatile xl_descriptor_t *tx;
     void *tx_allocation;
     uint8_t *tx_buffer;
-    volatile bool tx_busy;
+    volatile uint32_t tx_lock;
     volatile bool running;
     int poll_pid;
     const pci_device_t *pci;
@@ -193,23 +193,35 @@ static void poll_task(void *argument UNUSED) {
 
 static bool xl_send(const void *frame, uint16_t length) {
     uint32_t start, limit;
-    if (!g_xl.running || !frame || length < 14U || length > 1514U || g_xl.tx_busy) return false;
-    g_xl.tx_busy = true; kmemcpy(g_xl.tx_buffer, frame, length);
+    if (!g_xl.running || !frame || length < 14U || length > 1514U) return false;
+    start = pit_get_ticks();
+    limit = pit_get_frequency_hz();
+    if (!limit) limit = 100U;
+    while (!__sync_bool_compare_and_swap(&g_xl.tx_lock, 0U, 1U)) {
+        if ((uint32_t)(pit_get_ticks() - start) >= limit) return false;
+        /* Cooperativo: puede ser llamado desde el poll RX para mandar ACK. */
+        task_yield();
+    }
+
+    kmemcpy(g_xl.tx_buffer, frame, length);
     g_xl.tx->next = 0; g_xl.tx->status = (uint32_t)length | 0x80000000U;
     g_xl.tx->address = (uint32_t)(uintptr_t)g_xl.tx_buffer;
     g_xl.tx->length = (uint32_t)length | LAST_FRAGMENT;
     issue(CMD_DOWN_STALL);
     outl((uint16_t)(g_xl.io + REG_DOWN_LIST), (uint32_t)(uintptr_t)g_xl.tx);
     command(CMD_DOWN_UNSTALL);
-    start = pit_get_ticks(); limit = pit_get_frequency_hz(); if (!limit) limit = 100U;
+    start = pit_get_ticks();
     while (inl((uint16_t)(g_xl.io + REG_DOWN_LIST)) != 0U &&
            (uint32_t)(pit_get_ticks() - start) < limit) task_yield();
-    g_xl.tx_busy = false;
     if (inl((uint16_t)(g_xl.io + REG_DOWN_LIST)) != 0U) {
-        issue(CMD_TX_RESET); command(CMD_TX_ENABLE); return false;
+        issue(CMD_TX_RESET);
+        command(CMD_TX_ENABLE);
+        __sync_lock_release(&g_xl.tx_lock);
+        return false;
     }
     while (inb((uint16_t)(g_xl.io + REG_TX_STATUS)) & 0x3CU)
         outb((uint16_t)(g_xl.io + REG_TX_STATUS), 0);
+    __sync_lock_release(&g_xl.tx_lock);
     return true;
 }
 
@@ -266,7 +278,7 @@ static void xl_shutdown(void) {
 }
 
 const bk_driver_module_t *bleskernos_driver_query(void) {
-    static const bk_driver_module_t module = { BK_DRIVER_ABI_VERSION, sizeof(bk_driver_module_t),
+    static const bk_driver_module_t module = { BK_DRIVER_ABI_VERSION, sizeof(bk_driver_module_t), 1U, 0U,
         "3c90x", "3Com EtherLink XL 3c900/3c905/3c556", xl_init, xl_shutdown };
     return &module;
 }

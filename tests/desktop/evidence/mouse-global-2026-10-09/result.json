@@ -1,0 +1,13 @@
+{
+  "status": "pass",
+  "memory_mib": 256,
+  "cpus": 2,
+  "saved_sensitivity": 5,
+  "saved_trail": false,
+  "screenshots": [
+    "pointer.png",
+    "click-test.png",
+    "options.png",
+    "options-speed5.png"
+  ]
+}

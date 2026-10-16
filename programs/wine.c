@@ -1,21 +1,10 @@
 #include "../kernel/include/api.h"
-#include <stdio.h>
+#define WINE_LAUNCHER "/WINEGATE/bin/wine-launch.ELF"
 
-/*
- * Lanzador provisional explicito:
- *   /SYSTEM/PROGRAMS/WINE.BEX /SYSTEM/WIN32/HELLO.EXE
- *
- * El File Browser tambien puede abrir .EXE directamente. Este wrapper queda
- * como punto de entrada visible del futuro subsistema Wine.
- */
-void bleskernos_program_main(gui_desktop_t *desktop UNUSED) {
-    const char *path = bk_app_launch_argument();
-
-    if (!path || !path[0]) {
-        kprintf("[WINE] uso: WINE.BEX /RUTA/PROGRAMA.EXE\n");
-        return;
-    }
-    kprintf("[WINE] cargando %s\n", path);
-    if (!bk_app_pe_execute(path))
-        kprintf("[WINE] error: %s\n", bk_app_pe_last_error());
+void bleskernos_program_main(gui_desktop_t *desktop) {
+    const char *path = bk_proc_launch_arg();
+    (void)desktop;
+    if (!path || !path[0]) path = "winecfg";
+    if (!bk_app_launch(WINE_LAUNCHER, path))
+        bk_sys_log("[WINE] no se pudo iniciar Wine 11 mediante wine-launch.ELF");
 }

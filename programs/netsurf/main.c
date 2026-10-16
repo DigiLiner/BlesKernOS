@@ -1,10 +1,12 @@
 #include "platform.h"
 #include "plotters.h"
+#include "font.h"
+#include <string.h>
 
 #define NSBK_WINDOW_W 720
 #define NSBK_WINDOW_H 460
-#define NSBK_TOOLBAR_H 46
-#define NSBK_STATUS_H 22
+#define NSBK_TOOLBAR_H 80
+#define NSBK_STATUS_H 24
 #define NSBK_SCROLLBAR_W BK_GUI_SCROLLBAR_SIZE
 #define NSBK_SCROLL_STEP 36U
 #define NSBK_CHAR_W 8
@@ -14,11 +16,14 @@
 #define NSBK_FORM_BODY_MAX 2048U
 #define NSBK_HISTORY_MAX 16U
 #define NSBK_HOME_URL "https://www.google.com/"
-#define NSBK_MIN_API_VERSION 23U
+#define NSBK_MIN_API_VERSION 39U
 #define NSBK_INTERNET_CONFIG "/SYSTEM/USER/CONFIG/INTERNET.INI"
 
 #define NSBK_MENU_FILE_OPEN 1001U
 #define NSBK_MENU_FILE_CLOSE 1002U
+#define NSBK_MENU_FILE_LOCAL 1003U
+#define NSBK_MENU_FILE_SETTINGS 1004U
+#define NSBK_BROWSER_CONFIG "/SYSTEM/USER/CONFIG/NETSURF.INI"
 #define NSBK_MENU_VIEW_RELOAD 1101U
 #define NSBK_MENU_VIEW_STOP 1102U
 #define NSBK_MENU_VIEW_IMAGES 1103U
@@ -39,6 +44,17 @@ typedef struct {
     bk_gui_widget_t *address_box;
     bk_gui_widget_t *go_button;
     bk_gui_widget_t *page_textbox;
+    bk_gui_widget_t *open_button,*settings_button;
+    uint32_t open_id,settings_id;
+    bk_gui_window_t *settings_window;
+    bk_gui_widget_t *config_home,*config_timeout,*config_budget;
+    bk_gui_widget_t *config_images,*config_css,*config_cookies;
+    uint32_t config_save_id,config_cancel_id;
+    uint32_t resource_budget_ms;
+    bk_gui_image_t brand_icon;
+    int32_t layout_height;
+    int32_t toolbar_width;
+
     uint32_t back_id;
     uint32_t forward_id;
     uint32_t reload_id;
@@ -50,6 +66,7 @@ typedef struct {
     nsbk_document_t document;
     char address[NSBK_URL_MAX];
     char home_url[NSBK_URL_MAX];
+    char search_url[NSBK_URL_MAX];
     char status[128];
     char pending_url[NSBK_URL_MAX];
     char pending_method[8];
@@ -62,6 +79,9 @@ typedef struct {
     uint8_t history_count;
     uint8_t history_index;
     uint32_t scroll_line;
+    uint32_t progress_paint_ms;
+    uint32_t resize_changed_ms;
+    int32_t resize_width;
     bk_gui_scrollbar_drag_t scrollbar_drag;
     int32_t layout_width;
     uint32_t request_timeout_ms;
@@ -89,6 +109,8 @@ typedef struct {
 
 
 static netsurf_state_t *g_netsurf_state;
+static void open_local_page(netsurf_state_t *state);
+static void open_settings(netsurf_state_t *state);
 
 static void clamp_scroll(netsurf_state_t *state);
 static void position_page_textbox(netsurf_state_t *state);
@@ -166,16 +188,18 @@ static uint32_t parse_uint(const char *text, uint32_t fallback) {
         if (value > 100000U) return fallback;
         value = value * 10U + (uint32_t)(*text++ - '0');
     }
-    return have_digit ? value : fallback;
+    return have_digit && *text == '\0' ? value : fallback;
 }
 
 static void internet_defaults(netsurf_state_t *state) {
     if (!state) return;
     text_copy(state->home_url, sizeof(state->home_url), NSBK_HOME_URL);
+    text_copy(state->search_url,sizeof(state->search_url),"https://www.google.com/search?q=");
     /* QEMU + TLS por software puede dejar pausas superiores a 10 s entre
        fragmentos de páginas modernas. El timeout se aplica por operación de
        red, no congela el hilo de la interfaz. */
     state->request_timeout_ms = 30000U;
+    state->resource_budget_ms = 12000U;
     state->allow_stylesheets = true;
     state->allow_images = true;
     state->allow_cookies = true;
@@ -197,10 +221,15 @@ static void internet_apply_line(netsurf_state_t *state, const char *line) {
     value[j] = '\0';
     if (text_equal_nocase(key, "home") && value[0])
         text_copy(state->home_url, sizeof(state->home_url), value);
+    else if(text_equal_nocase(key,"search") && value[0])
+        text_copy(state->search_url,sizeof(state->search_url),value);
     else if (text_equal_nocase(key, "timeout")) {
         uint32_t timeout = parse_uint(value, 10000U);
         if (timeout >= 2000U && timeout <= 30000U)
             state->request_timeout_ms = timeout;
+    } else if(text_equal_nocase(key,"resources")) {
+        uint32_t budget=parse_uint(value,12000U);
+        if(budget>=2000U&&budget<=30000U)state->resource_budget_ms=budget;
     } else if (text_equal_nocase(key, "images"))
         state->allow_images = value[0] != '0';
     else if (text_equal_nocase(key, "css"))
@@ -212,9 +241,11 @@ static void internet_apply_line(netsurf_state_t *state, const char *line) {
 static void internet_load_settings(netsurf_state_t *state) {
     void *raw = NULL;
     uint32_t size = 0U, position = 0U;
-    char line[320];
+    char line[NSBK_URL_MAX+40];
     internet_defaults(state);
-    if (!bk_file_read_all(NSBK_INTERNET_CONFIG, &raw, &size) || !raw) return;
+    for(unsigned config=0;config<2;config++) {
+    position=0;raw=NULL;size=0;
+    if (!bk_file_read_all(config?NSBK_BROWSER_CONFIG:NSBK_INTERNET_CONFIG, &raw, &size) || !raw) continue;
     while (position < size) {
         uint32_t used = 0U;
         while (position < size && ((char *)raw)[position] != '\n' &&
@@ -228,6 +259,7 @@ static void internet_load_settings(netsurf_state_t *state) {
         internet_apply_line(state, line);
     }
     bk_sys_free(raw);
+    }
 }
 
 static void netsurf_present_progress(netsurf_state_t *state) {
@@ -252,7 +284,9 @@ static void netsurf_progress(void *context, uint8_t percent,
     /* The fetch thread owns document mutation until worker_complete.  It must
        not call into GUI code or rewrite strings that the compositor reads.
        Publish only tiny scalar progress state; the main GUI loop consumes it. */
-    state->loading_progress = percent > 100U ? 100U : percent;
+    percent = percent > 100U ? 100U : percent;
+    if (state->loading_progress == percent) return;
+    state->loading_progress = percent;
     __sync_synchronize();
     state->progress_dirty = true;
     bk_sys_yield();
@@ -282,64 +316,13 @@ static void update_loaded_status(netsurf_state_t *state, bool success) {
         else set_status(state, "@HBC504817");
         return;
     }
-    text_copy(state->status, sizeof(state->status),
-              state->document.secure ? "HTTPS " : "HTTP ");
-    append_uint(state->status, sizeof(state->status),
-                state->document.http_status > 0 ?
-                (uint32_t)state->document.http_status : 0U);
-    if (state->document.redirect_count) {
-        append_text(state->status, sizeof(state->status), " ->");
-        append_uint(state->status, sizeof(state->status),
-                    state->document.redirect_count);
-    }
-    append_text(state->status, sizeof(state->status),
-                state->document.built_dom ? " DOM " : " recurso ");
-    if (state->document.built_dom) {
-        append_uint(state->status, sizeof(state->status),
-                    state->document.node_count);
-        append_text(state->status, sizeof(state->status), "/");
-        append_uint(state->status, sizeof(state->status),
-                    state->document.element_count);
-    }
-    if (state->document.layout.valid) {
-        append_text(state->status, sizeof(state->status), " CSS ");
-        append_uint(state->status, sizeof(state->status),
-                    state->document.stylesheet_count);
-        if (state->document.stylesheet_discovered_count) {
-            append_text(state->status, sizeof(state->status), "/");
-            append_uint(state->status, sizeof(state->status),
-                        state->document.stylesheet_discovered_count);
-        }
-        if (state->document.stylesheet_failure_count) {
-            append_text(state->status, sizeof(state->status), "!");
-            append_uint(state->status, sizeof(state->status),
-                        state->document.stylesheet_failure_count);
-        }
-        append_text(state->status, sizeof(state->status), " IMG ");
-        append_uint(state->status, sizeof(state->status),
-                    state->document.image_count);
-        if (state->document.image_failures) {
-            append_text(state->status, sizeof(state->status), "/-");
-            append_uint(state->status, sizeof(state->status),
-                        state->document.image_failures);
-        }
-    }
-    append_text(state->status, sizeof(state->status), " enlaces ");
-    append_uint(state->status, sizeof(state->status), state->document.link_count);
-    if (state->document.form_count) {
-        append_text(state->status, sizeof(state->status), " forms ");
-        append_uint(state->status, sizeof(state->status), state->document.form_count);
-    }
-    if (state->document.cookie_count) {
-        append_text(state->status, sizeof(state->status), " cookies ");
-        append_uint(state->status, sizeof(state->status), state->document.cookie_count);
-    }
-    if (state->document.content_gzip)
-        append_text(state->status, sizeof(state->status), " gzip");
-    if (state->document.chunked)
-        append_text(state->status, sizeof(state->status), " chunked");
-    if (state->document.truncated)
-        append_text(state->status, sizeof(state->status), " truncado");
+    set_status(state,"Listo.");
+    if(state->document.http_status>=400) {
+        set_status(state,"La pagina devolvio HTTP ");
+        append_uint(state->status,sizeof(state->status),state->document.http_status);
+    } else if(state->document.image_failures || state->document.stylesheet_failure_count)
+        set_status(state,"Listo. Algunos recursos no se pudieron cargar.");
+
 }
 
 static void show_link_status(netsurf_state_t *state, uint32_t link_index) {
@@ -451,6 +434,20 @@ static bool queue_request(netsurf_state_t *state, const char *url,
 
 static bool queue_url(netsurf_state_t *state, const char *url,
                       bool add_history) {
+    if(url && url[0]=='?') {
+        char search[NSBK_URL_MAX];text_copy(search,sizeof(search),state->search_url);
+        uint32_t used=text_length(search);const unsigned char *src=(const unsigned char *)url+1;
+        while(*src==' ') src++;
+        while(*src) {
+            unsigned char ch=*src++;bool plain=(ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z')||(ch>='0'&&ch<='9')||ch=='-'||ch=='_'||ch=='.'||ch=='~';
+            uint32_t needed=plain || ch==' ' ? 1U : 3U;
+            if(used+needed>=sizeof(search)) {set_status(state,"Busqueda demasiado larga");return false;}
+            if(plain) search[used++]=(char)ch;
+            else if(ch==' ') search[used++]='+';
+            else {static const char hex[]="0123456789ABCDEF";search[used++]='%';search[used++]=hex[ch>>4];search[used++]=hex[ch&15];}
+        }
+        search[used]=0;return queue_request(state,search,"GET",NULL,0U,add_history);
+    }
     return queue_request(state, url, "GET", NULL, 0U, add_history);
 }
 
@@ -480,6 +477,7 @@ static void finish_load_request(netsurf_state_t *state) {
     success = state->worker_success;
     if (state->cancel_requested) success = false;
     state->layout_width = state->document.viewport_width;
+    state->layout_height = state->document.viewport_height;
     final_address[0] = '\0';
     if (state->document.final_url[0]) {
         text_copy(final_address, sizeof(final_address), state->document.final_url);
@@ -517,7 +515,7 @@ static void load_request(netsurf_state_t *state, const char *url,
     char request_url[NSBK_URL_MAX];
     char current_base[NSBK_URL_MAX];
     char fragment[NSBK_URL_MAX];
-    bk_gui_rect_t content;
+    bk_gui_rect_t content={0,0,640,480};
     int32_t viewport = 640;
     uint32_t i;
     if (!state || state->loading || !url || !url[0] ||
@@ -557,6 +555,8 @@ static void load_request(netsurf_state_t *state, const char *url,
     if (bk_gui_window_content_rect(state->window, &content))
         viewport = page_rect(state, content).w;
     state->worker_viewport = viewport;
+    state->document.viewport_height=page_rect(state,content).h;
+    state->document.resource_budget_ms=state->resource_budget_ms;
     state->loading = true;
     state->cancel_requested = false;
     state->worker_complete = false;
@@ -638,10 +638,8 @@ static bk_gui_rect_t page_frame_rect(bk_gui_rect_t content) {
 static bk_gui_rect_t page_rect(netsurf_state_t *state,
                                bk_gui_rect_t content) {
     bk_gui_rect_t page = page_frame_rect(content);
-    if (state && !state->loading && state->document.title[0]) {
-        page.y += 19;
-        page.h -= 19;
-    }
+    (void)state;
+    page.x+=2;page.y+=2;page.w-=4;page.h-=4;
     page.w -= NSBK_SCROLLBAR_W;
     if (page.w < 1) page.w = 1;
     return page;
@@ -1060,27 +1058,11 @@ static uint32_t css_opacity_color(uint32_t color, uint8_t opacity) {
 
 static void draw_spaced_text(bk_gui_surface_t *surface, bk_gui_rect_t clip,
                              int x, int y, const char *text, uint32_t length,
-                             uint32_t foreground, uint16_t font_px,
+                             uint32_t foreground, uint16_t font_px, uint16_t face,
                              bool bold, bool italic, bool monospace,
                              int8_t letter_spacing, int8_t word_spacing) {
-    uint32_t i;
-    int cursor = x;
-    if (!surface || !text || length == 0U) return;
-    if (letter_spacing == 0 && word_spacing == 0) {
-        bk_gui_surface_draw_text_px(surface, x, y, text, length, foreground,
-                                    font_px, bold, italic, monospace, clip);
-        return;
-    }
-    for (i = 0U; i < length; i++) {
-        uint16_t width = bk_gui_text_width_px(text + i, 1U, font_px,
-                                              monospace, bold);
-        bk_gui_surface_draw_text_px(surface, cursor, y, text + i, 1U,
-                                    foreground, font_px, bold, italic,
-                                    monospace, clip);
-        cursor += (int)width + letter_spacing;
-        if (text[i] == ' ') cursor += word_spacing;
-        if (cursor >= clip.x + clip.w) break;
-    }
+    nsbk_font_draw_spaced(surface,clip,face,font_px,x,y,text,length,foreground,
+                           bold,italic,monospace,letter_spacing,word_spacing);
 }
 
 static int32_t rounded_inset(int32_t radius, int32_t row) {
@@ -1178,6 +1160,11 @@ static void draw_control_item(netsurf_state_t *state,
     radius = button ? 4 : (control->type == NSBK_CONTROL_SEARCH ?
                            rect.h / 2 : 3);
     draw_control_box(surface, rect, radius, background, border);
+    if(button) {
+        bk_gui_surface_draw_line(surface,rect.x+1,rect.y+1,rect.x+rect.w-2,rect.y+1,0xffffff);
+        bk_gui_surface_draw_line(surface,rect.x+1,rect.y+1,rect.x+1,rect.y+rect.h-2,0xffffff);
+        bk_gui_surface_draw_line(surface,rect.x+1,rect.y+rect.h-2,rect.x+rect.w-2,rect.y+rect.h-2,0x808080);
+    }
     display[0] = '\0';
     if (button || control->type == NSBK_CONTROL_SELECT) {
         text_copy(display, sizeof(display), control->label);
@@ -1192,27 +1179,17 @@ static void draw_control_item(netsurf_state_t *state,
         text_copy(display, sizeof(display), control->placeholder);
         foreground = 0x00808080U;
     }
-    while (display[0] && bk_gui_text_width_px(display, text_length(display),
-            font_px, false, false) > (uint16_t)(rect.w > 12 ? rect.w - 12 : 1))
-        display[text_length(display) - 1U] = '\0';
-    if (button) {
-        uint16_t text_w = bk_gui_text_width_px(display, text_length(display),
-                                               font_px, false, false);
-        bk_gui_surface_draw_text_px(surface,
-            rect.x + (rect.w - (int)text_w) / 2,
-            rect.y + (rect.h - (int)font_px) / 2,
-            display, text_length(display), foreground, font_px,
-            (item->flags & NSBK_LAYOUT_BOLD) != 0,
-            (item->font_flags & NSBK_FONT_ITALIC) != 0,
-            (item->font_flags & NSBK_FONT_MONOSPACE) != 0, rect);
-    } else {
-        bk_gui_surface_draw_text_px(surface, rect.x + 5,
-            rect.y + (rect.h - (int)font_px) / 2,
-            display, text_length(display), foreground, font_px,
-            (item->flags & NSBK_LAYOUT_BOLD) != 0,
-            (item->font_flags & NSBK_FONT_ITALIC) != 0,
-            (item->font_flags & NSBK_FONT_MONOSPACE) != 0, rect);
-    }
+    bool bold=(item->flags & NSBK_LAYOUT_BOLD)!=0;
+    bool italic=(item->font_flags & NSBK_FONT_ITALIC)!=0;
+    bool mono=(item->font_flags & NSBK_FONT_MONOSPACE)!=0;
+    uint32_t fit=nsbk_font_fit(item->font_id,font_px,bold,mono,display,
+        text_length(display),rect.w>12?rect.w-12:1,0,0);
+    display[fit]='\0';
+    uint16_t text_w=nsbk_font_width(item->font_id,font_px,bold,mono,display,fit);
+    int text_x=button?rect.x+(rect.w-(int)text_w)/2:rect.x+5;
+    int text_y=rect.y+(rect.h-(int)nsbk_font_height(item->font_id,font_px))/2;
+    nsbk_font_draw(surface,rect,item->font_id,font_px,text_x,text_y,display,fit,
+                   foreground,bold,italic,mono);
     if (control->type == NSBK_CONTROL_SELECT) {
         bk_gui_rect_t arrow = {rect.x + rect.w - 18, rect.y + 2, 16, rect.h - 4};
         bk_gui_surface_fill_rect(surface, arrow, 0x00E4E4E4U);
@@ -1328,14 +1305,14 @@ static void draw_styled_document(netsurf_state_t *state,
             if (item->letter_spacing || item->word_spacing)
                 draw_spaced_text(surface, area, rect.x, rect.y, text,
                     item->text_length, foreground,
-                    item->font_px ? item->font_px : 12,
+                    item->font_px ? item->font_px : 12, item->font_id,
                     (item->flags & NSBK_LAYOUT_BOLD) != 0,
                     (item->font_flags & NSBK_FONT_ITALIC) != 0,
                     (item->font_flags & NSBK_FONT_MONOSPACE) != 0,
                     item->letter_spacing, item->word_spacing);
             else
                 nsbk_plot_text(&plotter, rect.x, rect.y, text,
-                               item->text_length, foreground,
+                               item->text_length, foreground, item->font_id,
                                item->font_px ? item->font_px : 12,
                                (item->flags & NSBK_LAYOUT_BOLD) != 0,
                                (item->font_flags & NSBK_FONT_ITALIC) != 0,
@@ -1413,45 +1390,46 @@ static void set_widget_bounds_safe(netsurf_state_t *state,
         bk_gui_widget_set_bounds(state->window, widget, bounds);
 }
 
-static void layout_toolbar_widgets(netsurf_state_t *state, int content_width) {
-    int address_x = 214;
-    int go_width = 42;
-    int address_width = content_width - address_x - go_width - 12;
-    if (!state || !state->window) return;
-    if (address_width < 80) address_width = 80;
-    set_widget_bounds_safe(state, state->back_button,
-        (bk_gui_rect_t){6, 9, 30, 26});
-    set_widget_bounds_safe(state, state->forward_button,
-        (bk_gui_rect_t){38, 9, 30, 26});
-    set_widget_bounds_safe(state, state->reload_button,
-        (bk_gui_rect_t){70, 9, 48, 26});
-    set_widget_bounds_safe(state, state->stop_button,
-        (bk_gui_rect_t){120, 9, 42, 26});
-    set_widget_bounds_safe(state, state->home_button,
-        (bk_gui_rect_t){164, 9, 46, 26});
-    set_widget_bounds_safe(state, state->address_box,
-        (bk_gui_rect_t){address_x, 9, address_width, 26});
-    set_widget_bounds_safe(state, state->go_button,
-        (bk_gui_rect_t){address_x + address_width + 4, 9, go_width, 26});
+static void bevel(bk_gui_surface_t *s,bk_gui_rect_t r,bool raised) {
+    uint32_t light=raised?0xffffff:0x606060,dark=raised?0x606060:0xffffff;
+    bk_gui_surface_draw_line(s,r.x,r.y,r.x+r.w-1,r.y,light);
+    bk_gui_surface_draw_line(s,r.x,r.y,r.x,r.y+r.h-1,light);
+    bk_gui_surface_draw_line(s,r.x,r.y+r.h-1,r.x+r.w-1,r.y+r.h-1,dark);
+    bk_gui_surface_draw_line(s,r.x+r.w-1,r.y,r.x+r.w-1,r.y+r.h-1,dark);
 }
-
-static void draw_toolbar_background(bk_gui_surface_t *surface,
-                                    bk_gui_rect_t content) {
-    bk_gui_rect_t toolbar;
-    if (!surface || content.w <= 0) return;
-    toolbar = (bk_gui_rect_t){content.x, content.y,
-                              content.w, NSBK_TOOLBAR_H};
-    /* Paint browser chrome after the document.  This prevents a page repaint
-       during scrolling from visually replacing the toolbar with page white. */
-    bk_gui_surface_fill_rect(surface, toolbar, 0x00C0C0C0U);
-    bk_gui_surface_fill_rect(surface,
-        (bk_gui_rect_t){toolbar.x, toolbar.y, toolbar.w, 1}, 0x00FFFFFFU);
-    bk_gui_surface_fill_rect(surface,
-        (bk_gui_rect_t){toolbar.x, toolbar.y + toolbar.h - 3,
-                        toolbar.w, 1}, 0x00606060U);
-    bk_gui_surface_fill_rect(surface,
-        (bk_gui_rect_t){toolbar.x, toolbar.y + toolbar.h - 2,
-                        toolbar.w, 1}, 0x00FFFFFFU);
+static void layout_toolbar_widgets(netsurf_state_t *state, int width) {
+    if(!state || !state->window || !state->settings_button || !state->address_box)return;
+    if(state->toolbar_width==width)return;
+    state->toolbar_width=width;
+    bk_gui_widget_t *nav[]={state->back_button,state->forward_button,state->stop_button,
+        state->reload_button,state->home_button,state->open_button,state->settings_button};
+    for(unsigned i=0;i<7;i++)set_widget_bounds_safe(state,nav[i],(bk_gui_rect_t){12+(int)i*30,5,26,24});
+    set_widget_bounds_safe(state,state->address_box,(bk_gui_rect_t){102,37,width-144,24});
+    set_widget_bounds_safe(state,state->go_button,(bk_gui_rect_t){width-36,37,28,24});
+}
+static void draw_toolbar_background(netsurf_state_t *state,bk_gui_surface_t *s,bk_gui_rect_t c) {
+    bk_gui_rect_t top={c.x,c.y,c.w,34},address={c.x,c.y+34,c.w,31};
+    bk_gui_surface_fill_rect(s,(bk_gui_rect_t){c.x,c.y,c.w,NSBK_TOOLBAR_H},0xc0c0c0);
+    bevel(s,top,true);bevel(s,address,true);
+    for(int row=0;row<2;row++) {
+        int y=c.y+5+row*34;
+        bk_gui_surface_draw_line(s,c.x+4,y,c.x+4,y+20,0xffffff);
+        bk_gui_surface_draw_line(s,c.x+6,y,c.x+6,y+20,0x808080);
+    }
+    bk_gui_surface_draw_line(s,c.x+224,c.y+5,c.x+224,c.y+29,0x808080);
+    bk_gui_surface_draw_line(s,c.x+225,c.y+5,c.x+225,c.y+29,0xffffff);
+    bk_gui_rect_t badge={c.x+c.w-100,c.y+4,94,26};
+    bk_gui_surface_fill_rect(s,badge,0xd4d0c8);bevel(s,badge,false);
+    if(state->brand_icon.pixels)bk_gui_surface_draw_image(s,
+        (bk_gui_rect_t){badge.x+5,badge.y+5,16,16},badge,&state->brand_icon);
+    bk_gui_surface_draw_text(s,badge.x+27,badge.y+9,"NetSurf",0x000080,0,false);
+    bk_gui_surface_draw_text(s,c.x+14,c.y+45,"Direccion:",0x202020,0,false);
+    const char *title=state->loading?"Conectando y cargando pagina...":
+        state->document.title[0]?state->document.title:"Seleccione una direccion o abra un archivo local";
+    char title_text[NSBK_HTML_TITLE_MAX];text_copy(title_text,sizeof(title_text),title);
+    uint32_t title_chars=c.w>18?(uint32_t)(c.w-18)/8U:0U;
+    if(title_chars<sizeof(title_text))title_text[title_chars]=0;
+    bk_gui_surface_draw_text(s,c.x+9,c.y+69,title_text,0x404040,0,false);
 }
 
 static void netsurf_paint(bk_gui_window_t *window UNUSED,
@@ -1475,15 +1453,7 @@ static void netsurf_paint(bk_gui_window_t *window UNUSED,
     bk_gui_surface_clear(surface, 0x00C0C0C0U);
 
     bk_gui_surface_fill_rect(surface, page_frame, 0x00FFFFFFU);
-    bk_gui_surface_draw_rect(surface, page_frame, 0x00808080U);
-    if (!state->loading && state->document.title[0]) {
-        bk_gui_rect_t title = (bk_gui_rect_t){page_frame.x + 1, page_frame.y + 1,
-                                             page_frame.w - 2, 18};
-        bk_gui_surface_fill_rect(surface, title, 0x00E8E8E8U);
-        bk_gui_surface_draw_text(surface, title.x + 6, title.y + 5,
-                                 state->document.title, 0x00000080U,
-                                 0x00E8E8E8U, false);
-    }
+    bevel(surface,page_frame,false);
     /* nsbk_document_fetch_request() clears/frees and rebuilds the document on
        netsurf-fetch. Never traverse its DOM/layout/images concurrently. */
     if (state->loading) {
@@ -1495,13 +1465,18 @@ static void netsurf_paint(bk_gui_window_t *window UNUSED,
         local_scrollbar_paint(surface, &scrollbar);
     }
 
-    bk_gui_surface_fill_rect(surface, status, 0x00D4D0C8U);
-    bk_gui_surface_draw_rect(surface, status, 0x00808080U);
-    bk_gui_surface_draw_text(surface, status.x + 5, status.y + 5,
-                             state->status, 0x00202020U, 0x00D4D0C8U, false);
+    bk_gui_surface_fill_rect(surface,status,0xc0c0c0);
+    bevel(surface,(bk_gui_rect_t){status.x+3,status.y+3,status.w-236,18},false);
+    bevel(surface,(bk_gui_rect_t){status.x+status.w-118,status.y+3,113,18},false);
+    const char *zone=state->address[0]=='/'||!strncmp(state->address,"file://",7)?"Archivo local":state->document.secure?"Internet (TLS)":"Internet";
+    bk_gui_surface_draw_text(surface,status.x+status.w-110,status.y+8,zone,0x202020,0,false);
+    char status_text[128];text_copy(status_text,sizeof(status_text),state->status);
+    uint32_t status_chars=status.w>244?(uint32_t)(status.w-244)/8U:1U;
+    if(status_chars<sizeof(status_text) && text_length(status_text)>status_chars)status_text[status_chars]=0;
+    bk_gui_surface_draw_text(surface,status.x+8,status.y+8,status_text,0x202020,0xc0c0c0,false);
     if (state->loading || (state->progress_visible_until &&
         bk_sys_uptime_ms() < state->progress_visible_until)) {
-        bk_gui_rect_t frame = {status.x + status.w - 116, status.y + 3, 110, 12};
+        bk_gui_rect_t frame = {status.x + status.w - 231, status.y + 4, 108, 16};
         uint32_t blocks = (state->loading_progress + 9U) / 10U;
         uint32_t color = state->progress_failed ? 0x00A02020U : 0x000000A0U;
         uint32_t i;
@@ -1515,7 +1490,7 @@ static void netsurf_paint(bk_gui_window_t *window UNUSED,
     }
     /* Keep the browser chrome opaque and stable across scroll repaints.
        The GUI compositor paints buttons/textboxes after this callback. */
-    draw_toolbar_background(surface, content);
+    draw_toolbar_background(state,surface, content);
 }
 
 static void clamp_scroll(netsurf_state_t *state) {
@@ -1560,6 +1535,8 @@ static void netsurf_widget_callback(bk_gui_window_t *window UNUSED,
         }
         return;
     }
+    if(widget_id==state->open_id) {open_local_page(state);return;}
+    if(widget_id==state->settings_id) {open_settings(state);return;}
     if (state->loading || state->pending_navigation) return;
     if (state->page_textbox_id && widget_id == state->page_textbox_id &&
         state->active_control < state->document.control_count) {
@@ -1588,6 +1565,10 @@ static bool netsurf_event(bk_gui_window_t *window UNUSED,
     uint8_t key;
     if (!state || !event ||
         !bk_gui_window_content_rect(state->window, &content)) return false;
+    if(event->type==BK_GUI_EVENT_CLOSE) {
+        bk_gui_close_window(state->window);
+        return true;
+    }
     page = page_rect(state, content);
 
     if (!state->loading && handle_scrollbar_event(state, event, content))
@@ -1599,15 +1580,8 @@ static bool netsurf_event(bk_gui_window_t *window UNUSED,
        inactive.  If the normal callback is delivered afterwards it sees the
        pending request and becomes a harmless no-op. */
     if (event->type == BK_GUI_EVENT_MOUSE_UP) {
-        int address_x = 214;
-        int go_width = 42;
-        int address_width = content.w - address_x - go_width - 12;
-        bk_gui_rect_t home_rect;
-        bk_gui_rect_t go_rect;
-        if (address_width < 80) address_width = 80;
-        home_rect = (bk_gui_rect_t){content.x + 164, content.y + 9, 46, 26};
-        go_rect = (bk_gui_rect_t){content.x + address_x + address_width + 4,
-                                  content.y + 9, go_width, 26};
+        bk_gui_rect_t home_rect={content.x+12+4*30,content.y+5,26,24};
+        bk_gui_rect_t go_rect={content.x+content.w-36,content.y+37,28,24};
         if (local_rect_contains(go_rect, event->x, event->y)) {
             bk_console_write("[NETSURF] clic directo Ir\n");
             netsurf_go_callback(state->window, state->go_id);
@@ -1711,6 +1685,7 @@ static bool netsurf_event(bk_gui_window_t *window UNUSED,
         return false;
     }
 
+    if(event->ctrl && (key=='o'||key=='O')) {open_local_page(state);return true;}
     if (event->ctrl && (key == 'l' || key == 'L' ||
                         key == 'k' || key == 'K')) {
         hide_page_textbox(state, true);
@@ -1783,6 +1758,93 @@ static bool netsurf_event(bk_gui_window_t *window UNUSED,
     return true;
 }
 
+static void local_page_selected(const char *path,void *context) {
+    netsurf_state_t *state=context;
+    if(!state || state!=g_netsurf_state || !path || !path[0])return;
+    if(state->loading) {
+        state->cancel_requested=true;
+        text_copy(state->pending_url,sizeof(state->pending_url),path);
+        text_copy(state->pending_method,sizeof(state->pending_method),"GET");
+        state->pending_body_length=0;state->pending_add_history=true;state->pending_navigation=true;
+    } else (void)queue_url(state,path,true);
+}
+static void open_local_page(netsurf_state_t *state) {
+    if(!state)return;
+    if(!bk_file_dialog_open(state->desktop,"Abrir pagina local","/SYSTEM/USER",NULL,0,
+        local_page_selected,state))set_status(state,"No se pudo abrir el selector de archivos");
+}
+static void settings_paint(bk_gui_window_t *window,bk_gui_surface_t *s,void *context) {
+    (void)context;bk_gui_rect_t c;
+    if(!bk_gui_window_content_rect(window,&c))return;
+    bk_gui_surface_clear(s,0xc0c0c0);
+    bk_gui_surface_draw_text(s,c.x+16,c.y+12,"Propiedades de NetSurf",0x000080,0,false);
+    bevel(s,(bk_gui_rect_t){c.x+10,c.y+35,c.w-20,142},false);
+    bk_gui_surface_draw_text(s,c.x+20,c.y+43,"Pagina de inicio",0x202020,0,false);
+    bk_gui_surface_draw_text(s,c.x+20,c.y+99,"Espera de red (2-30 segundos)",0x202020,0,false);
+    bk_gui_surface_draw_text(s,c.x+20,c.y+139,"Recursos de pagina (2-30 seg.)",0x202020,0,false);
+    bevel(s,(bk_gui_rect_t){c.x+10,c.y+184,c.w-20,80},false);
+    bk_gui_surface_draw_line(s,c.x+10,c.y+274,c.x+c.w-10,c.y+274,0x808080);
+    bk_gui_surface_draw_line(s,c.x+10,c.y+275,c.x+c.w-10,c.y+275,0xffffff);
+}
+static void settings_action(bk_gui_window_t *window,uint32_t id) {
+    netsurf_state_t *s=g_netsurf_state;
+    if(!s || window!=s->settings_window)return;
+    if(id==s->config_cancel_id) {bk_gui_close_window(window);return;}
+    if(id!=s->config_save_id)return;
+    if(s->loading) {bk_gui_error("Configuracion","Detenga la carga actual antes de aplicar los cambios.");return;}
+    char home[NSBK_URL_MAX],number[24],budget[24];
+    bk_gui_widget_get_text(s->config_home,home,sizeof(home));
+    bk_gui_widget_get_text(s->config_timeout,number,sizeof(number));
+    bk_gui_widget_get_text(s->config_budget,budget,sizeof(budget));
+    uint32_t seconds=parse_uint(number,0),resources=parse_uint(budget,0);
+    if(!home[0] || seconds<2 || seconds>30 || resources<2 || resources>30) {
+        bk_gui_error("Configuracion","Indique una pagina de inicio y tiempos entre 2 y 30 segundos.");return;
+    }
+    char normalized[NSBK_URL_MAX];nsbk_url_normalize(normalized,sizeof(normalized),home);
+    char data[NSBK_URL_MAX*2+192];text_copy(data,sizeof(data),"home=");
+    append_text(data,sizeof(data),normalized);append_text(data,sizeof(data),"\nsearch=");
+    append_text(data,sizeof(data),s->search_url);append_text(data,sizeof(data),"\ntimeout=");
+    append_uint(data,sizeof(data),seconds*1000);append_text(data,sizeof(data),"\nresources=");
+    append_uint(data,sizeof(data),resources*1000);
+    bool images=bk_gui_choice_is_checked(s->config_images),css=bk_gui_choice_is_checked(s->config_css),cookies=bk_gui_choice_is_checked(s->config_cookies);
+    append_text(data,sizeof(data),images?"\nimages=1":"\nimages=0");
+    append_text(data,sizeof(data),css?"\ncss=1":"\ncss=0");
+    append_text(data,sizeof(data),cookies?"\ncookies=1\n":"\ncookies=0\n");
+    if(!bk_file_write_all(NSBK_BROWSER_CONFIG,data,text_length(data))) {
+        bk_gui_error("Configuracion","No se pudieron guardar las opciones del navegador.");return;
+    }
+    text_copy(s->home_url,sizeof(s->home_url),normalized);
+    s->request_timeout_ms=seconds*1000;s->resource_budget_ms=resources*1000;
+    s->allow_images=images;s->allow_stylesheets=css;s->allow_cookies=cookies;
+    nsbk_document_set_preferences(&s->document,css,images,cookies);
+    set_status(s,"Configuracion guardada. Se aplicara en la proxima carga.");
+    bk_gui_window_invalidate(s->window);bk_gui_close_window(window);
+}
+static void open_settings(netsurf_state_t *s) {
+    if(!s)return;
+    if(s->settings_window) {
+        if(bk_gui_window_is_open(s->settings_window))return;
+        bk_gui_destroy_window(s->desktop,s->settings_window);s->settings_window=NULL;
+    }
+    s->settings_window=bk_gui_create_window(s->desktop,125,90,440,350,"Configuracion de NetSurf");
+    if(!s->settings_window)return;
+    bk_gui_window_t *w=s->settings_window;
+    bk_gui_set_window_min_size(w,440,350);
+    bk_gui_set_window_content(w,settings_paint,s);
+    s->config_home=bk_gui_create_textbox(s->desktop,w,(bk_gui_rect_t){20,62,396,25},s->home_url,NSBK_URL_MAX-1,settings_action);
+    char seconds[24];seconds[0]=0;append_uint(seconds,sizeof(seconds),s->request_timeout_ms/1000);
+    s->config_timeout=bk_gui_create_textbox(s->desktop,w,(bk_gui_rect_t){330,91,70,25},seconds,2,settings_action);
+    seconds[0]=0;append_uint(seconds,sizeof(seconds),s->resource_budget_ms/1000);
+    s->config_budget=bk_gui_create_textbox(s->desktop,w,(bk_gui_rect_t){330,131,70,25},seconds,2,settings_action);
+    s->config_images=bk_gui_create_choice(s->desktop,w,(bk_gui_rect_t){20,191,390,20},"Mostrar imagenes",false,NULL);
+    s->config_css=bk_gui_create_choice(s->desktop,w,(bk_gui_rect_t){20,214,390,20},"Usar estilos de las paginas (CSS)",false,NULL);
+    s->config_cookies=bk_gui_create_choice(s->desktop,w,(bk_gui_rect_t){20,237,390,20},"Permitir cookies durante la sesion",false,NULL);
+    bk_gui_choice_set_checked(s->config_images,s->allow_images);bk_gui_choice_set_checked(s->config_css,s->allow_stylesheets);bk_gui_choice_set_checked(s->config_cookies,s->allow_cookies);
+    bk_gui_widget_t *save=bk_gui_create_button(s->desktop,w,(bk_gui_rect_t){230,284,88,27},"Aceptar",settings_action);
+    bk_gui_widget_t *cancel=bk_gui_create_button(s->desktop,w,(bk_gui_rect_t){328,284,88,27},"Cancelar",settings_action);
+    s->config_save_id=bk_gui_widget_id(save);s->config_cancel_id=bk_gui_widget_id(cancel);
+}
+
 static void netsurf_menu_callback(bk_gui_window_t *window UNUSED,
                                    uint32_t item_id, void *context) {
     netsurf_state_t *state = (netsurf_state_t *)context;
@@ -1791,6 +1853,8 @@ static void netsurf_menu_callback(bk_gui_window_t *window UNUSED,
     case NSBK_MENU_FILE_OPEN:
         if (state->address_box) bk_gui_widget_set_focus(state->window, state->address_box, true);
         break;
+    case NSBK_MENU_FILE_LOCAL:open_local_page(state);return;
+    case NSBK_MENU_FILE_SETTINGS:open_settings(state);return;
     case NSBK_MENU_FILE_CLOSE:
         bk_gui_close_window(state->window);
         return;
@@ -1849,6 +1913,10 @@ static bool create_menus(netsurf_state_t *state) {
     return
         bk_gui_add_menu_item(state->window, file, NSBK_MENU_FILE_OPEN,
                              "Abrir direccion", netsurf_menu_callback, state) &&
+        bk_gui_add_menu_item(state->window, file, NSBK_MENU_FILE_LOCAL,
+                             "Abrir pagina local...  Ctrl+O",netsurf_menu_callback,state) &&
+        bk_gui_add_menu_item(state->window, file, NSBK_MENU_FILE_SETTINGS,
+                             "Configuracion...",netsurf_menu_callback,state) &&
         bk_gui_add_menu_item(state->window, file, NSBK_MENU_FILE_CLOSE,
                              "Cerrar", netsurf_menu_callback, state) &&
         bk_gui_add_menu_item(state->window, view, NSBK_MENU_VIEW_RELOAD,
@@ -1872,20 +1940,25 @@ static bool create_menus(netsurf_state_t *state) {
 static bool create_toolbar(netsurf_state_t *state) {
     if (!state || !state->desktop || !state->window) return false;
     state->back_button = bk_gui_create_button(state->desktop, state->window,
-        (bk_gui_rect_t){6, 6, 30, 24}, "<", netsurf_widget_callback);
+        (bk_gui_rect_t){12, 5, 26, 24}, "", netsurf_widget_callback);
     state->forward_button = bk_gui_create_button(state->desktop, state->window,
-        (bk_gui_rect_t){38, 6, 30, 24}, ">", netsurf_widget_callback);
+        (bk_gui_rect_t){42, 5, 26, 24}, "", netsurf_widget_callback);
     state->reload_button = bk_gui_create_button(state->desktop, state->window,
-        (bk_gui_rect_t){70, 9, 48, 26}, "Rec", netsurf_widget_callback);
+        (bk_gui_rect_t){102, 5, 26, 24}, "", netsurf_widget_callback);
     state->stop_button = bk_gui_create_button(state->desktop, state->window,
-        (bk_gui_rect_t){120, 9, 42, 26}, "X", netsurf_widget_callback);
+        (bk_gui_rect_t){72, 5, 26, 24}, "", netsurf_widget_callback);
     state->home_button = bk_gui_create_button(state->desktop, state->window,
-        (bk_gui_rect_t){164, 9, 46, 26}, "@H799FFCDA", netsurf_widget_callback);
+        (bk_gui_rect_t){132, 5, 26, 24}, "", netsurf_widget_callback);
     state->address_box = bk_gui_create_textbox(state->desktop, state->window,
-        (bk_gui_rect_t){214, 9, 392, 26}, state->address,
+        (bk_gui_rect_t){102, 37, 576, 24}, state->address,
         NSBK_URL_MAX - 1U, netsurf_widget_callback);
     state->go_button = bk_gui_create_button(state->desktop, state->window,
-        (bk_gui_rect_t){610, 9, 42, 26}, "@H4CE8DBA2", netsurf_widget_callback);
+        (bk_gui_rect_t){684, 37, 28, 24}, "", netsurf_widget_callback);
+    state->open_button=bk_gui_create_button(state->desktop,state->window,(bk_gui_rect_t){162,5,26,24},"",netsurf_widget_callback);
+    state->settings_button=bk_gui_create_button(state->desktop,state->window,(bk_gui_rect_t){192,5,26,24},"",netsurf_widget_callback);
+    (void)bk_gui_widget_set_icon(state->open_button,"Folder");
+    (void)bk_gui_widget_set_icon(state->settings_button,"Settings");
+    state->open_id=bk_gui_widget_id(state->open_button);state->settings_id=bk_gui_widget_id(state->settings_button);
     state->page_textbox = bk_gui_create_textbox(state->desktop, state->window,
         (bk_gui_rect_t){0, 0, 8, 8}, "",
         NSBK_HTML_FORM_VALUE_MAX - 1U, netsurf_widget_callback);
@@ -1893,8 +1966,9 @@ static bool create_toolbar(netsurf_state_t *state) {
         !state->reload_button || !state->stop_button || !state->home_button ||
         !state->address_box || !state->go_button ||
         !state->page_textbox) return false;
-    (void)bk_gui_widget_set_icon(state->back_button, "ArrowLeft");
-    (void)bk_gui_widget_set_icon(state->forward_button, "ArrowRight");
+    /* The legacy 16px ArrowLeft/Right pack aliases contain unrelated icons. */
+    bk_gui_widget_set_text(state->back_button,"<");
+    bk_gui_widget_set_text(state->forward_button,">");
     (void)bk_gui_widget_set_icon(state->reload_button, "Refresh");
     (void)bk_gui_widget_set_icon(state->stop_button, "Close");
     (void)bk_gui_widget_set_icon(state->home_button, "WebOpen");
@@ -1932,6 +2006,7 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
         bk_console_write("[NETSURF] sin memoria para estado\n");
         return;
     }
+    memset(state,0,sizeof(*state));
     state->desktop = desktop;
     state->window = NULL;
     state->back_button = NULL;
@@ -1955,6 +2030,9 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     state->history_count = 0U;
     state->history_index = 0U;
     state->scroll_line = 0U;
+    state->progress_paint_ms = 0U;
+    state->resize_changed_ms = 0U;
+    state->resize_width = 0;
     state->scrollbar_drag.active = false;
     state->scrollbar_drag.grab_offset = 0;
     state->layout_width = 0;
@@ -2011,9 +2089,14 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
         return;
     }
     bk_console_write("[NETSURF] ventana creada\n");
+    nsbk_font_init();
+    (void)bk_graphics_icon_load("Globe",&state->brand_icon);
     g_netsurf_state = state;
     bk_gui_set_window_content(state->window, netsurf_paint, state);
     bk_gui_set_window_event_handler(state->window, netsurf_event, state);
+    /* The toolbar and page reflow themselves; widget coordinates from the
+       previous frame must not impose the former window width as a minimum. */
+    bk_gui_window_set_extended_events(state->window,true);
     bk_gui_set_window_min_size(state->window, 500, 280);
     bk_gui_window_set_owner(state->window, bk_sys_getpid());
     bk_proc_bind_window(state->window);
@@ -2030,9 +2113,11 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
 
     while (bk_gui_window_is_open(state->window) && !bk_proc_exit_requested()) {
         bk_gui_rect_t content;
-        if (state->progress_dirty) {
+        if (state->progress_dirty &&
+            (uint32_t)(bk_sys_uptime_ms()-state->progress_paint_ms)>=100U) {
             __sync_synchronize();
             state->progress_dirty = false;
+            state->progress_paint_ms = bk_sys_uptime_ms();
             bk_gui_window_invalidate(state->window);
         }
         if (state->loading && state->worker_complete) {
@@ -2058,10 +2143,20 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
         }
         if (!state->loading && state->document.body_length > 0U &&
             bk_gui_window_content_rect(state->window, &content)) {
-            int32_t width = page_rect(state, content).w;
-            if (width >= 160 && width != state->layout_width &&
+            bk_gui_rect_t viewport=page_rect(state,content);
+            int32_t width = viewport.w;
+            state->document.viewport_height=viewport.h;
+            if (width != state->resize_width) {
+                state->resize_width = width;
+                state->resize_changed_ms = bk_sys_uptime_ms();
+            }
+            /* Reflow once after resize settles, instead of rebuilding the
+             * DOM layout at every intermediate drag position. */
+            if (width >= 160 && (width != state->layout_width || viewport.h!=state->layout_height) &&
+                (uint32_t)(bk_sys_uptime_ms()-state->resize_changed_ms)>=120U &&
                 nsbk_document_reflow(&state->document, width)) {
                 state->layout_width = width;
+                state->layout_height = viewport.h;
                 clamp_scroll(state);
                 position_page_textbox(state);
                 bk_gui_window_invalidate(state->window);
@@ -2079,6 +2174,8 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     if (state->loading) finish_load_request(state);
     bk_proc_bind_window(NULL);
     g_netsurf_state = NULL;
+    if(state->settings_window)bk_gui_destroy_window(state->desktop,state->settings_window);
+    if(state->brand_icon.pixels)bk_gui_image_free(&state->brand_icon);
     if (state->window) bk_gui_destroy_window(state->desktop, state->window);
     nsbk_document_destroy(&state->document);
     bk_sys_free(state);

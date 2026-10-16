@@ -10,7 +10,8 @@
 #include "kernel/include/bootsplash.h"
 #include "kernel/include/compat_mode.h"
 #include "kernel/include/user_config.h"
-#include "kernel/stdio.h"
+#include "../../kernel/libc/include/stdio.h"
+#include "system/desktop/file_progress.h"
 
 /* ══════════════════════════════════════════════════════════════════════════
  *  Iconos de escritorio
@@ -23,12 +24,15 @@
  *    - Callback que se dispara al hacer doble clic
  * ══════════════════════════════════════════════════════════════════════════ */
 
-#define DESK_ICON_W          80
-#define DESK_ICON_H          94   /* 64px imagen + etiqueta de hasta dos lineas */
-#define DESK_ICON_IMG_W      64
-#define DESK_ICON_IMG_H      64
-#define DESK_DBLCLICK_MS     500U
-#define DESK_MAX_ICONS      16
+static int g_desktop_icon_size=32;
+#include "kernel/include/browser_preferences.h"
+
+#define DESK_ICON_W          (g_desktop_icon_size+32)
+#define DESK_ICON_H          (g_desktop_icon_size+28)
+#define DESK_ICON_IMG_W      g_desktop_icon_size
+#define DESK_ICON_IMG_H      g_desktop_icon_size
+#define DESK_DBLCLICK_MS bk_input_preference_get(BK_INPUT_DOUBLE_CLICK)
+#define DESK_MAX_ICONS      128
 #define RESIZE_MARGIN         5
 #define RESIZE_LEFT           0x01
 #define RESIZE_RIGHT          0x02
@@ -47,7 +51,11 @@ typedef void (*desk_icon_open_fn)(gui_desktop_t *desktop);
 
 typedef struct {
     int      x, y;
+    int      drag_x, drag_y;
+    bool hidden;
+    char path[VFS_MAX_PATH];
     char     label[24];
+    bool     selected;
     bool     hovered;
     bool     pressed;
     uint32_t last_click_tick;
@@ -55,15 +63,26 @@ typedef struct {
     int      last_click_y;
     desk_icon_open_fn open;
     uint32_t *pixels;
+    uint32_t *original_pixels; /* Immutable source, never resampled in place. */
+    uint16_t original_width,original_height;
 } desk_icon_t;
 
 typedef struct {
     desk_icon_t icons[DESK_MAX_ICONS];
     int         icon_count;
     int         base_icon_count;
-    gui_context_menu_t context_menu;
+    gui_context_menu_t context_menu, desktop_menu;
+    bool auto_arrange, align_grid, selecting;
+    int select_x, select_y;
+    bool selection_before[DESK_MAX_ICONS];
+    int drag_dx, drag_dy;
     int         context_icon;
-    uint32_t    last_drive_poll;
+    uint32_t    context_pressed;
+    int         selected_icon, drag_icon;
+    int         drag_start_x, drag_start_y, drag_offset_x, drag_offset_y;
+    bool        icon_dragged;
+    uint32_t    desktop_files_hash;
+    uint32_t    last_drive_poll,file_change_seen;
     uint16_t    last_surface_width;
     bool        show_cdrom;
     bool        show_usb;
@@ -72,7 +91,7 @@ typedef struct {
 } deskmanager_state_t;
 
 #define DESK_DEFAULT_BACKGROUND 0x00204070U
-#define DESK_DEFAULT_WALLPAPER  "/SYSTEM/WALLPAPERS/CLASSIC.BMP"
+#define DESK_DEFAULT_WALLPAPER  "/SYSTEM/WALLPAPR/CLASSIC.BMP"
 #define DESK_BMP_MAX_DIMENSION   4096U
 #define DESK_BMP_MAX_PIXELS      (16U * 1024U * 1024U)
 static uint32_t g_desktop_background = DESK_DEFAULT_BACKGROUND;
@@ -84,6 +103,20 @@ static uint8_t g_wallpaper_mode = DESK_WALLPAPER_TILE;
 static gui_desktop_t *g_desk_desktop;
 static deskmanager_state_t *g_desk_state;
 static char g_wallpaper_path[VFS_MAX_PATH];
+static void desk_arrange_icons(deskmanager_state_t *st,gui_desktop_t *desktop);
+static void desk_layout_preferences(deskmanager_state_t *st,bool save) {
+    struct {uint32_t magic,automatic,grid,size;} value={0x33594C44,st->auto_arrange,st->align_grid,g_desktop_icon_size};
+    const char *path=BK_DESKTOP_FILES "/.bk-layout";
+    if(save) {(void)bk_file_write_all(path,&value,sizeof(value));return;}
+    int fd=bk_file_open(path,VFS_O_RDONLY);
+    if(fd<0)return;
+    int n=bk_file_read(fd,&value,sizeof(value));bk_file_close(fd);
+    if(n!=(int)sizeof(value) || (value.magic!=0x32594C44 && value.magic!=0x33594C44) || value.automatic>1 || value.grid>1 ||
+       (value.size!=32 && value.size!=48 && value.size!=64))return;
+    st->auto_arrange=value.automatic;st->align_grid=value.grid;
+    g_desktop_icon_size=value.magic==0x32594C44 ? 32 : value.size;
+}
+
 static uint16_t desk_le16(const uint8_t *p);
 static uint32_t desk_le32(const uint8_t *p);
 
@@ -323,11 +356,16 @@ bool deskmanager_set_wallpaper(const char *path) {
         kfree(pixels);
     }
     if (!cache) return false;
-    /* El cache queda instalado globalmente aunque cierre DISPLAY.CPL. */
+    /* Vision allocated this cache in its own user heap. It already has the
+     * correct service lifetime: requesting an owner PID through the public
+     * metadata API is forbidden and used to discard every decoded wallpaper.
+     * Only the legacy kernel-side image loader needs an ownership transfer. */
+#ifndef BLES_VISION_SERVICE
     if (!mm_set_allocation_owner(cache, 0U)) {
         kfree(cache);
         return false;
     }
+#endif
     desk_wallpaper_release();
     g_desktop_wallpaper = cache;
     g_wallpaper_tiled_source = g_wallpaper_mode == DESK_WALLPAPER_TILE &&
@@ -336,6 +374,8 @@ bool deskmanager_set_wallpaper(const char *path) {
     g_wallpaper_h = g_wallpaper_tiled_source ? output_h : screen_h;
     kstrncpy(g_wallpaper_path, path, sizeof(g_wallpaper_path) - 1);
     g_wallpaper_path[sizeof(g_wallpaper_path) - 1] = '\0';
+    kprintf("[WALLPAPER] installed %s %ux%u tiled=%u\n",g_wallpaper_path,
+        g_wallpaper_w,g_wallpaper_h,g_wallpaper_tiled_source);
     return true;
 }
 
@@ -346,68 +386,113 @@ bool deskmanager_set_wallpaper(const char *path) {
  * ────────────────────────────────────────────────────────────────────────── */
 
 /* Forward-declare las funciones de apertura que viven en sus módulos */
+static void desk_open_trash(gui_desktop_t *desktop) {
+    (void)bk_file_mkdir(BK_TRASH_FILES);
+    (void)program_execute_path_async_arg(desktop,"/SYSTEM/PROGRAMS/FILE.BEX",BK_TRASH_FILES);
+}
+
+static void desk_open_icon(gui_desktop_t *desktop, desk_icon_t *icon) {
+    if (icon->path[0]) {
+        vfs_dir_entry_t info;
+        if (bk_file_stat(icon->path,&info) && info.type == VFS_NODE_DIR)
+            (void)program_execute_path_async_arg(desktop,"/SYSTEM/PROGRAMS/FILE.BEX",icon->path);
+        else (void)bk_app_launch(icon->path,NULL);
+    } else if (icon->open) icon->open(desktop);
+}
+
+static uint32_t desk_position_key(const desk_icon_t *icon) {
+    const char *key = icon->path[0] ? icon->path : icon->label;
+    uint32_t hash=2166136261U;
+    while (*key) { hash ^= (uint8_t)*key++; hash *= 16777619U; }
+    return hash;
+}
+
+static void desk_icon_position(desk_icon_t *icon, bool save) {
+    char path[VFS_MAX_PATH];
+    struct { uint32_t magic; int32_t x,y; uint32_t hidden; } record;
+    snprintf(path,sizeof(path),BK_DESKTOP_FILES "/.bk-pos-%08x",desk_position_key(icon));
+    if (save) {
+        record.magic=0x31534f50; record.x=icon->x; record.y=icon->y; record.hidden=icon->hidden;
+        (void)bk_file_write_all(path,&record,sizeof(record));
+    } else {
+        int fd=bk_file_open(path,VFS_O_RDONLY);
+        if (fd<0) return;
+        int bytes=bk_file_read(fd,&record,sizeof(record)); bk_file_close(fd);
+        if (bytes == sizeof(record) && record.magic==0x31534f50 && record.x>=0 && record.y>=0) {
+            icon->x=record.x; icon->y=record.y; icon->hidden=record.hidden!=0;
+        }
+    }
+}
+
 static void desk_open_files_app(gui_desktop_t *desktop) {
-    (void)program_execute_path(desktop, "/SYSTEM/PROGRAMS/FILE.BEX");
+    (void)program_execute_path_async(desktop, "/SYSTEM/PROGRAMS/FILE.BEX");
 }
 
 static void desk_open_shell_app(gui_desktop_t *desktop) {
-    (void)program_execute_path(desktop, "/SYSTEM/PROGRAMS/SHELL.BEX");
+    (void)program_execute_path_async(desktop, "/SYSTEM/PROGRAMS/SHELL.BEX");
 }
 
 static void desk_open_editor_app(gui_desktop_t *desktop) {
-    (void)program_execute_path(desktop, "/SYSTEM/PROGRAMS/TEXTEDITOR.BEX");
+    (void)program_execute_path_async(desktop, "/SYSTEM/PROGRAMS/TEXTEDITOR.BEX");
 }
 
 static void desk_open_netsurf_app(gui_desktop_t *desktop) {
-    (void)program_execute_path(desktop, "/SYSTEM/PROGRAMS/NETSURF.BEX");
+    char path[260];bk_browser_default_path(path,sizeof(path));
+    (void)program_execute_path_async(desktop,path);
+}
+
+static void desk_open_font_app(gui_desktop_t *desktop) {
+    (void)program_execute_path_async(desktop, "/SYSTEM/PROGRAMS/FONT.BEX");
 }
 
 static void desk_open_calculator_app(gui_desktop_t *desktop) {
-    (void)program_execute_path(desktop, "/SYSTEM/PROGRAMS/CALCULATOR.BEX");
+    (void)program_execute_path_async(desktop, "/SYSTEM/PROGRAMS/CALCULATOR.BEX");
 }
 
 static void desk_open_processmanager_app(gui_desktop_t *desktop) {
-    (void)program_execute_path(desktop, "/SYSTEM/PROGRAMS/PROCESSMANAGER.BEX");
+    (void)program_execute_path_async(desktop, "/SYSTEM/PROGRAMS/PROCESSMANAGER.BEX");
+}
+
+static void desk_open_events_app(gui_desktop_t *desktop) {
+    (void)program_execute_path_async(desktop,"/SYSTEM/PROGRAMS/EVENT_VIEWER.BEX");
 }
 
 static void desk_open_performance_app(gui_desktop_t *desktop) {
-    (void)program_execute_path(desktop,
+    (void)program_execute_path_async(desktop,
         "/SYSTEM/PROGRAMS/PERFORMANCE_MONITOR.BEX");
 }
 
 static void desk_open_midamp_app(gui_desktop_t *desktop) {
-    (void)program_execute_path(desktop, "/SYSTEM/PROGRAMS/MIDAMP.BEX");
+    (void)program_execute_path_async(desktop, "/SYSTEM/PROGRAMS/MIDAMP.BEX");
 }
 
 static void desk_open_viewer_app(gui_desktop_t *desktop) {
-    (void)program_execute_path(desktop, "/SYSTEM/PROGRAMS/IMAGEVIEWER.BEX");
+    (void)program_execute_path_async(desktop, "/SYSTEM/PROGRAMS/IMAGEVIEWER.BEX");
 }
 
-static void desk_open_games_app(gui_desktop_t *desktop) {
-    (void)program_execute_path(desktop, "/SYSTEM/PROGRAMS/GAMES.BEX");
-}
+
 
 static void desk_open_control_panel(gui_desktop_t *desktop) {
-    (void)program_execute_path(desktop, "/SYSTEM/CONTROL/CONTROL.BEX");
+    (void)program_execute_path_async(desktop, "/SYSTEM/CONTROL/CONTROL.BEX");
 }
 
 static void desk_open_cdrom(gui_desktop_t *desktop) {
     /* El acceso ATAPI puede ser lento: solo se intenta por accion del usuario. */
     if (vfs_has_cdrom() || iso9660_mount_default())
-        (void)program_execute_path_arg(desktop, "/SYSTEM/PROGRAMS/FILE.BEX",
+        (void)program_execute_path_async_arg(desktop, "/SYSTEM/PROGRAMS/FILE.BEX",
                                        "/CDROM");
 }
 
 static void desk_open_floppy(gui_desktop_t *desktop) {
-    if (vfs_mount("fd0"))
-        (void)program_execute_path_arg(desktop, "/SYSTEM/PROGRAMS/FILE.BEX",
-                                       "/");
+    if (block_get("fd0"))
+        (void)program_execute_path_async_arg(desktop, "/SYSTEM/PROGRAMS/FILE.BEX",
+                                       "/fd0");
 }
 
 static void desk_open_usb(gui_desktop_t *desktop) {
-    if (vfs_mount("usb0"))
-        (void)program_execute_path_arg(desktop, "/SYSTEM/PROGRAMS/FILE.BEX",
-                                       "/");
+    if (block_get("usb0"))
+        (void)program_execute_path_async_arg(desktop, "/SYSTEM/PROGRAMS/FILE.BEX",
+                                       "/usb0");
 }
 
 static uint16_t desk_le16(const uint8_t *p) {
@@ -1254,15 +1339,128 @@ static void bk_iconpak_preload_on_gui_start(void) {
 
 
 
+typedef struct {
+    const char *legacy_path;
+    const char *graphics_name;
+} desk_graphics_alias_t;
+
+/*
+ * Mientras BlesKernOS termina su set propio de iconos, todas las rutas
+ * historicas bajo /ICONS se resuelven primero contra GRAPHICS.PAK.
+ * Esto mantiene una sola familia visual (KDE 1) sin obligar a reescribir
+ * cada programa.  BLESKERNOS.BMP queda fuera a proposito: es el primer
+ * icono propio y se usa en el boton central del Deskbar.
+ */
+static const desk_graphics_alias_t g_desk_graphics_aliases[] = {
+    {"/ICONS/TRASH.BMP",     "RecycleEmpty"},
+    {"/ICONS/FOLDER.BMP",    "Folder"},
+    {"/ICONS/FILE.BMP",      "FileText"},
+    {"/ICONS/TEXT.BMP",      "FileText"},
+    {"/ICONS/CONFIG.BMP",    "Settings"},
+    {"/ICONS/IMAGE.BMP",     "Camera"},
+    {"/ICONS/OBJECT.BMP",    "Appwiz1500"},
+    {"/ICONS/ABOUT.BMP",     "InfoBubble"},
+    {"/ICONS/MIDI.BMP",      "MediaAudio"},
+    {"/ICONS/HDD.BMP",       "Computer"},
+    {"/ICONS/CD.BMP",        "ReaderCd"},
+    {"/ICONS/CDROM.BMP",     "ReaderCd"},
+    {"/ICONS/USB.BMP",       "ReaderOpened"},
+    {"/ICONS/FLOPPY.BMP",    "ReaderDisket"},
+    {"/ICONS/FILES.BMP",     "WindowsExplorer"},
+    {"/ICONS/SHELL.BMP",     "MsDos"},
+    {"/ICONS/EDITOR.BMP",    "Notepad"},
+    {"/ICONS/CALC.BMP",      "Calculator"},
+    {"/ICONS/MIDAMP.BMP",    "MediaAudio"},
+    {"/ICONS/NETSCAPE.BMP",  "Globe"},
+    {"/ICONS/PROCESOS.BMP",  "Taskman100"},
+    {"/ICONS/MONITOR.BMP",   "Desktop"},
+    {"/ICONS/DISPLAY.BMP",   "Desktop"},
+    {"/ICONS/SOUND.BMP",     "Mmsys100"},
+    {"/ICONS/MOUSE.BMP",     "Mouse"},
+    {"/ICONS/KEYBOARD.BMP",  "Keyboard"},
+    {"/ICONS/DATETIME.BMP",  "Timedate"},
+    {"/ICONS/DEVICES.BMP",   "HardwareDiag"},
+    {"/ICONS/SYSTEM.BMP",    "Computer2"},
+    {"/ICONS/INTERNET.BMP",  "Globe"},
+    {"/ICONS/MODEM.BMP",     "Dpmodemx701"},
+    {"/ICONS/LANGUAGE.BMP",  "Intl101"},
+    {"/ICONS/CONTROL.BMP",   "Controls3000"},
+    {"/ICONS/WARNING.BMP",   "Warning"},
+};
+
+static const char *desk_graphics_alias_for_path(const char *path) {
+    uint32_t count = (uint32_t)(sizeof(g_desk_graphics_aliases) /
+                                sizeof(g_desk_graphics_aliases[0]));
+    if (!path) return NULL;
+    for (uint32_t i = 0; i < count; i++) {
+        if (kstrcmp(path, g_desk_graphics_aliases[i].legacy_path) == 0)
+            return g_desk_graphics_aliases[i].graphics_name;
+    }
+    return NULL;
+}
+
+static uint32_t *desk_load_graphics_scaled(const char *resource_name,
+                                           uint16_t output_width,
+                                           uint16_t output_height) {
+    gui_image_t image;
+    uint32_t *pixels;
+
+    if (!resource_name || !output_width || !output_height) return NULL;
+    kmemset(&image, 0, sizeof(image));
+    bool loaded = output_width == output_height && (output_width == 16 || output_width == 32)
+        ? bk_graphics_icon_load_size(resource_name, output_width, &image)
+        : bk_graphics_icon_load(resource_name, &image);
+    if (!loaded ||
+        !image.pixels || !image.width || !image.height) {
+        if (image.pixels) bk_gui_image_free(&image);
+        return NULL;
+    }
+
+    pixels = (uint32_t *)kmalloc((uint32_t)output_width *
+                                 (uint32_t)output_height *
+                                 sizeof(uint32_t));
+    if (!pixels) {
+        bk_gui_image_free(&image);
+        return NULL;
+    }
+
+    /* Nearest-neighbour: los iconos KDE 1 conservan bordes de pixel
+     * limpios aun cuando el escritorio pide 28, 44 o 64 px. */
+    for (uint32_t y = 0; y < output_height; y++) {
+        uint32_t sy = (y * image.height) / output_height;
+        for (uint32_t x = 0; x < output_width; x++) {
+            uint32_t sx = (x * image.width) / output_width;
+            pixels[y * output_width + x] =
+                image.pixels[sy * image.width + sx];
+        }
+    }
+    bk_gui_image_free(&image);
+    return pixels;
+}
+
 uint32_t *program_load_bmp_icon_scaled(const char *path,
                                        uint16_t output_width,
                                        uint16_t output_height) {
-    uint32_t *bvi_icon = bk_bvi_load_bmp_path(
-        path, (int)output_width, (int)output_height);
-    if (bvi_icon) return bvi_icon;
+    const char *graphics_name = desk_graphics_alias_for_path(path);
+    if (graphics_name) {
+        /* Para rutas migradas no volver al BMP viejo: asi la sesion usa una
+         * sola familia visual y un recurso faltante se detecta enseguida. */
+        return desk_load_graphics_scaled(
+            graphics_name, output_width, output_height);
+    }
 
-    uint32_t *bk_pak_icon = bk_iconpak_load_bmp_path(path, (int)output_width, (int)output_height);
-    if (bk_pak_icon) return bk_pak_icon;
+    /* Iconos propios/no migrados conservan la ruta clasica. */
+    {
+        uint32_t *bvi_icon = bk_bvi_load_bmp_path(
+            path, (int)output_width, (int)output_height);
+        if (bvi_icon) return bvi_icon;
+    }
+
+    {
+        uint32_t *bk_pak_icon = bk_iconpak_load_bmp_path(
+            path, (int)output_width, (int)output_height);
+        if (bk_pak_icon) return bk_pak_icon;
+    }
 
     return desk_load_bmp_scaled(path, output_width, output_height, true);
 }
@@ -1319,9 +1517,32 @@ void program_draw_icon_pixels(gui_surface_t *surface, int x, int y,
     }
 }
 
+static void desk_load_icon_image(desk_icon_t *icon,const char *path) {
+    gui_image_t image={0};
+    const char *resource=desk_graphics_alias_for_path(path);
+    bool loaded = resource && (g_desktop_icon_size == 32
+        ? bk_graphics_icon_load_size(resource, 32, &image)
+        : bk_graphics_icon_load(resource, &image));
+    if(loaded && image.pixels && image.width && image.height) {
+        icon->original_pixels=image.pixels;
+        icon->original_width=image.width;icon->original_height=image.height;
+    } else {
+        if(image.pixels)bk_gui_image_free(&image);
+        icon->original_pixels=program_load_bmp_icon_scaled(path,64,64);
+        icon->original_width=64;icon->original_height=64;
+    }
+    if(!icon->original_pixels)return;
+    int size=g_desktop_icon_size;
+    icon->pixels=bk_sys_alloc_zero(size*size*sizeof(uint32_t));
+    if(!icon->pixels)return;
+    for(int y=0;y<size;++y)for(int x=0;x<size;++x)
+        icon->pixels[y*size+x]=icon->original_pixels[(y*icon->original_height/size)*icon->original_width+x*icon->original_width/size];
+}
+
 static void desk_clear_icon(desk_icon_t *icon) {
     if (!icon) return;
     if (icon->pixels) kfree(icon->pixels);
+    if (icon->original_pixels) kfree(icon->original_pixels);
     kmemset(icon, 0, sizeof(*icon));
 }
 
@@ -1369,11 +1590,12 @@ static bool desk_floppy_available(void) {
  */
 
 static void desk_draw_icon(gui_surface_t *surface, const desk_icon_t *icon) {
+    if (icon->hidden) return;
     int x = icon->x;
     int y = icon->y;
 
     /* Selección / hover: fondo resaltado */
-    if (icon->hovered || icon->pressed) {
+    if (icon->selected || icon->hovered || icon->pressed) {
         gui_gfx_fill_rect(surface,
             (gui_rect_t){x - 2, y - 2, DESK_ICON_W + 4, DESK_ICON_H + 4},
             icon->pressed ? 0x00204060 : 0x002A5080);
@@ -1390,34 +1612,35 @@ static void desk_draw_icon(gui_surface_t *surface, const desk_icon_t *icon) {
     }
 
     /* Etiqueta debajo */
-    uint32_t fg = (icon->hovered || icon->pressed) ? 0x00FFFFFF : 0x00EEEEFF;
-    int label_w = (int)gui_font_text_width(icon->label);
+    uint32_t fg = (icon->selected || icon->hovered || icon->pressed) ? 0x00FFFFFF : 0x00EEEEFF;
+    int label_w = (int)bk_gui_text_width_px(icon->label,kstrlen(icon->label),8,false,false);
     gui_rect_t label_clip = {x - 2, y + DESK_ICON_IMG_H + 5,
                              DESK_ICON_W + 4, 24};
     if (label_w <= DESK_ICON_W) {
         int label_x = x + (DESK_ICON_W - label_w) / 2;
-        gui_font_draw_string_clipped(surface, label_x,
+        bk_gui_surface_draw_text_px(surface, label_x,
                                      y + DESK_ICON_IMG_H + 8,
-                                     icon->label, fg, label_clip);
+                                     icon->label, kstrlen(icon->label), fg, 8, false, false, false, label_clip);
     } else {
-        char first[10];
+        char first[10] = {0};
         char second[16];
         int split = 0;
         while (icon->label[split] && split < 9) {
-            first[split] = icon->label[split];
+            first[split] = icon->label[split]; first[split + 1] = 0;
+            if ((int)bk_gui_text_width_px(first,kstrlen(first),8,false,false) > DESK_ICON_W) { first[split] = 0; break; }
             split++;
         }
         first[split] = '\0';
         kstrncpy(second, icon->label + split, sizeof(second) - 1);
         second[sizeof(second) - 1] = '\0';
-        int first_x = x + (DESK_ICON_W - (int)gui_font_text_width(first)) / 2;
-        int second_x = x + (DESK_ICON_W - (int)gui_font_text_width(second)) / 2;
-        gui_font_draw_string_clipped(surface, first_x,
+        int first_x = x + (DESK_ICON_W - (int)bk_gui_text_width_px(first,kstrlen(first),8,false,false)) / 2;
+        int second_x = x + (DESK_ICON_W - (int)bk_gui_text_width_px(second,kstrlen(second),8,false,false)) / 2;
+        bk_gui_surface_draw_text_px(surface, first_x,
                                      y + DESK_ICON_IMG_H + 5,
-                                     first, fg, label_clip);
-        gui_font_draw_string_clipped(surface, second_x,
+                                     first, kstrlen(first), fg, 8, false, false, false, label_clip);
+        bk_gui_surface_draw_text_px(surface, second_x,
                                      y + DESK_ICON_IMG_H + 15,
-                                     second, fg, label_clip);
+                                     second, kstrlen(second), fg, 8, false, false, false, label_clip);
     }
 }
 
@@ -1440,11 +1663,14 @@ static void desk_add_icon(deskmanager_state_t *st,
     ic->last_click_y    = -999;
     ic->open        = open_fn;
     const char *icon_path = NULL;
-    if (open_fn == desk_open_files_app) icon_path = "/ICONS/FILES.BMP";
+    if (open_fn == desk_open_trash) icon_path = "/ICONS/TRASH.BMP";
+    else if (open_fn == desk_open_files_app) icon_path = "/ICONS/FILES.BMP";
     else if (open_fn == desk_open_shell_app) icon_path = "/ICONS/SHELL.BMP";
     else if (open_fn == desk_open_editor_app) icon_path = "/ICONS/EDITOR.BMP";
     else if (open_fn == desk_open_netsurf_app) icon_path = "/ICONS/NETSCAPE.BMP";
+    else if (open_fn == desk_open_font_app) icon_path = "/ICONS/TEXT.BMP";
     else if (open_fn == desk_open_calculator_app) icon_path = "/ICONS/CALC.BMP";
+    else if (open_fn == desk_open_events_app) icon_path = "/ICONS/ABOUT.BMP";
     else if (open_fn == desk_open_processmanager_app) icon_path = "/ICONS/PROCESOS.BMP";
     else if (open_fn == desk_open_performance_app) icon_path = "/ICONS/PROCESOS.BMP";
     else if (open_fn == desk_open_midamp_app) icon_path = "/ICONS/MIDAMP.BMP";
@@ -1453,12 +1679,13 @@ static void desk_add_icon(deskmanager_state_t *st,
     else if (open_fn == desk_open_cdrom) icon_path = "/ICONS/CDROM.BMP";
     else if (open_fn == desk_open_floppy) icon_path = "/ICONS/FLOPPY.BMP";
     else if (open_fn == desk_open_usb) icon_path = "/ICONS/USB.BMP";
-    ic->pixels = (compat_mode_allow_icon_images() && icon_path)
-        ? program_load_bmp_icon_scaled(icon_path,
-                                       DESK_ICON_IMG_W, DESK_ICON_IMG_H)
-        : NULL;
+    if(compat_mode_allow_icon_images() && icon_path)desk_load_icon_image(ic,icon_path);
+    if (label && kstrcmp(label, "Editor de texto") == 0) label = "Editor";
+    if (label && kstrcmp(label, "Rendimiento") == 0) label = "Rendim.";
+    if (label && kstrcmp(label, "Visor de eventos") == 0) label = "Eventos";
     kstrncpy(ic->label, label ? label : "", sizeof(ic->label) - 1);
     ic->label[sizeof(ic->label) - 1] = '\0';
+    desk_icon_position(ic,false);
 }
 
 static bool desk_has_icon_open_fn(const deskmanager_state_t *st,
@@ -1481,14 +1708,14 @@ static void desk_find_free_default_slot(const deskmanager_state_t *st,
 
     if (!x_out || !y_out) return;
     usable_h = desktop ? desktop->surface.height - 48 : 552;
-    rows = usable_h / 100;
+    rows = usable_h / (DESK_ICON_H+8);
     if (rows < 1) rows = 1;
-    if (rows > 7) rows = 7;
+    
 
-    for (column = 0; column < 5; column++) {
+    for (column = 0; column < (desktop ? (desktop->surface.width-24)/(DESK_ICON_W+12) : 8); column++) {
         for (row = 0; row < rows; row++) {
-            int x = 16 + column * 96;
-            int y = 16 + row * 100;
+            int x = 12 + column * (DESK_ICON_W+12);
+            int y = 12 + row * (DESK_ICON_H+8);
             bool occupied = false;
             int i;
             for (i = 0; st && i < st->icon_count; i++) {
@@ -1504,8 +1731,8 @@ static void desk_find_free_default_slot(const deskmanager_state_t *st,
             }
         }
     }
-    *x_out = 16;
-    *y_out = 16 + (st ? st->icon_count : 0) * 100;
+    *x_out = 12;
+    *y_out = 12 + (st ? st->icon_count : 0) * (DESK_ICON_H+8);
 }
 
 static void desk_add_default_icon_if_missing(deskmanager_state_t *st,
@@ -1527,8 +1754,6 @@ static void desk_ensure_default_program_icons(deskmanager_state_t *st,
                                      desk_open_editor_app);
     desk_add_default_icon_if_missing(st, desktop, "NetSurf",
                                      desk_open_netsurf_app);
-    desk_add_default_icon_if_missing(st, desktop, "Rendimiento",
-                                     desk_open_performance_app);
 }
 
 static void desk_sync_drive_icons(deskmanager_state_t *st,
@@ -1543,10 +1768,21 @@ static void desk_sync_drive_icons(deskmanager_state_t *st,
 
     if (!st || !desktop) return;
 
+    if (st->drag_icon >= 0 || st->selecting || desktop->file_drag_active) return;
     now = bk_sys_ticks();
-    if (!force && now - st->last_drive_poll < 1000U) return;
-    st->last_drive_poll = now;
+    uint32_t sequence=bk_gui_files_sequence();
+    if (!force && st->file_change_seen==sequence &&
+        now-st->last_drive_poll<desk_ticks_from_ms(2000))return;
+    st->file_change_seen=sequence;
+    st->last_drive_poll=now;
 
+    vfs_dir_entry_t *files = NULL;
+    uint32_t file_count=0, hash=2166136261U;
+    (void)bk_shell_read_directory(BK_DESKTOP_FILES,&files,&file_count);
+    for (uint32_t i=0;i<file_count;++i) {
+        if (files[i].name[0]=='.') continue;
+        for (const char *n=files[i].name; *n; ++n) { hash ^= (uint8_t)*n; hash *= 16777619U; }
+    }
     show_cdrom = desk_cdrom_available();
     show_usb = desk_usb_available();
     show_floppy = desk_floppy_available();
@@ -1554,9 +1790,12 @@ static void desk_sync_drive_icons(deskmanager_state_t *st,
         st->last_surface_width == desktop->surface.width &&
         st->show_cdrom == show_cdrom &&
         st->show_usb == show_usb &&
-        st->show_floppy == show_floppy)
-        return;
+        st->show_floppy == show_floppy && st->desktop_files_hash == hash) {
+        bk_sys_free(files); return;
+    }
+    st->desktop_files_hash=hash;
 
+    if(st->selected_icon>=st->base_icon_count)st->selected_icon=-1;
     desk_remove_icons_from(st, st->base_icon_count);
     st->show_cdrom = show_cdrom;
     st->show_usb = show_usb;
@@ -1568,17 +1807,31 @@ static void desk_sync_drive_icons(deskmanager_state_t *st,
     if (show_cdrom && st->icon_count < DESK_MAX_ICONS) {
         desk_add_icon(st, drive_x, drive_y, "CD-ROM",
                       desk_open_cdrom);
-        drive_y += 100;
+        drive_y += 80;
     }
     if (show_usb && st->icon_count < DESK_MAX_ICONS) {
         desk_add_icon(st, drive_x, drive_y, "USB",
                       desk_open_usb);
-        drive_y += 100;
+        drive_y += 80;
     }
     if (show_floppy && st->icon_count < DESK_MAX_ICONS) {
         desk_add_icon(st, drive_x, drive_y, "@H3737CE2B",
                       desk_open_floppy);
     }
+    for (uint32_t i=0;i<file_count && st->icon_count<DESK_MAX_ICONS;++i) {
+        if (files[i].name[0]=='.') continue;
+        int x,y; desk_find_free_default_slot(st,desktop,&x,&y);
+        desk_add_icon(st,x,y,files[i].name,NULL);
+        desk_icon_t *icon=&st->icons[st->icon_count-1];
+        snprintf(icon->path,sizeof(icon->path),BK_DESKTOP_FILES "/%s",files[i].name);
+        desk_load_icon_image(icon,files[i].type==VFS_NODE_DIR ?
+            "/ICONS/FOLDER.BMP" : "/ICONS/FILE.BMP");
+        desk_icon_position(icon,false);
+    }
+    bk_sys_free(files);
+    if(st->auto_arrange)desk_arrange_icons(st,desktop);
+    gui_desktop_invalidate_all(desktop);
+
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -1587,6 +1840,7 @@ static void desk_sync_drive_icons(deskmanager_state_t *st,
 
 static int desk_hit_icon(const deskmanager_state_t *st, int mx, int my) {
     for (int i = 0; i < st->icon_count; i++) {
+        if (st->icons[i].hidden) continue;
         gui_rect_t r = {st->icons[i].x - 2, st->icons[i].y - 2,
                         DESK_ICON_W + 4, DESK_ICON_H + 4};
         if (gui_rect_contains(r, mx, my)) return i;
@@ -1600,6 +1854,64 @@ static gui_rect_t desk_icon_rect(const desk_icon_t *icon) {
                         DESK_ICON_W + 4, DESK_ICON_H + 4};
 }
 
+static void desk_clear_selection(deskmanager_state_t *st) {
+    for(int i=0;i<st->icon_count;++i)st->icons[i].selected=false;
+    st->selected_icon=-1;
+}
+static void desk_select_area(deskmanager_state_t *st,gui_desktop_t *desktop,gui_rect_t area) {
+    st->selected_icon=-1;
+    for(int i=0;i<st->icon_count;++i) {
+        gui_rect_t overlap;desk_icon_t *icon=&st->icons[i];
+        bool selected=!icon->hidden && (st->selection_before[i] || gui_rect_intersect(area,desk_icon_rect(icon),&overlap));
+        if(selected!=icon->selected) {icon->selected=selected;gui_desktop_invalidate_rect(desktop,desk_icon_rect(icon));}
+        if(selected && st->selected_icon<0)st->selected_icon=i;
+    }
+}
+static void desk_arrange_icons(deskmanager_state_t *st,gui_desktop_t *desktop) {
+    int rows=(desktop->surface.height-104)/(DESK_ICON_H+8);
+    if(rows<1)rows=1;
+    unsigned slot=0;
+    for(int i=0;i<st->icon_count;++i) {
+        desk_icon_t *icon=&st->icons[i];if(icon->hidden)continue;
+        icon->x=12+(slot/(unsigned)rows)*(DESK_ICON_W+12);
+        icon->y=12+(slot%(unsigned)rows)*(DESK_ICON_H+8);++slot;
+    }
+}
+static bool desk_resize_icons(deskmanager_state_t *st,int size) {
+    if(size==g_desktop_icon_size)return true;
+    uint32_t *images[DESK_MAX_ICONS]={0};
+    for(int i=0;i<st->icon_count;++i)if(st->icons[i].original_pixels) {
+        int width=st->icons[i].original_width,height=st->icons[i].original_height;
+        images[i]=bk_sys_alloc_zero(size*size*sizeof(uint32_t));
+        if(!images[i]) {for(int j=0;j<i;++j)bk_sys_free(images[j]);return false;}
+        for(int y=0;y<size;++y)for(int x=0;x<size;++x)
+            images[i][y*size+x]=st->icons[i].original_pixels[(y*height/size)*width+x*width/size];
+    }
+    for(int i=0;i<st->icon_count;++i)if(images[i]) {
+        bk_sys_free(st->icons[i].pixels);st->icons[i].pixels=images[i];
+    }
+    g_desktop_icon_size=size;return true;
+}
+static void desk_icon_ghost(gui_desktop_t *desktop,const uint32_t *pixels,int size,unsigned count) {
+    kmemset(desktop->drag_icon_mask,0,sizeof(desktop->drag_icon_mask));
+    if(!pixels || size<1 || size>64)return;
+    for(int y=0;y<size;++y)for(int x=0;x<size;++x) {
+        if(!(pixels[y*size+x]>>24))continue;
+        bool edge=!x || !y || x==size-1 || y==size-1 ||
+            !(pixels[y*size+x-1]>>24) || !(pixels[y*size+x+1]>>24) ||
+            !(pixels[(y-1)*size+x]>>24) || !(pixels[(y+1)*size+x]>>24);
+        desktop->drag_icon_mask[y*64+x]=edge?2:1;
+    }
+    desktop->drag_icon_size=size;desktop->drag_icon_count=count;
+    desktop->drag_icon_ghost=true;
+}
+
+static gui_rect_t desk_context_menu_rect(const gui_context_menu_t *menu) {
+    if (!menu) return (gui_rect_t){0, 0, 0, 0};
+    return (gui_rect_t){menu->x, menu->y, menu->width,
+                        menu->item_count * 22 + 4};
+}
+
 enum {
     DESK_CONTEXT_OPEN = 1,
     DESK_CONTEXT_FILES,
@@ -1608,6 +1920,15 @@ enum {
     DESK_CONTEXT_CONTROL,
     DESK_CONTEXT_DISPLAY,
     DESK_CONTEXT_REFRESH,
+    DESK_CONTEXT_DELETE,
+    DESK_CONTEXT_DESKTOP,
+    DESK_CONTEXT_AUTO,
+    DESK_CONTEXT_GRID,
+    DESK_CONTEXT_SMALL,
+    DESK_CONTEXT_MEDIUM,
+    DESK_CONTEXT_LARGE,
+    DESK_CONTEXT_ARRANGE,
+
 };
 
 static void desk_context_callback(gui_window_t *window UNUSED,
@@ -1618,20 +1939,44 @@ static void desk_context_callback(gui_window_t *window UNUSED,
     if (!st || !desktop) return;
     if (item_id == DESK_CONTEXT_OPEN && st->context_icon >= 0 &&
         st->context_icon < st->icon_count) {
-        if (st->icons[st->context_icon].open)
-            st->icons[st->context_icon].open(desktop);
+        desk_open_icon(desktop,&st->icons[st->context_icon]);
+    } else if (item_id == DESK_CONTEXT_DELETE && st->context_icon >= 0 && st->context_icon < st->icon_count) {
+        bool failed=false;
+        bk_shell_job_t *job=bk_shell_job_create(desktop,BK_SHELL_JOB_TRASH,NULL);
+        for(int i=0;i<st->icon_count;++i) {
+            desk_icon_t *icon=&st->icons[i];
+            if(icon->hidden || (!icon->selected && i!=st->context_icon))continue;
+            if(icon->path[0]) {if(!bk_shell_job_add(job,icon->path))failed=true;}
+            else {icon->hidden=true;icon->selected=false;desk_icon_position(icon,true);}
+        }
+        if(job && job->count && !failed)failed=!bk_shell_job_start(job);
+        else bk_sys_free(job);
+        if(st->auto_arrange)desk_arrange_icons(st,desktop);
+        if(failed)gui_desktop_show_error(desktop,"Papelera","Algunos archivos no se pudieron enviar a la papelera.");
+        gui_desktop_invalidate_all(desktop);
+    } else if(item_id>=DESK_CONTEXT_AUTO && item_id<=DESK_CONTEXT_ARRANGE) {
+        if(item_id==DESK_CONTEXT_AUTO)st->auto_arrange=!st->auto_arrange;
+        else if(item_id==DESK_CONTEXT_GRID)st->align_grid=!st->align_grid;
+        else if(item_id==DESK_CONTEXT_SMALL || item_id==DESK_CONTEXT_MEDIUM || item_id==DESK_CONTEXT_LARGE) {
+            int size=item_id==DESK_CONTEXT_SMALL?32:item_id==DESK_CONTEXT_MEDIUM?48:64;
+            if(!desk_resize_icons(st,size))return;
+        }
+        if(st->auto_arrange || item_id==DESK_CONTEXT_ARRANGE ||
+           (item_id>=DESK_CONTEXT_SMALL && item_id<=DESK_CONTEXT_LARGE))desk_arrange_icons(st,desktop);
+        for(int i=0;i<st->icon_count;++i)desk_icon_position(&st->icons[i],true);
+        desk_layout_preferences(st,true);gui_desktop_invalidate_all(desktop);
     } else if (item_id == DESK_CONTEXT_FILES) {
         desk_open_files_app(desktop);
     } else if (item_id == DESK_CONTEXT_NEW_FOLDER) {
         for (int n = 1; n < 100; n++) {
-            snprintf(path, sizeof(path), "/Nueva carpeta %u", (uint32_t)n);
+            snprintf(path, sizeof(path), BK_DESKTOP_FILES "/Nueva carpeta %u", (uint32_t)n);
             if (vfs_mkdir(path)) break;
         }
     } else if (item_id == DESK_CONTEXT_NEW_TEXT) {
         for (int n = 1; n < 100; n++) {
-            snprintf(path, sizeof(path), "/Nuevo documento %u.txt", (uint32_t)n);
+            snprintf(path, sizeof(path), BK_DESKTOP_FILES "/Nuevo documento %u.txt", (uint32_t)n);
             if (vfs_write_all(path, NULL, 0)) {
-                (void)program_execute_path_arg(desktop,
+                (void)program_execute_path_async_arg(desktop,
                     "/SYSTEM/PROGRAMS/TEXTEDITOR.BEX", path);
                 break;
             }
@@ -1639,22 +1984,31 @@ static void desk_context_callback(gui_window_t *window UNUSED,
     } else if (item_id == DESK_CONTEXT_CONTROL) {
         desk_open_control_panel(desktop);
     } else if (item_id == DESK_CONTEXT_DISPLAY) {
-        (void)program_execute_path(desktop, "/SYSTEM/CONTROL/DISPLAY.CPL");
+        (void)program_execute_path_async(desktop, "/SYSTEM/CONTROL/DISPLAY.CPL");
     } else if (item_id == DESK_CONTEXT_REFRESH) {
         desk_sync_drive_icons(st, desktop, true);
+        /* Drive icons may have appeared/disappeared, so this explicit refresh
+         * is the one context action that still needs desktop-wide damage. */
+        gui_desktop_invalidate_all(desktop);
     }
-    gui_desktop_invalidate_all(desktop);
 }
 
 static void desk_open_context(deskmanager_state_t *st, gui_desktop_t *desktop,
                               int x, int y, int icon) {
     gui_rect_t limits;
     if (!st || !desktop) return;
-    st->context_icon = icon;
+    st->context_icon = icon;st->context_pressed=0;
+    gui_context_menu_clear(&st->desktop_menu);
     gui_context_menu_clear(&st->context_menu);
     if (icon >= 0)
         (void)gui_context_menu_add_item(&st->context_menu,
             DESK_CONTEXT_OPEN, "@H5A216C13", true, desk_context_callback, st);
+    if (icon >= 0)
+        (void)gui_context_menu_add_item(&st->context_menu,DESK_CONTEXT_DELETE,
+            st->icons[icon].path[0] ? "Enviar a papelera" : "Quitar icono",
+            true,desk_context_callback,st);
+    (void)gui_context_menu_add_item(&st->context_menu,DESK_CONTEXT_DESKTOP,
+        "Escritorio",true,NULL,st);
     (void)gui_context_menu_add_item(&st->context_menu,
         DESK_CONTEXT_FILES, "@H3D400190", true, desk_context_callback, st);
     (void)gui_context_menu_add_item(&st->context_menu,
@@ -1672,15 +2026,75 @@ static void desk_open_context(deskmanager_state_t *st, gui_desktop_t *desktop,
     (void)gui_context_menu_add_item(&st->context_menu,
         DESK_CONTEXT_REFRESH, "@H7CC1E2B3", true, desk_context_callback, st);
     limits = (gui_rect_t){0, 0, desktop->surface.width,
-                          desktop->surface.height - 24};
+                          desktop->surface.height - 80};
     gui_context_menu_open(&st->context_menu, x, y, limits);
-    gui_desktop_invalidate_all(desktop);
+    gui_desktop_invalidate_rect(desktop,
+                                desk_context_menu_rect(&st->context_menu));
+    gui_request_paint();
+}
+
+static void desk_open_desktop_menu(deskmanager_state_t *st,gui_desktop_t *desktop,int row) {
+    gui_context_menu_t *menu=&st->desktop_menu;gui_context_menu_clear(menu);
+    (void)gui_context_menu_add_item(menu,DESK_CONTEXT_AUTO,st->auto_arrange?"[x] Organizar auto":"[ ] Organizar auto",true,desk_context_callback,st);
+    (void)gui_context_menu_add_item(menu,DESK_CONTEXT_GRID,st->align_grid?"[x] Alinear cuadricula":"[ ] Alinear cuadricula",true,desk_context_callback,st);
+    (void)gui_context_menu_add_item(menu,DESK_CONTEXT_SMALL,g_desktop_icon_size==32?"(*) Chicos":"( ) Chicos",true,desk_context_callback,st);
+    (void)gui_context_menu_add_item(menu,DESK_CONTEXT_MEDIUM,g_desktop_icon_size==48?"(*) Medianos":"( ) Medianos",true,desk_context_callback,st);
+    (void)gui_context_menu_add_item(menu,DESK_CONTEXT_LARGE,g_desktop_icon_size==64?"(*) Grandes":"( ) Grandes",true,desk_context_callback,st);
+    (void)gui_context_menu_add_item(menu,DESK_CONTEXT_ARRANGE,"Organizar ahora",true,desk_context_callback,st);
+    int x=st->context_menu.x+st->context_menu.width-2;
+    if(x+menu->width>desktop->surface.width)x=st->context_menu.x-menu->width+2;
+    gui_context_menu_open(menu,x,st->context_menu.y+2+row*22,
+        (gui_rect_t){0,0,desktop->surface.width,desktop->surface.height-80});
+}
+static bool desk_context_event(deskmanager_state_t *st,gui_desktop_t *desktop,const gui_event_t *event) {
+    if(!st->context_menu.open)return false;
+    if(event->type==GUI_EVENT_KEY && event->key==KEY_ESCAPE) {
+        gui_context_menu_close(&st->context_menu);gui_context_menu_close(&st->desktop_menu);
+        gui_desktop_invalidate_all(desktop);return true;
+    }
+    if(event->type!=GUI_EVENT_MOUSE_MOVE && event->type!=GUI_EVENT_MOUSE_DOWN && event->type!=GUI_EVENT_MOUSE_UP)return false;
+    gui_rect_t parent=desk_context_menu_rect(&st->context_menu);
+    gui_rect_t child=desk_context_menu_rect(&st->desktop_menu);
+    gui_context_menu_t *menu=NULL;
+    if(st->desktop_menu.open && gui_rect_contains(child,event->x,event->y))menu=&st->desktop_menu;
+    else if(gui_rect_contains(parent,event->x,event->y))menu=&st->context_menu;
+    if(menu) {
+        int row=(event->y-menu->y-3)/22;
+        if(event->y<menu->y+3 || row<0 || row>=menu->item_count)return true;
+        if(event->type==GUI_EVENT_MOUSE_MOVE) {
+            menu->pressed_item=row;
+            if(menu==&st->context_menu) {
+                if(menu->items[row].id==DESK_CONTEXT_DESKTOP) {
+                    if(!st->desktop_menu.open)desk_open_desktop_menu(st,desktop,row);
+                } else gui_context_menu_close(&st->desktop_menu);
+            }
+        } else if(menu->items[row].id==DESK_CONTEXT_DESKTOP) {
+            desk_open_desktop_menu(st,desktop,row);
+        } else if(event->type==GUI_EVENT_MOUSE_DOWN && event->button==MOUSE_LEFT_BUTTON) {
+            st->context_pressed=menu->items[row].id;
+        } else if(event->type==GUI_EVENT_MOUSE_UP && event->button==MOUSE_LEFT_BUTTON) {
+            uint32_t id=menu->items[row].id;
+            if(st->context_pressed==id) {
+                gui_context_menu_close(&st->context_menu);gui_context_menu_close(&st->desktop_menu);
+                desk_context_callback(NULL,id,st);
+            }
+            st->context_pressed=0;
+        }
+    } else if(event->type==GUI_EVENT_MOUSE_DOWN) {
+        gui_context_menu_close(&st->context_menu);gui_context_menu_close(&st->desktop_menu);st->context_pressed=0;
+    }
+    if(!menu && event->type==GUI_EVENT_MOUSE_UP)st->context_pressed=0;
+    gui_desktop_invalidate_rect(desktop,parent);
+    if(child.w && child.h)gui_desktop_invalidate_rect(desktop,child);
+    if(st->desktop_menu.open)gui_desktop_invalidate_rect(desktop,desk_context_menu_rect(&st->desktop_menu));
+    gui_request_paint();return menu!=NULL || event->type==GUI_EVENT_MOUSE_MOVE;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
  *  Pintar ventanas (igual que antes)
  * ────────────────────────────────────────────────────────────────────────── */
 
+#ifndef BLES_VISION_SERVICE
 static void deskmanager_paint_windows(gui_desktop_t *desktop,
                                        gui_surface_t *surface,
                                        gui_rect_t screen) {
@@ -1688,11 +2102,11 @@ static void deskmanager_paint_windows(gui_desktop_t *desktop,
     gui_rect_t content_clip;
     gui_rect_t saved_clip;
 
-    /* El dominio GUI se libera temporalmente al cambiar de tarea. Mientras
-       recorremos la lista, no permita que CPU0 ejecute un callback Ring 3 que
-       pueda cerrar o modificar esas mismas ventanas. Es una barrera local;
-       los demás núcleos siguen ejecutando trabajo no GUI. */
-    task_preempt_disable();
+    /* gui_desktop_paint() already owns the desktop paint mutex for this whole
+       traversal. Destruction/widget-list mutation therefore cannot free what
+       we are walking, even if the scheduler runs a Ring-3 callback meanwhile.
+       Keeping preemption disabled across all window/content/widget drawing
+       caused long scheduler stalls on single-core Pentium II/III machines. */
     gui_window_t *window = desktop->first_window;
     while (window) {
         bool intersects = window->visible &&
@@ -1700,7 +2114,12 @@ static void deskmanager_paint_windows(gui_desktop_t *desktop,
                                              &win_clip);
         if (intersects)
             gui_window_paint(surface, window, screen);
-        if (intersects && window->content_paint) {
+        if (intersects && window->streaming_content && window->stream_ready) {
+            /* Video/games publish a compact frame backing directly.  Never
+             * bounce through a Ring-3 paint callback: that callback races the
+             * producer and was the source of gray/old-frame flashes. */
+            gui_window_paint_stream_content(surface, window, screen);
+        } else if (intersects && window->content_paint) {
             if (window->content_pid) {
                 bool dragging = desktop->drag_window == window;
                 /* Los callbacks Ring 3 terminan despues de este frame. Se
@@ -1755,36 +2174,24 @@ static void deskmanager_paint_windows(gui_desktop_t *desktop,
             gui_window_paint_menus(surface, window);
         window = window->next;
     }
-    task_preempt_enable();
 }
+#endif
 
 static bool deskmanager_dispatch_widgets(gui_window_t *window,
                                           const gui_event_t *event) {
     gui_widget_t *widget;
     bool handled = false;
-    bool expanded_dropdown = false;
-
     if (!window) return false;
-    widget = window->widgets;
-    while (widget) {
-        if (gui_widget_is_dropdown_expanded(widget)) {
-            expanded_dropdown = true;
-            break;
+    for(widget=window->widgets;widget;widget=widget->next)
+        if(gui_widget_is_dropdown_expanded(widget)) {
+            (void)gui_widget_handle_event(window,widget,event);
+            return true;
         }
-        widget = widget->next;
-    }
 
     widget = window->widgets;
     while (widget) {
-        if (expanded_dropdown &&
-            widget->style != GUI_WIDGET_STYLE_DROPDOWN) {
-            widget = widget->next;
-            continue;
-        }
-        if (gui_widget_handle_event(window, widget, event)) {
-            window->dirty = true;
+        if (gui_widget_handle_event(window, widget, event))
             handled = true;
-        }
         widget = widget->next;
     }
     return handled;
@@ -1845,18 +2252,31 @@ static gui_rect_t desk_resize_bounds(gui_desktop_t *desktop, int x, int y) {
         if (desktop->resize_edges & RESIZE_TOP) bounds.y -= min_h - bounds.h;
         bounds.h = min_h;
     }
-    if (bounds.x < 0) {
-        bounds.w += bounds.x;
-        bounds.x = 0;
+    /* Do not satisfy screen-edge constraints by squeezing below min_w/min_h.
+       That was able to defeat the minimum computed above and reintroduce the
+       exact overlap the minimum was meant to prevent.  Preserve the size and
+       slide the window back into the work area; only a physically smaller
+       desktop is allowed to cap it. */
+    {
+        int work_w = (int)desktop->surface.width;
+        int work_h = (int)desktop->surface.height - 52;
+        if (work_w < 1) work_w = 1;
+        if (work_h < 1) work_h = 1;
+        if (bounds.w > work_w) {
+            bounds.x = 0;
+            bounds.w = work_w;
+        } else {
+            if (bounds.x < 0) bounds.x = 0;
+            if (bounds.x + bounds.w > work_w) bounds.x = work_w - bounds.w;
+        }
+        if (bounds.h > work_h) {
+            bounds.y = 0;
+            bounds.h = work_h;
+        } else {
+            if (bounds.y < 0) bounds.y = 0;
+            if (bounds.y + bounds.h > work_h) bounds.y = work_h - bounds.h;
+        }
     }
-    if (bounds.y < 0) {
-        bounds.h += bounds.y;
-        bounds.y = 0;
-    }
-    if (bounds.x + bounds.w > desktop->surface.width)
-        bounds.w = desktop->surface.width - bounds.x;
-    if (bounds.y + bounds.h > desktop->surface.height - 30)
-        bounds.h = desktop->surface.height - 30 - bounds.y;
     return bounds;
 }
 
@@ -1866,13 +2286,15 @@ static void desk_resize_window(gui_desktop_t *desktop, int x, int y) {
     if (!desktop || !window) return;
     bounds = desk_resize_bounds(desktop, x, y);
     if (desktop->drag_outline_enabled) {
+        desktop->drag_icon_ghost=false;
         gui_rect_t old_outline = desktop->drag_outline_bounds;
         if (old_outline.x != bounds.x || old_outline.y != bounds.y ||
             old_outline.w != bounds.w || old_outline.h != bounds.h) {
             desktop->drag_outline_bounds = bounds;
             desktop->drag_outline_visible = true;
-            gui_desktop_invalidate_rect(desktop, old_outline);
-            gui_desktop_invalidate_rect(desktop, bounds);
+            gui_desktop_invalidate_overlay_rect(desktop, old_outline);
+            gui_desktop_invalidate_overlay_rect(desktop, bounds);
+            (void)bk_system_sound_event_play(BK_SYSTEM_SOUND_WINDOW_RESIZE);
         }
         return;
     }
@@ -1884,6 +2306,7 @@ static void desk_resize_window(gui_desktop_t *desktop, int x, int y) {
         window->dirty = true;
         gui_desktop_invalidate_rect(desktop, old_bounds);
         gui_desktop_invalidate_rect(desktop, bounds);
+        (void)bk_system_sound_event_play(BK_SYSTEM_SOUND_WINDOW_RESIZE);
     }
 }
 
@@ -1895,15 +2318,51 @@ static void deskmanager_paint(gui_program_t *program,
                                gui_desktop_t *desktop,
                                gui_surface_t *surface) {
     deskmanager_state_t *st = (deskmanager_state_t *)program->state;
+    gui_rect_t full_screen;
     gui_rect_t screen;
 
     if (!desktop || !surface) return;
+
+    /* Vision receives a staging surface whose clip is exactly the damaged
+     * region selected by the compositor.  Older code threw that information
+     * away and traversed/repainted every visible window for every tiny change
+     * (clock tick, button hover, caret, etc.).  Once DeskManager moved to
+     * Ring 3 that became catastrophically expensive because every window
+     * painter also crosses the userspace/kernel boundary.  Keep all shell work
+     * bounded to the clip that actually needs rebuilding. */
+    full_screen = (gui_rect_t){0, 0, surface->width, surface->height};
+    if (!gui_rect_intersect(full_screen, gui_gfx_get_clip(surface), &screen))
+        return;
+
     /* BLESKERNOS_SVGA3D_FRAME_BEGIN */
     gui_gpu_compositor_begin_frame(desktop, surface);
     /* BLESKERNOS_SVGA3D_FRAME_END */
     if (st && !st->setup_only) desk_sync_drive_icons(st, desktop, false);
 
-    screen = (gui_rect_t){0, 0, surface->width, surface->height};
+#ifdef BLES_VISION_SERVICE
+    /* Input may open a popup after this callback was queued with a smaller
+     * clip. Capture its geometry BEFORE painting and draw every new popup in
+     * full; publish that expanded clip together with the cached pixels. */
+    program->staging_overlay_count = 0;
+    if (st && !st->setup_only) {
+        vision_deskbar_overlay_rects(program, desktop);
+        if (st->context_menu.open && program->staging_overlay_count < 12U)
+            program->staging_overlays[program->staging_overlay_count++] = desk_context_menu_rect(&st->context_menu);
+        if (st->desktop_menu.open && program->staging_overlay_count < 12U)
+            program->staging_overlays[program->staging_overlay_count++] = desk_context_menu_rect(&st->desktop_menu);
+        for (uint32_t i=1;i<program->staging_overlay_count;i++) {
+            gui_rect_t r=program->staging_overlays[i];
+            int left=screen.x<r.x ? screen.x : r.x;
+            int top=screen.y<r.y ? screen.y : r.y;
+            int right=screen.x+screen.w>r.x+r.w ? screen.x+screen.w : r.x+r.w;
+            int bottom=screen.y+screen.h>r.y+r.h ? screen.y+screen.h : r.y+r.h;
+            screen=(gui_rect_t){left,top,right-left,bottom-top};
+        }
+        if (!gui_rect_intersect(full_screen,screen,&screen)) return;
+        gui_gfx_set_clip(surface,screen);
+    }
+#endif
+
     if (g_desktop_wallpaper && (g_wallpaper_tiled_source ||
         (g_wallpaper_w == surface->width && g_wallpaper_h == surface->height))) {
         desk_wallpaper_copy_dirty(surface);
@@ -1913,30 +2372,40 @@ static void deskmanager_paint(gui_program_t *program,
                                  : DESK_DEFAULT_BACKGROUND);
     }
 
-    /* Iconos de escritorio */
+    /* Only desktop icons touching the damaged region need to be redrawn. */
     if (st && !st->setup_only) {
         for (int i = 0; i < st->icon_count; i++) {
-            desk_draw_icon(surface, &st->icons[i]);
+            gui_rect_t icon_rect = desk_icon_rect(&st->icons[i]);
+            gui_rect_t ignored;
+            if (gui_rect_intersect(icon_rect, screen, &ignored))
+                desk_draw_icon(surface, &st->icons[i]);
         }
     }
 
     /* BLESKERNOS_SVGA3D_BACKGROUND_BEGIN */
     gui_gpu_compositor_capture_background(surface);
     /* BLESKERNOS_SVGA3D_BACKGROUND_END */
+#ifndef BLES_VISION_SERVICE
     deskmanager_paint_windows(desktop, surface, screen);
-    if (desktop->drag_outline_visible) {
-        gui_rect_t outline = desktop->drag_outline_bounds;
-        gui_gfx_draw_rect(surface, outline, 0x00000000);
-        if (outline.w > 2 && outline.h > 2) {
-            outline.x++;
-            outline.y++;
-            outline.w -= 2;
-            outline.h -= 2;
-            gui_gfx_draw_rect(surface, outline, 0x00FFFFFF);
-        }
-    }
-    if (st && !st->setup_only)
+#endif
+    /* Drag/resize and minimize/restore outlines are compositor overlays.
+       Keeping them out of the Vision shell cache avoids a Ring-3 repaint on
+       every mouse packet and keeps the animation above application windows. */
+    if (st && !st->setup_only) {
         gui_context_menu_paint(surface, &st->context_menu);
+        if(st->context_menu.open)for(unsigned i=0;i<st->context_menu.item_count;++i)
+            if(st->context_menu.items[i].id==DESK_CONTEXT_DESKTOP) {
+                int x=st->context_menu.x+st->context_menu.width-13,y=st->context_menu.y+9+i*22;
+                for(int n=0;n<5;++n)gui_gfx_draw_line(surface,x+n,y+n,x+n,y+8-n,0x00181818);
+            }
+        gui_context_menu_paint(surface,&st->desktop_menu);
+#ifdef BLES_VISION_SERVICE
+        /* One Ring-3 cache for the complete shell: background, windows and
+         * Deskbar are rendered atomically into the same staging surface. */
+        vision_deskbar_paint_layer(desktop, surface);
+
+#endif
+    }
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -1957,6 +2426,75 @@ static gui_window_t *desk_focus_fallback(gui_desktop_t *desktop,
     return NULL;
 }
 
+static bool desk_queue_files_drop(gui_desktop_t *desktop,gui_window_t *target,
+                                 const gui_event_t *event,const char (*paths)[260],unsigned count) {
+    if(!count || count>DESK_MAX_ICONS)return false;
+    uint32_t now=bk_sys_ticks();
+    for(unsigned i=0;i<4;++i) {
+        if(desktop->file_drops[i].used && now-desktop->file_drops[i].tick>desk_ticks_from_ms(10000)) {
+            bk_sys_free(desktop->file_drop_batches[i]);desktop->file_drop_batches[i]=NULL;
+            __sync_lock_release(&desktop->file_drops[i].used);
+        }
+        if(!__sync_bool_compare_and_swap(&desktop->file_drops[i].used,0,1))continue;
+        desktop->file_drop_batches[i]=NULL;desktop->file_drop_counts[i]=count;desktop->file_drop_positions[i]=0;
+        if(count>1) {
+            desktop->file_drop_batches[i]=bk_sys_alloc_zero(count*260);
+            if(!desktop->file_drop_batches[i]) {__sync_lock_release(&desktop->file_drops[i].used);return false;}
+            kmemcpy(desktop->file_drop_batches[i],paths,count*260);
+        }
+        desktop->file_drop_windows[i]=target;
+        uint32_t token=++desktop->file_drop_sequence;
+        bk_runtime_strncpy(desktop->file_drops[i].path,paths[0],259);desktop->file_drops[i].path[259]=0;
+        desktop->file_drops[i].token=token;desktop->file_drops[i].tick=now;
+        __sync_synchronize();
+        gui_event_t drop=*event;drop.type=GUI_EVENT_FILE_DROP;drop.dx=i;drop.dy=token;
+        bool queued=gui_window_dispatch_event(target,&drop);
+        if(!queued) {
+            bk_sys_free(desktop->file_drop_batches[i]);desktop->file_drop_batches[i]=NULL;
+            __sync_lock_release(&desktop->file_drops[i].used);
+        }
+        return queued;
+    }
+    return false;
+}
+static bool desk_queue_file_drop(gui_desktop_t *desktop,gui_window_t *target,
+                                 const gui_event_t *event,const char *path) {
+    char paths[1][260];bk_runtime_strncpy(paths[0],path,259);paths[0][259]=0;
+    return desk_queue_files_drop(desktop,target,event,paths,1);
+}
+
+static void desk_drop_file(deskmanager_state_t *st,gui_desktop_t *desktop,
+                           const gui_event_t *event,const char *path,int ignored_icon) {
+    gui_window_t *target=gui_desktop_window_at(desktop,event->x,event->y);
+    if (target) {
+        if (target->input_enabled) (void)desk_queue_file_drop(desktop,target,event,path);
+        return;
+    }
+    bool hidden=false;
+    if(ignored_icon>=0) {hidden=st->icons[ignored_icon].hidden;st->icons[ignored_icon].hidden=true;}
+    int hit=desk_hit_icon(st,event->x,event->y);
+    if(ignored_icon>=0) st->icons[ignored_icon].hidden=hidden;
+    const char *directory=BK_DESKTOP_FILES;
+    unsigned action=BK_SHELL_JOB_MOVE;
+    vfs_dir_entry_t info;
+    if(hit>=0 && st->icons[hit].open==desk_open_trash)action=BK_SHELL_JOB_TRASH;
+    else if(hit>=0 && st->icons[hit].path[0] && bk_file_stat(st->icons[hit].path,&info) && info.type==VFS_NODE_DIR)
+        directory=st->icons[hit].path;
+    if(action==BK_SHELL_JOB_MOVE && !st->auto_arrange && !bk_runtime_strcmp(directory,BK_DESKTOP_FILES)) {
+        desk_icon_t placed={0};
+        snprintf(placed.path,sizeof(placed.path),BK_DESKTOP_FILES "/%s",bk_shell_basename(path));
+        placed.x=event->x-5;placed.y=event->y-2;
+        if(placed.x<0)placed.x=0;
+        if(placed.y<0)placed.y=0;
+        if(placed.x>desktop->surface.width-DESK_ICON_W)placed.x=desktop->surface.width-DESK_ICON_W;
+        if(placed.y>desktop->surface.height-80-DESK_ICON_H)placed.y=desktop->surface.height-80-DESK_ICON_H;
+        desk_icon_position(&placed,true);
+    }
+    if(!bk_shell_job_one(desktop,action,path,directory))
+        gui_desktop_show_error(desktop,"Mover archivo","No se pudo iniciar la transferencia.");
+
+}
+
 static bool deskmanager_handle_event(gui_program_t *program,
                                       gui_desktop_t *desktop,
                                       const gui_event_t *event) {
@@ -1967,17 +2505,163 @@ static bool deskmanager_handle_event(gui_program_t *program,
     bool right_click;
 
     if (!desktop || !event) return false;
+    if (desktop->file_drag_active) {
+        if (event->type==GUI_EVENT_KEY && event->key==KEY_ESCAPE) {
+            desktop->file_drag_active=false; desktop->file_drag_window=NULL;desktop->drag_outline_visible=false;desktop->drag_icon_ghost=false;
+            gui_desktop_invalidate_all(desktop); return true;
+        }
+        if (event->type==GUI_EVENT_MOUSE_MOVE) {
+            gui_rect_t previous=desktop->drag_outline_bounds;
+            if(!desktop->drag_icon_ghost) {
+                vfs_dir_entry_t info;
+                const char *resource=bk_file_stat(desktop->file_drag_path,&info) && info.type==VFS_NODE_DIR ? "Folder" : "FileText";
+                uint32_t *pixels=desk_load_graphics_scaled(resource,g_desktop_icon_size,g_desktop_icon_size);
+                desk_icon_ghost(desktop,pixels,g_desktop_icon_size,1);bk_sys_free(pixels);
+            }
+            desktop->drag_outline_bounds=(gui_rect_t){event->x+8,event->y+8,desktop->drag_icon_size,desktop->drag_icon_size};
+            desktop->drag_outline_visible=true;
+            gui_desktop_invalidate_overlay_rect(desktop,previous);
+            gui_desktop_invalidate_overlay_rect(desktop,desktop->drag_outline_bounds);
+            gui_request_paint(); return true;
+        }
+        if (event->type==GUI_EVENT_MOUSE_UP && event->button==MOUSE_LEFT_BUTTON) {
+            char source[VFS_MAX_PATH]; bk_runtime_strcpy(source,desktop->file_drag_path);
+            desktop->file_drag_active=false; desktop->drag_outline_visible=false;desktop->drag_icon_ghost=false;
+            desk_drop_file(st,desktop,event,source,-1);
+            gui_window_t *window=desktop->first_window;
+            gui_event_t refresh={0}; refresh.type=GUI_EVENT_FILES_CHANGED;
+            while (window) { if(window==desktop->file_drag_window) { gui_window_dispatch_event(window,&refresh); break; } window=window->next; }
+            desktop->file_drag_window=NULL;
+            gui_desktop_invalidate_all(desktop); return true;
+        }
+    }
+    if(st && !st->setup_only && event->type==GUI_EVENT_KEY && event->key==KEY_ESCAPE &&
+       (st->selecting || st->drag_icon>=0)) {
+        st->selecting=false;st->drag_icon=-1;st->icon_dragged=false;
+        for(int i=0;i<st->icon_count;++i)st->icons[i].pressed=false;
+        desktop->drag_outline_visible=false;desktop->drag_icon_ghost=false;
+        gui_desktop_invalidate_all(desktop);return true;
+    }
+    if(st && !st->setup_only && st->selecting) {
+        if(event->type==GUI_EVENT_MOUSE_MOVE) {
+            int x=event->x,y=event->y;
+            if(x<0)x=0;
+            if(y<0)y=0;
+            if(x>=desktop->surface.width)x=desktop->surface.width-1;
+            if(y>=desktop->surface.height-80)y=desktop->surface.height-81;
+            gui_rect_t previous=desktop->drag_outline_bounds;
+            gui_rect_t area={x<st->select_x?x:st->select_x,y<st->select_y?y:st->select_y,
+                x<st->select_x?st->select_x-x:x-st->select_x,y<st->select_y?st->select_y-y:y-st->select_y};
+            desktop->drag_outline_bounds=area;desktop->drag_outline_visible=true;desktop->drag_icon_ghost=false;
+            desk_select_area(st,desktop,area);
+            gui_desktop_invalidate_overlay_rect(desktop,previous);
+            gui_desktop_invalidate_overlay_rect(desktop,area);gui_request_paint();return true;
+        }
+        if(event->type==GUI_EVENT_MOUSE_UP && event->button==MOUSE_LEFT_BUTTON) {
+            st->selecting=false;desktop->drag_outline_visible=false;
+            gui_desktop_invalidate_overlay_rect(desktop,desktop->drag_outline_bounds);gui_request_paint();return true;
+        }
+    }
+    if(st && !st->setup_only && st->drag_icon>=0 && event->type==GUI_EVENT_MOUSE_MOVE &&
+       (event->buttons&MOUSE_LEFT_BUTTON)) {
+        int dx=event->x-st->drag_start_x,dy=event->y-st->drag_start_y;
+        if(st->icon_dragged || dx*dx+dy*dy>=36) {
+            unsigned count=0;
+            for(int i=0;i<st->icon_count;++i)if(st->icons[i].selected && !st->icons[i].hidden)++count;
+            desk_icon_t *icon=&st->icons[st->drag_icon];
+            if(!st->icon_dragged)desk_icon_ghost(desktop,icon->pixels,g_desktop_icon_size,count);
+            st->icon_dragged=true;st->drag_dx=dx;st->drag_dy=dy;icon->last_click_tick=0;
+            gui_rect_t previous=desktop->drag_outline_bounds;
+            desktop->drag_outline_bounds=(gui_rect_t){icon->drag_x+dx+5,icon->drag_y+dy+2,
+                g_desktop_icon_size+(count>1?6:0),g_desktop_icon_size+(count>1?6:0)};
+            desktop->drag_outline_visible=true;
+            gui_desktop_invalidate_overlay_rect(desktop,previous);
+            gui_desktop_invalidate_overlay_rect(desktop,desktop->drag_outline_bounds);gui_request_paint();return true;
+        }
+    }
+    if(st && !st->setup_only && st->drag_icon>=0 && event->type==GUI_EVENT_MOUSE_UP && event->button==MOUSE_LEFT_BUTTON) {
+        st->drag_icon=-1;
+        if(st->icon_dragged) {
+            st->icon_dragged=false;desktop->drag_icon_ghost=false;desktop->drag_outline_visible=false;
+            gui_window_t *window=gui_desktop_window_at(desktop,event->x,event->y);
+            int target=-1;
+            for(int i=0;i<st->icon_count;++i)if(!st->icons[i].selected && !st->icons[i].hidden &&
+                gui_rect_contains(desk_icon_rect(&st->icons[i]),event->x,event->y)){target=i;break;}
+            char destination[260]={0};bool trash=target>=0 && st->icons[target].open==desk_open_trash;
+            vfs_dir_entry_t info;
+            if(target>=0 && st->icons[target].path[0] && bk_file_stat(st->icons[target].path,&info) && info.type==VFS_NODE_DIR)
+                bk_runtime_strcpy(destination,st->icons[target].path);
+            bool changed=false,failed=false;
+            if(window) {
+                char (*paths)[260]=bk_sys_alloc_zero(st->icon_count*260);unsigned count=0;
+                if(paths) {
+                    for(int i=0;i<st->icon_count;++i)if(st->icons[i].selected && st->icons[i].path[0])
+                        bk_runtime_strcpy(paths[count++],st->icons[i].path);
+                    if(count)failed=!desk_queue_files_drop(desktop,window,event,paths,count);
+                    bk_sys_free(paths);
+                } else failed=true;
+            } else if(trash || destination[0]) {
+                bk_shell_job_t *job=bk_shell_job_create(desktop,trash?BK_SHELL_JOB_TRASH:BK_SHELL_JOB_MOVE,destination);
+                for(int i=0;i<st->icon_count;++i) {
+                    desk_icon_t *icon=&st->icons[i];if(!icon->selected || icon->hidden)continue;
+                    if(icon->path[0]) {if(!bk_shell_job_add(job,icon->path))failed=true;}
+                    else if(trash) {icon->hidden=true;icon->selected=false;desk_icon_position(icon,true);}
+                }
+                if(job && job->count && !failed)failed=!bk_shell_job_start(job);
+                else bk_sys_free(job);
+            } else if(!st->auto_arrange) {
+                int dx=st->drag_dx,dy=st->drag_dy,min_x=desktop->surface.width,min_y=desktop->surface.height,max_x=0,max_y=0;
+                for(int i=0;i<st->icon_count;++i)if(st->icons[i].selected && !st->icons[i].hidden) {
+                    desk_icon_t *icon=&st->icons[i];
+                    if(icon->drag_x<min_x)min_x=icon->drag_x;
+                    if(icon->drag_y<min_y)min_y=icon->drag_y;
+                    if(icon->drag_x+DESK_ICON_W>max_x)max_x=icon->drag_x+DESK_ICON_W;
+                    if(icon->drag_y+DESK_ICON_H>max_y)max_y=icon->drag_y+DESK_ICON_H;
+                }
+                if(dx< -min_x)dx=-min_x;
+                if(dy< -min_y)dy=-min_y;
+                if(max_x+dx>desktop->surface.width)dx=desktop->surface.width-max_x;
+                if(max_y+dy>desktop->surface.height-80)dy=desktop->surface.height-80-max_y;
+                for(int i=0;i<st->icon_count;++i)if(st->icons[i].selected && !st->icons[i].hidden) {
+                    desk_icon_t *icon=&st->icons[i];icon->x=icon->drag_x+dx;icon->y=icon->drag_y+dy;
+                    if(st->align_grid) {icon->x=12+((icon->x-12+(DESK_ICON_W+12)/2)/(DESK_ICON_W+12))*(DESK_ICON_W+12);
+                        icon->y=12+((icon->y-12+(DESK_ICON_H+8)/2)/(DESK_ICON_H+8))*(DESK_ICON_H+8);}
+                    if(icon->x<0)icon->x=0;
+                    if(icon->y<0)icon->y=0;
+                    if(icon->x>desktop->surface.width-DESK_ICON_W)icon->x=desktop->surface.width-DESK_ICON_W;
+                    if(icon->y>desktop->surface.height-80-DESK_ICON_H)icon->y=desktop->surface.height-80-DESK_ICON_H;
+                    desk_icon_position(icon,true);
+                }
+            }
+            for(int i=0;i<st->icon_count;++i)st->icons[i].pressed=false;
+            if(changed){bk_gui_files_changed();desk_sync_drive_icons(st,desktop,true);}
+            if(st->auto_arrange)desk_arrange_icons(st,desktop);
+            if(failed)gui_desktop_show_error(desktop,"Mover archivos","Algunos archivos no se pudieron transferir. Revisa el destino.");
+            gui_desktop_invalidate_all(desktop);return true;
+        }
+    }
+    if(st && !st->setup_only && event->type==GUI_EVENT_KEY && !desktop->focused_window) {
+        kbd_modifiers_t mods={0};(void)bk_input_key_modifiers(&mods);
+        if(mods.ctrl && (event->key=='a' || event->key=='A')) {
+            for(int i=0;i<st->icon_count;++i)if(!st->icons[i].hidden){st->icons[i].selected=true;st->selected_icon=i;}
+            gui_desktop_invalidate_all(desktop);return true;
+        }
+    }
+    if(st && !st->setup_only && event->type==GUI_EVENT_KEY && event->key==KEY_DELETE && !desktop->focused_window && st->selected_icon>=0) {
+        st->context_icon=st->selected_icon;
+        desk_context_callback(NULL,DESK_CONTEXT_DELETE,st); return true;
+    }
+    if(st && !st->setup_only && desk_context_event(st,desktop,event))return true;
+#ifdef BLES_VISION_SERVICE
+    /* Preserve the old z-order semantics: Deskbar was the last registered
+     * program, therefore it had first chance to consume input. */
+    if (st && !st->setup_only &&
+        vision_deskbar_handle_event_layer(desktop, event))
+        return true;
+#endif
     left_click = event->button == MOUSE_LEFT_BUTTON;
     right_click = event->button == MOUSE_RIGHT_BUTTON;
 
-    if (st && !st->setup_only && st->context_menu.open &&
-        (event->type == GUI_EVENT_MOUSE_DOWN ||
-         event->type == GUI_EVENT_MOUSE_UP)) {
-        bool menu_handled = gui_context_menu_handle_event(&st->context_menu,
-                                                           NULL, event);
-        gui_desktop_invalidate_all(desktop);
-        if (menu_handled) return true;
-    }
 
     /* ── Primero probar si el clic cae sobre una ventana existente ── */
     if (event->type == GUI_EVENT_MOUSE_DOWN) {
@@ -2012,13 +2696,21 @@ static bool deskmanager_handle_event(gui_program_t *program,
                 return handled || right_click;
             }
             if (gui_window_handle_menu_event(hit, event)) {
-                hit->dirty = true;
                 return true;
             }
             gui_window_button_t button =
                 gui_window_titlebar_button_at(hit, event->x, event->y);
             if (!st || !st->setup_only) {
                 if (button == GUI_WINDOW_BUTTON_CLOSE) {
+                    if (hit->extended_events) {
+                        gui_event_t close_event = {0};
+                        close_event.type = GUI_EVENT_CLOSE;
+                        /* A queued Ring-3 callback counts as handled. VCL owns
+                           the close policy; if queueing fails, fall back to the
+                           historical immediate close. */
+                        if (gui_window_dispatch_event(hit, &close_event))
+                            return true;
+                    }
                     gui_window_t *fallback = desk_focus_fallback(desktop, hit);
                     gui_window_close(hit);
                     gui_desktop_focus_window(desktop, fallback);
@@ -2026,6 +2718,18 @@ static bool deskmanager_handle_event(gui_program_t *program,
                 }
                 if (button == GUI_WINDOW_BUTTON_MINIMIZE) {
                     gui_window_t *fallback = desk_focus_fallback(desktop, hit);
+                    gui_rect_t target;
+                    gui_rect_t from = hit->bounds;
+                    if (!deskbar_window_button_rect(desktop, hit, &target)) {
+                        target = (gui_rect_t){
+                            desktop->surface.width / 2 - 24,
+                            desktop->surface.height - 27,
+                            48, 24
+                        };
+                    }
+                    gui_desktop_start_minimize_animation(
+                        desktop, from, target, pit_get_ticks(),
+                        desk_ticks_from_ms(180U));
                     gui_window_minimize(hit);
                     gui_desktop_focus_window(desktop, fallback);
                     return true;
@@ -2037,10 +2741,12 @@ static bool deskmanager_handle_event(gui_program_t *program,
                     desktop->resize_start_bounds = hit->bounds;
                     desktop->resize_start_x = event->x;
                     desktop->resize_start_y = event->y;
+                    bk_system_sound_resize_begin();
                     if (desktop->drag_outline_enabled) {
+        desktop->drag_icon_ghost=false;
                         desktop->drag_outline_bounds = hit->bounds;
                         desktop->drag_outline_visible = true;
-                        gui_desktop_invalidate_rect(desktop, hit->bounds);
+                        gui_desktop_invalidate_overlay_rect(desktop, hit->bounds);
                     }
                     return true;
                 }
@@ -2049,10 +2755,11 @@ static bool deskmanager_handle_event(gui_program_t *program,
                     desktop->drag_off_x   = event->x - hit->bounds.x;
                     desktop->drag_off_y   = event->y - hit->bounds.y;
                     if (desktop->drag_outline_enabled) {
+        desktop->drag_icon_ghost=false;
                         desktop->drag_outline_bounds = hit->bounds;
                         desktop->drag_outline_visible = true;
-                        gui_desktop_invalidate_rect(desktop,
-                                                    hit->bounds);
+                        gui_desktop_invalidate_overlay_rect(desktop,
+                                                            hit->bounds);
                     }
                 }
             } else if (button != GUI_WINDOW_BUTTON_NONE ||
@@ -2088,18 +2795,41 @@ static bool deskmanager_handle_event(gui_program_t *program,
             int idx = desk_hit_icon(st, event->x, event->y);
             if (idx >= 0) {
                 if (left_click) {
-                    st->icons[idx].pressed = true;
+                    kbd_modifiers_t mods={0};(void)bk_input_key_modifiers(&mods);
+                    if(!mods.ctrl && !mods.shift && !st->icons[idx].selected)desk_clear_selection(st);
+                    if(mods.ctrl) {st->icons[idx].selected=!st->icons[idx].selected;st->icons[idx].last_click_tick=0;}
+                    else st->icons[idx].selected=true;
+                    st->selected_icon=st->icons[idx].selected?idx:-1;
+                    st->drag_icon=st->icons[idx].selected?idx:-1;st->icon_dragged=false;
+                    if(st->selected_icon<0)for(int i=0;i<st->icon_count;++i)
+                        if(st->icons[i].selected && !st->icons[i].hidden){st->selected_icon=i;break;}
+                    for(int i=0;i<st->icon_count;++i){st->icons[i].drag_x=st->icons[i].x;st->icons[i].drag_y=st->icons[i].y;}
+                    gui_desktop_invalidate_all(desktop);
+                    st->drag_start_x=event->x; st->drag_start_y=event->y;
+                    st->drag_offset_x=event->x-st->icons[idx].x;
+                    st->drag_offset_y=event->y-st->icons[idx].y;
+                    st->icons[idx].pressed = st->icons[idx].selected && !mods.ctrl && !mods.shift;
                     gui_desktop_invalidate_rect(desktop,
                                                 desk_icon_rect(&st->icons[idx]));
                     return true;
                 }
                 if (right_click) {
+                    if(!st->icons[idx].selected) {desk_clear_selection(st);st->icons[idx].selected=true;}
+                    st->selected_icon=idx;gui_desktop_invalidate_all(desktop);
                     desk_open_context(st, desktop, event->x, event->y, idx);
                     return true;
                 }
                 return false;
             }
-            if (!right_click) return false;
+            if(left_click) {
+                kbd_modifiers_t mods={0};(void)bk_input_key_modifiers(&mods);
+                if(!mods.ctrl && !mods.shift)desk_clear_selection(st);
+                for(int i=0;i<st->icon_count;++i)st->selection_before[i]=st->icons[i].selected;
+                st->selecting=true;st->select_x=event->x;st->select_y=event->y;
+                desktop->drag_icon_ghost=false;desktop->drag_outline_visible=false;
+                gui_desktop_invalidate_all(desktop);return true;
+            }
+            if(!right_click)return false;
             desk_open_context(st, desktop, event->x, event->y, -1);
             return true;
         }
@@ -2109,7 +2839,6 @@ static bool deskmanager_handle_event(gui_program_t *program,
     if (event->type == GUI_EVENT_MOUSE_UP) {
         if (desktop->focused_window) {
             if (gui_window_handle_menu_event(desktop->focused_window, event)) {
-                desktop->focused_window->dirty = true;
                 return true;
             }
             handled = deskmanager_dispatch_widgets(desktop->focused_window, event);
@@ -2135,6 +2864,7 @@ static bool deskmanager_handle_event(gui_program_t *program,
         if (desktop->resize_window) {
             gui_window_t *resized = desktop->resize_window;
             handled = true;
+            bk_system_sound_resize_end();
             if (desktop->drag_outline_enabled &&
                 desktop->drag_outline_visible) {
                 gui_rect_t old_bounds = resized->bounds;
@@ -2145,6 +2875,14 @@ static bool deskmanager_handle_event(gui_program_t *program,
                 resized->dirty = true;
                 gui_desktop_invalidate_rect(desktop, old_bounds);
                 gui_desktop_invalidate_rect(desktop, new_bounds);
+            }
+            /* Resize is useful to native control panels too: fixed-layout
+             * windows now use it to reflow their controls inside safe groups.
+             * Extended clients still receive exactly the same event as before. */
+            if (resized->event_handler || resized->extended_events) {
+                gui_event_t resize_event = {0};
+                resize_event.type = GUI_EVENT_RESIZE;
+                (void)gui_window_dispatch_event(resized, &resize_event);
             }
         }
         desktop->resize_window = NULL;
@@ -2171,7 +2909,7 @@ static bool deskmanager_handle_event(gui_program_t *program,
 
                 if (delta < desk_ticks_from_ms(DESK_DBLCLICK_MS) && same && ic->last_click_tick != 0) {
                     /* ¡Doble clic! */
-                    if (ic->open) ic->open(desktop);
+                    desk_open_icon(desktop,ic);
                     ic->last_click_tick = 0;
                 } else {
                     ic->last_click_tick = now;
@@ -2197,6 +2935,7 @@ static bool deskmanager_handle_event(gui_program_t *program,
         }
         if (desktop->drag_window) {
             if (desktop->drag_outline_enabled) {
+        desktop->drag_icon_ghost=false;
                 gui_rect_t old_outline = desktop->drag_outline_bounds;
                 gui_rect_t new_outline = old_outline;
                 new_outline.x = event->x - desktop->drag_off_x;
@@ -2205,8 +2944,8 @@ static bool deskmanager_handle_event(gui_program_t *program,
                     new_outline.y != old_outline.y) {
                     desktop->drag_outline_bounds = new_outline;
                     desktop->drag_outline_visible = true;
-                    gui_desktop_invalidate_rect(desktop, old_outline);
-                    gui_desktop_invalidate_rect(desktop, new_outline);
+                    gui_desktop_invalidate_overlay_rect(desktop, old_outline);
+                    gui_desktop_invalidate_overlay_rect(desktop, new_outline);
                 }
             } else {
                 desktop->drag_window->bounds.x =
@@ -2216,7 +2955,10 @@ static bool deskmanager_handle_event(gui_program_t *program,
                 desktop->drag_window->mode_restore_valid = false;
                 desktop->drag_window->dirty = true;
             }
-            handled = true;
+            /* Window movement consumes this pointer motion.  Forwarding it
+               again to every widget/client caused extra Ring-3 upcalls and
+               content paints while the outline was moving. */
+            return true;
         }
         if (desktop->focused_window &&
             deskmanager_dispatch_widgets(desktop->focused_window, event)) {
@@ -2250,6 +2992,12 @@ static bool deskmanager_handle_event(gui_program_t *program,
         return gui_window_dispatch_event(desktop->focused_window, event);
     }
 
+    if (event->type == GUI_EVENT_KEY_UP && desktop->focused_window) {
+        if (!desktop->focused_window->extended_events)
+            return false;
+        return gui_window_dispatch_event(desktop->focused_window, event);
+    }
+
     if (event->type == GUI_EVENT_MOUSE_WHEEL && desktop->focused_window)
         return gui_window_dispatch_event(desktop->focused_window, event);
 
@@ -2263,6 +3011,9 @@ static bool deskmanager_handle_event(gui_program_t *program,
 static void deskmanager_destroy(gui_program_t *program) {
     if (!program || !program->state) return;
     deskmanager_state_t *st = (deskmanager_state_t *)program->state;
+#ifdef BLES_VISION_SERVICE
+    vision_deskbar_shutdown_layer();
+#endif
     for (int i = 0; i < st->icon_count; i++)
         desk_clear_icon(&st->icons[i]);
     if (g_desk_state == st) g_desk_state = NULL;
@@ -2294,6 +3045,11 @@ void deskmanager_install(gui_desktop_t *desktop) {
     st = (deskmanager_state_t *)kzalloc(sizeof(deskmanager_state_t));
     if (!st) return;
 
+    st->selected_icon=st->drag_icon=-1;
+    st->auto_arrange=false;st->align_grid=true;
+    (void)bk_file_mkdir(BK_DESKTOP_FILES);
+    (void)bk_file_mkdir(BK_TRASH_FILES);
+    desk_layout_preferences(st,false);
     st->icon_count = 0;
     st->base_icon_count = 0;
     g_desk_desktop = desktop;
@@ -2336,18 +3092,21 @@ void deskmanager_install(gui_desktop_t *desktop) {
                 } else if (kstrcmp(line, "netsurf") == 0 ||
                            kstrcmp(line, "browser") == 0) {
                     open_fn = desk_open_netsurf_app;
+                } else if (kstrcmp(line, "font") == 0) {
+                    open_fn = desk_open_font_app;
                 } else if (kstrcmp(line, "calculator") == 0) {
                     open_fn = desk_open_calculator_app;
                 } else if (kstrcmp(line, "processes") == 0) {
                     open_fn = desk_open_processmanager_app;
+                } else if (kstrcmp(line, "events") == 0) {
+                    open_fn = desk_open_events_app;
                 } else if (kstrcmp(line, "performance") == 0) {
                     open_fn = desk_open_performance_app;
                 } else if (kstrcmp(line, "midamp") == 0) {
                     open_fn = desk_open_midamp_app;
                 } else if (kstrcmp(line, "viewer") == 0) {
                     open_fn = desk_open_viewer_app;
-                } else if (kstrcmp(line, "games") == 0) {
-                    open_fn = desk_open_games_app;
+
                 } else if (kstrcmp(line, "control") == 0 ||
                            kstrcmp(line, "settings") == 0) {
                     open_fn = desk_open_control_panel;
@@ -2362,7 +3121,7 @@ void deskmanager_install(gui_desktop_t *desktop) {
                         while (*comma2 && *comma2 != ',') comma2++;
                     }
                     int x = 16;
-                    int y = 16 + st->icon_count * 100;
+                    int y = 12 + st->icon_count * 80;
                     if (comma2 && *comma2) {
                         *comma2++ = '\0';
                         x = 0;
@@ -2385,6 +3144,7 @@ void deskmanager_install(gui_desktop_t *desktop) {
     /* Los perfiles viejos guardaban sólo Archivos y Rendimiento. Se conservan
      * sus posiciones y se completan los accesos de trabajo sin duplicarlos. */
     desk_ensure_default_program_icons(st, desktop);
+    desk_add_icon(st,desktop->surface.width-74,desktop->surface.height-170,"Papelera",desk_open_trash);
     st->base_icon_count = st->icon_count;
     desk_sync_drive_icons(st, desktop, true);
 
@@ -2392,6 +3152,9 @@ void deskmanager_install(gui_desktop_t *desktop) {
                                         deskmanager_paint,
                                         deskmanager_handle_event,
                                         deskmanager_destroy);
+#ifdef BLES_VISION_SERVICE
+    if (prog) prog->scene_owner = true;
+#endif
     if (!prog) {
         if (g_desk_state == st) g_desk_state = NULL;
         desk_remove_icons_from(st, 0);
@@ -2423,6 +3186,9 @@ void deskmanager_install_setup(gui_desktop_t *desktop,
                                         deskmanager_paint,
                                         deskmanager_handle_event,
                                         deskmanager_destroy);
+#ifdef BLES_VISION_SERVICE
+    if (prog) prog->scene_owner = true;
+#endif
     if (!prog) {
         if (g_desk_state == st) g_desk_state = NULL;
         kfree(st);

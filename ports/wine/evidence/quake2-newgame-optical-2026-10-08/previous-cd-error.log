@@ -1,0 +1,9 @@
+0x0011cde9 in task_yield ()
+Hardware assisted breakpoint 1 at 0x411f30
+[Switching to Thread 1.2]
+QUAKE COM_ERROR eip=411f30 esp=7f20f8e4
+0x7f20f8e4:	0x0042b133	0x00000000	0x0044474c	0x00b19bf0
+0x7f20f8f4:	0x00003a7b	0x715c3a7a	0x656b6175	0x78652e32
+0x44474c:	"You must have the Quake2 CD in the drive to play."
+#0  0x00411f30 in ?? ()
+[Inferior 1 (process 1) detached]

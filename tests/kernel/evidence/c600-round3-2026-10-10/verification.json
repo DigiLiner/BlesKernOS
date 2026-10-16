@@ -1,0 +1,17 @@
+{
+  "checks": {
+    "ati_clock_wait": "PASS",
+    "c600_paths": "PASS",
+    "sxga_volume": "PASS",
+    "ati_tiles": "PASS",
+    "idle_std_128m": "PASS; Vision 1.1%",
+    "idle_vmware_128m": "PASS; Vision 0.8%",
+    "desktop_vmware_32m_smp2_ac97": "PASS",
+    "installed_ati_readback": "PASS",
+    "usb_partition_match": "PASS",
+    "saved_master_volume": 30
+  },
+  "ati_module_sha256": "e50912b78c5cb39e0a18b98d3a89622077efff2e811650d087c2515449b55386",
+  "physical_ati_verified": false,
+  "dell_vision_high_cpu_reproduced": false
+}

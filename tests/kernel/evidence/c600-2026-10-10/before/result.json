@@ -1,0 +1,21 @@
+{
+  "desktop_wall_seconds": 151.76724499400007,
+  "reads": [
+    {
+      "pass_index": 0,
+      "bytes": 1048576,
+      "ticks": 909,
+      "hz": 100,
+      "valid": 1
+    },
+    {
+      "pass_index": 1,
+      "bytes": 1048576,
+      "ticks": 16,
+      "hz": 100,
+      "valid": 1
+    }
+  ],
+  "pass": true,
+  "root_usb": true
+}

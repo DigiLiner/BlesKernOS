@@ -1,0 +1,25 @@
+{
+  "result": "PASS",
+  "first_surface_ms": 46096,
+  "ram_mib": 1536,
+  "host_launch_observed_to_surface_ms": 48228.6948270048,
+  "smp": 2,
+  "disk_bus": "ide",
+  "vga": "vmware",
+  "kernel_sha256": "782c65c9fa6fdb4b394d765c5df55f82cf643ee0da1eff27da98a87f73a902c0",
+  "notepad": {
+    "handle": 62067248,
+    "bounds": [
+      36,
+      70,
+      511,
+      376
+    ],
+    "title": "notepad.exe",
+    "visible": true,
+    "listed": true,
+    "owner": 8,
+    "controller": 7
+  },
+  "method": "guest launcher monotonic time to first surface; fresh guest boot, no typing"
+}

@@ -1,0 +1,7 @@
+test: /tmp/bk-pager-ranges-gb0r0oek/test.c:137: main: Assertion `!mutations && !guards && pages[0].frame==0x80000U' failed.
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/test_pager_ranges.py", line 102, in <module>
+    subprocess.run([str(binary), case], check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/tmp/bk-pager-ranges-gb0r0oek/test', 'unmap']' died with <Signals.SIGABRT: 6>.

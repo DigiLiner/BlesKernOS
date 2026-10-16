@@ -1,0 +1,47 @@
+/SYSTEM/DRIVERS/PS2MOUSE.DVR 7140 bytes; mode 0o100644
+/SYSTEM/SERVICES/VISION.BEX 255152 bytes; mode 0o100644
+/SYSTEM/CONTROL/DISPLAY.CPL 2299376 bytes; mode 0o100644
+/SYSTEM/CONTROL/MOUSE.CPL 19952 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/FILE.BEX 59196 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/TEXTEDITOR.BEX 14372 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/PROCESSMANAGER.BEX 24176 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/VMMETA.ELF 8908 bytes; mode 0o100755
+/SYSTEM/PROGRAMS/GFXALLOC.ELF 8812 bytes; mode 0o100755
+/SYSTEM/PROGRAMS/RAMTEST.BEX 1728 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/STARTUP.INI 77 bytes; mode 0o100755
+{
+  "ram_mib": 64,
+  "backend": "std",
+  "desktop_started": true,
+  "completed": true,
+  "wine_boot_started": false,
+  "smoke_pass": false,
+  "memory": {
+    "DESKTOP": {
+      "installed_kib": 65023,
+      "managed_kib": 61312,
+      "used_kib": 11135,
+      "free_kib": 50176,
+      "unmanaged_kib": 3711,
+      "heap_used_kib": 11007,
+      "heap_free_kib": 34976,
+      "vm_free_kib": 15200
+    },
+    "IDLE": {
+      "installed_kib": 65023,
+      "managed_kib": 61312,
+      "used_kib": 15466,
+      "free_kib": 45845,
+      "unmanaged_kib": 3711,
+      "heap_used_kib": 15338,
+      "heap_free_kib": 30645,
+      "vm_free_kib": 15200
+    }
+  },
+  "depths": []
+}
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/run_ram_smoke.py", line 148, in <module>
+    assert not a.smoke or result['smoke_pass'],'Native smoke test failed'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Native smoke test failed

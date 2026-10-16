@@ -1,0 +1,377 @@
+--- before/ports/wine/graphics/glx.c
++++ after/ports/wine/graphics/glx.c
+@@ -21,7 +21,19 @@
+ 
+ struct __GLXFBConfigRec {int doublebuffer;};
+ static struct __GLXFBConfigRec configs[2]={{0},{1}};
++struct bles_drawable {
++    struct bles_drawable *next;
++    Display *display;
++    GLXDrawable xid;
++    unsigned width,height,refs;
++    int doublebuffer,retired;
++    void *mesa;
++    unsigned char *pixels;
++};
++static struct bles_drawable *drawables;
+ struct __GLXcontextRec {
++    struct bles_drawable *draw_buffer,*read_buffer;
++    int doublebuffer;
+     OSMesaContext mesa;
+     Display *display;
+     GLXDrawable draw,read;
+@@ -41,6 +53,9 @@
+ static OSMesaContext (*create_attribs)(const int *,OSMesaContext);
+ static void (*destroy)(OSMesaContext);
+ static GLboolean (*bind)(OSMesaContext,void *,GLenum,GLsizei,GLsizei);
++static void *(*create_drawable)(OSMesaContext,void *,GLenum,GLsizei,GLsizei);
++static void (*destroy_drawable)(void *);
++static GLboolean (*bind_drawables)(OSMesaContext,void *,void *);
+ static void (*pixelstore)(GLint,GLint);
+ static void (*finish)(void);
+ static void (*flush)(void);
+@@ -61,7 +76,10 @@
+         bles_virgl_t caps={.abi=BLES_VIRGL_ABI,.op=BLES_VIRGL_CAPS};
+         int available=fd>=0 && !ioctl(fd,BLES_GFX_VIRGL,&caps);
+         if(fd>=0)close(fd);
+-        if(available)backend=dlopen("libbkvirgl.so.8",RTLD_NOW|RTLD_LOCAL);
++        if(available){
++            backend=dlopen("libbkvirgl.so.8",RTLD_NOW|RTLD_LOCAL);
++            if(!backend)fprintf(stderr,"[WINE:GL] unable to load VirGL: %s\n",dlerror());
++        }
+     }
+     if(!backend)backend=dlopen(software?"libOSMesa.so.8":
+         selection && !strcmp(selection,"virgl")?"libbkvirgl.so.8":"libbkmesa.so.1",RTLD_NOW|RTLD_LOCAL);
+@@ -73,6 +91,11 @@
+     bind=dlsym(backend,"OSMesaMakeCurrent");pixelstore=dlsym(backend,"OSMesaPixelStore");
+     flush=dlsym(backend,"glFlush");getinteger=dlsym(backend,"glGetIntegerv");
+     swapcolor=dlsym(backend,"OSMesaBleskSwapBuffers");
++    create_drawable=dlsym(backend,"OSMesaBleskCreateDrawable");
++    destroy_drawable=dlsym(backend,"OSMesaBleskDestroyDrawable");
++    bind_drawables=dlsym(backend,"OSMesaBleskMakeContextCurrent");
++    if(!create_drawable || !destroy_drawable || !bind_drawables)
++        create_drawable=NULL,destroy_drawable=NULL,bind_drawables=NULL;
+     finish=dlsym(backend,"glFinish");getstring=dlsym(backend,"glGetString");
+     lookup=dlsym(backend,"OSMesaGetProcAddress");
+     if(!lookup)lookup=dlsym(backend,"_glapi_get_proc_address");
+@@ -97,6 +120,7 @@
+     if(list){list[0]=&configs[0];list[1]=&configs[1];}return list;
+ }
+ int glXGetFBConfigAttrib(Display *d,GLXFBConfig config,int attribute,int *value){
++    pthread_once(&once,initialize);
+     if(config!=&configs[0] && config!=&configs[1])return GLX_BAD_VISUAL;
+     *value=0;
+     switch(attribute){
+@@ -108,7 +132,7 @@
+     case GLX_X_RENDERABLE:case GLX_USE_GL:case GLX_RGBA:*value=True;break;
+     case GLX_DOUBLEBUFFER:*value=config->doublebuffer;break;
+     case GLX_RED_SIZE:case GLX_GREEN_SIZE:case GLX_BLUE_SIZE:case GLX_ALPHA_SIZE:*value=8;break;
+-    case GLX_DEPTH_SIZE:*value=16;break;
++    case GLX_DEPTH_SIZE:*value=swapcolor?24:16;break;
+     case GLX_STENCIL_SIZE:*value=8;break;
+     case GLX_X_VISUAL_TYPE:*value=GLX_TRUE_COLOR;break;
+     case GLX_CONFIG_CAVEAT:case GLX_TRANSPARENT_TYPE:*value=GLX_NONE;break;
+@@ -149,6 +173,7 @@
+     c->mesa=create(OSMESA_BGRA,16,8,0,share?share->mesa:NULL);
+     pthread_mutex_unlock(&contexts_lock);
+     if(!c->mesa){free(c);return NULL;}
++    c->doublebuffer=1;
+     if(setrenderer)setrenderer(c->mesa,0); /* native GPU with correct CPU fallback */
+     return c;
+ }
+@@ -183,7 +208,7 @@
+         }
+     }
+     if(major<1 || minor<0)return NULL;
+-    const int attrs[]={0x22,OSMESA_BGRA,0x30,16,0x31,8,
++    const int attrs[]={0x22,OSMESA_BGRA,0x30,swapcolor?24:16,0x31,8,
+                        0x33,profile,0x36,major,0x37,minor,
+                        context_flags?OSMESA_BLES_CONTEXT_FLAGS:0,flags,
+                        swapcolor?OSMESA_BLES_DOUBLE_BUFFER:0,config->doublebuffer,0};
+@@ -191,7 +216,7 @@
+     pthread_mutex_lock(&contexts_lock);
+     c->mesa=create_attribs(attrs,share?share->mesa:NULL);
+     pthread_mutex_unlock(&contexts_lock);
+-    if(!c->mesa){free(c);return NULL;}return c;
++    if(!c->mesa){free(c);return NULL;}c->doublebuffer=config->doublebuffer;return c;
+ }
+ static const char *context_extensions(void){
+     pthread_once(&once,initialize);
+@@ -203,8 +228,71 @@
+     Window root;int x,y;unsigned border,depth;
+     return XGetGeometry(d,drawable,&root,&x,&y,w,h,&border,&depth) && *w && *h && *w<=2048 && *h<=2048;
+ }
++/* contexts_lock protects the drawable registry and binding references.
++ * A destroyed/resized drawable survives until all bound contexts release it. */
++static void release_drawable(struct bles_drawable *b){
++    if(!b)return;
++    if(b->refs)--b->refs;
++    if(b->refs || !b->retired)return;
++    struct bles_drawable **link=&drawables;
++    while(*link && *link!=b)link=&(*link)->next;
++    if(*link)*link=b->next;
++    destroy_drawable(b->mesa);free(b->pixels);free(b);
++}
++static void retire_drawable(Display *d,GLXDrawable xid){
++    pthread_mutex_lock(&contexts_lock);
++    struct bles_drawable *b=drawables,*next;
++    while(b){next=b->next;if(b->display==d && b->xid==xid){b->retired=1;if(!b->refs)release_drawable(b);}b=next;}
++    pthread_mutex_unlock(&contexts_lock);
++}
++static struct bles_drawable *acquire_drawable(Display *d,GLXDrawable xid,GLXContext c,unsigned w,unsigned h){
++    struct bles_drawable *b=drawables,*next;
++    while(b){
++        next=b->next;
++        if(!b->retired && b->display==d && b->xid==xid){
++            if(b->width==w && b->height==h && b->doublebuffer==c->doublebuffer){b->refs++;return b;}
++            b->retired=1;if(!b->refs)release_drawable(b);
++        }
++        b=next;
++    }
++    b=calloc(1,sizeof(*b));if(!b)return NULL;
++    b->pixels=calloc((size_t)w*h,4);
++    if(b->pixels)b->mesa=create_drawable(c->mesa,b->pixels,GL_UNSIGNED_BYTE,w,h);
++    if(!b->mesa){free(b->pixels);free(b);return NULL;}
++    b->display=d;b->xid=xid;b->width=w;b->height=h;b->refs=1;b->doublebuffer=c->doublebuffer;
++    b->next=drawables;drawables=b;return b;
++}
++static void release_binding(GLXContext c){
++    if(!c)return;
++    release_drawable(c->draw_buffer);release_drawable(c->read_buffer);
++    c->draw_buffer=c->read_buffer=NULL;
++}
+ Bool glXMakeContextCurrent(Display *d,GLXDrawable draw,GLXDrawable read,GLXContext c){
+-    if(!c){if(detach)detach(NULL,NULL,NULL);else if(bind)bind(NULL,NULL,GL_UNSIGNED_BYTE,0,0);current=NULL;return True;}
++    if(!c){
++        if(bind_drawables)bind_drawables(NULL,NULL,NULL);
++        else if(detach)detach(NULL,NULL,NULL);else if(bind)bind(NULL,NULL,GL_UNSIGNED_BYTE,0,0);
++        pthread_mutex_lock(&contexts_lock);release_binding(current);pthread_mutex_unlock(&contexts_lock);
++        current=NULL;return True;
++    }
++    if(bind_drawables){
++        unsigned w,h,rw,rh;
++        if(!dimensions(d,draw,&w,&h))return False;
++        if(read==draw){rw=w;rh=h;}
++        else if(!dimensions(d,read,&rw,&rh))return False;
++        pthread_mutex_lock(&contexts_lock);
++        struct bles_drawable *db=acquire_drawable(d,draw,c,w,h);
++        struct bles_drawable *rb=db?acquire_drawable(d,read,c,rw,rh):NULL;
++        if(!rb || !bind_drawables(c->mesa,db->mesa,rb->mesa)){
++            release_drawable(db);release_drawable(rb);pthread_mutex_unlock(&contexts_lock);return False;
++        }
++        release_binding(current);
++        c->draw_buffer=db;c->read_buffer=rb;
++        c->pixels=db->pixels;c->width=w;c->height=h;
++        pixelstore(OSMESA_Y_UP,0);current=c;c->display=d;c->draw=draw;c->read=read;
++        pthread_mutex_unlock(&contexts_lock);return True;
++    }
++    /* The legacy OSMesa backend cannot bind an independent read surface. */
++    if(draw!=read)return False;
+     unsigned w,h;if(!draw || !dimensions(d,draw,&w,&h))return False;
+     if(c->width!=w || c->height!=h){
+         unsigned char *p=calloc(w*h,4);if(!p)return False;
+@@ -218,7 +306,7 @@
+ GLXDrawable glXGetCurrentDrawable(void){return current?current->draw:0;}
+ GLXDrawable glXGetCurrentReadDrawable(void){return current?current->read:0;}
+ Display *glXGetCurrentDisplay(void){return current?current->display:NULL;}
+-void glXDestroyContext(Display *d,GLXContext c){if(!c)return;if(current==c)glXMakeCurrent(d,0,NULL);pthread_mutex_lock(&contexts_lock);destroy(c->mesa);pthread_mutex_unlock(&contexts_lock);if(c->present_gc)XFreeGC(c->gc_display,c->present_gc);free(c->pixels);free(c);}
++void glXDestroyContext(Display *d,GLXContext c){if(!c)return;if(current==c)glXMakeCurrent(d,0,NULL);pthread_mutex_lock(&contexts_lock);destroy(c->mesa);pthread_mutex_unlock(&contexts_lock);if(c->present_gc)XFreeGC(c->gc_display,c->present_gc);if(!bind_drawables)free(c->pixels);free(c);}
+ static uint64_t trace_time(void){
+     struct timespec t;
+     if(clock_gettime(CLOCK_MONOTONIC,&t))return 0;
+@@ -345,16 +433,16 @@
+ const char *glXQueryServerString(Display *d,int screen,int name){(void)screen;return glXGetClientString(d,name);}
+ const char *glXQueryExtensionsString(Display *d,int screen){(void)d;(void)screen;return context_extensions();}
+ GLXWindow glXCreateWindow(Display *d,GLXFBConfig config,Window w,const int *attributes){(void)d;(void)config;(void)attributes;return w;}
+-void glXDestroyWindow(Display *d,GLXWindow w){(void)d;(void)w;}
++void glXDestroyWindow(Display *d,GLXWindow w){retire_drawable(d,w);}
+ GLXPixmap glXCreatePixmap(Display *d,GLXFBConfig config,Pixmap p,const int *attributes){(void)d;(void)config;(void)attributes;return p;}
+-void glXDestroyPixmap(Display *d,GLXPixmap p){(void)d;(void)p;}
++void glXDestroyPixmap(Display *d,GLXPixmap p){retire_drawable(d,p);}
+ GLXPbuffer glXCreatePbuffer(Display *d,GLXFBConfig config,const int *attributes){
+     (void)config;unsigned w=1,h=1;
+     for(const int *p=attributes;p && *p;p+=2){if(*p==GLX_PBUFFER_WIDTH)w=p[1];if(*p==GLX_PBUFFER_HEIGHT)h=p[1];}
+     if(!w || !h || w>2048 || h>2048)return 0;
+     return XCreatePixmap(d,RootWindow(d,DefaultScreen(d)),w,h,DefaultDepth(d,DefaultScreen(d)));
+ }
+-void glXDestroyPbuffer(Display *d,GLXPbuffer p){if(p)XFreePixmap(d,p);}
++void glXDestroyPbuffer(Display *d,GLXPbuffer p){retire_drawable(d,p);if(p)XFreePixmap(d,p);}
+ void glXQueryDrawable(Display *d,GLXDrawable draw,int attribute,unsigned *value){
+     unsigned w=0,h=0;dimensions(d,draw,&w,&h);
+     *value=attribute==GLX_WIDTH?w:attribute==GLX_HEIGHT?h:0;
+--- before/ports/wine/graphics/mesa-blesk-frontend.patch
++++ after/ports/wine/graphics/mesa-blesk-frontend.patch
+@@ -1,14 +1,15 @@
+ --- a/src/gallium/frontends/osmesa/osmesa.c
+ +++ b/src/gallium/frontends/osmesa/osmesa.c
+-@@ -105,6 +105,7 @@
++@@ -105,6 +105,8 @@
+  struct osmesa_context
+  {
+     struct st_context *st;
+ +   bool double_buffer;
+++   bool external_buffer;
+  
+     bool ever_used;     /*< Has this context ever been current? */
+  
+-@@ -358,7 +359,7 @@
++@@ -358,7 +360,7 @@
+     unsigned bpp;
+     int dst_stride;
+  
+@@ -17,7 +18,7 @@
+        return false;
+  
+     if (osmesa->pp) {
+-@@ -440,7 +441,7 @@
++@@ -440,7 +442,7 @@
+         * attachment, since that's all we specified for the visual in
+         * osmesa_init_st_visual().
+         */
+@@ -26,7 +27,7 @@
+           format = osbuffer->visual.color_format;
+           bind = PIPE_BIND_RENDER_TARGET;
+        }
+-@@ -459,9 +460,12 @@
++@@ -459,9 +461,12 @@
+  
+        templat.format = format;
+        templat.bind = bind;
+@@ -42,7 +43,7 @@
+     }
+  
+     return true;
+-@@ -503,6 +507,8 @@
++@@ -503,6 +508,8 @@
+      * is no longer valid.
+      */
+     st_api_destroy_drawable(&osbuffer->base);
+@@ -51,7 +52,7 @@
+  
+     FREE(osbuffer);
+  }
+-@@ -570,7 +576,7 @@
++@@ -570,7 +577,7 @@
+     GLenum format = GL_RGBA;
+     int depthBits = 0, stencilBits = 0, accumBits = 0;
+     int profile = OSMESA_COMPAT_PROFILE, version_major = 1, version_minor = 0;
+@@ -60,7 +61,7 @@
+  
+     if (sharelist) {
+        st_shared = sharelist->st;
+-@@ -581,6 +587,13 @@
++@@ -581,6 +588,13 @@
+  
+     for (i = 0; attribList[i]; i += 2) {
+        switch (attribList[i]) {
+@@ -74,7 +75,7 @@
+        case OSMESA_FORMAT:
+           format = attribList[i+1];
+           switch (format) {
+-@@ -658,6 +671,35 @@
++@@ -658,6 +672,35 @@
+        osmesa->depth_stencil_format = PIPE_FORMAT_Z16_UNORM;
+     }
+  
+@@ -110,7 +111,7 @@
+     /*
+      * Create the rendering context
+      */
+-@@ -666,7 +708,7 @@
++@@ -666,7 +709,7 @@
+        ? API_OPENGL_CORE : API_OPENGL_COMPAT;
+     attribs.major = version_major;
+     attribs.minor = version_minor;
+@@ -119,7 +120,7 @@
+     attribs.options.force_glsl_extensions_warn = false;
+     attribs.options.disable_blend_func_extended = false;
+     attribs.options.disable_glsl_line_continuations = false;
+-@@ -676,6 +718,9 @@
++@@ -676,6 +719,9 @@
+                           PIPE_FORMAT_NONE,
+                           osmesa->depth_stencil_format,
+                           osmesa->accum_format);
+@@ -129,15 +130,28 @@
+  
+     osmesa->st = st_api_create_context(get_st_manager(),
+                                           &attribs, &st_error, st_shared);
+-@@ -705,6 +750,7 @@
++@@ -705,6 +751,8 @@
+  {
+     if (osmesa) {
+        pp_free(osmesa->pp);
+-+      if (osmesa->current_buffer) osmesa_destroy_buffer(osmesa->current_buffer);
+++      if (osmesa->current_buffer && !osmesa->external_buffer)
+++         osmesa_destroy_buffer(osmesa->current_buffer);
+        st_destroy_context(osmesa->st);
+        free(osmesa->zs);
+        FREE(osmesa);
+-@@ -774,6 +820,7 @@
++@@ -753,6 +801,11 @@
++    if (color_format == PIPE_FORMAT_NONE) {
++       fprintf(stderr, "OSMesaMakeCurrent(unsupported format/type)\n");
++       return GL_FALSE;
+++   }
+++
+++   if (osmesa->external_buffer) {
+++      osmesa->current_buffer = NULL;
+++      osmesa->external_buffer = false;
++    }
++ 
++    /* See if we already have a buffer that uses these pixel formats */
++@@ -774,6 +827,7 @@
+  
+     struct osmesa_buffer *osbuffer = osmesa->current_buffer;
+  
+@@ -145,7 +159,7 @@
+     osbuffer->width = width;
+     osbuffer->height = height;
+     osbuffer->map = buffer;
+-@@ -1027,3 +1074,46 @@
++@@ -1027,3 +1081,85 @@
+        debug_warning("Calling OSMesaPostprocess() after OSMesaMakeCurrent()\n");
+     }
+  }
+@@ -192,3 +206,42 @@
+ +   if (!swap.ok) return GL_FALSE;
+ +   return osmesa_st_framebuffer_flush_front(osmesa->st,&osmesa->current_buffer->base,ST_ATTACHMENT_FRONT_LEFT);
+ +}
+++
+++/* Local GLX drawables own their GPU attachments independently of contexts.
+++ * These entry points deliberately remain outside the public OSMesa ABI. */
+++GLAPI void * GLAPIENTRY OSMesaBleskCreateDrawable(OSMesaContext, void *, GLenum, GLsizei, GLsizei);
+++GLAPI void * GLAPIENTRY
+++OSMesaBleskCreateDrawable(OSMesaContext c, void *pixels, GLenum type, GLsizei width, GLsizei height)
+++{
+++   if (!c || !pixels || width < 1 || height < 1) return NULL;
+++   enum pipe_format format = osmesa_choose_format(c->format, type);
+++   if (format == PIPE_FORMAT_NONE) return NULL;
+++   struct osmesa_buffer *b = osmesa_create_buffer(format, c->depth_stencil_format, c->accum_format);
+++   if (!b) return NULL;
+++   if (c->double_buffer) b->visual.buffer_mask |= ST_ATTACHMENT_BACK_LEFT_MASK;
+++   b->width = width; b->height = height; b->map = pixels;
+++   return b;
+++}
+++GLAPI void GLAPIENTRY OSMesaBleskDestroyDrawable(void *);
+++GLAPI void GLAPIENTRY OSMesaBleskDestroyDrawable(void *drawable)
+++{
+++   if (drawable) osmesa_destroy_buffer(drawable);
+++}
+++GLAPI GLboolean GLAPIENTRY OSMesaBleskMakeContextCurrent(OSMesaContext, void *, void *);
+++GLAPI GLboolean GLAPIENTRY
+++OSMesaBleskMakeContextCurrent(OSMesaContext c, void *draw, void *read)
+++{
+++   if (!c) { st_api_make_current(NULL, NULL, NULL); return GL_TRUE; }
+++   struct osmesa_buffer *d = draw, *r = read;
+++   if (!d || !r || d->visual.color_format != r->visual.color_format ||
+++       d->visual.depth_stencil_format != r->visual.depth_stencil_format ||
+++       d->visual.accum_format != r->visual.accum_format ||
+++       !!(d->visual.buffer_mask & ST_ATTACHMENT_BACK_LEFT_MASK) != c->double_buffer ||
+++       !!(r->visual.buffer_mask & ST_ATTACHMENT_BACK_LEFT_MASK) != c->double_buffer)
+++      return GL_FALSE;
+++   if (!st_api_make_current(c->st, &d->base, &r->base)) return GL_FALSE;
+++   if (c->current_buffer && !c->external_buffer) osmesa_destroy_buffer(c->current_buffer);
+++   c->current_buffer = d; c->external_buffer = true; c->type = GL_UNSIGNED_BYTE;
+++   c->ever_used = true;
+++   return GL_TRUE;
+++}

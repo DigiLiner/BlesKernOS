@@ -3,8 +3,8 @@
 
 #include "types.h"
 
-#define SHELL_MAX_CMD     256
-#define SHELL_MAX_ARGS    16
+#define SHELL_MAX_CMD     1024
+#define SHELL_MAX_ARGS    64
 #define SHELL_HISTORY_LEN 10
 
 typedef int (*cmd_func_t)(int argc, char **argv);

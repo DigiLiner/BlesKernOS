@@ -1,5 +1,5 @@
 #include "../include/inflate.h"
-#include "../string.h"
+#include "include/string.h"
 
 typedef struct {
     const uint8_t *data;

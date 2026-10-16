@@ -1,5 +1,3 @@
 #include "common.h"
-
-static int run(int argc UNUSED,char **argv UNUSED){ return command_error("nice","@HBD4E3438"); }
-
+static int run(int argc,char **argv){return command_filetool(argc,argv);}
 BK_COMMAND_MAIN(run)

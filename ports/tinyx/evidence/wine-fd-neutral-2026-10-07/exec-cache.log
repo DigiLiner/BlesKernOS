@@ -1,0 +1,207 @@
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA FAIL
+[BKBOOT t=0] STARTING KERNEL
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=1572351 KiB top=1572736 KiB
+  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000
+  [MM] RAM usable: 1536 MB
+  [MM] Heap dinamico: 0xc00000 - 0x1ffe0000 (511872 KB)
+  [MM] VM frames: 0x1ffe0000 - 0x5ffe0000 (1048576 KiB, 262144 paginas)
+  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)
+  [MM] Vista PE fija: 0x400000 - 0x800000
+[PAGING] Ring 3 permitido: 0x400000-0x800000 y heap 0xc00000-0x1ffe0000
+[COMPAT] perfil=normal RAM_top=1572736 KiB heap=511872 KiB tareas=128 CPU=fam6/mod7 GUI=30FPS TIMER=100Hz
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 6 dispositivos detectados
+  [LPT] LPT1 base=0x0378 status=0xD9 listo
+  [ATA] ata0: 1572864 sectores de 512 bytes
+  [ATA] ata0: read burst=16 sectores
+  [ATAPI] cd0: 186378 bloques de 2048 bytes
+  [ATAPI] cd1: unidad detectada sin medio listo
+  [ATA] canales IDE normalizados despues del probe
+[BKBOOT t=13] STORAGE DRIVERS
+[BKBOOT t=13] MOUNTING FILESYSTEM
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=3
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 3
+[FAT] dev[0]=ata0 tipo=1 sectores=1572864
+[FAT] dev[1]=cd0 tipo=3 sectores=186378
+[FAT] dev[2]=cd1 tipo=3 sectores=0
+Intentando montar ata0...
+fat_set_active(ata0)
+No es particion, buscando ata0
+Dispositivo encontrado
+fat_try_mount_device OK
+fat_set_active OK
+Montado ata0 OK
+[VFS] /TEMP listo
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[AC97] controlador ICH-compatible no detectado
+[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=6 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+  [USBCLASS] HID boot/report, hubs USB 1.1 y printers cargados
+[DVR] usbclass: cargado (/SYSTEM/DRIVERS/USBCLASS.DVR)
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado
+[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo
+[GFX:TRACE] REGISTER request ops=0x18be520 abi=2 size=100 name_ptr=0x18be4c6 priority=200 caps=0x4ff
+[GFX:TRACE] REGISTER SELECT name=vmware_svga priority=200 previous=(ninguno) previous_priority=0
+[DVR] vmware_svga: cargado (/SYSTEM/DRIVERS/VMWARESVGA.DVR)
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 11 modulo(s) cargado(s)
+[VFS] CD-ROM ISO9660 montado en /CDROM
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=vmware_svga ops=0x18be520
+[GFX:TRACE] ACTIVATE call name=vmware_svga preferred=800x600
+[SVGA:MODE] begin 800x600 active=0 generation=1
+[SVGA:MODE] OK 800x600x32 pitch=3200 fb=0xfd000000 generation=2
+[SVGA.DVR] SVGA3D preflight guest=0x20001 rb=0x0 memregs=0 reserved=4 modern=0
+[SVGA.DVR] VMware SVGA-II ID=0x90000002 IO=0xc050 FB=0xfd000000 FIFO=0xfe000000
+[SVGA.DVR] 800x600x32 pitch=3200 caps=0x3 fifo=0x0 GMR=fallback
+[GFX:TRACE] ACTIVATE OK name=vmware_svga mode=800x600x32 pitch=3200 fb=0xfd000000
+[GFXRES] boot icons 9/9 precargados
+[SOUND:EVENT] sin backend PCM; sonidos GUI desactivados en esta sesion
+[BKBOOT t=447] LOADING PRINT SERVICE
+[PRINT] spooler iniciado en segundo plano, pid=3
+[[BKBOOT t=641] STARTING VISION
+[VISION] servicio lanzado pid=4
+PRINT] PrintSpool Ring 3 listo
+[VISION] ownership grafico adquirido pid=4
+[BKBOOT t=662] PREPARING DESKTOP
+[BKBOOT t=663] LOADING DESKTOP ICONS
+[BKBOOT t=663] ICONPAK preload begin
+[BKBOOT t=663] LOADING ICON CACHE
+[BKBOOT t=668] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=672] DESKMANAGER read desktop config
+[BKBOOT t=673] DESKMANAGER desktop config loaded
+[DESKBAR] alloc state bytes=17108
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load BlesKernOS Start icon
+[DESKBAR:STARTICON] stat /ICONS/BLESKERNOS.BMP type=1 size=16522
+[DESKBAR:STARTICON] read OK /ICONS/BLESKERNOS.BMP bytes=16522
+[DESKBAR:STARTICON] hdr sig=BM off=138 dib=124 64x64 bpp=32 comp=3
+[DESKBAR:STARTICON] decode OK /ICONS/BLESKERNOS.BMP -> 64x64
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[TASK] entrada Ring 3 no accesible: 0x1663d9 (screensaverd)
+[THREAD] no se pudo crear worker proceso=4 entry=0x1663d9 nombre=screensaverd
+[VISION] READY: motor, escritorio y compositor b[BKBOOT t=826] kernel_main: Vision READY
+[SMP] escritorio listo; iniciandao procesadores secundarios
+jo Vision
+[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000
+[SMP] iniciando CPU1 APIC=1...
+[SMP] CPU1 online
+[SMP] 2/2 CPU(s) online; timer LAPIC=626044 cuentas/tick
+[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (124 slots libres)
+[SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI
+[BKBOOT] VISION ONLINE pid=4
+[BKBOOT t=882] CARGANDO WINE
+[WINE:BOOT] waiting pid=5
+[WINE:DESKTOP] rootless start --warmup
+_XSERVTransTransNoListen: unable to find transport: tcp
+scheduling timer: Function not implemented
+[WINE:DESKTOP] TinyX rootless ready on :15 pid=6
+[WINE:TIME] x-ready ms=710
+[WINE:STAGE] PREFIX ready marker=1
+[WINE:TIME] prefix-ready ms=970 delta_ms=260
+[WINE:STAGE] THEME ready marker=1
+[WINE:TIME] theme-ready ms=1030 delta_ms=60
+.[LOCK] inversion CPU1 tid=5: vfs despues de legacy (se ocultan repeticiones)
+[WINE:TIME] warmup-wineserver ms=9990 delta_ms=8920 status=0
+[WINE:VM-PERF] phase=warmup-wineserver mmap=10 file=7 cached=6 hits=3 misses=3 fallback=1 file_io_kib=3560 file_io_ms=70
+......[LINUX:EXIT] pid=87 proc=87 ppid=86 name=wine-preloader status=256 thread=0
+[WINE:TIME] warmup-prime ms=53090 delta_ms=43010 status=0
+[WINE:VM-PERF] phase=warmup-prime mmap=3810 file=2760 cached=2602 hits=2444 misses=158 fallback=158 file_io_kib=205417 file_io_ms=13720
+[WINE:WARMUP] mode=core server=0 prime=0 probe=skipped elapsed_ms=53090
+[WINE:PERF] warmup-ready total_ms=53090 x_ms=710 prefix_ms=970 theme_ms=1030 wineserver_ms=8920 prime_ms=43010 probe_ms=0
+[WINE:CACHE-PERF] phase=warmup-ready cache_entries=181 cache_bytes=49893376 cache_evictions=0 vfs_handles_peak=59 vfs_handles=53 cache_writeback_fds=0
+[WINE:BOOT] READY elapsed_ms=54050
+[BKBOOT t=6296] DISABLE SPLASH / ENTER GUI
+[BKBOOT] DESKTOP RELEASED
+[[LINUX:EXIT] pid=89 proc=89 ppid=88 name=wine-preloader status=256 thread=0
+LOCK] inversion CPU0 tid=4: gui despues de legacy (se ocultan repeticiones)
+[LOCK] inversion CPU0 tid=4: gfx despues de legacy (se ocultan repeticiones)
+[LOCK] inversion CPU0 tid=4: wine despues de legacy (se ocultan repeticiones)
+[BKBOOT] QUEUE STARTUP SOUND
+[[[WINE:DESKTOP] rootless start /SYSTEM/WINE/windows/system32/notepad.exe
+MM] proceso 91: 1 KiB recuperados
+[SOUND] Sin PCM; se omite el sonido de inicio
+_XSERVTransTransNoListen: unable to find transport: tcp
+scheduling timer: Function not implemented
+GATE:ASSOC] path=/SYSTEM/WINE/windows/system32/notepad.exe started=1
+[WINE:DESKTOP] TinyX rootless ready on :54 pid=93
+[WINE:TIME] x-ready ms=390
+[WINE:STAGE] PREFIX ready marker=1
+[WINE:TIME] prefix-ready ms=660 delta_ms=270
+[WINE:STAGE] THEME ready marker=1
+[WINE:TIME] theme-ready ms=730 delta_ms=70
+[WINE:STAGE] TARGET begin path=/SYSTEM/WINE/windows/system32/notepad.exe kind=exe
+[WINE:TIME] target-begin ms=770
+[WINE:STAGE] TARGET spawned pid=95
+[WINE:TIME] target-spawned ms=870 delta_ms=100
+[WINE:TIME] first-surface ms=13860 title=notepad.exe
+[WINE:PERF] ready total_ms=13860 x_ms=390 prefix_ms=660 theme_ms=730 target_begin_ms=770 spawn_ms=870 spawn_to_surface_ms=12990
+[WINE:VM-PERF] phase=spawn-to-surface mmap=1003 file=772 cached=711 hits=709 misses=2 fallback=61 file_io_kib=60966 file_io_ms=5290
+[WINE:CACHE-PERF] phase=first-surface cache_entries=183 cache_bytes=51785728 cache_evictions=0 vfs_handles_peak=59 vfs_handles=53 cache_writeback_fds=0

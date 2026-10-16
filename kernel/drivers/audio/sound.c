@@ -646,6 +646,7 @@ const bk_driver_module_t *bleskernos_driver_query(void) {
     static const bk_driver_module_t module = {
         BK_DRIVER_ABI_VERSION,
         sizeof(bk_driver_module_t),
+        1U, 0U,
         "sb16",
         "PC speaker y Sound Blaster 16",
         sound_driver_init,

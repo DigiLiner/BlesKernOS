@@ -2,17 +2,73 @@
 
 enum {
     SYS_EXIT = 0, SYS_WRITE, SYS_GETPID, SYS_YIELD, SYS_SLEEP,
-    SYS_UPTIME_MS, SYS_ABI_VERSION, SYS_WIN32_EXCEPTION_RETURN,
+    SYS_UPTIME_MS, SYS_ABI_VERSION, SYS_RESERVED_7,
     SYS_GETPPID, SYS_OPEN, SYS_READ, SYS_CLOSE, SYS_GETCWD, SYS_CHDIR,
     SYS_MKDIR, SYS_UNLINK, SYS_RENAME, SYS_GETDENTS, SYS_ALLOC,
     SYS_REALLOC, SYS_FREE, SYS_SPAWN, SYS_WAITPID, SYS_KILL,
     SYS_API_CALL, SYS_UPCALL_RETURN, SYS_NET_RESOLVE, SYS_NET_SOCKET,
     SYS_NET_CONNECT, SYS_NET_SEND, SYS_NET_RECV, SYS_NET_CLOSE,
-    SYS_NET_HTTP_GET, SYS_WIN16_RELAY, SYS_THREAD_CREATE, SYS_THREAD_JOIN,
+    SYS_NET_HTTP_GET, SYS_RESERVED_33, SYS_THREAD_CREATE, SYS_THREAD_JOIN,
     SYS_THREAD_DETACH, SYS_THREAD_EXIT, SYS_THREAD_SELF,
-    SYS_THREAD_TLS_SET, SYS_THREAD_TLS_GET
+    SYS_THREAD_TLS_SET, SYS_THREAD_TLS_GET, SYS_FILE_WRITE,
+    SYS_FILE_SEEK, SYS_FILE_TELL, SYS_FILE_SIZE, SYS_FILE_STAT,
+    SYS_LAUNCH_ARG_COPY, SYS_TICKS, SYS_FILE_SYNC, SYS_FILE_TRUNCATE,
+    SYS_FILE_DUP, SYS_SIGNAL_REGISTER, SYS_SIGNAL_SEND, SYS_PERSONALITY,
+    SYS_VM_BRK, SYS_VM_MMAP, SYS_VM_MUNMAP, SYS_VM_MPROTECT,
+    SYS_LINUX_FUTEX, SYS_LINUX_SET_THREAD_AREA,
+    SYS_LINUX_GET_THREAD_AREA, SYS_LINUX_EXECVE, SYS_LINUX_UNAME,
+    SYS_LINUX_GETTIMEOFDAY, SYS_LINUX_CLOCK_GETTIME,
+    SYS_LINUX_CLOCK_GETRES, SYS_LINUX_STAT64, SYS_LINUX_FSTAT64,
+    SYS_LINUX_ACCESS, SYS_LINUX_IOCTL, SYS_LINUX_SET_TID_ADDRESS,
+    SYS_LINUX_SET_ROBUST_LIST, SYS_LINUX_TIME, SYS_LINUX_NANOSLEEP,
+    SYS_LINUX_SYSINFO, SYS_LINUX_GETRLIMIT, SYS_LINUX_MADVISE,
+    SYS_LINUX_PRLIMIT64, SYS_LINUX_GETRANDOM,
+    SYS_LINUX_SCHED_GETAFFINITY, SYS_LINUX_SCHED_SETAFFINITY,
+    SYS_LINUX_FCNTL64, SYS_LINUX_CLONE
 };
 
+#if defined(BLES_ARCH_ARM32_RPI3)
+static bk_i32 call0(bk_u32 number) {
+    register bk_u32 r0 __asm__("r0") = 0U;
+    register bk_u32 r7 __asm__("r7") = number;
+    __asm__ volatile ("svc #0" : "+r"(r0) : "r"(r7) : "memory", "cc");
+    return (bk_i32)r0;
+}
+static bk_i32 call1(bk_u32 number, bk_u32 a) {
+    register bk_u32 r0 __asm__("r0") = a;
+    register bk_u32 r7 __asm__("r7") = number;
+    __asm__ volatile ("svc #0" : "+r"(r0) : "r"(r7) : "memory", "cc");
+    return (bk_i32)r0;
+}
+static bk_i32 call2(bk_u32 number, bk_u32 a, bk_u32 b) {
+    register bk_u32 r0 __asm__("r0") = a;
+    register bk_u32 r1 __asm__("r1") = b;
+    register bk_u32 r7 __asm__("r7") = number;
+    __asm__ volatile ("svc #0" : "+r"(r0) : "r"(r1), "r"(r7)
+                      : "memory", "cc");
+    return (bk_i32)r0;
+}
+static bk_i32 call3(bk_u32 number, bk_u32 a, bk_u32 b, bk_u32 c) {
+    register bk_u32 r0 __asm__("r0") = a;
+    register bk_u32 r1 __asm__("r1") = b;
+    register bk_u32 r2 __asm__("r2") = c;
+    register bk_u32 r7 __asm__("r7") = number;
+    __asm__ volatile ("svc #0" : "+r"(r0)
+                      : "r"(r1), "r"(r2), "r"(r7) : "memory", "cc");
+    return (bk_i32)r0;
+}
+static bk_i32 call4(bk_u32 number, bk_u32 a, bk_u32 b, bk_u32 c, bk_u32 d) {
+    register bk_u32 r0 __asm__("r0") = a;
+    register bk_u32 r1 __asm__("r1") = b;
+    register bk_u32 r2 __asm__("r2") = c;
+    register bk_u32 r3 __asm__("r3") = d;
+    register bk_u32 r7 __asm__("r7") = number;
+    __asm__ volatile ("svc #0" : "+r"(r0)
+                      : "r"(r1), "r"(r2), "r"(r3), "r"(r7)
+                      : "memory", "cc");
+    return (bk_i32)r0;
+}
+#else
 static bk_i32 call0(bk_u32 number) {
     bk_i32 result;
     __asm__ volatile ("int $0x80" : "=a"(result) : "a"(number) : "memory");
@@ -47,6 +103,7 @@ static bk_i32 call4(bk_u32 number, bk_u32 a, bk_u32 b, bk_u32 c, bk_u32 d) {
                       : "memory");
     return result;
 }
+#endif
 
 bk_i32 bk_abi_version(void) { return call0(SYS_ABI_VERSION); }
 bk_i32 bk_write(bk_i32 fd, const void *p, bk_u32 n) {
@@ -59,6 +116,33 @@ bk_i32 bk_open(const char *path, bk_u32 flags) {
     return call2(SYS_OPEN, (bk_u32)path, flags);
 }
 bk_i32 bk_close(bk_i32 fd) { return call1(SYS_CLOSE, (bk_u32)fd); }
+bk_i32 bk_file_write(bk_i32 fd, const void *p, bk_u32 n) {
+    return call3(SYS_FILE_WRITE, (bk_u32)fd, (bk_u32)p, n);
+}
+bk_i32 bk_lseek(bk_i32 fd, bk_i32 offset, bk_u32 origin) {
+    return call3(SYS_FILE_SEEK, (bk_u32)fd, (bk_u32)offset, origin);
+}
+bk_i32 bk_tell(bk_i32 fd) { return call1(SYS_FILE_TELL, (bk_u32)fd); }
+bk_i32 bk_file_size(bk_i32 fd) {
+    return call1(SYS_FILE_SIZE, (bk_u32)fd);
+}
+bk_i32 bk_stat(const char *path, bk_dirent_t *entry) {
+    return call2(SYS_FILE_STAT, (bk_u32)path, (bk_u32)entry);
+}
+bk_i32 bk_fsync(bk_i32 fd) { return call1(SYS_FILE_SYNC, (bk_u32)fd); }
+bk_i32 bk_ftruncate(bk_i32 fd, bk_u32 size) {
+    return call2(SYS_FILE_TRUNCATE, (bk_u32)fd, size);
+}
+bk_i32 bk_dup(bk_i32 fd, bk_i32 requested_fd) {
+    return call2(SYS_FILE_DUP, (bk_u32)fd, (bk_u32)requested_fd);
+}
+bk_i32 bk_signal_register(void (*dispatcher)(bk_i32)) {
+    return call1(SYS_SIGNAL_REGISTER, (bk_u32)dispatcher);
+}
+bk_i32 bk_signal_send(bk_u32 pid, bk_i32 signal_number) {
+    return call2(SYS_SIGNAL_SEND, pid, (bk_u32)signal_number);
+}
+bk_i32 bk_personality_linux_i386(void) { return call1(SYS_PERSONALITY, 1U); }
 bk_i32 bk_getcwd(char *buffer, bk_u32 capacity) {
     return call2(SYS_GETCWD, (bk_u32)buffer, capacity);
 }
@@ -112,6 +196,7 @@ void *bk_thread_sys_tls_get(void) {
     return (void *)(bk_u32)call0(SYS_THREAD_TLS_GET);
 }
 bk_u32 bk_uptime_ms(void) { return (bk_u32)call0(SYS_UPTIME_MS); }
+bk_u32 bk_ticks(void) { return (bk_u32)call0(SYS_TICKS); }
 void bk_yield(void) { (void)call0(SYS_YIELD); }
 void bk_sleep(bk_u32 ticks) { (void)call1(SYS_SLEEP, ticks); }
 bk_i32 bk_spawn(const char *path, const char *argument) {

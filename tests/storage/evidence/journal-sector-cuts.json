@@ -1,0 +1,17 @@
+{
+  "result": "PASS",
+  "granularity": "sector",
+  "cuts": {
+    "create": 140,
+    "extend": 114,
+    "shrink": 73,
+    "delete": 98,
+    "rename": 91,
+    "mkdir": 65,
+    "chmod": 32,
+    "times": 32,
+    "sync": 28,
+    "defrag": 113
+  },
+  "total": 786
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "run": "baseline",
+    "first_surface_ms": 41450,
+    "samples": 16,
+    "p50_ms": 293.39703550795093,
+    "p95_ms": 504.2912009812426,
+    "max_ms": 504.2912009812426,
+    "input_probe": false,
+    "disk_bus": "ide"
+  },
+  {
+    "run": "baseline-repeat",
+    "first_surface_ms": 39256,
+    "samples": 16,
+    "p50_ms": 270.0353089894634,
+    "p95_ms": 297.15490600210615,
+    "max_ms": 297.15490600210615,
+    "input_probe": false,
+    "disk_bus": "ide"
+  },
+  {
+    "run": "handoff-ui",
+    "first_surface_ms": 30193,
+    "samples": 16,
+    "p50_ms": 102.79239248484373,
+    "p95_ms": 1061.5365220000967,
+    "max_ms": 1061.5365220000967,
+    "input_probe": false,
+    "disk_bus": "ide"
+  },
+  {
+    "run": "handoff-ahci",
+    "first_surface_ms": 27776,
+    "samples": 16,
+    "p50_ms": 109.00371850584634,
+    "p95_ms": 784.494675026508,
+    "max_ms": 784.494675026508,
+    "input_probe": false,
+    "disk_bus": "ahci"
+  },
+  {
+    "run": "handoff-probe",
+    "first_surface_ms": 37916,
+    "samples": 16,
+    "p50_ms": 222.24805199948605,
+    "p95_ms": 571.397571999114,
+    "max_ms": 571.397571999114,
+    "input_probe": true,
+    "disk_bus": "ide"
+  },
+  {
+    "run": "final-ui",
+    "first_surface_ms": 39536,
+    "samples": 32,
+    "p50_ms": 93.13531601219438,
+    "p95_ms": 169.86764801549725,
+    "max_ms": 199.87942598527297,
+    "input_probe": false,
+    "disk_bus": "ide"
+  }
+]

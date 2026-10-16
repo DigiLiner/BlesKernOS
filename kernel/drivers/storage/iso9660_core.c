@@ -12,6 +12,14 @@ bool iso9660_register_driver(const iso9660_driver_ops_t *ops) {
 bool iso9660_mount_default(void) {
     return g_iso9660_driver && g_iso9660_driver->mount_default();
 }
+void iso9660_unmount(void) {
+    if (g_iso9660_driver && g_iso9660_driver->unmount)
+        g_iso9660_driver->unmount();
+}
+uint32_t iso9660_media_signature(void) {
+    return g_iso9660_driver && g_iso9660_driver->media_signature
+        ? g_iso9660_driver->media_signature() : 0U;
+}
 bool iso9660_is_mounted(void) {
     return g_iso9660_driver && g_iso9660_driver->is_mounted();
 }

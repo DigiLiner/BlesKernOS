@@ -7,7 +7,7 @@
  * miden con TSC cuando la CPU lo anuncia; los contadores siguen funcionando
  * en CPUs sin TSC. Los reportes periodicos salen por el flujo normal de COM1. */
 
-#define PERFMON_IO_TYPE_COUNT 5U
+#define PERFMON_IO_TYPE_COUNT 7U
 #define PERFMON_IRQ_COUNT 16U
 
 #define PERFMON_BENCH_CPU       0x00000001U
@@ -134,6 +134,32 @@ typedef enum {
     PERF_SCOPE_BLOCK_WRITE,
     PERF_SCOPE_SCHEDULER,
     PERF_SCOPE_FPU_SWITCH,
+    PERF_SCOPE_3D_DRAW,
+    PERF_SCOPE_3D_UPLOAD,
+    PERF_SCOPE_3D_READBACK,
+    PERF_SCOPE_3D_END,
+    PERF_SCOPE_3D_WAIT,
+    PERF_SCOPE_APP_PUBLISH,
+    PERF_SCOPE_ATI_LOCK,
+    PERF_SCOPE_ATI_SWITCH_2D,
+    PERF_SCOPE_ATI_SWITCH_3D,
+    PERF_SCOPE_ATI_START,
+    PERF_SCOPE_ATI_STATE,
+    PERF_SCOPE_ATI_ENCODE,
+    PERF_SCOPE_ATI_SUBMIT,
+    PERF_SCOPE_ATI_PIO,
+    PERF_SCOPE_ATI_IDLE,
+    PERF_SCOPE_ATI_CACHE,
+    PERF_SCOPE_ATI_CLEAR,
+    PERF_SCOPE_ATI_UPLOAD,
+    PERF_SCOPE_ATI_DOWNLOAD,
+    PERF_SCOPE_ATI_DEPTH_UP,
+    PERF_SCOPE_ATI_DEPTH_DOWN,
+    PERF_SCOPE_ATI_PRESENT_2D,
+    PERF_SCOPE_ATI_COPY_2D,
+    PERF_SCOPE_ATI_FIFO_2D,
+    PERF_SCOPE_ATI_IDLE_2D,
+    PERF_SCOPE_ATI_CACHE_2D,
     PERF_SCOPE_COUNT
 } perf_scope_id_t;
 
@@ -142,18 +168,27 @@ bool perfmon_enabled(void);
 void perfmon_set_enabled(bool enabled);
 void perfmon_reset(void);
 void perfmon_force_report(void);
+void perfmon_set_watch(bool enabled);
+bool perfmon_watch(void);
 void perfmon_set_interval_seconds(uint32_t seconds);
 uint32_t perfmon_interval_seconds(void);
 
 uint64_t perfmon_scope_begin(void);
 void perfmon_scope_end(perf_scope_id_t scope, uint64_t started);
 
+/* Optional interval diagnostics: units are bytes, DWORDs or vertices as
+ * documented per scope; polls count MMIO reads. No output in the hot path. */
+void perfmon_scope_note(perf_scope_id_t scope, uint32_t units,
+                         uint32_t polls, uint32_t timeouts);
+
 void perfmon_irq(uint8_t irq);
 void perfmon_scheduler_tick(bool busy);
+void perfmon_sample_pc(uint32_t tid, uint32_t pc);
 void perfmon_scheduler_switch(void);
 void perfmon_scheduler_fast_quantum(void);
 void perfmon_scheduler_preempt_blocked(void);
 
+void perfmon_app_frame(uint32_t pid, bool gpu);
 void perfmon_gui_loop(void);
 void perfmon_gui_event(bool mouse_move);
 void perfmon_gui_frame(uint32_t dirty_pixels, uint32_t screen_pixels,

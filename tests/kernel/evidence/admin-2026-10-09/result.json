@@ -1,0 +1,32 @@
+{
+  "api": 35,
+  "kernel_bytes": 792516,
+  "kernel_sha256": "7f8c36206428fc50fbccd661651f58c5f3332dbcfe1645cee6b034b83fa1b2e3",
+  "image": "build/bleskernos-admin.img",
+  "payloads_match": {
+    "/SYSTEM/PROGRAMS/PROCESSMANAGER.BEX": true,
+    "/SYSTEM/PROGRAMS/EVENT_VIEWER.BEX": true,
+    "/SYSTEM/CONTROL/CONTROL.BEX": true,
+    "/SYSTEM/CONTROL/DEVMGR.CPL": true,
+    "/SYSTEM/CONTROL/NETWORK.CPL": true,
+    "/SYSTEM/CONTROL/DEFAULT_APPS.CPL": true
+  },
+  "qemu": {
+    "64m-1cpu": {
+      "ring3": true,
+      "backend": true,
+      "interfaces": true,
+      "oom": false
+    },
+    "256m-2cpu": {
+      "ring3": true,
+      "backend": true,
+      "interfaces": true,
+      "oom": false
+    }
+  },
+  "host_tests": 8,
+  "recovery": true,
+  "desktop_before_wine": true,
+  "wine_runtime": "existing prime failure"
+}

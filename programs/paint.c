@@ -1,14 +1,6 @@
 #include "../kernel/include/api.h"
 /*
  * BlesPaint - simple bitmap paint program for BlesKernOS
- *
- * v5:
- *  - palette moved to the right side under the help/status text
- *  - live preview for line and rectangle tools
- *  - editable BMP filename in the bottom box
- *  - Save writes /<typed-name>.BMP
- *  - title is simply "Paint"
- *  - fixed bucket fill after v4 border guard regression
  */
 
 #include <stdint.h>
@@ -1113,7 +1105,7 @@ static void paint_main(void *argument)
     paint_set_default_filename(st);
     {
         static const char *icons[5] = {
-            "FilePencil", "Pbrush1", "Mspaint", "Delete", "Save"
+            "16/FilePencil", "16/Pbrush1", "16/Mspaint", "16/Delete", "16/Save"
         };
         for (uint32_t i = 0; i < 5U; i++)
             st->toolbar_icon_loaded[i] =

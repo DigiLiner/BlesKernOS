@@ -1,0 +1,1 @@
+PASS actual i386 API wrapper: cdecl, hidden struct return pointer and bounded ret N

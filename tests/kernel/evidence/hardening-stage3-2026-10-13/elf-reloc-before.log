@@ -1,0 +1,7 @@
+test: /tmp/bk-elf-bounds-9f_p4yj6/test.c:33: kfree: Assertion `blocks[i].p[blocks[i].size+j]==0xa5' failed.
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/test_elf_object_bounds.py", line 118, in <module>
+    subprocess.run([str(binary),args.case],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/tmp/bk-elf-bounds-9f_p4yj6/test', 'reloc']' died with <Signals.SIGABRT: 6>.

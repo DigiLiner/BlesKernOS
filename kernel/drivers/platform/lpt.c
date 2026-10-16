@@ -2,7 +2,7 @@
 #include "../../include/pic.h"
 #include "../../include/pit.h"
 #include "../../include/task.h"
-#include "../../stdio.h"
+#include "../../libc/include/stdio.h"
 
 #define LPT_DATA_OFFSET    0U
 #define LPT_STATUS_OFFSET  1U
@@ -26,6 +26,7 @@ static lpt_port_info_t g_lpt_ports[LPT_MAX_PORTS];
 static volatile bool g_lpt_locked;
 static bool g_lpt_initialized;
 static const lpt_virtual_provider_t *g_virtual[LPT_MAX_VIRTUAL_PROVIDERS];
+static bool (*g_identity[LPT_MAX_VIRTUAL_PROVIDERS])(uint32_t, char *, uint32_t);
 static uint32_t g_virtual_count;
 
 static uint32_t lpt_timeout_ticks(uint32_t milliseconds) {
@@ -118,13 +119,24 @@ bool lpt_register_virtual_provider(const lpt_virtual_provider_t *provider) {
     return true;
 }
 
+bool lpt_register_identity_provider(const lpt_virtual_provider_t *provider,
+    bool (*identify)(uint32_t, char *, uint32_t)) {
+    if (!provider || !identify) return false;
+    for (uint32_t i = 0; i < g_virtual_count; i++)
+        if (g_virtual[i] == provider) { g_identity[i] = identify; return true; }
+    return false;
+}
+
 bool lpt_unregister_virtual_provider(const lpt_virtual_provider_t *provider) {
     if (!provider) return false;
     for (uint32_t i = 0; i < g_virtual_count; i++) {
         if (g_virtual[i] != provider) continue;
-        for (uint32_t j = i + 1U; j < g_virtual_count; j++)
+        for (uint32_t j = i + 1U; j < g_virtual_count; j++) {
             g_virtual[j - 1U] = g_virtual[j];
+            g_identity[j - 1U] = g_identity[j];
+        }
         g_virtual[--g_virtual_count] = NULL;
+        g_identity[g_virtual_count] = NULL;
         return true;
     }
     return false;
@@ -166,6 +178,24 @@ bool lpt_port_info(uint32_t index, lpt_port_info_t *info) {
     for (uint32_t i = 0; i < g_virtual_count; i++) {
         uint32_t count = g_virtual[i]->count();
         if (index < count) return g_virtual[i]->info(index, info);
+        index -= count;
+    }
+    return false;
+}
+
+/* IEEE1284 identity is separate from the stable status ABI. Physical LPT
+ * ports have no negotiated ID; do not invent a command language for them. */
+bool lpt_device_id(uint32_t index, char *buffer, uint32_t capacity) {
+    if (!buffer || capacity < 2U || capacity > 4096U) return false;
+    buffer[0] = '\0';
+    if (!g_lpt_initialized) lpt_init();
+    uint32_t physical = lpt_physical_count();
+    if (index < physical) return false;
+    index -= physical;
+    for (uint32_t i = 0; i < g_virtual_count; i++) {
+        uint32_t count = g_virtual[i]->count();
+        if (index < count) return g_identity[i] &&
+            g_identity[i](index, buffer, capacity);
         index -= count;
     }
     return false;

@@ -7,6 +7,8 @@
 #define GDT_KERNEL_DATA 0x10
 #define GDT_USER_CODE   0x1B
 #define GDT_USER_DATA   0x23
+#define GDT_LDT_INDEX   5U
+#define GDT_LDT_SELECTOR ((uint16_t)(GDT_LDT_INDEX << 3U))
 /* Cada CPU carga un selector TSS distinto. Ademas de evitar el bit busy
  * compartido, el selector permite identificar el CPU actual con STR sin una
  * lectura MMIO del LAPIC en cada lock, malloc o cambio de tarea. */
@@ -14,11 +16,23 @@
 #define GDT_TSS_SELECTOR(cpu) ((uint16_t)((GDT_TSS_BASE_INDEX + (cpu)) << 3U))
 #define GDT_TSS         GDT_TSS_SELECTOR(0U)
 #define GDT_USER_FS     0x33
+/* Linux i386 reserves three per-thread TLS descriptors in GDT slots 6..8.
+ * Keep GDT_USER_FS as the historical slot-6 name used by native Win32. */
+#define GDT_USER_TLS0   0x33
+#define GDT_USER_TLS1   0x3B
+#define GDT_USER_TLS2   0x43
+#define GDT_USER_TLS_MIN_ENTRY 6U
+#define GDT_USER_TLS_COUNT     3U
+#define GDT_USER_TLS_SELECTOR(entry) \
+    ((uint16_t)(((entry) << 3U) | 3U))
 
 void gdt_init(void);
 void gdt_init_ap(uint32_t cpu_index);
 void tss_set_kernel_stack(uint32_t stack_top);
 void gdt_set_user_fs_base(uint32_t base);
+void gdt_set_user_tls_base(uint32_t slot, uint32_t base);
+void gdt_activate_user_ldt(const void *base, uint32_t byte_size);
+void gdt_disable_user_ldt(void);
 uint32_t gdt_current_cpu_index(void);
 uint16_t gdt_alloc_user16_segment(uint32_t base, uint32_t limit,
                                   bool executable, bool writable);

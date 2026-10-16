@@ -4,8 +4,7 @@
 #include "control_common.h"
 #include "kernel/include/api.h"
 #include <math.h>
-#include <TGL/gl.h>
-#include "zbuffer.h"
+#include "system/screensavers/ss_mesa.h"
 #define SS_BALLS_EMBEDDED_PREVIEW 1
 #include "system/screensavers/ss_balls.c"
 
@@ -97,6 +96,7 @@ typedef struct {
 
     uint32_t *monitor_pixels;
     uint32_t *wallpaper_pixels;
+    uint16_t wallpaper_preview_w, wallpaper_preview_h;
 
     uint32_t logo_seed;
     int logo_x;
@@ -116,8 +116,8 @@ typedef struct {
     uint32_t last_pipe_frame_tick;
     display_preview_pipe_segment_t pipe_segments[DISPLAY_PREVIEW_PIPE_MAX];
 
-    ZBuffer *pipe_framebuffer;
-    PIXEL *pipe_pixels;
+    ss_mesa_surface_t pipe_mesa;
+    uint32_t *pipe_pixels;
     uint16_t pipe_render_w;
     uint16_t pipe_render_h;
     bool pipe_gl_ready;
@@ -202,6 +202,16 @@ static bool display_props_text_ends_with_ci(const char *text,
     return true;
 }
 
+static const char *display_props_saver_path_local(void) {
+    /* screensaver_get_path() returns kernel-owned storage.  That pointer is
+       intentionally supervisor-only now, so Ring 3 must ask the kernel to
+       copy it into memory owned by this CPL process. */
+    static char path[VFS_MAX_PATH];
+    if (!bk_screensaver_copy_path(path, sizeof(path))) path[0] = '\0';
+    path[sizeof(path) - 1U] = '\0';
+    return path;
+}
+
 static const char *display_props_saver_name_from_path(const char *path) {
     if (display_props_text_contains_ci(path, "BALLS")) return "Balls 3D";
     if (display_props_text_contains_ci(path, "PIPES")) return "Pipes 3D";
@@ -210,11 +220,11 @@ static const char *display_props_saver_name_from_path(const char *path) {
 }
 
 static bool display_props_saver_is_balls(void) {
-    return display_props_text_contains_ci(bk_screensaver_get_path(), "BALLS");
+    return display_props_text_contains_ci(display_props_saver_path_local(), "BALLS");
 }
 
 static bool display_props_saver_is_pipes(void) {
-    return display_props_text_contains_ci(bk_screensaver_get_path(), "PIPES");
+    return display_props_text_contains_ci(display_props_saver_path_local(), "PIPES");
 }
 
 static void display_props_saver_label_from_name(const char *name,
@@ -316,20 +326,19 @@ static gui_rect_t display_props_monitor_rect(const display_props_state_t *st) {
 
 static gui_rect_t display_props_monitor_screen_rect(const display_props_state_t *st) {
     gui_rect_t monitor = display_props_monitor_rect(st);
-    gui_rect_t screen = {
-        monitor.x + (DISPLAY_PREVIEW_SCREEN_X * monitor.w) / DISPLAY_PREVIEW_ASSET_W,
-        monitor.y + (DISPLAY_PREVIEW_SCREEN_Y * monitor.h) / DISPLAY_PREVIEW_ASSET_H,
-        (DISPLAY_PREVIEW_SCREEN_W * monitor.w) / DISPLAY_PREVIEW_ASSET_W,
-        (DISPLAY_PREVIEW_SCREEN_H * monitor.h) / DISPLAY_PREVIEW_ASSET_H
-    };
-    /* Mantener un margen de un pixel respecto del bisel tras el escalado
-       256 -> 192. Asi ningun elemento de la vista previa puede escaparse
-       sobre el marco del monitor. */
-    screen.x++;
-    screen.y++;
-    screen.w -= 2;
-    screen.h -= 2;
-    return screen;
+    int left = (DISPLAY_PREVIEW_SCREEN_X * monitor.w) / DISPLAY_PREVIEW_ASSET_W;
+    int top = (DISPLAY_PREVIEW_SCREEN_Y * monitor.h) / DISPLAY_PREVIEW_ASSET_H;
+    int right = ((DISPLAY_PREVIEW_SCREEN_X + DISPLAY_PREVIEW_SCREEN_W) * monitor.w +
+                 DISPLAY_PREVIEW_ASSET_W - 1) / DISPLAY_PREVIEW_ASSET_W;
+    int bottom = ((DISPLAY_PREVIEW_SCREEN_Y + DISPLAY_PREVIEW_SCREEN_H) * monitor.h +
+                  DISPLAY_PREVIEW_ASSET_H - 1) / DISPLAY_PREVIEW_ASSET_H;
+
+    /* El hueco magenta de MONITOR.BMP es 146x113 dentro de un asset 256x256.
+       Escalando a 192x192 los extremos caen entre pixeles; truncar ancho/alto
+       dejaba un borde magenta visible. Escalar ambos extremos y redondear el
+       extremo lejano hacia arriba cubre el vidrio completo sin comer bisel. */
+    return (gui_rect_t){monitor.x + left, monitor.y + top,
+                        right - left, bottom - top};
 }
 
 static gui_rect_t display_props_tab_rect(const display_props_state_t *st, int index) {
@@ -530,20 +539,35 @@ static void display_props_load_wallpaper_preview(display_props_state_t *st) {
 
     if (!st->wallpaper_path[0]) return;
     screen = display_props_monitor_screen_rect(st);
-    width = (uint16_t)screen.w;
-    height = (uint16_t)screen.h;
-    if (st->wallpaper_mode == DESK_WALLPAPER_TILE) {
-        width = 32U;
-        height = 32U;
-    } else if (st->wallpaper_mode == DESK_WALLPAPER_CENTER) {
-        width = 64U;
-        height = 64U;
-    } else if (st->wallpaper_mode == DESK_WALLPAPER_FIT) {
-        width = height;
+    uint8_t header[26];
+    uint32_t source_w = 256, source_h = 256;
+    int fd = bk_file_open(st->wallpaper_path, VFS_O_RDONLY);
+    if (fd >= 0) {
+        if (bk_file_read(fd, header, sizeof(header)) == sizeof(header) &&
+            header[0] == 'B' && header[1] == 'M') {
+            source_w = header[18] | header[19]<<8 | header[20]<<16 | (uint32_t)header[21]<<24;
+            int32_t h = header[22] | header[23]<<8 | header[24]<<16 | (uint32_t)header[25]<<24;
+            source_h = h < 0 ? (uint32_t)(-(int64_t)h) : (uint32_t)h;
+        }
+        bk_file_close(fd);
     }
-    st->wallpaper_pixels = bk_app_load_wallpaper(
-        st->wallpaper_path,
-        width, height);
+    if (!source_w || !source_h || source_w > 4096 || source_h > 4096) source_w = source_h = 256;
+    width = (uint16_t)screen.w; height = (uint16_t)screen.h;
+    if (st->wallpaper_mode == DESK_WALLPAPER_TILE ||
+        st->wallpaper_mode == DESK_WALLPAPER_CENTER) {
+        width = (uint16_t)((source_w * (uint32_t)screen.w) / st->desktop->surface.width);
+        height = (uint16_t)((source_h * (uint32_t)screen.h) / st->desktop->surface.height);
+    } else if (st->wallpaper_mode == DESK_WALLPAPER_FIT ||
+               st->wallpaper_mode == DESK_WALLPAPER_FILL) {
+        bool wider = source_w * (uint32_t)screen.h > source_h * (uint32_t)screen.w;
+        if (wider == (st->wallpaper_mode == DESK_WALLPAPER_FIT))
+            height = (uint16_t)(source_h * width / source_w);
+        else width = (uint16_t)(source_w * height / source_h);
+    }
+    if (!width) width = 1;
+    if (!height) height = 1;
+    st->wallpaper_preview_w = width; st->wallpaper_preview_h = height;
+    st->wallpaper_pixels = bk_app_load_wallpaper(st->wallpaper_path, width, height);
 }
 
 static void display_props_load_monitor_asset(display_props_state_t *st) {
@@ -576,10 +600,35 @@ static void display_props_refresh_modes(display_props_state_t *st) {
      * experiencia mediante un modo indexado de 8 bpp cuya salida queda
      * limitada a la paleta EGA de 16 entradas.
      */
+    /* Modern SVGA drivers expose 32-bit scanout. The GUI can quantize that
+     * output in place, so expose usable color choices at these resolutions. */
+    hardware_count = st->count;
+    for (uint32_t i = 0; i < hardware_count; ++i) {
+        if (st->modes[i].bpp != 32U) continue;
+        const uint8_t depths[] = {8, 16};
+        for (uint32_t d = 0; d < 2U && st->count < DISPLAY_PROPS_MODE_MAX; ++d) {
+            bool exists = false;
+            for (uint32_t j = 0; j < st->count; ++j)
+                if (st->modes[j].width == st->modes[i].width &&
+                    st->modes[j].height == st->modes[i].height &&
+                    st->modes[j].bpp == depths[d]) exists = true;
+            if (!exists) st->modes[st->count++] = (gfx_display_mode_t){
+                st->modes[i].width, st->modes[i].height, depths[d]};
+        }
+    }
     hardware_count = st->count;
     for (uint32_t i = 0; i < hardware_count &&
                          st->count < DISPLAY_PROPS_MODE_MAX; i++) {
         bool resolution_seen = false;
+        bool indexed_8_available = false;
+        for (uint32_t j = 0; j < hardware_count; j++) {
+            if (st->modes[j].width == st->modes[i].width &&
+                st->modes[j].height == st->modes[i].height &&
+                st->modes[j].bpp == 8U) {
+                indexed_8_available = true;
+                break;
+            }
+        }
         for (uint32_t j = 0; j < i; j++) {
             if (st->modes[j].width == st->modes[i].width &&
                 st->modes[j].height == st->modes[i].height) {
@@ -587,7 +636,8 @@ static void display_props_refresh_modes(display_props_state_t *st) {
                 break;
             }
         }
-        if (!resolution_seen) {
+        /* EGA uses indexed output, or software quantization on 32-bit GPUs. */
+        if (!resolution_seen && indexed_8_available) {
             st->modes[st->count++] = (gfx_display_mode_t){
                 st->modes[i].width, st->modes[i].height, 4
             };
@@ -776,17 +826,17 @@ static void display_props_refresh_saver_dropdown(display_props_state_t *st) {
             snprintf(path, sizeof(path), "%s/%s", DISPLAY_SAVER_DIR,
                      entries[i].name);
             if (bk_gui_widget_dropdown_add_item(st->saver_dropdown, label, path) &&
-                bk_runtime_strcmp(path, bk_screensaver_get_path()) == 0)
+                bk_runtime_strcmp(path, display_props_saver_path_local()) == 0)
                 matched = true;
         }
     }
 
-    if (!matched && bk_screensaver_get_path()[0]) {
+    if (!matched && display_props_saver_path_local()[0]) {
         char label[40];
-        display_props_saver_label_from_name(bk_screensaver_get_path(), label,
+        display_props_saver_label_from_name(display_props_saver_path_local(), label,
                                             sizeof(label));
         (void)bk_gui_widget_dropdown_add_item(st->saver_dropdown, label,
-                                           bk_screensaver_get_path());
+                                           display_props_saver_path_local());
     }
 }
 
@@ -926,7 +976,7 @@ static void display_props_sync_selection(display_props_state_t *st) {
     else
         bk_gui_widget_dropdown_set_selected(st->wallpaper_dropdown, 0);
     (void)bk_gui_widget_dropdown_set_selected_by_value(st->saver_dropdown,
-        bk_screensaver_get_path());
+        display_props_saver_path_local());
     if (st->selected_mode >= 0 && st->selected_mode < (int)st->count) {
         display_props_mode_resolution_value(&st->modes[st->selected_mode],
                                             resolution, sizeof(resolution));
@@ -1072,6 +1122,8 @@ typedef struct {
     gui_widget_t *timeout_dropdown;
     gui_widget_t *preview_button;
     gui_widget_t *close_button;
+    int layout_w;
+    int layout_h;
     char status[80];
 } display_saver_config_state_t;
 
@@ -1155,32 +1207,104 @@ static void display_saver_config_close(gui_window_t *window, uint32_t id) {
     bk_gui_request_paint();
 }
 
+static void display_saver_config_rects(gui_window_t *window,
+                                       gui_rect_t *state_group,
+                                       gui_rect_t *time_group,
+                                       gui_rect_t *extra_group,
+                                       gui_rect_t *status) {
+    gui_rect_t client = bk_gui_window_content_rect_raw(window);
+    int left = client.x + 12;
+    int width = client.w - 24;
+    int status_h = 16;
+    int status_y = client.y + client.h - 18;
+    int y = client.y + 14;
+    int gap = 10;
+    int h1 = 70;
+    int h2 = 76;
+    int extra_y;
+    int extra_h;
+
+    if (width < 120) width = 120;
+    extra_y = y + h1 + gap + h2 + gap;
+    extra_h = status_y - 8 - extra_y;
+    if (extra_h < 68) extra_h = 68;
+
+    if (state_group) *state_group = (gui_rect_t){left, y, width, h1};
+    y += h1 + gap;
+    if (time_group) *time_group = (gui_rect_t){left, y, width, h2};
+    if (extra_group) *extra_group = (gui_rect_t){left, extra_y, width, extra_h};
+    if (status) *status = (gui_rect_t){client.x + 6, status_y,
+                                       client.w - 12, status_h};
+}
+
+static void display_saver_config_layout(display_saver_config_state_t *cfg) {
+    gui_rect_t client;
+    gui_rect_t state_group, time_group, extra_group, status;
+    gui_rect_t row;
+    gui_rect_t cell;
+
+    if (!cfg || !cfg->window) return;
+    client = bk_gui_window_content_rect_raw(cfg->window);
+    if (cfg->layout_w == client.w && cfg->layout_h == client.h) return;
+    cfg->layout_w = client.w;
+    cfg->layout_h = client.h;
+    display_saver_config_rects(cfg->window, &state_group, &time_group,
+                               &extra_group, &status);
+
+    row = (gui_rect_t){state_group.x + 14, state_group.y + 42,
+                       state_group.w - 28, 22};
+    cell = cpl_row_cell(row, 0, 2, 10);
+    bk_gui_widget_set_bounds(cfg->window, cfg->enabled_buttons[0],
+                             cpl_local_rect(cell, client));
+    cell = cpl_row_cell(row, 1, 2, 10);
+    bk_gui_widget_set_bounds(cfg->window, cfg->enabled_buttons[1],
+                             cpl_local_rect(cell, client));
+
+    row = (gui_rect_t){time_group.x + 14, time_group.y + 44,
+                       time_group.w - 28, 22};
+    bk_gui_widget_set_bounds(cfg->window, cfg->timeout_dropdown,
+                             cpl_local_rect(row, client));
+
+    row = (gui_rect_t){extra_group.x + 14,
+                       extra_group.y + extra_group.h - 30,
+                       extra_group.w - 28, 22};
+    cell = cpl_row_cell(row, 0, 2, 10);
+    bk_gui_widget_set_bounds(cfg->window, cfg->preview_button,
+                             cpl_local_rect(cell, client));
+    cell = cpl_row_cell(row, 1, 2, 10);
+    bk_gui_widget_set_bounds(cfg->window, cfg->close_button,
+                             cpl_local_rect(cell, client));
+}
+
 static void display_saver_config_paint(gui_window_t *window,
                                        gui_surface_t *surface,
                                        void *context) {
     display_saver_config_state_t *cfg =
         (display_saver_config_state_t *)context;
-    gui_rect_t client = bk_gui_window_content_rect_raw(window);
-    gui_rect_t status = {client.x + 6, client.y + client.h - 18,
-                         client.w - 12, 16};
+    gui_rect_t state_group, time_group, extra_group, status;
+    gui_rect_t inner;
 
-    cpl_draw_group(surface, (gui_rect_t){client.x + 12, client.y + 14, 248, 76},
-                   "Estado");
-    bk_gui_font_draw_string(surface, client.x + 24, client.y + 34,
-                         "Active o desactive el protector.",
-                         CPL_TEXT, 0, false);
+    display_saver_config_rects(window, &state_group, &time_group,
+                               &extra_group, &status);
 
-    cpl_draw_group(surface, (gui_rect_t){client.x + 12, client.y + 100, 248, 86},
-                   "Tiempo");
-    bk_gui_font_draw_string(surface, client.x + 24, client.y + 120,
-                         "Elegir demora antes de activarse.",
-                         CPL_TEXT, 0, false);
+    cpl_draw_group(surface, state_group, "Estado");
+    inner = cpl_group_inner(state_group);
+    cpl_draw_text_wrapped(surface,
+        (gui_rect_t){inner.x, inner.y + 4, inner.w, 22},
+        "Active o desactive el protector.", CPL_TEXT, 10, 2);
 
-    cpl_draw_group(surface, (gui_rect_t){client.x + 12, client.y + 196, 248, 58},
-                   "Extra");
-    bk_gui_font_draw_string(surface, client.x + 24, client.y + 216,
-                         "Puede probar el protector completo.",
-                         CPL_TEXT, 0, false);
+    cpl_draw_group(surface, time_group, "Tiempo");
+    inner = cpl_group_inner(time_group);
+    cpl_draw_text_wrapped(surface,
+        (gui_rect_t){inner.x, inner.y + 4, inner.w, 24},
+        "Elegir demora antes de activarse.", CPL_TEXT, 10, 2);
+
+    cpl_draw_group(surface, extra_group, "Extra");
+    inner = cpl_group_inner(extra_group);
+    cpl_draw_text_wrapped(surface,
+        (gui_rect_t){inner.x, inner.y + 4, inner.w,
+                     extra_group.h - 48},
+        "Puede probar el protector completo.", CPL_TEXT, 10, 2);
 
     cpl_draw_bevel(surface, status, CPL_FACE, true);
     bk_gui_font_draw_string_clipped(surface, status.x + 4, status.y + 4,
@@ -1195,6 +1319,16 @@ static bool display_saver_config_event(gui_window_t *window,
     (void)context;
 
     if (!window || !event) return false;
+    if (event->type == GUI_EVENT_RESIZE) {
+        display_saver_config_state_t *cfg =
+            (display_saver_config_state_t *)context;
+        if (cfg) {
+            cfg->layout_w = 0;
+            cfg->layout_h = 0;
+            display_saver_config_layout(cfg);
+        }
+        return true;
+    }
     if (event->type == GUI_EVENT_KEY && event->key == 27) {
         bk_gui_close_window(window);
         bk_gui_request_paint();
@@ -1214,41 +1348,44 @@ static void display_saver_config_main(void *arg) {
 
     cfg->window = bk_gui_create_window(cfg->desktop,
         cfg->spawn_x + 34, cfg->spawn_y + 48,
-        276, 290, "Configurar protector");
+        300, 310, "Configurar protector");
     if (!cfg->window) {
         bk_sys_free(cfg);
         bk_proc_exit();
     }
 
-    bk_gui_set_window_min_size(cfg->window, 276, 290);
+    bk_gui_set_window_min_size(cfg->window, 300, 310);
     bk_gui_set_window_content(cfg->window, display_saver_config_paint, cfg);
     bk_gui_set_window_event_handler(cfg->window, display_saver_config_event, cfg);
-    cfg->window->bg_color = 0x00CFCFCF;
+    cfg->window->bg_color = 0x00C0C0C0;
     cfg->window->owner_pid = bk_sys_getpid();
     bk_proc_bind_window(cfg->window);
 
     cfg->enabled_buttons[0] = bk_gui_widget_create_selectable_button(
-        cfg->desktop, cfg->window, (gui_rect_t){26, 52, 92, 20},
+        cfg->desktop, cfg->window, (gui_rect_t){26, 52, 110, 22},
         "Activado", display_saver_config_toggle);
     cfg->enabled_buttons[1] = bk_gui_widget_create_selectable_button(
-        cfg->desktop, cfg->window, (gui_rect_t){128, 52, 104, 20},
+        cfg->desktop, cfg->window, (gui_rect_t){146, 52, 110, 22},
         "Desactivado", display_saver_config_toggle);
     cfg->timeout_dropdown = bk_gui_widget_create_dropdown(
-        cfg->desktop, cfg->window, (gui_rect_t){26, 138, 206, 22},
+        cfg->desktop, cfg->window, (gui_rect_t){26, 138, 230, 22},
         display_saver_config_timeout);
     (void)bk_gui_widget_dropdown_add_item(cfg->timeout_dropdown, "1 minuto", "60");
     (void)bk_gui_widget_dropdown_add_item(cfg->timeout_dropdown, "5 minutos", "300");
     (void)bk_gui_widget_dropdown_add_item(cfg->timeout_dropdown, "10 minutos", "600");
     (void)bk_gui_widget_dropdown_add_item(cfg->timeout_dropdown, "15 minutos", "900");
     cfg->preview_button = bk_gui_widget_create_button(
-        cfg->desktop, cfg->window, (gui_rect_t){26, 222, 92, 22},
+        cfg->desktop, cfg->window, (gui_rect_t){26, 242, 110, 22},
         "Probar", display_saver_config_preview);
     cfg->close_button = bk_gui_widget_create_button(
-        cfg->desktop, cfg->window, (gui_rect_t){140, 222, 92, 22},
+        cfg->desktop, cfg->window, (gui_rect_t){146, 242, 110, 22},
         "Cerrar", display_saver_config_close);
     (void)bk_gui_widget_set_icon(cfg->preview_button, "Runonce106");
     (void)bk_gui_widget_set_icon(cfg->close_button, "Close");
 
+    cfg->layout_w = 0;
+    cfg->layout_h = 0;
+    display_saver_config_layout(cfg);
     display_saver_config_sync(cfg);
     display_props_force_full_refresh(cfg->desktop);
 
@@ -1355,7 +1492,14 @@ static void display_props_apply_depth(gui_window_t *window, uint32_t id) {
     depth_value = bk_gui_widget_dropdown_get_selected_value(st->depth_dropdown);
     if (!display_props_parse_resolution_value(res_value, &width, &height))
         return;
-    bpp = (uint8_t)display_props_timeout_from_value(depth_value);
+    if (!depth_value || !depth_value[0]) return;
+    uint32_t depth = 0;
+    for (const char *p = depth_value; *p; ++p) {
+        if (*p < '0' || *p > '9' || depth > 32U) return;
+        depth = depth * 10U + (uint32_t)(*p - '0');
+    }
+    if (depth != 4 && depth != 8 && depth != 16 && depth != 24 && depth != 32) return;
+    bpp = (uint8_t)depth;
     mode_index = display_props_find_mode(st, width, height, bpp);
     if (mode_index < 0) return;
     (void)display_props_apply_mode_index(st, mode_index);
@@ -1387,28 +1531,16 @@ static void display_props_draw_preview_background(display_props_state_t *st,
                                                   gui_rect_t screen) {
     bk_gui_gfx_fill_rect(surface, screen, st->preview_color);
     if (st->wallpaper_pixels) {
-        uint16_t width = (uint16_t)screen.w;
-        uint16_t height = (uint16_t)screen.h;
-        int x = screen.x;
-        int y = screen.y;
-        if (st->wallpaper_mode == DESK_WALLPAPER_TILE) {
-            width = height = 32U;
-            for (int ty = screen.y; ty < screen.y + screen.h; ty += height)
-                for (int tx = screen.x; tx < screen.x + screen.w; tx += width)
-                    bk_app_draw_icon(surface, tx, ty, st->wallpaper_pixels,
-                                     width, height);
-        } else {
-            if (st->wallpaper_mode == DESK_WALLPAPER_CENTER)
-                width = height = 64U;
-            else if (st->wallpaper_mode == DESK_WALLPAPER_FIT)
-                width = height = (uint16_t)screen.h;
-            if (st->wallpaper_mode == DESK_WALLPAPER_CENTER ||
-                st->wallpaper_mode == DESK_WALLPAPER_FIT) {
-                x += (screen.w - width) / 2;
-                y += (screen.h - height) / 2;
+        int w = st->wallpaper_preview_w, h = st->wallpaper_preview_h;
+        int ox = (screen.w - w) / 2, oy = (screen.h - h) / 2;
+        for (int y = 0; y < screen.h; ++y) {
+            for (int x = 0; x < screen.w; ++x) {
+                int sx = x - ox, sy = y - oy;
+                if (st->wallpaper_mode == DESK_WALLPAPER_TILE) { sx = x % w; sy = y % h; }
+                if (sx >= 0 && sy >= 0 && sx < w && sy < h)
+                    bk_gui_gfx_putpixel(surface, screen.x+x, screen.y+y,
+                        st->wallpaper_pixels[sy*w+sx]);
             }
-            bk_app_draw_icon(surface, x, y, st->wallpaper_pixels,
-                             width, height);
         }
     }
 
@@ -1493,21 +1625,13 @@ static void display_props_draw_saver_logo(display_props_state_t *st,
 static void display_props_draw_saver_balls(display_props_state_t *st,
                                            gui_surface_t *surface,
                                            gui_rect_t screen) {
-    /* La configuracion se pinta desde Ring 3. Crear un contexto TinyGL aqui
-       competia con el compositor y hacia caer al proceso al abrir Protector.
-       El protector real sigue usando su renderer; la miniatura usa una
-       animacion 2D segura. */
-    display_props_draw_saver_logo(st, surface, screen);
+    (void)st;
+    ss_balls_preview_draw(surface, screen);
 }
 
 static void display_props_pipe_preview_release(display_props_state_t *st) {
     if (!st) return;
-    if (st->pipe_gl_ready) {
-        if (st->pipe_framebuffer) ZB_close(st->pipe_framebuffer);
-        glClose();
-    }
-    if (st->pipe_pixels) bk_sys_free(st->pipe_pixels);
-    st->pipe_framebuffer = NULL;
+    if (st->pipe_gl_ready) ss_mesa_surface_destroy(&st->pipe_mesa);
     st->pipe_pixels = NULL;
     st->pipe_render_w = 0;
     st->pipe_render_h = 0;
@@ -1520,35 +1644,27 @@ static bool display_props_pipe_preview_prepare(display_props_state_t *st,
     GLfloat light_pos[4] = {3.0f, 4.0f, 8.0f, 0.0f};
     GLfloat white[4] = {0.85f, 0.85f, 0.85f, 1.0f};
     GLfloat ambient[4] = {0.16f, 0.16f, 0.20f, 1.0f};
-    uint32_t pixel_count;
 
     if (!st || screen.w < 16 || screen.h < 16) return false;
     if (st->pipe_gl_ready &&
         st->pipe_render_w == (uint16_t)screen.w &&
         st->pipe_render_h == (uint16_t)screen.h)
-        return true;
+        return ss_mesa_surface_make_current(&st->pipe_mesa);
 
     display_props_pipe_preview_release(st);
 
     st->pipe_render_w = (uint16_t)screen.w;
     st->pipe_render_h = (uint16_t)screen.h;
-    pixel_count = (uint32_t)st->pipe_render_w * (uint32_t)st->pipe_render_h;
-    st->pipe_pixels = (PIXEL *)bk_sys_alloc_zero(pixel_count * sizeof(PIXEL));
-    if (!st->pipe_pixels) return false;
-
-    st->pipe_framebuffer = ZB_open(st->pipe_render_w, st->pipe_render_h,
-#if TGL_FEATURE_RENDER_BITS == 32
-                                   ZB_MODE_RGBA,
-#else
-                                   ZB_MODE_5R6G5B,
-#endif
-                                   0);
-    if (!st->pipe_framebuffer) {
+    /* Preview intentionally uses Mesa SWRAST.  It runs inside a control-panel
+       paint callback, so it must not contend with the desktop's GFX3D path. */
+    if (!ss_mesa_surface_create(&st->pipe_mesa,
+                                st->pipe_render_w,
+                                st->pipe_render_h,
+                                false)) {
         display_props_pipe_preview_release(st);
         return false;
     }
-
-    glInit(st->pipe_framebuffer);
+    st->pipe_pixels = st->pipe_mesa.pixels;
     st->pipe_gl_ready = true;
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -1564,7 +1680,6 @@ static bool display_props_pipe_preview_prepare(display_props_state_t *st,
     glLightfv(GL_LIGHT0, GL_DIFFUSE, white);
     glLightfv(GL_LIGHT0, GL_SPECULAR, white);
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-    glSetEnableSpecular(GL_TRUE);
 
     h = (GLfloat)st->pipe_render_h / (GLfloat)st->pipe_render_w;
     glMatrixMode(GL_PROJECTION);
@@ -1690,18 +1805,49 @@ static void display_props_pipe_draw_segment(
         DISPLAY_PREVIEW_PIPE_RADIUS * 1.35f);
 }
 
-static uint32_t display_props_pipe_pixel_to_rgb(PIXEL pixel) {
-    return ((uint32_t)GET_RED(pixel) << 16) |
-           ((uint32_t)GET_GREEN(pixel) << 8) |
-           ((uint32_t)GET_BLUE(pixel));
-}
-
 static void display_props_draw_saver_pipes(display_props_state_t *st,
                                            gui_surface_t *surface,
                                            gui_rect_t screen) {
-    /* Vease la nota en Balls 3D: la vista previa no debe inicializar TinyGL
-       dentro de un repintado de panel de control. */
-    display_props_draw_saver_logo(st, surface, screen);
+    uint32_t now;
+    if (!st || !surface) return;
+    if (!display_props_pipe_preview_prepare(st, screen)) {
+        display_props_draw_saver_logo(st, surface, screen);
+        return;
+    }
+
+    now = bk_sys_ticks();
+    if ((uint32_t)(now - st->last_pipe_frame_tick) >= DISPLAY_PREVIEW_FRAME_TICKS) {
+        st->last_pipe_frame_tick = now;
+        if (!ss_mesa_surface_make_current(&st->pipe_mesa)) return;
+        if ((uint32_t)(now - st->last_pipe_grow_tick) >= 10U) {
+            st->last_pipe_grow_tick = now;
+            display_props_pipe_grow(st);
+        }
+        st->pipe_rot_y += 1.2f;
+        st->pipe_rot_z += 0.25f;
+        if (st->pipe_rot_y >= 360.0f) st->pipe_rot_y -= 360.0f;
+        if (st->pipe_rot_z >= 360.0f) st->pipe_rot_z -= 360.0f;
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glTranslatef(0.0f, 0.0f, -18.0f);
+        glRotatef(st->pipe_rot_x, 1.0f, 0.0f, 0.0f);
+        glRotatef(st->pipe_rot_y, 0.0f, 1.0f, 0.0f);
+        glRotatef(st->pipe_rot_z, 0.0f, 0.0f, 1.0f);
+        for (uint32_t i = 0; i < st->pipe_segment_count; i++)
+            display_props_pipe_draw_segment(&st->pipe_segments[i]);
+        if (!ss_mesa_surface_present(&st->pipe_mesa)) return;
+        st->pipe_pixels = st->pipe_mesa.pixels;
+    }
+
+    if (!st->pipe_pixels) return;
+    for (int y = 0; y < screen.h; y++) {
+        const uint32_t *src = st->pipe_pixels + (uint32_t)y * st->pipe_render_w;
+        for (int x = 0; x < screen.w; x++)
+            bk_gui_gfx_putpixel(surface, screen.x + x, screen.y + y,
+                                ss_mesa_pixel_to_rgb(src[x]));
+    }
 }
 
 static void display_props_draw_monitor_preview(display_props_state_t *st,
@@ -1743,33 +1889,13 @@ static void display_props_draw_monitor_preview(display_props_state_t *st,
 static void display_props_draw_tabs(display_props_state_t *st,
                                     gui_surface_t *surface,
                                     gui_rect_t page) {
-    for (int i = 0; i < DISPLAY_PROPS_TAB_COUNT; i++) {
-        gui_rect_t tab = display_props_tab_rect(st, i);
-        bool active = i == st->current_tab;
-        bk_gui_gfx_fill_rect(surface, tab, CPL_FACE);
-        bk_gui_gfx_draw_line(surface, tab.x, tab.y + tab.h - 1,
-                          tab.x, tab.y, CPL_LIGHT);
-        bk_gui_gfx_draw_line(surface, tab.x, tab.y,
-                          tab.x + tab.w - 1, tab.y, CPL_LIGHT);
-        bk_gui_gfx_draw_line(surface, tab.x + tab.w - 1, tab.y,
-                          tab.x + tab.w - 1, tab.y + tab.h - 1, CPL_DARK);
-        if (!active) {
-            bk_gui_gfx_draw_line(surface, tab.x, tab.y + tab.h - 1,
-                              tab.x + tab.w - 1, tab.y + tab.h - 1, CPL_SHADOW);
-        } else {
-            bk_gui_gfx_fill_rect(surface,
-                (gui_rect_t){tab.x + 2, tab.y + tab.h - 1, tab.w - 4, 1},
-                CPL_FACE);
-        }
-        bk_gui_font_draw_string(surface, tab.x + 10, tab.y + 7,
-                             display_props_tab_name((uint8_t)i),
-                             CPL_TEXT, 0, false);
-    }
-
+    for (int i = 0; i < DISPLAY_PROPS_TAB_COUNT; ++i)
+        if (i != st->current_tab)
+            cpl_draw_tab_face(surface, display_props_tab_rect(st, i),
+                display_props_tab_name((uint8_t)i), false, page);
     cpl_draw_bevel(surface, page, CPL_FACE, false);
-    bk_gui_gfx_fill_rect(surface,
-        (gui_rect_t){page.x + 2, page.y + 2, page.w - 4, page.h - 4},
-        CPL_FACE);
+    cpl_draw_tab_face(surface, display_props_tab_rect(st, st->current_tab),
+        display_props_tab_name(st->current_tab), true, page);
 }
 
 static void display_props_paint_background_tab(display_props_state_t *st,
@@ -1791,8 +1917,9 @@ static void display_props_paint_background_tab(display_props_state_t *st,
 
     cpl_draw_group(surface, (gui_rect_t){page.x + 272, page.y + 216, 236, 156},
                    "Imagen");
-    bk_gui_font_draw_string(surface, page.x + 284, page.y + 318,
-                            "Posicion:", CPL_TEXT, 0, false);
+    cpl_draw_text_clipped(surface,
+        (gui_rect_t){page.x + 284, page.y + 318, 210, 10},
+        "Posicion:", CPL_TEXT);
 }
 
 static void display_props_paint_saver_tab(display_props_state_t *st,
@@ -1801,12 +1928,13 @@ static void display_props_paint_saver_tab(display_props_state_t *st,
     const char *selected = bk_gui_widget_dropdown_get_selected_label(st->saver_dropdown);
 
     if (!selected || !selected[0])
-        selected = display_props_saver_name_from_path(bk_screensaver_get_path());
+        selected = display_props_saver_name_from_path(display_props_saver_path_local());
 
     cpl_draw_group(surface, (gui_rect_t){page.x + 16, page.y + 216, 236, 128},
                    "Protector");
-    bk_gui_font_draw_string(surface, page.x + 28, page.y + 318,
-                         selected, CPL_SHADOW, 0, false);
+    cpl_draw_text_clipped(surface,
+        (gui_rect_t){page.x + 28, page.y + 318, 208, 10},
+        selected, CPL_SHADOW);
 
     cpl_draw_group(surface, (gui_rect_t){page.x + 272, page.y + 216, 236, 128},
                    "Opciones");
@@ -1875,10 +2003,12 @@ static void display_props_paint_screen_tab(display_props_state_t *st,
     display_props_mode_depth_label(bpp, depth_label, sizeof(depth_label));
     snprintf(line, sizeof(line), "%ux%u",
              info_ok ? info.width : 0, info_ok ? info.height : 0);
-    bk_gui_font_draw_string(surface, page.x + 108, page.y + 318,
-                         line, CPL_SHADOW, 0, false);
-    bk_gui_font_draw_string(surface, page.x + 308, page.y + 324,
-                         depth_label, CPL_SHADOW, 0, false);
+    cpl_draw_text_clipped(surface,
+        (gui_rect_t){page.x + 28, page.y + 318, 208, 10},
+        line, CPL_SHADOW);
+    cpl_draw_text_clipped(surface,
+        (gui_rect_t){page.x + 308, page.y + 324, 188, 10},
+        depth_label, CPL_SHADOW);
 }
 
 static void display_props_paint_performance_tab(display_props_state_t *st,
@@ -1888,11 +2018,13 @@ static void display_props_paint_performance_tab(display_props_state_t *st,
     cpl_draw_group(surface,
         (gui_rect_t){page.x + 54, page.y + 218, page.w - 108, 132},
         "Movimiento de ventanas");
-    bk_gui_font_draw_string(surface, page.x + 78, page.y + 246,
-        "Durante el arrastre:", CPL_TEXT, 0, false);
-    bk_gui_font_draw_string(surface, page.x + 78, page.y + 326,
+    cpl_draw_text_clipped(surface,
+        (gui_rect_t){page.x + 78, page.y + 246, page.w - 156, 10},
+        "Durante el arrastre:", CPL_TEXT);
+    cpl_draw_text_wrapped(surface,
+        (gui_rect_t){page.x + 78, page.y + 326, page.w - 156, 22},
         "La silueta reduce repintados y uso del framebuffer.",
-        CPL_SHADOW, 0, false);
+        CPL_SHADOW, 10, 2);
 }
 
 static void display_props_paint(gui_window_t *window, gui_surface_t *surface,
@@ -2039,9 +2171,7 @@ void bleskernos_program_main(gui_desktop_t *desktop) {
     }
 
     bk_gui_set_window_min_size(st->window, 536, 448);
-    bk_gui_set_window_content(st->window, display_props_paint, st);
-    bk_gui_set_window_event_handler(st->window, display_props_event, st);
-    st->window->bg_color = 0x00CFCFCF;
+    st->window->bg_color = 0x00C0C0C0;
     st->window->owner_pid = bk_sys_getpid();
     bk_proc_bind_window(st->window);
 
@@ -2053,7 +2183,13 @@ void bleskernos_program_main(gui_desktop_t *desktop) {
     display_props_refresh_saver_dropdown(st);
     display_props_sync_widget_visibility(st);
     display_props_sync_selection(st);
+    /* Publish callbacks only after tab visibility and both mode selectors are
+     * initialized. Early paint upcalls could interrupt UI construction. */
+    bk_gui_set_window_content(st->window, display_props_paint, st);
+    bk_gui_set_window_event_handler(st->window, display_props_event, st);
     display_props_force_redraw(st);
+    kprintf("[DISPLAY] ready modes=%u depth=%u uptime_ms=%u\n",
+            st->count,bk_gui_display_color_depth(),bk_sys_uptime_ms());
 
     {
         uint32_t last_preview_tick = bk_sys_ticks();

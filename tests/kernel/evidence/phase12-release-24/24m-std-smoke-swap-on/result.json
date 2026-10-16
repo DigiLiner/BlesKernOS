@@ -1,0 +1,24 @@
+{
+  "ram_mib": 24,
+  "backend": "std",
+  "desktop_started": true,
+  "completed": true,
+  "smoke_pass": true,
+  "memory": {
+    "DESKTOP": {
+      "installed_kib": 24063,
+      "managed_kib": 20352
+    },
+    "IDLE": {
+      "installed_kib": 24063,
+      "managed_kib": 20352,
+      "used_kib": 11871,
+      "free_kib": 8480,
+      "unmanaged_kib": 3711,
+      "heap_used_kib": 11867,
+      "heap_free_kib": 7460,
+      "vm_free_kib": 1020
+    }
+  },
+  "depths": []
+}

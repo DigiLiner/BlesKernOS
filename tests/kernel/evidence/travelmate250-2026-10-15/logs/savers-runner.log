@@ -1,0 +1,26 @@
+make: 'build/system/services/vision.o' is up to date.
+make: 'build/system/drivers/PS2MOUSE.DVR' is up to date.
+[GCC]  Compilando ss_balls...
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel/libc/include -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -Ilibs/Mesa-3.5/include -Ilibs/Mesa-3.5/bleskernos/include -DSS_BALLS_EXTERNAL_ENTRY -c system/screensavers/ss_balls.c -o build/system/screensavers/ss_balls.raw.o
+[LD]   Asociando ss_balls con Mesa 3.5...
+ld -m elf_i386 -r build/system/screensavers/ss_balls.raw.o build/system/libs/mesa35/mesa35.a -o build/system/screensavers/ss_balls.o
+ld: warning: mmx_blend.o: missing .note.GNU-stack section implies executable stack
+ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+[OK]   SSBalls object: build/system/screensavers/ss_balls.o
+[GCC]  Compilando ss_pipes...
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel/libc/include -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -Ilibs/Mesa-3.5/include -Ilibs/Mesa-3.5/bleskernos/include -DSS_PIPES_EXTERNAL_ENTRY -c system/screensavers/ss_pipes.c -o build/system/screensavers/ss_pipes.raw.o
+[LD]   Asociando ss_pipes con Mesa 3.5...
+ld -m elf_i386 -r build/system/screensavers/ss_pipes.raw.o build/system/libs/mesa35/mesa35.a -o build/system/screensavers/ss_pipes.o
+ld: warning: mmx_blend.o: missing .note.GNU-stack section implies executable stack
+ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+[OK]   SSPipes object: build/system/screensavers/ss_pipes.o
+/SYSTEM/DRIVERS/PS2MOUSE.DVR 7140 bytes; mode 0o100644
+/SYSTEM/SERVICES/VISION.BEX 254672 bytes; mode 0o100644
+/SYSTEM/SCREENS/SSBALLS.SCV 2256944 bytes; mode 0o100644
+/SYSTEM/USER/CONFIG/STARTUP.INI 73 bytes; mode 0o100644
+{"saver": "SSBALLS", "animated_pixels_changed": 344995, "black_pixels": 158039, "closed_black_pixels": 2211, "passed": true}
+/SYSTEM/DRIVERS/PS2MOUSE.DVR 7140 bytes; mode 0o100644
+/SYSTEM/SERVICES/VISION.BEX 254672 bytes; mode 0o100644
+/SYSTEM/SCREENS/SSPIPES.SCV 2256436 bytes; mode 0o100644
+/SYSTEM/USER/CONFIG/STARTUP.INI 73 bytes; mode 0o100644
+{"saver": "SSPIPES", "animated_pixels_changed": 166240, "black_pixels": 353014, "closed_black_pixels": 2211, "passed": true}

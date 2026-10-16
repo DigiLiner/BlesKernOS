@@ -1,0 +1,26 @@
+--- a/dlls/winex11.drv/opengl.c
++++ b/dlls/winex11.drv/opengl.c
+@@ -558,7 +558,8 @@
+  */
+ UINT X11DRV_OpenGLInit( UINT version, const struct opengl_funcs *opengl_funcs, const struct opengl_driver_funcs **driver_funcs )
+ {
+-    int error_base, event_base;
++    int error_base = 0, event_base = 0;
++    int (*local_glx)(void);
+ 
+     if (version != WINE_OPENGL_DRIVER_VERSION)
+     {
+@@ -661,7 +662,12 @@
+ 
+     if(!X11DRV_WineGL_InitOpenglInfo()) goto failed;
+ 
+-    if (XQueryExtension( gdi_display, "GLX", &glx_opcode, &event_base, &error_base ))
++    /* BlesKernOS renders locally through Mesa/GFX3D and presents using X11.
++     * TinyX does not implement the GLX wire protocol. Only a backend with
++     * this explicit handshake may bypass the server extension check. */
++    local_glx = dlsym( opengl_handle, "bles_glx_client_rendering" );
++    if ((local_glx && local_glx()) ||
++        XQueryExtension( gdi_display, "GLX", &glx_opcode, &event_base, &error_base ))
+     {
+         TRACE("GLX is up and running error_base = %d\n", error_base);
+     } else {

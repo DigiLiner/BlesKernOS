@@ -2,6 +2,7 @@
 #include "css_compat.h"
 #include "layout.h"
 #include "platform.h"
+#include "font.h"
 
 #include <libcss/libcss.h>
 #include <libcss/unit.h>
@@ -18,7 +19,7 @@
 #define NSBK_LAYOUT_BUDGET_MS 12000U
 
 static const char nsbk_ua_css[] =
-    "html,body{display:block;color:#000;background:#fff;font-size:12px;margin:0;padding:0}"
+    "html,body{display:block;color:#000;background:#fff;font-size:12px;font-family:sans-serif;margin:0;padding:0}"
     "head,title,base,meta,link,style,script,template,source{display:none}"
     "noscript{display:block} picture{display:inline}"
     "address,article,aside,blockquote,div,dl,fieldset,figure,figcaption,footer,form,"
@@ -53,6 +54,7 @@ typedef struct {
     nsbk_layout_t *layout;
     nsbk_html_result_t *result;
     int32_t viewport_width;
+    int32_t viewport_height;
     int32_t cursor_x;
     int32_t cursor_y;
     int32_t line_start_x;
@@ -101,6 +103,7 @@ typedef struct {
     int32_t margin_top, margin_right, margin_bottom, margin_left;
     int32_t padding_top, padding_right, padding_bottom, padding_left;
     int32_t border_top, border_right, border_bottom, border_left;
+    uint16_t font_id;
     int32_t font_px;
     int32_t line_height;
     int32_t width;
@@ -1204,8 +1207,20 @@ static void extract_style(css_context_t *ctx, css_computed_style *computed,
     value = css_computed_font_style(computed);
     style->italic = value == CSS_FONT_STYLE_ITALIC ||
                     value == CSS_FONT_STYLE_OBLIQUE;
-    value = css_computed_font_family(computed, NULL);
-    style->monospace = value == CSS_FONT_FAMILY_MONOSPACE;
+    {
+        lwc_string **names = NULL;
+        value = css_computed_font_family(computed, &names);
+        style->monospace = value == CSS_FONT_FAMILY_MONOSPACE;
+        style->font_id = NSBK_FONT_NONE;
+        if (names) for (uint32_t i=0; names[i]; i++) {
+            style->font_id = nsbk_font_named(lwc_string_data(names[i]),
+                                             lwc_string_length(names[i]));
+            if (style->font_id != NSBK_FONT_NONE) break;
+        }
+        if (style->font_id == NSBK_FONT_NONE)
+            style->font_id = nsbk_font_default(style->monospace ? NSBK_FAMILY_MONO :
+                value == CSS_FONT_FAMILY_SERIF ? NSBK_FAMILY_SERIF : NSBK_FAMILY_SANS);
+    }
     value = css_computed_text_decoration(computed);
     style->underline = (value & CSS_TEXT_DECORATION_UNDERLINE) != 0U;
     value = css_computed_white_space(computed);
@@ -1218,8 +1233,8 @@ static void extract_style(css_context_t *ctx, css_computed_style *computed,
         css_length_px(computed, &ctx->units, value, CSS_FONT_SIZE_DIMENSION,
                       length, unit) : 12;
     if (style->font_px < 8) style->font_px = 8;
-    if (style->font_px > 28) style->font_px = 28;
-    style->line_height = style->font_px + 3;
+    if (style->font_px > 72) style->font_px = 72;
+    style->line_height = nsbk_font_height(style->font_id, style->font_px);
     value = css_computed_line_height(computed, &length, &unit);
     if (value == CSS_LINE_HEIGHT_NUMBER) {
         int32_t hundredths = FIXTOINT(FMUL(length, INTTOFIX(100)));
@@ -1230,7 +1245,7 @@ static void extract_style(css_context_t *ctx, css_computed_style *computed,
                                             length, unit);
     }
     if (style->line_height < style->font_px) style->line_height = style->font_px;
-    if (style->line_height > 64) style->line_height = 64;
+    if (style->line_height > 128) style->line_height = 128;
     value = css_computed_letter_spacing(computed, &length, &unit);
     if (value == CSS_LETTER_SPACING_SET) {
         int32_t spacing = css_length_px(computed, &ctx->units, value,
@@ -1285,7 +1300,7 @@ static void extract_style(css_context_t *ctx, css_computed_style *computed,
     value = css_computed_bottom(computed, &length, &unit);
     if (value == CSS_BOTTOM_SET) {
         style->bottom = css_length_px_relative(computed, &ctx->units, value,
-            CSS_BOTTOM_SET, length, unit, 380);
+            CSS_BOTTOM_SET, length, unit, ctx->viewport_height);
         style->bottom_set = true;
     }
     value = css_computed_left(computed, &length, &unit);
@@ -1430,13 +1445,7 @@ static uint32_t transformed_text(const char *text, uint32_t length,
 
 static int32_t text_spacing_width(const char *text, uint32_t length,
                                   const paint_style_t *style) {
-    uint32_t i;
-    int32_t extra = 0;
-    if (!text || !style || length == 0U) return 0;
-    if (length > 1U) extra += (int32_t)(length - 1U) * style->letter_spacing;
-    for (i = 0U; i < length; i++)
-        if (text[i] == ' ') extra += style->word_spacing;
-    return extra;
+    return nsbk_font_spacing(text, length, style->letter_spacing, style->word_spacing);
 }
 
 static void add_text_piece(css_context_t *ctx, const char *text,
@@ -1457,12 +1466,46 @@ static void add_text_piece(css_context_t *ctx, const char *text,
             display = converted;
         }
     }
-    width = (int32_t)bk_gui_text_width_px(display, length,
-        (uint16_t)style->font_px, style->monospace, style->bold);
+    width = (int32_t)nsbk_font_width(style->font_id, style->font_px, style->bold,
+        style->monospace, display, length);
     width += text_spacing_width(display, length, style);
     if (width < 1) width = 1;
-    if (!style->no_wrap && ctx->cursor_x + width > ctx->line_right &&
+    int32_t fit_width=width;
+    if (ctx->cursor_x>ctx->line_start_x && style->letter_spacing>0)
+        fit_width+=style->letter_spacing;
+    if (!style->no_wrap && ctx->cursor_x + fit_width > ctx->line_right &&
         ctx->cursor_x > ctx->line_start_x) finish_line(ctx);
+    /* Adjacent words used to become separate draw calls and consume one
+     * display-list slot each (including every space). Join compatible text
+     * on the same line and measure the resulting native run exactly. */
+    if (ctx->layout->item_count) {
+        nsbk_layout_item_t *last=&ctx->layout->items[ctx->layout->item_count-1U];
+        uint16_t flags=NSBK_LAYOUT_TEXT|(style->bold?NSBK_LAYOUT_BOLD:0U)|
+            (style->underline?NSBK_LAYOUT_UNDERLINE:0U);
+        uint8_t font_flags=(style->italic?NSBK_FONT_ITALIC:0U)|
+            (style->monospace?NSBK_FONT_MONOSPACE:0U);
+        if (last->flags==flags && last->y==ctx->cursor_y &&
+            last->x+last->width==ctx->cursor_x && last->height==style->line_height &&
+            last->foreground==style->color && last->opacity==style->opacity &&
+            last->link_index==ctx->active_link && last->font_id==style->font_id &&
+            last->font_px==style->font_px && last->font_flags==font_flags &&
+            last->letter_spacing==style->letter_spacing && last->word_spacing==style->word_spacing &&
+            last->text_offset+last->text_length+1U==ctx->layout->text_length &&
+            last->text_length+length<=4096U &&
+            length<=NSBK_LAYOUT_TEXT_MAX-ctx->layout->text_length) {
+            char *run=ctx->layout->text+last->text_offset;
+            memcpy(run+last->text_length,display,length);
+            last->text_length+=(uint16_t)length;
+            run[last->text_length]='\0';ctx->layout->text_length+=length;
+            last->width=nsbk_font_width(style->font_id,style->font_px,style->bold,
+                style->monospace,run,last->text_length)+text_spacing_width(run,last->text_length,style);
+            if (last->width<1) last->width=1;
+            ctx->cursor_x=last->x+last->width;
+            if (ctx->cursor_x>ctx->layout->width) ctx->layout->width=ctx->cursor_x;
+            if (converted && converted!=local) free(converted);
+            return;
+        }
+    }
     if (!nsbk_layout_store_text(ctx->layout, display, length, &offset)) {
         if (converted && converted != local) free(converted);
         return;
@@ -1481,6 +1524,7 @@ static void add_text_piece(css_context_t *ctx, const char *text,
     item->foreground = style->color;
     item->text_offset = offset;
     item->text_length = (uint16_t)length;
+    item->font_id = style->font_id;
     item->font_px = (uint8_t)style->font_px;
     item->font_flags = (style->italic ? NSBK_FONT_ITALIC : 0U) |
                        (style->monospace ? NSBK_FONT_MONOSPACE : 0U);
@@ -1494,7 +1538,7 @@ static void add_text_piece(css_context_t *ctx, const char *text,
     if (converted && converted != local) free(converted);
 }
 
-static void emit_ascii_run(css_context_t *ctx, const char *text,
+static void emit_text_run(css_context_t *ctx, const char *text,
                            uint32_t length, const paint_style_t *style) {
     uint32_t start = 0U;
     if (style && style->no_wrap) {
@@ -1503,6 +1547,8 @@ static void emit_ascii_run(css_context_t *ctx, const char *text,
     }
     while (start < length) {
         int32_t available_px = ctx->line_right - ctx->cursor_x;
+        if (ctx->cursor_x>ctx->line_start_x && style->letter_spacing>0)
+            available_px-=style->letter_spacing;
         uint32_t piece = 0U;
         uint32_t best_break = 0U;
         if (layout_should_abort(ctx)) return;
@@ -1518,20 +1564,16 @@ static void emit_ascii_run(css_context_t *ctx, const char *text,
             }
             continue;
         }
-        while (start + piece < length) {
-            uint32_t next = piece + 1U;
-            int32_t width = (int32_t)bk_gui_text_width_px(text + start, next,
-                (uint16_t)style->font_px, style->monospace, style->bold) +
-                text_spacing_width(text + start, next, style);
-            if (width > available_px) break;
-            piece = next;
-            if (text[start + piece - 1U] == ' ' ||
-                text[start + piece - 1U] == '-' ||
-                text[start + piece - 1U] == '/') best_break = piece;
+        piece = nsbk_font_fit(style->font_id, style->font_px, style->bold,
+            style->monospace, text + start, length - start, available_px,
+            style->letter_spacing, style->word_spacing);
+        for (uint32_t pos=0; pos<piece; pos=nsbk_utf8_next(text+start, piece, pos)) {
+            if (text[start+pos]==' ' || text[start+pos]=='-' || text[start+pos]=='/')
+                best_break=pos+1U;
         }
         if (piece == 0U) {
             if (ctx->cursor_x > ctx->line_start_x) { finish_line(ctx); continue; }
-            piece = 1U;
+            piece = nsbk_utf8_next(text + start, length - start, 0);
         } else if (start + piece < length && best_break > 0U) {
             piece = best_break;
         }
@@ -1541,79 +1583,15 @@ static void emit_ascii_run(css_context_t *ctx, const char *text,
     }
 }
 
-static uint32_t utf8_decode_one(const char *text, uint32_t length,
-                                uint32_t *consumed) {
-    uint8_t a, b, c, d;
-    if (!text || !length || !consumed) return '?';
-    a = (uint8_t)text[0];
-    *consumed = 1U;
-    if (a < 0x80U) return a;
-    if (a >= 0xC2U && a <= 0xDFU && length >= 2U) {
-        b = (uint8_t)text[1];
-        if ((b & 0xC0U) == 0x80U) {
-            *consumed = 2U;
-            return ((uint32_t)(a & 0x1FU) << 6U) | (b & 0x3FU);
-        }
-    } else if (a >= 0xE0U && a <= 0xEFU && length >= 3U) {
-        b = (uint8_t)text[1]; c = (uint8_t)text[2];
-        if ((b & 0xC0U) == 0x80U && (c & 0xC0U) == 0x80U &&
-            !(a == 0xE0U && b < 0xA0U) && !(a == 0xEDU && b >= 0xA0U)) {
-            *consumed = 3U;
-            return ((uint32_t)(a & 0x0FU) << 12U) |
-                   ((uint32_t)(b & 0x3FU) << 6U) | (c & 0x3FU);
-        }
-    } else if (a >= 0xF0U && a <= 0xF4U && length >= 4U) {
-        b = (uint8_t)text[1]; c = (uint8_t)text[2]; d = (uint8_t)text[3];
-        if ((b & 0xC0U) == 0x80U && (c & 0xC0U) == 0x80U &&
-            (d & 0xC0U) == 0x80U && !(a == 0xF0U && b < 0x90U) &&
-            !(a == 0xF4U && b >= 0x90U)) {
-            *consumed = 4U;
-            return ((uint32_t)(a & 0x07U) << 18U) |
-                   ((uint32_t)(b & 0x3FU) << 12U) |
-                   ((uint32_t)(c & 0x3FU) << 6U) | (d & 0x3FU);
-        }
-    }
-    return '?';
-}
-
-static uint32_t display_fold(uint32_t codepoint, char output[4]) {
-    output[0] = '?'; output[1] = '\0';
-    if (codepoint < 0x80U) { output[0] = (char)codepoint; return 1U; }
-    if (codepoint >= 0x00A0U && codepoint <= 0x00FFU) {
-        output[0] = (char)(uint8_t)codepoint;
-        return 1U;
-    }
-    if (codepoint == 0x0178U) { output[0] = (char)0xDD; return 1U; }
-    if (codepoint == 0x2013U || codepoint == 0x2014U ||
-        codepoint == 0x2212U) output[0] = '-';
-    else if (codepoint == 0x2018U || codepoint == 0x2019U) output[0] = '\'';
-    else if (codepoint == 0x201CU || codepoint == 0x201DU) output[0] = '"';
-    else if (codepoint == 0x2026U) {
-        output[0] = '.'; output[1] = '.'; output[2] = '.'; return 3U;
-    } else if (codepoint == 0x20ACU) {
-        output[0] = 'E'; output[1] = 'U'; output[2] = 'R'; return 3U;
-    } else if (codepoint == 0x2022U) output[0] = '*';
-    return 1U;
-}
-
 static void emit_utf8_word(css_context_t *ctx, const char *text,
                            uint32_t length, const paint_style_t *style) {
-    char folded[128];
-    uint32_t input = 0U, used = 0U;
-    while (input < length) {
-        char mapped[4];
-        uint32_t consumed, count, i;
-        uint32_t codepoint = utf8_decode_one(text + input, length - input,
-                                             &consumed);
-        count = display_fold(codepoint, mapped);
-        if (used + count > sizeof(folded)) {
-            emit_ascii_run(ctx, folded, used, style);
-            used = 0U;
-        }
-        for (i = 0U; i < count; i++) folded[used++] = mapped[i];
-        input += consumed;
+    while (length) {
+        uint32_t chunk=length>4096U?4096U:length;
+        while (chunk<length && ((uint8_t)text[chunk]&0xc0U)==0x80U) chunk--;
+        emit_text_run(ctx,text,chunk,style);
+        text+=chunk;length-=chunk;
+        if (layout_should_abort(ctx)) break;
     }
-    if (used) emit_ascii_run(ctx, folded, used, style);
 }
 
 static void emit_text(css_context_t *ctx, const char *text, uint32_t length,
@@ -1946,6 +1924,77 @@ static int32_t find_control(const css_context_t *ctx,
     return -1;
 }
 
+/* Shrink-to-fit measures visible descendants in their computed fonts. Hidden
+   menus and the longest-word bitmap estimate must not widen inline buttons. */
+static int32_t preferred_inline_width(css_context_t *ctx, nsbk_dom_node_t *node,
+        css_computed_style *computed, const paint_style_t *style, int32_t limit) {
+    if (layout_should_abort(ctx)) return 0;
+    if (node->type == NSBK_DOM_TEXT) {
+        char text[1024]; uint32_t n=0; bool space=false;
+        for (uint32_t i=0; i<node->text_length && n<sizeof(text);) {
+            uint32_t next=nsbk_utf8_next(node->text,node->text_length,i);
+            char c=node->text[i];
+            if(c==' ' || c=='\n' || c=='\r' || c=='\t') {
+                i=next; if(space)continue; text[n++]=' ';space=true;
+            } else {
+                if(next-i>sizeof(text)-n)break;
+                memcpy(text+n,node->text+i,next-i);n+=next-i;i=next;space=false;
+            }
+        }
+        return nsbk_font_width(style->font_id,style->font_px,style->bold,
+            style->monospace,text,n)+nsbk_font_spacing(text,n,
+                style->letter_spacing,style->word_spacing);
+    }
+    int32_t control_index=find_control(ctx,node);
+    if(control_index>=0) {
+        nsbk_html_control_t *control=&ctx->result->controls[control_index];
+        if(control->type==NSBK_CONTROL_HIDDEN)return 0;
+        if(control->type==NSBK_CONTROL_SUBMIT || control->type==NSBK_CONTROL_BUTTON) {
+            int32_t width=nsbk_font_width(style->font_id,style->font_px,style->bold,
+                style->monospace,control->label,strlen(control->label))+14;
+            return width<48?48:width;
+        }
+    }
+    if(nsbk_dom_name_is(node,"img") || nsbk_dom_name_is(node,"input"))
+        return intrinsic_node_width(node,limit);
+    int32_t width=0,line=0;
+    for(nsbk_dom_node_t *child=node->first_child;child;child=child->next) {
+        css_select_results *results=NULL;css_computed_style *composed=NULL;
+        css_computed_style *child_computed=computed;
+        paint_style_t child_style=*style;
+        if(child->type==NSBK_DOM_ELEMENT) {
+            child_computed=select_node_style(ctx,child,computed,&results,&composed);
+            if(child_computed)extract_style(ctx,child_computed,&child_style,false);
+        }
+        if(child_style.display!=CSS_DISPLAY_NONE && child_style.visible &&
+           child_style.position!=CSS_POSITION_ABSOLUTE &&
+           child_style.position!=CSS_POSITION_FIXED) {
+            int32_t part=child_style.width_set?child_style.width:
+                preferred_inline_width(ctx,child,child_computed,&child_style,limit);
+            if(child->type==NSBK_DOM_ELEMENT) {
+                if(!child_style.border_box || !child_style.width_set)
+                    part+=child_style.padding_left+child_style.padding_right+
+                          child_style.border_left+child_style.border_right;
+                if(child_style.min_width_set && part<child_style.min_width)
+                    part=child_style.min_width;
+                if(child_style.max_width_set && part>child_style.max_width)
+                    part=child_style.max_width;
+                part+=child_style.margin_left+child_style.margin_right;
+            }
+            if(child->type==NSBK_DOM_ELEMENT && is_block_display(child_style.display)) {
+                if(line>width)width=line;
+                if(part>width)width=part;
+                line=0;
+            } else line+=part;
+        }
+        if(composed)css_computed_style_destroy(composed);
+        if(results)css_select_results_destroy(results);
+        if(width>=limit || line>=limit)return limit;
+    }
+    if(line>width)width=line;
+    return width;
+}
+
 static bool emit_control(css_context_t *ctx, nsbk_dom_node_t *node,
                          const paint_style_t *style) {
     int32_t index = find_control(ctx, node);
@@ -1967,10 +2016,8 @@ static bool emit_control(css_context_t *ctx, nsbk_dom_node_t *node,
         width = 14; height = 14;
     } else if (control->type == NSBK_CONTROL_SUBMIT ||
                control->type == NSBK_CONTROL_BUTTON) {
-        width = (int32_t)bk_gui_text_width_px(control->label,
-            (uint32_t)strlen(control->label),
-            control_font_px,
-            style->monospace, style->bold) +
+        width = (int32_t)nsbk_font_width(style->font_id, control_font_px, style->bold,
+            style->monospace, control->label, (uint32_t)strlen(control->label)) +
             style->padding_left + style->padding_right + 14;
         if (width < 48) width = 48;
         if (width > 320) width = 320;
@@ -1980,15 +2027,17 @@ static bool emit_control(css_context_t *ctx, nsbk_dom_node_t *node,
     } else if (control->type == NSBK_CONTROL_TEXTAREA) {
         width = 240; height = 54;
     } else if (control->type == NSBK_CONTROL_SELECT) {
-        width = (int32_t)bk_gui_text_width_px(control->label,
-            (uint32_t)strlen(control->label),
-            control_font_px,
-            style->monospace, style->bold) + 32;
+        width = (int32_t)nsbk_font_width(style->font_id, control_font_px, style->bold,
+            style->monospace, control->label, (uint32_t)strlen(control->label)) + 32;
         if (width < 110) width = 110;
         if (width > 260) width = 260;
         height = 23;
     } else {
         width = 190; height = 23;
+    }
+    if(control->type!=NSBK_CONTROL_CHECKBOX && control->type!=NSBK_CONTROL_RADIO) {
+        int32_t minimum=nsbk_font_height(style->font_id,control_font_px)+8;
+        if(height<minimum)height=minimum;
     }
     if (style->width_set && style->width > 4) width = style->width;
     if (style->height_set && style->height > 4) height = style->height;
@@ -1997,6 +2046,10 @@ static bool emit_control(css_context_t *ctx, nsbk_dom_node_t *node,
     if (width < 8) width = 8;
     if (ctx->cursor_x != ctx->line_start_x &&
         ctx->cursor_x + width > ctx->line_right) finish_line(ctx);
+    if(ctx->cursor_x>ctx->line_start_x &&
+       (style->display==CSS_DISPLAY_BLOCK ||
+        ctx->cursor_x+style->margin_left+width+style->margin_right>ctx->line_right))
+        finish_line(ctx);
     item = nsbk_layout_add(ctx->layout, NSBK_LAYOUT_CONTROL |
         NSBK_LAYOUT_BOX | NSBK_LAYOUT_BACKGROUND | NSBK_LAYOUT_BORDER);
     if (!item) return true;
@@ -2007,6 +2060,7 @@ static bool emit_control(css_context_t *ctx, nsbk_dom_node_t *node,
     item->foreground = style->color;
     item->background = style->has_background ? style->background : 0x00FFFFFFU;
     item->border = style->has_border ? style->border : 0x00808080U;
+    item->font_id = style->font_id;
     item->font_px = control_font_px;
     item->opacity = style->opacity;
     item->font_flags = style->monospace ? NSBK_FONT_MONOSPACE : 0U;
@@ -2307,8 +2361,9 @@ static void layout_node(css_context_t *ctx, nsbk_dom_node_t *node,
         memset(&inherited, 0, sizeof(inherited));
         inherited.color = 0x00000000U;
         inherited.visible = true;
+        inherited.font_id = nsbk_font_default(NSBK_FAMILY_SANS);
         inherited.font_px = 12;
-        inherited.line_height = NSBK_BASE_LINE_H;
+        inherited.line_height = nsbk_font_height(inherited.font_id,12);
         inherited.opacity = 255U;
         inherited.text_transform = CSS_TEXT_TRANSFORM_NONE;
         if (parent_style) extract_style(ctx, parent_style, &inherited, false);
@@ -2378,7 +2433,7 @@ static void layout_node(css_context_t *ctx, nsbk_dom_node_t *node,
         box_top = origin_y;
         if (style.top_set) box_top = origin_y + style.top;
         else if (style.bottom_set && style.height_set)
-            box_top = origin_y + 380 - style.bottom - style.height;
+            box_top = origin_y + ctx->viewport_height - style.bottom - style.height;
         ctx->cursor_x = box_x;
         ctx->cursor_y = box_top;
         ctx->base_line_start = box_x;
@@ -2473,9 +2528,9 @@ static void layout_node(css_context_t *ctx, nsbk_dom_node_t *node,
         else if (table_cell)
             inline_width = table_cell_width(node, available);
         else
-            inline_width = intrinsic_node_width(node, available);
+            inline_width = preferred_inline_width(ctx, node, computed, &style, available);
         outer_width = inline_width;
-        if (!style.border_box && !table_cell)
+        if ((!style.border_box || !style.width_set) && !table_cell)
             outer_width += style.padding_left + style.padding_right +
                            style.border_left + style.border_right;
         if (style.min_width_set && outer_width < style.min_width)
@@ -2746,6 +2801,7 @@ bool nsbk_css_layout_build(nsbk_dom_tree_t *tree,
     ctx.result = result;
     ctx.viewport_width = result->viewport_width > 160 ?
                          result->viewport_width : 640;
+    ctx.viewport_height=result->viewport_height>0?result->viewport_height:380;
     ctx.cursor_x = NSBK_PAGE_PAD;
     ctx.cursor_y = NSBK_PAGE_PAD;
     ctx.line_start_x = NSBK_PAGE_PAD;
@@ -2757,16 +2813,16 @@ bool nsbk_css_layout_build(nsbk_dom_tree_t *tree,
     ctx.text_align = CSS_TEXT_ALIGN_LEFT;
     ctx.active_link = -1;
     ctx.deadline_ms = bk_sys_uptime_ms() + NSBK_LAYOUT_BUDGET_MS;
-    nsbk_css_compat_init(&ctx.compatibility, ctx.viewport_width, 380);
+    nsbk_css_compat_init(&ctx.compatibility, ctx.viewport_width, ctx.viewport_height);
     ctx.units.viewport_width = INTTOFIX(ctx.viewport_width);
-    ctx.units.viewport_height = INTTOFIX(380);
+    ctx.units.viewport_height = INTTOFIX(ctx.viewport_height);
     ctx.units.font_size_default = INTTOFIX(12);
     ctx.units.font_size_minimum = INTTOFIX(8);
     ctx.units.device_dpi = INTTOFIX(96);
     memset(&ctx.media, 0, sizeof(ctx.media));
     ctx.media.type = CSS_MEDIA_SCREEN;
     ctx.media.width = INTTOFIX(ctx.viewport_width);
-    ctx.media.height = INTTOFIX(380);
+    ctx.media.height = INTTOFIX(ctx.viewport_height);
     ctx.media.color = INTTOFIX(24);
     ctx.media.scripting = CSS_MEDIA_SCRIPTING_NONE;
     if (css_select_ctx_create(&ctx.select) != CSS_OK) return false;

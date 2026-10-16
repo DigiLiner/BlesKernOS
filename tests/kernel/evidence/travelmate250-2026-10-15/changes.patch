@@ -1,0 +1,2839 @@
+--- /dev/null
++++ b/kernel/drivers/graphics/intel_i830_3d.inc
+@@ -0,0 +1,290 @@
++/* Intel Gen2 fixed-function subset. Included in INTELGMA.DVR so 2D and 3D
++ * share one ring and one owned GGTT arena. Packet definitions are from Mesa
++ * i830 (MIT, notices in intel_i830_{regs,common}.h). No textures are advertised;
++ * Mesa keeps unsupported GL states on its software renderer. */
++#include "intel_i830_regs.h"
++#define GMA3_CAPS (GFX3D_CAP_FIXED_FUNCTION|GFX3D_CAP_RENDER_TARGETS|\
++    GFX3D_CAP_VERTEX_BUFFERS|GFX3D_CAP_PRESENT|GFX3D_CAP_TINYGL|\
++    GFX3D_CAP_DEPTH_BUFFER|GFX3D_CAP_DEPTH_SURFACE_IO|GFX3D_CAP_DEPTH_FUNCS|\
++    GFX3D_CAP_ALPHA_BLEND)
++#define GMA3_FIRST_PAGE 18U /* 64-KiB ring + two scratch pages */
++#define GMA3_PAGES (GMA_OWNED_BYTES/4096U)
++#define GMA3_FLAGS (GFX3D_DRAW_DEPTH_TEST|GFX3D_DRAW_DEPTH_WRITE|GFX3D_DRAW_BLEND|\
++    GFX3D_DRAW_CLEAR_COLOR|GFX3D_DRAW_CLEAR_DEPTH|GFX3D_DRAW_REVERSED_DEPTH|\
++    GFX3D_DRAW_PREMULTIPLIED|GFX3D_DRAW_DEPTH_FUNC_VALID|GFX3D_DRAW_DEPTH_FUNC_MASK)
++typedef struct {
++    uint32_t handle,offset,depth,pitch,zpitch,page,pages;
++    uint16_t w,h;
++} gma3_surface;
++static gma3_surface gma3_surfaces[64];
++static uint32_t gma3_pages[GMA3_PAGES/32U],gma3_next=1;
++static bool gma3_tested,gma3_ready;
++static bool gma3_sync(void) {
++    if(!g_gma.accel)return false;
++    const uint32_t flush[2]={GMA_MI_FLUSH|1U,GMA_MI_NOOP};
++    if(gma_emit(flush,2U) && gma_wait_idle())return true;
++    gma_stop_accel("3D fence");gma3_ready=false;return false;
++}
++static gma3_surface *gma3_get(uint32_t handle) {
++    for(unsigned i=0;i<64;i++)if(gma3_surfaces[i].handle==handle && handle)
++        return &gma3_surfaces[i];
++    return NULL;
++}
++static bool gma3_create(const gfx3d_surface_desc_t *d,uint32_t *out) {
++    if(out)*out=0;
++    if(!out || !d || !g_gma.accel || !g_gma.owned_raw ||
++       !d->width || !d->height || d->width>2048 || d->height>2048 ||
++       (d->format!=GFX3D_FORMAT_XRGB8888 && d->format!=GFX3D_FORMAT_ARGB8888) ||
++       (d->flags&~(GFX3D_SURFACE_RENDER_TARGET|GFX3D_SURFACE_TEXTURE|
++        GFX3D_SURFACE_DYNAMIC|GFX3D_SURFACE_WINDOW|GFX3D_SURFACE_TINYGL)))return false;
++    gma3_surface *s=NULL;
++    for(unsigned i=0;i<64;i++)if(!gma3_surfaces[i].handle){s=&gma3_surfaces[i];break;}
++    if(!s || !gma3_next)return false;
++    uint32_t pitch=ALIGN_UP((uint32_t)d->width*4U,64U);
++    uint32_t zpitch=ALIGN_UP((uint32_t)d->width*2U,64U);
++    uint32_t color=ALIGN_UP(pitch*d->height,4096U);
++    uint32_t size=color+ALIGN_UP(zpitch*d->height,4096U),pages=size/4096U;
++    uint32_t first=0,run=0;
++    for(uint32_t i=GMA3_FIRST_PAGE;i<GMA3_PAGES;i++) {
++        if(gma3_pages[i/32U]&(1U<<(i%32U))){run=0;continue;}
++        if(!run)first=i;
++        if(++run==pages)break;
++    }
++    if(run<pages)return false;
++    for(uint32_t i=first;i<first+pages;i++)gma3_pages[i/32U]|=1U<<(i%32U);
++    *s=(gma3_surface){.handle=gma3_next++,.offset=g_gma.owned_offset+first*4096U,
++        .pitch=pitch,.zpitch=zpitch,.page=first,.pages=pages,.w=d->width,.h=d->height};
++    s->depth=s->offset+color;
++    kmemset((void *)(g_gma.aperture+s->offset),0,size);
++    *out=s->handle;return true;
++}
++static bool gma3_destroy(uint32_t h) {
++    gma3_surface *s=gma3_get(h);if(!s || !gma3_sync())return false;
++    for(uint32_t i=s->page;i<s->page+s->pages;i++)gma3_pages[i/32U]&=~(1U<<(i%32U));
++    kmemset(s,0,sizeof(*s));return true;
++}
++static bool gma3_rect(gma3_surface *s,const gfx_rect_t *r,gfx_rect_t *out) {
++    if(!s || !out)return false;
++    *out=r?*r:(gfx_rect_t){0,0,s->w,s->h};
++    return out->x>=0 && out->y>=0 && out->w>0 && out->h>0 &&
++        (uint32_t)out->x+(uint32_t)out->w<=s->w &&
++        (uint32_t)out->y+(uint32_t)out->h<=s->h;
++}
++static bool gma3_transfer(uint32_t h,uint32_t *pixels,uint32_t pitch,
++                           const gfx_rect_t *rect,bool upload) {
++    gma3_surface *s=gma3_get(h);gfx_rect_t r;
++    if(!pixels || !gma3_rect(s,rect,&r) || pitch<(uint32_t)r.x+(uint32_t)r.w ||
++       !gma3_sync())return false;
++    for(int y=r.y;y<r.y+r.h;y++) {
++        void *gpu=(void *)(g_gma.aperture+s->offset+y*s->pitch+r.x*4U);
++        uint32_t *cpu=pixels+(uint32_t)y*pitch+(uint32_t)r.x;
++        if(upload)kmemcpy(gpu,cpu,(uint32_t)r.w*4U);
++        else kmemcpy(cpu,gpu,(uint32_t)r.w*4U);
++    }
++    return true;
++}
++static bool gma3_upload(uint32_t h,const uint32_t *p,uint32_t pitch,const gfx_rect_t *r) {
++    return gma3_transfer(h,(uint32_t *)p,pitch,r,true);
++}
++static bool gma3_download(uint32_t h,uint32_t *p,uint32_t pitch,const gfx_rect_t *r) {
++    return gma3_transfer(h,p,pitch,r,false);
++}
++static bool gma3_depth(uint32_t h,uint16_t *pixels,uint32_t pitch,
++                       const gfx_rect_t *rect,bool upload) {
++    gma3_surface *s=gma3_get(h);gfx_rect_t r;
++    /* Public ABI depth pitch is a count of uint16_t pixels. */
++    if(!pixels || !gma3_rect(s,rect,&r) ||
++       pitch<(uint32_t)r.x+(uint32_t)r.w || !gma3_sync())return false;
++    for(int y=r.y;y<r.y+r.h;y++) {
++        void *gpu=(void *)(g_gma.aperture+s->depth+y*s->zpitch+r.x*2U);
++        uint16_t *cpu=pixels+(uint32_t)y*pitch+(uint32_t)r.x;
++        if(upload)kmemcpy(gpu,cpu,(uint32_t)r.w*2U);
++        else kmemcpy(cpu,gpu,(uint32_t)r.w*2U);
++    }
++    return true;
++}
++static bool gma3_depth_upload(uint32_t h,const uint16_t *p,uint32_t pitch,const gfx_rect_t *r) {
++    return gma3_depth(h,(uint16_t *)p,pitch,r,true);
++}
++static bool gma3_depth_download(uint32_t h,uint16_t *p,uint32_t pitch,const gfx_rect_t *r) {
++    return gma3_depth(h,p,pitch,r,false);
++}
++static bool gma3_clear(uint32_t h,uint32_t color,uint32_t *f) {
++    if(f)*f=0;
++    gma3_surface *s=gma3_get(h);
++    return s && gma_color_blt(s->offset,s->pitch,0,0,s->w,s->h,color) && gma3_sync();
++}
++static bool gma3_begin(uint32_t h,uint32_t color,float depth,uint32_t flags) {
++    gma3_surface *s=gma3_get(h);
++    if(!s || (flags&~GMA3_FLAGS) || !(depth>=0.0f && depth<=1.0f) || !gma3_sync())return false;
++    if((flags&GFX3D_DRAW_CLEAR_COLOR) && !gma3_clear(h,color,NULL))return false;
++    if(flags&GFX3D_DRAW_CLEAR_DEPTH) {
++        uint16_t z=(uint16_t)(depth*65535.0f+0.5f);
++        for(uint32_t y=0;y<s->h;y++) {
++            volatile uint16_t *row=(void *)(g_gma.aperture+s->depth+y*s->zpitch);
++            for(uint32_t x=0;x<s->w;x++)row[x]=z;
++        }
++    }
++    return true;
++}
++/* Complete state on every batch: a 2D blit may have run between 3D calls. */
++static uint32_t gma3_state(uint32_t *c,gma3_surface *s,uint32_t flags) {
++    uint32_t n=0;
++#define G3(v) c[n++]=(v)
++    G3(GMA_MI_FLUSH|1U);
++    G3(_3DSTATE_DFLT_DIFFUSE_CMD);G3(0);G3(_3DSTATE_DFLT_SPEC_CMD);G3(0);
++    G3(_3DSTATE_DFLT_Z_CMD);G3(0);
++    G3(_3DSTATE_VERTEX_TRANS_CMD);G3(DISABLE_VIEWPORT_TRANSFORM|DISABLE_PERSP_DIVIDE);
++    G3(_3DSTATE_W_STATE_CMD);G3(MAGIC_W_STATE_DWORD1);G3(0x3F800000U);
++    G3(_3DSTATE_VFT0_CMD|VFT0_XYZ|VFT0_DIFFUSE);G3(_3DSTATE_VFT1_CMD);
++    G3(_3DSTATE_ENABLES_1_CMD|DISABLE_LOGIC_OP|DISABLE_STENCIL_TEST|
++        DISABLE_DEPTH_BIAS|DISABLE_SPEC_ADD|DISABLE_FOG|DISABLE_ALPHA_TEST|
++        ((flags&GFX3D_DRAW_BLEND)?ENABLE_COLOR_BLEND:DISABLE_COLOR_BLEND)|
++        ((flags&GFX3D_DRAW_DEPTH_TEST)?ENABLE_DEPTH_TEST:DISABLE_DEPTH_TEST));
++    G3(_3DSTATE_ENABLES_2_CMD|DISABLE_STENCIL_WRITE|DISABLE_TEX_CACHE|
++        DISABLE_DITHER|ENABLE_COLOR_MASK|ENABLE_COLOR_WRITE|
++        ((flags&GFX3D_DRAW_DEPTH_WRITE)?ENABLE_DEPTH_WRITE:DISABLE_DEPTH_WRITE));
++    /* Intel blend factors ZERO=1, ONE=2, SRC_ALPHA=5, INV_SRC_ALPHA=6. */
++    G3(_3DSTATE_MODES_1_CMD|ENABLE_COLR_BLND_FUNC|ENABLE_SRC_BLND_FACTOR|
++        SRC_BLND_FACT((flags&GFX3D_DRAW_PREMULTIPLIED)?2U:5U)|
++        ENABLE_DST_BLND_FACTOR|DST_BLND_FACT(6U));
++    static const uint8_t compare[]={1,2,3,4,5,6,7,0};
++    G3(_3DSTATE_MODES_3_CMD|ENABLE_DEPTH_TEST_FUNC|
++        DEPTH_TEST_FUNC(compare[gfx3d_draw_depth_func(flags)])|
++        ENABLE_ALPHA_SHADE_MODE|ENABLE_FOG_SHADE_MODE|ENABLE_SPEC_SHADE_MODE|
++        ENABLE_COLOR_SHADE_MODE|ENABLE_CULL_MODE|CULLMODE_NONE);
++    G3(_3DSTATE_MODES_4_CMD|ENABLE_LOGIC_OP_FUNC|LOGIC_OP_FUNC(LOGICOP_COPY));
++    G3(_3DSTATE_MODES_5_CMD|FLUSH_RENDER_CACHE|FLUSH_TEXTURE_CACHE|
++        ENABLE_SPRITE_POINT_TEX|SPRITE_POINT_TEX_OFF);
++    G3(_3DSTATE_INDPT_ALPHA_BLEND_CMD|DISABLE_INDPT_ALPHA_BLEND|ENABLE_ALPHA_BLENDFUNC);
++    G3(_3DSTATE_STIPPLE);G3(0);
++    G3(_3DSTATE_MAP_BLEND_OP_CMD(0)|TEXPIPE_COLOR|ENABLE_TEXOUTPUT_WRT_SEL|
++        DISABLE_TEX_CNTRL_STAGE|TEXOP_MODIFY_PARMS|TEXOP_LAST_STAGE|TEXBLENDOP_ARG1);
++    G3(_3DSTATE_MAP_BLEND_OP_CMD(0)|TEXPIPE_ALPHA|ENABLE_TEXOUTPUT_WRT_SEL|
++        TEXOP_MODIFY_PARMS|TEXBLENDOP_ARG1);
++    G3(_3DSTATE_MAP_BLEND_ARG_CMD(0)|TEXPIPE_COLOR|TEXBLEND_ARG1|
++        TEXBLENDARG_MODIFY_PARMS|TEXBLENDARG_DIFFUSE);
++    G3(_3DSTATE_MAP_BLEND_ARG_CMD(0)|TEXPIPE_ALPHA|TEXBLEND_ARG1|
++        TEXBLENDARG_MODIFY_PARMS|TEXBLENDARG_DIFFUSE);
++    G3(_3DSTATE_BUF_INFO_CMD);G3(BUF_3D_ID_COLOR_BACK|s->pitch);G3(s->offset);
++    G3(_3DSTATE_BUF_INFO_CMD);G3(BUF_3D_ID_DEPTH|s->zpitch);G3(s->depth);
++    G3(_3DSTATE_DST_BUF_VARS_CMD);
++    G3(DSTORG_HORT_BIAS(8)|DSTORG_VERT_BIAS(8)|COLR_BUF_ARGB8888|DEPTH_FRMT_16_FIXED);
++    G3(_3DSTATE_SCISSOR_ENABLE_CMD|DISABLE_SCISSOR_RECT);
++    G3(_3DSTATE_DRAW_RECT_CMD);G3(0);G3(0);
++    G3(((uint32_t)(s->h-1U)<<16)|(s->w-1U));G3(0);
++    G3(_3DSTATE_RASTER_RULES_CMD|ENABLE_POINT_RASTER_RULE|OGL_POINT_RASTER_RULE);
++#undef G3
++    return n;
++}
++static bool gma3_draw(uint32_t h,uint32_t texture,const gfx3d_vertex_t *v,
++                      uint32_t count,uint32_t flags,uint32_t *fence) {
++    if(fence)*fence=0;
++    gma3_surface *s=gma3_get(h);
++    if(!s || texture || !v || !count || count%3U || count>65535U ||
++       (flags&~GMA3_FLAGS) || !g_gma.accel)return false;
++    /* Validate the entire call before submitting anything. IEEE comparisons
++     * reject NaN/Inf as well as coordinates outside the Gen2 guard band. */
++    for(uint32_t i=0;i<count;i++)if(!(v[i].x>=-2048.0f && v[i].x<=2047.0f &&
++        v[i].y>=-2048.0f && v[i].y<=2047.0f && v[i].z>=0.0f && v[i].z<=1.0f))return false;
++    for(uint32_t at=0;at<count;) {
++        uint32_t c[64U+96U*4U],n=gma3_state(c,s,flags);
++        uint32_t take=count-at;if(take>96U)take=96U;
++        c[n++]=_3DPRIMITIVE|PRIM_INLINE|PRIM3D_TRILIST|(take*4U-1U);
++        for(uint32_t i=0;i<take;i++) {
++            union {float f;uint32_t u;} bits;
++            bits.f=v[at+i].x;c[n++]=bits.u;bits.f=v[at+i].y;c[n++]=bits.u;
++            bits.f=v[at+i].z;c[n++]=bits.u;c[n++]=v[at+i].color;
++        }
++        if(n&1U)c[n++]=GMA_MI_NOOP;
++        if(!gma_emit(c,n) || !gma3_sync())return false;
++        at+=take;
++    }
++    return true;
++}
++static bool gma3_end(uint32_t h,uint32_t *f) {if(f)*f=0;return gma3_get(h)&&gma3_sync();}
++static bool gma3_wait(uint32_t f) {(void)f;return gma3_sync();}
++static bool gma3_present(uint32_t h,const gfx_rect_t *rect,uint32_t *f) {
++    if(f)*f=0;
++    gma3_surface *s=gma3_get(h);gfx_rect_t r;
++    if(!gma3_rect(s,rect,&r) || r.x+r.w>g_gma.mode.width ||
++       r.y+r.h>g_gma.mode.height || !gma3_sync())return false;
++    /* XY_SRC_COPY_BLT accepts independent source/destination strides. */
++    uint32_t c[10]={GMA_XY_SRC_COPY_BLT|GMA_BLT_WRITE_ALPHA|GMA_BLT_WRITE_RGB,
++        GMA_BLT_DEPTH_32|GMA_ROP_COPY|g_gma.mode.pitch,
++        ((uint32_t)r.y<<16)|r.x,((uint32_t)(r.y+r.h)<<16)|(r.x+r.w),
++        g_gma.fb_offset,((uint32_t)r.y<<16)|r.x,s->pitch,s->offset,GMA_MI_FLUSH,0};
++    return gma_emit(c,10U)&&gma3_sync();
++}
++static bool gma3_selftest(uint32_t *fence) {
++    if(fence)*fence=0;
++    uint32_t h=0;
++    gfx3d_surface_desc_t d={32,32,GFX3D_FORMAT_ARGB8888,GFX3D_SURFACE_RENDER_TARGET};
++    if(!gma3_create(&d,&h))return false;
++    gma3_surface *s=gma3_get(h);
++    const gfx3d_vertex_t triangle[3]={{2,2,0.25f,1,0xFFFF0000U,0,0},
++        {26,2,0.25f,1,0xFFFF0000U,0,0},{2,26,0.25f,1,0xFFFF0000U,0,0}};
++    bool ok=gma3_begin(h,0xFF102030U,1.0f,GFX3D_DRAW_CLEAR_COLOR|GFX3D_DRAW_CLEAR_DEPTH) &&
++        gma3_draw(h,0,triangle,3,GFX3D_DRAW_DEPTH_TEST|GFX3D_DRAW_DEPTH_WRITE,NULL);
++    volatile uint32_t *inside=(void *)(g_gma.aperture+s->offset+6*s->pitch+6*4U);
++    volatile uint32_t *outside=(void *)(g_gma.aperture+s->offset+30*s->pitch+30*4U);
++    ok=ok && (*inside&0xFFFFFFU)==0xFF0000U && (*outside&0xFFFFFFU)==0x102030U;
++    /* A farther triangle must fail the depth test. */
++    gfx3d_vertex_t behind[3];kmemcpy(behind,triangle,sizeof(behind));
++    for(unsigned i=0;i<3;i++){behind[i].z=0.75f;behind[i].color=0xFF00FF00U;}
++    ok=ok && gma3_draw(h,0,behind,3,GFX3D_DRAW_DEPTH_TEST|GFX3D_DRAW_DEPTH_WRITE,NULL) &&
++        (*inside&0xFFFFFFU)==0xFF0000U;
++    /* Blend is advertised only if the actual GPU mixes source/destination. */
++    for(unsigned i=0;i<3;i++)behind[i].color=0x800000FFU;
++    ok=ok && gma3_draw(h,0,behind,3,GFX3D_DRAW_BLEND,NULL);
++    uint32_t mixed=*inside;
++    ok=ok && ((mixed>>16)&255U)>=126U && ((mixed>>16)&255U)<=129U &&
++        (mixed&255U)>=126U && (mixed&255U)<=129U;
++    (void)gma3_destroy(h);
++    return ok;
++}
++static bool gma3_probe(gfx3d_info_t *info) {
++    if(!g_gma.active || !g_gma.accel || g_gma.chip->generation!=2U ||
++       g_gma.mode.bpp!=32U || !g_gma.owned_raw)return false;
++    if(!gma3_tested) {
++        gma3_tested=true;gma3_ready=gma3_selftest(NULL);
++        kprintf("[INTELGMA:3D] triangle/depth/blend selftest %s\n",gma3_ready?"PASS":"FAIL; Mesa software");
++    }
++    if(!gma3_ready)return false;
++    if(info)*info=(gfx3d_info_t){true,"intel_852_855_3d","Gen2 ring + owned GGTT",
++        GMA3_CAPS,2U,1U,1U};
++    return true;
++}
++static void gma3_reset(void) {
++    if(!gma3_sync())return;
++    kmemset(gma3_surfaces,0,sizeof(gma3_surfaces));kmemset(gma3_pages,0,sizeof(gma3_pages));
++}
++GMA_LOCKED(gma3_locked_probe,(gfx3d_info_t *i),gma3_probe(i))
++GMA_LOCKED(gma3_locked_create,(const gfx3d_surface_desc_t *d,uint32_t *h),gma3_create(d,h))
++GMA_LOCKED(gma3_locked_destroy,(uint32_t h),gma3_destroy(h))
++GMA_LOCKED(gma3_locked_upload,(uint32_t h,const uint32_t *p,uint32_t pitch,const gfx_rect_t *r),gma3_upload(h,p,pitch,r))
++GMA_LOCKED(gma3_locked_download,(uint32_t h,uint32_t *p,uint32_t pitch,const gfx_rect_t *r),gma3_download(h,p,pitch,r))
++GMA_LOCKED(gma3_locked_clear,(uint32_t h,uint32_t c,uint32_t *f),gma3_clear(h,c,f))
++GMA_LOCKED(gma3_locked_present,(uint32_t h,const gfx_rect_t *r,uint32_t *f),gma3_present(h,r,f))
++GMA_LOCKED(gma3_locked_begin,(uint32_t h,uint32_t c,float z,uint32_t f),gma3_begin(h,c,z,f))
++GMA_LOCKED(gma3_locked_draw,(uint32_t h,uint32_t t,const gfx3d_vertex_t *v,uint32_t n,uint32_t f,uint32_t *o),gma3_draw(h,t,v,n,f,o))
++GMA_LOCKED(gma3_locked_end,(uint32_t h,uint32_t *f),gma3_end(h,f))
++GMA_LOCKED(gma3_locked_wait,(uint32_t f),gma3_wait(f))
++GMA_LOCKED(gma3_locked_test,(uint32_t *f),gma3_selftest(f))
++GMA_LOCKED(gma3_locked_depth_up,(uint32_t h,const uint16_t *p,uint32_t pitch,const gfx_rect_t *r),gma3_depth_upload(h,p,pitch,r))
++GMA_LOCKED(gma3_locked_depth_down,(uint32_t h,uint16_t *p,uint32_t pitch,const gfx_rect_t *r),gma3_depth_download(h,p,pitch,r))
++static void gma3_locked_reset(void) {
++    kmutex_lock(&gma_engine_mutex);gma3_reset();kmutex_unlock(&gma_engine_mutex);
++}
++static bool gma3_register(void) {
++    static const gfx3d_driver_ops_t ops={
++        .abi_version=BK_GFX3D_DRIVER_ABI_VERSION,.descriptor_size=sizeof(gfx3d_driver_ops_t),
++        .name="intel_852_855_3d",.priority=235,.capabilities=GMA3_CAPS,
++        .probe=gma3_locked_probe,.reset=gma3_locked_reset,.surface_create=gma3_locked_create,
++        .surface_destroy=gma3_locked_destroy,.surface_upload=gma3_locked_upload,
++        .surface_download=gma3_locked_download,.surface_clear=gma3_locked_clear,
++        .surface_present=gma3_locked_present,.begin=gma3_locked_begin,.draw_triangles=gma3_locked_draw,
++        .end=gma3_locked_end,.wait_fence=gma3_locked_wait,.selftest=gma3_locked_test,
++        .depth_upload=gma3_locked_depth_up,.depth_download=gma3_locked_depth_down};
++    return gfx3d_register_driver(&ops);
++}
+--- /dev/null
++++ b/kernel/drivers/graphics/intel_i830_regs.h
+@@ -0,0 +1,628 @@
++/**************************************************************************
++ * 
++ * Copyright 2003 Tungsten Graphics, Inc., Cedar Park, Texas.
++ * All Rights Reserved.
++ * 
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the
++ * "Software"), to deal in the Software without restriction, including
++ * without limitation the rights to use, copy, modify, merge, publish,
++ * distribute, sub license, and/or sell copies of the Software, and to
++ * permit persons to whom the Software is furnished to do so, subject to
++ * the following conditions:
++ * 
++ * The above copyright notice and this permission notice (including the
++ * next paragraph) shall be included in all copies or substantial portions
++ * of the Software.
++ * 
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
++ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
++ * IN NO EVENT SHALL TUNGSTEN GRAPHICS AND/OR ITS SUPPLIERS BE LIABLE FOR
++ * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
++ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
++ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
++ * 
++ **************************************************************************/
++
++
++#ifndef _I830_REG_H_
++#define _I830_REG_H_
++
++
++#include "intel_i830_common.h"
++
++#define I830_SET_FIELD( var, mask, value ) (var &= ~(mask), var |= value)
++
++#define _3DSTATE_AA_CMD			(CMD_3D | (0x06<<24))
++#define AA_LINE_ECAAR_WIDTH_ENABLE	(1<<16)
++#define AA_LINE_ECAAR_WIDTH_0_5 	0
++#define AA_LINE_ECAAR_WIDTH_1_0		(1<<14)
++#define AA_LINE_ECAAR_WIDTH_2_0 	(2<<14)
++#define AA_LINE_ECAAR_WIDTH_4_0 	(3<<14)
++#define AA_LINE_REGION_WIDTH_ENABLE	(1<<8)
++#define AA_LINE_REGION_WIDTH_0_5	0
++#define AA_LINE_REGION_WIDTH_1_0	(1<<6)
++#define AA_LINE_REGION_WIDTH_2_0	(2<<6)
++#define AA_LINE_REGION_WIDTH_4_0	(3<<6)
++#define AA_LINE_ENABLE			((1<<1) | 1)
++#define AA_LINE_DISABLE			(1<<1)
++
++#define _3DSTATE_COLOR_FACTOR_CMD	(CMD_3D | (0x1d<<24) | (0x1<<16))
++
++#define _3DSTATE_COLOR_FACTOR_N_CMD(stage)	(CMD_3D | (0x1d<<24) | \
++					         ((0x90+(stage))<<16))
++
++#define _3DSTATE_CONST_BLEND_COLOR_CMD	(CMD_3D | (0x1d<<24) | (0x88<<16))
++
++#define _3DSTATE_DFLT_DIFFUSE_CMD	(CMD_3D | (0x1d<<24) | (0x99<<16))
++
++#define _3DSTATE_DFLT_SPEC_CMD		(CMD_3D | (0x1d<<24) | (0x9a<<16))
++
++#define _3DSTATE_DFLT_Z_CMD		(CMD_3D | (0x1d<<24) | (0x98<<16))
++
++
++#define _3DSTATE_DST_BUF_VARS_CMD	(CMD_3D | (0x1d<<24) | (0x85<<16))
++/* Dword 1 */
++#define DSTORG_HORT_BIAS(x)		((x)<<20)
++#define DSTORG_VERT_BIAS(x)		((x)<<16)
++#define COLOR_4_2_2_CHNL_WRT_ALL	0
++#define COLOR_4_2_2_CHNL_WRT_Y		(1<<12)
++#define COLOR_4_2_2_CHNL_WRT_CR		(2<<12)
++#define COLOR_4_2_2_CHNL_WRT_CB		(3<<12)
++#define COLOR_4_2_2_CHNL_WRT_CRCB	(4<<12)
++#define COLR_BUF_8BIT			0
++#define COLR_BUF_RGB555 		(1<<8)
++#define COLR_BUF_RGB565 		(2<<8)
++#define COLR_BUF_ARGB8888		(3<<8)
++#define DEPTH_IS_Z			0
++#define DEPTH_IS_W			(1<<6)
++#define DEPTH_FRMT_16_FIXED		0
++#define DEPTH_FRMT_16_FLOAT		(1<<2)
++#define DEPTH_FRMT_24_FIXED_8_OTHER	(2<<2)
++#define DEPTH_FRMT_24_FLOAT_8_OTHER	(3<<2)
++#define VERT_LINE_STRIDE_1		(1<<1)
++#define VERT_LINE_STRIDE_0		0
++#define VERT_LINE_STRIDE_OFS_1		1
++#define VERT_LINE_STRIDE_OFS_0		0
++
++
++#define _3DSTATE_DRAW_RECT_CMD		(CMD_3D|(0x1d<<24)|(0x80<<16)|3)
++/* Dword 1 */
++#define DRAW_RECT_DIS_DEPTH_OFS 	(1<<30)
++#define DRAW_DITHER_OFS_X(x)		((x)<<26)
++#define DRAW_DITHER_OFS_Y(x)		((x)<<24)
++/* Dword 2 */
++#define DRAW_YMIN(x)			((x)<<16)
++#define DRAW_XMIN(x)			(x)
++/* Dword 3 */
++#define DRAW_YMAX(x)			((x)<<16)
++#define DRAW_XMAX(x)			(x)
++/* Dword 4 */
++#define DRAW_YORG(x)			((x)<<16)
++#define DRAW_XORG(x)			(x)
++
++
++#define _3DSTATE_ENABLES_1_CMD		(CMD_3D|(0x3<<24))
++#define ENABLE_LOGIC_OP_MASK		((1<<23)|(1<<22))
++#define ENABLE_LOGIC_OP 		((1<<23)|(1<<22))
++#define DISABLE_LOGIC_OP		(1<<23)
++#define ENABLE_STENCIL_TEST		((1<<21)|(1<<20))
++#define DISABLE_STENCIL_TEST		(1<<21)
++#define ENABLE_DEPTH_BIAS		((1<<11)|(1<<10))
++#define DISABLE_DEPTH_BIAS		(1<<11)
++#define ENABLE_SPEC_ADD_MASK		((1<<9)|(1<<8))
++#define ENABLE_SPEC_ADD 		((1<<9)|(1<<8))
++#define DISABLE_SPEC_ADD		(1<<9)
++#define ENABLE_DIS_FOG_MASK		((1<<7)|(1<<6))
++#define ENABLE_FOG			((1<<7)|(1<<6))
++#define DISABLE_FOG			(1<<7)
++#define ENABLE_DIS_ALPHA_TEST_MASK	((1<<5)|(1<<4))
++#define ENABLE_ALPHA_TEST		((1<<5)|(1<<4))
++#define DISABLE_ALPHA_TEST		(1<<5)
++#define ENABLE_DIS_CBLEND_MASK		((1<<3)|(1<<2))
++#define ENABLE_COLOR_BLEND		((1<<3)|(1<<2))
++#define DISABLE_COLOR_BLEND		(1<<3)
++#define ENABLE_DIS_DEPTH_TEST_MASK	((1<<1)|1)
++#define ENABLE_DEPTH_TEST		((1<<1)|1)
++#define DISABLE_DEPTH_TEST		(1<<1)
++
++/* _3DSTATE_ENABLES_2, p138 */
++#define _3DSTATE_ENABLES_2_CMD		(CMD_3D|(0x4<<24))
++#define ENABLE_STENCIL_WRITE		((1<<21)|(1<<20))
++#define DISABLE_STENCIL_WRITE		(1<<21)
++#define ENABLE_TEX_CACHE		((1<<17)|(1<<16))
++#define DISABLE_TEX_CACHE		(1<<17)
++#define ENABLE_DITHER			((1<<9)|(1<<8))
++#define DISABLE_DITHER			(1<<9)
++#define ENABLE_COLOR_MASK		(1<<10)
++#define WRITEMASK_ALPHA			(1<<7)
++#define WRITEMASK_ALPHA_SHIFT		7
++#define WRITEMASK_RED			(1<<6)
++#define WRITEMASK_RED_SHIFT		6
++#define WRITEMASK_GREEN 		(1<<5)
++#define WRITEMASK_GREEN_SHIFT		5
++#define WRITEMASK_BLUE			(1<<4)
++#define WRITEMASK_BLUE_SHIFT		4
++#define WRITEMASK_MASK			((1<<4)|(1<<5)|(1<<6)|(1<<7))
++#define ENABLE_COLOR_WRITE		((1<<3)|(1<<2))
++#define DISABLE_COLOR_WRITE		(1<<3)
++#define ENABLE_DIS_DEPTH_WRITE_MASK	0x3
++#define ENABLE_DEPTH_WRITE		((1<<1)|1)
++#define DISABLE_DEPTH_WRITE		(1<<1)
++
++/* _3DSTATE_FOG_COLOR, p139 */
++#define _3DSTATE_FOG_COLOR_CMD		(CMD_3D|(0x15<<24))
++#define FOG_COLOR_RED(x)		((x)<<16)
++#define FOG_COLOR_GREEN(x)		((x)<<8)
++#define FOG_COLOR_BLUE(x)		(x)
++
++/* _3DSTATE_FOG_MODE, p140 */
++#define _3DSTATE_FOG_MODE_CMD		(CMD_3D|(0x1d<<24)|(0x89<<16)|2)
++/* Dword 1 */
++#define FOGFUNC_ENABLE			(1U<<31)
++#define FOGFUNC_VERTEX			0
++#define FOGFUNC_PIXEL_EXP		(1<<28)
++#define FOGFUNC_PIXEL_EXP2		(2<<28)
++#define FOGFUNC_PIXEL_LINEAR		(3<<28)
++#define FOGSRC_INDEX_Z			(1<<27)
++#define FOGSRC_INDEX_W			((1<<27)|(1<<25))
++#define FOG_LINEAR_CONST		(1<<24)
++#define FOG_CONST_1(x)			((x)<<4)
++#define ENABLE_FOG_DENSITY		(1<<23)
++/* Dword 2 */
++#define FOG_CONST_2(x)			(x)
++/* Dword 3 */
++#define FOG_DENSITY(x)			(x)
++
++/* _3DSTATE_INDEPENDENT_ALPHA_BLEND, p142 */
++#define _3DSTATE_INDPT_ALPHA_BLEND_CMD	(CMD_3D|(0x0b<<24))
++#define ENABLE_INDPT_ALPHA_BLEND	((1<<23)|(1<<22))
++#define DISABLE_INDPT_ALPHA_BLEND	(1<<23)
++#define ALPHA_BLENDFUNC_MASK		0x3f0000
++#define ENABLE_ALPHA_BLENDFUNC		(1<<21)
++#define ABLENDFUNC_ADD			0
++#define ABLENDFUNC_SUB			(1<<16)
++#define ABLENDFUNC_RVSE_SUB		(2<<16)
++#define ABLENDFUNC_MIN			(3<<16)
++#define ABLENDFUNC_MAX			(4<<16)
++#define SRC_DST_ABLEND_MASK		0xfff
++#define ENABLE_SRC_ABLEND_FACTOR	(1<<11)
++#define SRC_ABLEND_FACT(x)		((x)<<6)
++#define ENABLE_DST_ABLEND_FACTOR	(1<<5)
++#define DST_ABLEND_FACT(x)		(x)
++
++
++/* _3DSTATE_MAP_BLEND_ARG, p152 */
++#define _3DSTATE_MAP_BLEND_ARG_CMD(stage)	(CMD_3D|(0x0e<<24)|((stage)<<20))
++
++#define TEXPIPE_COLOR			0
++#define TEXPIPE_ALPHA			(1<<18)
++#define TEXPIPE_KILL			(2<<18)
++#define TEXBLEND_ARG0			0
++#define TEXBLEND_ARG1			(1<<15)
++#define TEXBLEND_ARG2			(2<<15)
++#define TEXBLEND_ARG3			(3<<15)
++#define TEXBLENDARG_MODIFY_PARMS	(1<<6)
++#define TEXBLENDARG_REPLICATE_ALPHA 	(1<<5)
++#define TEXBLENDARG_INV_ARG 		(1<<4)
++#define TEXBLENDARG_ONE 		0
++#define TEXBLENDARG_FACTOR		0x01
++#define TEXBLENDARG_ACCUM		0x02
++#define TEXBLENDARG_DIFFUSE		0x03
++#define TEXBLENDARG_SPEC		0x04
++#define TEXBLENDARG_CURRENT		0x05
++#define TEXBLENDARG_TEXEL0		0x06
++#define TEXBLENDARG_TEXEL1		0x07
++#define TEXBLENDARG_TEXEL2		0x08
++#define TEXBLENDARG_TEXEL3		0x09
++#define TEXBLENDARG_FACTOR_N		0x0e
++
++/* _3DSTATE_MAP_BLEND_OP, p155 */
++#define _3DSTATE_MAP_BLEND_OP_CMD(stage)	(CMD_3D|(0x0d<<24)|((stage)<<20))
++#if 0
++#   define TEXPIPE_COLOR		0
++#   define TEXPIPE_ALPHA		(1<<18)
++#   define TEXPIPE_KILL			(2<<18)
++#endif
++#define ENABLE_TEXOUTPUT_WRT_SEL	(1<<17)
++#define TEXOP_OUTPUT_CURRENT		0
++#define TEXOP_OUTPUT_ACCUM		(1<<15)
++#define ENABLE_TEX_CNTRL_STAGE		((1<<12)|(1<<11))
++#define DISABLE_TEX_CNTRL_STAGE		(1<<12)
++#define TEXOP_SCALE_SHIFT		9
++#define TEXOP_SCALE_1X			(0 << TEXOP_SCALE_SHIFT)
++#define TEXOP_SCALE_2X			(1 << TEXOP_SCALE_SHIFT)
++#define TEXOP_SCALE_4X			(2 << TEXOP_SCALE_SHIFT)
++#define TEXOP_MODIFY_PARMS		(1<<8)
++#define TEXOP_LAST_STAGE		(1<<7)
++#define TEXBLENDOP_KILLPIXEL		0x02
++#define TEXBLENDOP_ARG1 		0x01
++#define TEXBLENDOP_ARG2 		0x02
++#define TEXBLENDOP_MODULATE		0x03
++#define TEXBLENDOP_ADD			0x06
++#define TEXBLENDOP_ADDSIGNED		0x07
++#define TEXBLENDOP_BLEND		0x08
++#define TEXBLENDOP_BLEND_AND_ADD	0x09
++#define TEXBLENDOP_SUBTRACT		0x0a
++#define TEXBLENDOP_DOT3 		0x0b
++#define TEXBLENDOP_DOT4 		0x0c
++#define TEXBLENDOP_MODULATE_AND_ADD	0x0d
++#define TEXBLENDOP_MODULATE_2X_AND_ADD	0x0e
++#define TEXBLENDOP_MODULATE_4X_AND_ADD	0x0f
++
++/* _3DSTATE_MAP_BUMP_TABLE, p160 TODO */
++/* _3DSTATE_MAP_COLOR_CHROMA_KEY, p161 TODO */
++
++#define _3DSTATE_MAP_COORD_TRANSFORM	((3<<29)|(0x1d<<24)|(0x8c<<16))
++#define DISABLE_TEX_TRANSFORM		(1<<28)
++#define TEXTURE_SET(x)			(x<<29)
++
++#define _3DSTATE_VERTEX_TRANSFORM	((3<<29)|(0x1d<<24)|(0x8b<<16))
++#define DISABLE_VIEWPORT_TRANSFORM	(1U<<31)
++#define DISABLE_PERSPECTIVE_DIVIDE	(1<<29)
++
++
++/* _3DSTATE_MAP_COORD_SET_BINDINGS, p162 */
++#define _3DSTATE_MAP_COORD_SETBIND_CMD	(CMD_3D|(0x1d<<24)|(0x02<<16))
++#define TEXBIND_MASK3			((1<<15)|(1<<14)|(1<<13)|(1<<12))
++#define TEXBIND_MASK2			((1<<11)|(1<<10)|(1<<9)|(1<<8))
++#define TEXBIND_MASK1			((1<<7)|(1<<6)|(1<<5)|(1<<4))
++#define TEXBIND_MASK0			((1<<3)|(1<<2)|(1<<1)|1)
++
++#define TEXBIND_SET3(x) 		((x)<<12)
++#define TEXBIND_SET2(x) 		((x)<<8)
++#define TEXBIND_SET1(x) 		((x)<<4)
++#define TEXBIND_SET0(x) 		(x)
++
++#define TEXCOORDSRC_KEEP		0
++#define TEXCOORDSRC_DEFAULT		0x01
++#define TEXCOORDSRC_VTXSET_0		0x08
++#define TEXCOORDSRC_VTXSET_1		0x09
++#define TEXCOORDSRC_VTXSET_2		0x0a
++#define TEXCOORDSRC_VTXSET_3		0x0b
++#define TEXCOORDSRC_VTXSET_4		0x0c
++#define TEXCOORDSRC_VTXSET_5		0x0d
++#define TEXCOORDSRC_VTXSET_6		0x0e
++#define TEXCOORDSRC_VTXSET_7		0x0f
++
++#define MAP_UNIT(unit)			((unit)<<16)
++#define MAP_UNIT_MASK			(0x7<<16)
++
++/* _3DSTATE_MAP_COORD_SETS, p164 */
++#define _3DSTATE_MAP_COORD_SET_CMD	(CMD_3D|(0x1c<<24)|(0x01<<19))
++#define ENABLE_TEXCOORD_PARAMS		(1<<15)
++#define TEXCOORDS_ARE_NORMAL		(1<<14)
++#define TEXCOORDS_ARE_IN_TEXELUNITS	0
++#define TEXCOORDTYPE_CARTESIAN		0
++#define TEXCOORDTYPE_HOMOGENEOUS	(1<<11)
++#define TEXCOORDTYPE_VECTOR		(2<<11)
++#define TEXCOORDTYPE_MASK	        (0x7<<11)
++#define ENABLE_ADDR_V_CNTL		(1<<7)
++#define ENABLE_ADDR_U_CNTL		(1<<3)
++#define TEXCOORD_ADDR_V_MODE(x) 	((x)<<4)
++#define TEXCOORD_ADDR_U_MODE(x) 	(x)
++#define TEXCOORDMODE_WRAP		0
++#define TEXCOORDMODE_MIRROR		1
++#define TEXCOORDMODE_CLAMP		2
++#define TEXCOORDMODE_WRAP_SHORTEST	3
++#define TEXCOORDMODE_CLAMP_BORDER	4
++#define TEXCOORD_ADDR_V_MASK		0x70
++#define TEXCOORD_ADDR_U_MASK		0x7
++
++/* _3DSTATE_MAP_CUBE, p168 TODO */
++#define _3DSTATE_MAP_CUBE		(CMD_3D|(0x1c<<24)|(0x0a<<19))
++#define CUBE_NEGX_ENABLE                (1<<5)
++#define CUBE_POSX_ENABLE                (1<<4)
++#define CUBE_NEGY_ENABLE                (1<<3)
++#define CUBE_POSY_ENABLE                (1<<2)
++#define CUBE_NEGZ_ENABLE                (1<<1)
++#define CUBE_POSZ_ENABLE                (1<<0)
++
++
++/* _3DSTATE_MODES_1, p190 */
++#define _3DSTATE_MODES_1_CMD		(CMD_3D|(0x08<<24))
++#define BLENDFUNC_MASK			0x3f0000
++#define ENABLE_COLR_BLND_FUNC		(1<<21)
++#define BLENDFUNC_ADD			0
++#define BLENDFUNC_SUB			(1<<16)
++#define BLENDFUNC_RVRSE_SUB		(2<<16)
++#define BLENDFUNC_MIN			(3<<16)
++#define BLENDFUNC_MAX			(4<<16)
++#define SRC_DST_BLND_MASK		0xfff
++#define ENABLE_SRC_BLND_FACTOR		(1<<11)
++#define ENABLE_DST_BLND_FACTOR		(1<<5)
++#define SRC_BLND_FACT(x)		((x)<<6)
++#define DST_BLND_FACT(x)		(x)
++
++
++/* _3DSTATE_MODES_2, p192 */
++#define _3DSTATE_MODES_2_CMD		(CMD_3D|(0x0f<<24))
++#define ENABLE_GLOBAL_DEPTH_BIAS	(1<<22)
++#define GLOBAL_DEPTH_BIAS(x)		((x)<<14)
++#define ENABLE_ALPHA_TEST_FUNC		(1<<13)
++#define ENABLE_ALPHA_REF_VALUE		(1<<8)
++#define ALPHA_TEST_FUNC(x)		((x)<<9)
++#define ALPHA_REF_VALUE(x)		(x)
++
++#define ALPHA_TEST_REF_MASK		0x3fff
++
++/* _3DSTATE_MODES_3, p193 */
++#define _3DSTATE_MODES_3_CMD		(CMD_3D|(0x02<<24))
++#define DEPTH_TEST_FUNC_MASK		0x1f0000
++#define ENABLE_DEPTH_TEST_FUNC		(1<<20)
++/* Uses COMPAREFUNC */
++#define DEPTH_TEST_FUNC(x)		((x)<<16)
++#define ENABLE_ALPHA_SHADE_MODE 	(1<<11)
++#define ENABLE_FOG_SHADE_MODE		(1<<9)
++#define ENABLE_SPEC_SHADE_MODE		(1<<7)
++#define ENABLE_COLOR_SHADE_MODE 	(1<<5)
++#define ALPHA_SHADE_MODE(x)		((x)<<10)
++#define FOG_SHADE_MODE(x)		((x)<<8)
++#define SPEC_SHADE_MODE(x)		((x)<<6)
++#define COLOR_SHADE_MODE(x)		((x)<<4)
++#define CULLMODE_MASK			0xf
++#define ENABLE_CULL_MODE		(1<<3)
++#define CULLMODE_BOTH			0
++#define CULLMODE_NONE			1
++#define CULLMODE_CW			2
++#define CULLMODE_CCW			3
++
++#define SHADE_MODE_LINEAR		0
++#define SHADE_MODE_FLAT 		0x1
++
++/* _3DSTATE_MODES_4, p195 */
++#define _3DSTATE_MODES_4_CMD		(CMD_3D|(0x16<<24))
++#define ENABLE_LOGIC_OP_FUNC		(1<<23)
++#define LOGIC_OP_FUNC(x)		((x)<<18)
++#define LOGICOP_MASK			((1<<18)|(1<<19)|(1<<20)|(1<<21))
++#define LOGICOP_CLEAR			0
++#define LOGICOP_NOR			0x1
++#define LOGICOP_AND_INV 		0x2
++#define LOGICOP_COPY_INV		0x3
++#define LOGICOP_AND_RVRSE		0x4
++#define LOGICOP_INV			0x5
++#define LOGICOP_XOR			0x6
++#define LOGICOP_NAND			0x7
++#define LOGICOP_AND			0x8
++#define LOGICOP_EQUIV			0x9
++#define LOGICOP_NOOP			0xa
++#define LOGICOP_OR_INV			0xb
++#define LOGICOP_COPY			0xc
++#define LOGICOP_OR_RVRSE		0xd
++#define LOGICOP_OR			0xe
++#define LOGICOP_SET			0xf
++#define MODE4_ENABLE_STENCIL_TEST_MASK	((1<<17)|(0xff00))
++#define ENABLE_STENCIL_TEST_MASK	(1<<17)
++#define STENCIL_TEST_MASK(x)		(((x)&0xff)<<8)
++#define MODE4_ENABLE_STENCIL_WRITE_MASK	((1<<16)|(0x00ff))
++#define ENABLE_STENCIL_WRITE_MASK	(1<<16)
++#define STENCIL_WRITE_MASK(x)		((x)&0xff)
++
++/* _3DSTATE_MODES_5, p196 */
++#define _3DSTATE_MODES_5_CMD		(CMD_3D|(0x0c<<24))
++#define ENABLE_SPRITE_POINT_TEX 	(1<<23)
++#define SPRITE_POINT_TEX_ON		(1<<22)
++#define SPRITE_POINT_TEX_OFF		0
++#define FLUSH_RENDER_CACHE		(1<<18)
++#define FLUSH_TEXTURE_CACHE		(1<<16)
++#define FIXED_LINE_WIDTH_MASK		0xfc00
++#define ENABLE_FIXED_LINE_WIDTH 	(1<<15)
++#define FIXED_LINE_WIDTH(x)		((x)<<10)
++#define FIXED_POINT_WIDTH_MASK		0x3ff
++#define ENABLE_FIXED_POINT_WIDTH	(1<<9)
++#define FIXED_POINT_WIDTH(x)		(x)
++
++/* _3DSTATE_RASTERIZATION_RULES, p198 */
++#define _3DSTATE_RASTER_RULES_CMD	(CMD_3D|(0x07<<24))
++#define ENABLE_POINT_RASTER_RULE	(1<<15)
++#define OGL_POINT_RASTER_RULE		(1<<13)
++#define ENABLE_LINE_STRIP_PROVOKE_VRTX	(1<<8)
++#define ENABLE_TRI_FAN_PROVOKE_VRTX	(1<<5)
++#define ENABLE_TRI_STRIP_PROVOKE_VRTX	(1<<2)
++#define LINE_STRIP_PROVOKE_VRTX_MASK	(3<<6)
++#define LINE_STRIP_PROVOKE_VRTX(x)	((x)<<6)
++#define TRI_FAN_PROVOKE_VRTX_MASK	(3<<3)
++#define TRI_FAN_PROVOKE_VRTX(x) 	((x)<<3)
++#define TRI_STRIP_PROVOKE_VRTX_MASK	(3<<0)
++#define TRI_STRIP_PROVOKE_VRTX(x)	(x)
++
++/* _3DSTATE_SCISSOR_ENABLE, p200 */
++#define _3DSTATE_SCISSOR_ENABLE_CMD	(CMD_3D|(0x1c<<24)|(0x10<<19))
++#define ENABLE_SCISSOR_RECT		((1<<1) | 1)
++#define DISABLE_SCISSOR_RECT		(1<<1)
++
++/* _3DSTATE_SCISSOR_RECTANGLE_0, p201 */
++#define _3DSTATE_SCISSOR_RECT_0_CMD	(CMD_3D|(0x1d<<24)|(0x81<<16)|1)
++/* Dword 1 */
++#define SCISSOR_RECT_0_YMIN(x)		((x)<<16)
++#define SCISSOR_RECT_0_XMIN(x)		(x)
++/* Dword 2 */
++#define SCISSOR_RECT_0_YMAX(x)		((x)<<16)
++#define SCISSOR_RECT_0_XMAX(x)		(x)
++
++/* _3DSTATE_STENCIL_TEST, p202 */
++#define _3DSTATE_STENCIL_TEST_CMD	(CMD_3D|(0x09<<24))
++#define ENABLE_STENCIL_PARMS		(1<<23)
++#define STENCIL_OPS_MASK		(0xffc000)
++#define STENCIL_FAIL_OP(x)		((x)<<20)
++#define STENCIL_PASS_DEPTH_FAIL_OP(x)	((x)<<17)
++#define STENCIL_PASS_DEPTH_PASS_OP(x)	((x)<<14)
++
++#define ENABLE_STENCIL_TEST_FUNC_MASK	((1<<13)|(1<<12)|(1<<11)|(1<<10)|(1<<9))
++#define ENABLE_STENCIL_TEST_FUNC	(1<<13)
++/* Uses COMPAREFUNC */
++#define STENCIL_TEST_FUNC(x)		((x)<<9)
++#define STENCIL_REF_VALUE_MASK		((1<<8)|0xff)
++#define ENABLE_STENCIL_REF_VALUE	(1<<8)
++#define STENCIL_REF_VALUE(x)		(x)
++
++/* _3DSTATE_VERTEX_FORMAT, p204 */
++#define _3DSTATE_VFT0_CMD	(CMD_3D|(0x05<<24))
++#define VFT0_POINT_WIDTH	(1<<12)
++#define VFT0_TEX_COUNT_MASK    	(7<<8)
++#define VFT0_TEX_COUNT_SHIFT    8
++#define VFT0_TEX_COUNT(x) 	((x)<<8)
++#define VFT0_SPEC		(1<<7)
++#define VFT0_DIFFUSE		(1<<6)
++#define VFT0_DEPTH_OFFSET  	(1<<5)
++#define VFT0_XYZ		(1<<1)
++#define VFT0_XYZW		(2<<1)
++#define VFT0_XY			(3<<1)
++#define VFT0_XYW		(4<<1)
++#define VFT0_XYZW_MASK          (7<<1)
++
++/* _3DSTATE_VERTEX_FORMAT_2, p206 */
++#define _3DSTATE_VFT1_CMD	(CMD_3D|(0x0a<<24))
++#define VFT1_TEX7_FMT(x)	((x)<<14)
++#define VFT1_TEX6_FMT(x)	((x)<<12)
++#define VFT1_TEX5_FMT(x)	((x)<<10)
++#define VFT1_TEX4_FMT(x)	((x)<<8)
++#define VFT1_TEX3_FMT(x)	((x)<<6)
++#define VFT1_TEX2_FMT(x)	((x)<<4)
++#define VFT1_TEX1_FMT(x)	((x)<<2)
++#define VFT1_TEX0_FMT(x)	(x)
++#define VFT1_TEX0_MASK          3
++#define VFT1_TEX1_SHIFT         2
++
++/*New stuff picked up along the way */
++
++#define MLC_LOD_BIAS_MASK ((1<<7)-1)
++
++
++/* _3DSTATE_VERTEX_TRANSFORM, p207 */
++#define _3DSTATE_VERTEX_TRANS_CMD	(CMD_3D|(0x1d<<24)|(0x8b<<16)|0)
++#define _3DSTATE_VERTEX_TRANS_MTX_CMD	(CMD_3D|(0x1d<<24)|(0x8b<<16)|6)
++/* Dword 1 */
++#define ENABLE_VIEWPORT_TRANSFORM	((1U<<31)|(1<<30))
++#define DISABLE_VIEWPORT_TRANSFORM	(1U<<31)
++#define ENABLE_PERSP_DIVIDE		((1<<29)|(1<<28))
++#define DISABLE_PERSP_DIVIDE		(1<<29)
++#define VRTX_TRANS_LOAD_MATRICES	0x7421
++#define VRTX_TRANS_NO_LOAD_MATRICES	0x0000
++/* Dword 2 -> 7  are matrix elements */
++
++/* _3DSTATE_W_STATE, p209 */
++#define _3DSTATE_W_STATE_CMD		(CMD_3D|(0x1d<<24)|(0x8d<<16)|1)
++/* Dword 1 */
++#define MAGIC_W_STATE_DWORD1		0x00000008
++/* Dword 2 */
++#define WFAR_VALUE(x)			(x)
++
++
++/* Stipple command, carried over from the i810, apparently:
++ */
++#define _3DSTATE_STIPPLE           ((0x3<<29)|(0x1d<<24)|(0x83<<16))
++#define ST1_ENABLE               (1<<16)
++#define ST1_MASK                 (0xffff)
++
++
++
++#define _3DSTATE_LOAD_STATE_IMMEDIATE_2      ((0x3<<29)|(0x1d<<24)|(0x03<<16))
++#define LOAD_TEXTURE_MAP0                   (1<<11)
++#define LOAD_GLOBAL_COLOR_FACTOR            (1<<6)
++
++#define TM0S0_ADDRESS_MASK              0xfffffffc
++#define TM0S0_USE_FENCE                 (1<<1)
++
++#define TM0S1_HEIGHT_SHIFT              21
++#define TM0S1_WIDTH_SHIFT               10
++#define TM0S1_PALETTE_SELECT            (1<<9)
++#define TM0S1_MAPSURF_FORMAT_MASK       (0x7 << 6)
++#define TM0S1_MAPSURF_FORMAT_SHIFT      6
++#define    MAPSURF_8BIT_INDEXED		   (0<<6)
++#define    MAPSURF_8BIT		 	   (1<<6)
++#define    MAPSURF_16BIT		   (2<<6)
++#define    MAPSURF_32BIT		   (3<<6)
++#define    MAPSURF_411			   (4<<6)
++#define    MAPSURF_422			   (5<<6)
++#define    MAPSURF_COMPRESSED		   (6<<6)
++#define    MAPSURF_4BIT_INDEXED		   (7<<6)
++#define TM0S1_MT_FORMAT_MASK         (0x7 << 3)
++#define TM0S1_MT_FORMAT_SHIFT        3
++#define    MT_4BIT_IDX_ARGB8888	           (7<<3)       /* SURFACE_4BIT_INDEXED */
++#define    MT_8BIT_IDX_RGB565	           (0<<3)       /* SURFACE_8BIT_INDEXED */
++#define    MT_8BIT_IDX_ARGB1555	           (1<<3)
++#define    MT_8BIT_IDX_ARGB4444	           (2<<3)
++#define    MT_8BIT_IDX_AY88		   (3<<3)
++#define    MT_8BIT_IDX_ABGR8888	           (4<<3)
++#define    MT_8BIT_IDX_BUMP_88DVDU 	   (5<<3)
++#define    MT_8BIT_IDX_BUMP_655LDVDU	   (6<<3)
++#define    MT_8BIT_IDX_ARGB8888	           (7<<3)
++#define    MT_8BIT_I8		           (0<<3)       /* SURFACE_8BIT */
++#define    MT_8BIT_L8		           (1<<3)
++#define    MT_16BIT_RGB565 		   (0<<3)       /* SURFACE_16BIT */
++#define    MT_16BIT_ARGB1555		   (1<<3)
++#define    MT_16BIT_ARGB4444		   (2<<3)
++#define    MT_16BIT_AY88		   (3<<3)
++#define    MT_16BIT_DIB_ARGB1555_8888      (4<<3)
++#define    MT_16BIT_BUMP_88DVDU	           (5<<3)
++#define    MT_16BIT_BUMP_655LDVDU	   (6<<3)
++#define    MT_16BIT_DIB_RGB565_8888	   (7<<3)
++#define    MT_32BIT_ARGB8888		   (0<<3)       /* SURFACE_32BIT */
++#define    MT_32BIT_ABGR8888		   (1<<3)
++#define    MT_32BIT_XRGB8888		   (2<<3)       /* XXX: Guess from i915_reg.h */
++#define    MT_32BIT_BUMP_XLDVDU_8888	   (6<<3)
++#define    MT_32BIT_DIB_8888		   (7<<3)
++#define    MT_411_YUV411		   (0<<3)       /* SURFACE_411 */
++#define    MT_422_YCRCB_SWAPY	           (0<<3)       /* SURFACE_422 */
++#define    MT_422_YCRCB_NORMAL	           (1<<3)
++#define    MT_422_YCRCB_SWAPUV	           (2<<3)
++#define    MT_422_YCRCB_SWAPUVY	           (3<<3)
++#define    MT_COMPRESS_DXT1		   (0<<3)       /* SURFACE_COMPRESSED */
++#define    MT_COMPRESS_DXT2_3	           (1<<3)
++#define    MT_COMPRESS_DXT4_5	           (2<<3)
++#define    MT_COMPRESS_FXT1		   (3<<3)
++#define TM0S1_COLORSPACE_CONVERSION     (1 << 2)
++#define TM0S1_TILED_SURFACE             (1 << 1)
++#define TM0S1_TILE_WALK                 (1 << 0)
++
++#define TM0S2_PITCH_SHIFT               21
++#define TM0S2_CUBE_FACE_ENA_SHIFT       15
++#define TM0S2_CUBE_FACE_ENA_MASK        (1<<15)
++#define TM0S2_MAP_FORMAT                (1<<14)
++#define TM0S2_VERTICAL_LINE_STRIDE      (1<<13)
++#define TM0S2_VERITCAL_LINE_STRIDE_OFF  (1<<12)
++#define TM0S2_OUTPUT_CHAN_SHIFT         10
++#define TM0S2_OUTPUT_CHAN_MASK          (3<<10)
++#define TM0S2_BASE_MIP_LEVEL_SHIFT      1
++#define TM0S2_LOD_PRECLAMP              (1 << 0)
++
++#define TM0S3_MIP_FILTER_MASK           (0x3<<30)
++#define TM0S3_MIP_FILTER_SHIFT          30
++#define MIPFILTER_NONE		0
++#define MIPFILTER_NEAREST	1
++#define MIPFILTER_LINEAR	3
++#define TM0S3_MAG_FILTER_MASK           (0x3<<28)
++#define TM0S3_MAG_FILTER_SHIFT          28
++#define TM0S3_MIN_FILTER_MASK           (0x3<<26)
++#define TM0S3_MIN_FILTER_SHIFT          26
++#define FILTER_NEAREST		0
++#define FILTER_LINEAR		1
++#define FILTER_ANISOTROPIC	2
++
++#define TM0S3_LOD_BIAS_SHIFT		17
++#define TM0S3_LOD_BIAS_MASK		(0x1ff<<17)
++#define TM0S3_MAX_MIP_SHIFT		9
++#define TM0S3_MAX_MIP_MASK		(0xff<<9)
++#define TM0S3_MIN_MIP_SHIFT		3
++#define TM0S3_MIN_MIP_MASK		(0x3f<<3)
++#define TM0S3_MIN_MIP_SHIFT_830		5
++#define TM0S3_MIN_MIP_MASK_830		(0x3f<<5)
++#define TM0S3_KILL_PIXEL		(1<<2)
++#define TM0S3_KEYED_FILTER		(1<<1)
++#define TM0S3_CHROMA_KEY		(1<<0)
++
++
++/* _3DSTATE_MAP_TEXEL_STREAM, p188 */
++#define _3DSTATE_MAP_TEX_STREAM_CMD	(CMD_3D|(0x1c<<24)|(0x05<<19))
++#define DISABLE_TEX_STREAM_BUMP 	(1<<12)
++#define ENABLE_TEX_STREAM_BUMP		((1<<12)|(1<<11))
++#define TEX_MODIFY_UNIT_0		0
++#define TEX_MODIFY_UNIT_1		(1<<8)
++#define ENABLE_TEX_STREAM_COORD_SET	(1<<7)
++#define TEX_STREAM_COORD_SET(x) 	((x)<<4)
++#define ENABLE_TEX_STREAM_MAP_IDX	(1<<3)
++#define TEX_STREAM_MAP_IDX(x)		(x)
++
++#endif
+--- /dev/null
++++ b/kernel/drivers/graphics/intel_i830_common.h
+@@ -0,0 +1,263 @@
++/**************************************************************************
++ * 
++ * Copyright 2003 Tungsten Graphics, Inc., Cedar Park, Texas.
++ * All Rights Reserved.
++ * 
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the
++ * "Software"), to deal in the Software without restriction, including
++ * without limitation the rights to use, copy, modify, merge, publish,
++ * distribute, sub license, and/or sell copies of the Software, and to
++ * permit persons to whom the Software is furnished to do so, subject to
++ * the following conditions:
++ * 
++ * The above copyright notice and this permission notice (including the
++ * next paragraph) shall be included in all copies or substantial portions
++ * of the Software.
++ * 
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
++ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
++ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
++ * IN NO EVENT SHALL TUNGSTEN GRAPHICS AND/OR ITS SUPPLIERS BE LIABLE FOR
++ * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
++ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
++ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
++ * 
++ **************************************************************************/
++
++#define CMD_MI				(0x0 << 29)
++#define CMD_2D				(0x2 << 29)
++#define CMD_3D				(0x3 << 29)
++
++#define MI_NOOP				(CMD_MI | 0)
++
++#define MI_BATCH_BUFFER_END		(CMD_MI | 0xA << 23)
++
++#define MI_FLUSH			(CMD_MI | (4 << 23))
++#define FLUSH_MAP_CACHE				(1 << 0)
++#define INHIBIT_FLUSH_RENDER_CACHE		(1 << 2)
++
++#define MI_FLUSH_DW			(CMD_MI | (0x26 << 23) | 2)
++
++/* Stalls command execution waiting for the given events to have occurred. */
++#define MI_WAIT_FOR_EVENT               (CMD_MI | (0x3 << 23))
++#define MI_WAIT_FOR_PLANE_B_FLIP        (1<<6)
++#define MI_WAIT_FOR_PLANE_A_FLIP        (1<<2)
++
++/* p189 */
++#define _3DSTATE_LOAD_STATE_IMMEDIATE_1   (CMD_3D | (0x1d<<24) | (0x04<<16))
++#define I1_LOAD_S(n)                      (1<<(4+n))
++
++#define _3DSTATE_DRAWRECT_INFO		(CMD_3D | (0x1d<<24) | (0x80<<16) | 0x3)
++#define _3DSTATE_DRAWRECT_INFO_I965	(CMD_3D | (3 << 27) | (1 << 24) | 0x2)
++
++/** @{
++ *
++ * PIPE_CONTROL operation, a combination MI_FLUSH and register write with
++ * additional flushing control.
++ */
++#define _3DSTATE_PIPE_CONTROL		(CMD_3D | (3 << 27) | (2 << 24) | 2)
++#define PIPE_CONTROL_CS_STALL		(1 << 20)
++#define PIPE_CONTROL_GLOBAL_SNAPSHOT_COUNT_RESET	(1 << 19)
++#define PIPE_CONTROL_TLB_INVALIDATE	(1 << 18)
++#define PIPE_CONTROL_SYNC_GFDT		(1 << 17)
++#define PIPE_CONTROL_MEDIA_STATE_CLEAR	(1 << 16)
++#define PIPE_CONTROL_NO_WRITE		(0 << 14)
++#define PIPE_CONTROL_WRITE_IMMEDIATE	(1 << 14)
++#define PIPE_CONTROL_WRITE_DEPTH_COUNT	(2 << 14)
++#define PIPE_CONTROL_WRITE_TIMESTAMP	(3 << 14)
++#define PIPE_CONTROL_DEPTH_STALL	(1 << 13)
++#define PIPE_CONTROL_WRITE_FLUSH	(1 << 12)
++#define PIPE_CONTROL_INSTRUCTION_FLUSH	(1 << 11)
++#define PIPE_CONTROL_TC_FLUSH		(1 << 10) /* GM45+ only */
++#define PIPE_CONTROL_ISP_DIS		(1 << 9)
++#define PIPE_CONTROL_INTERRUPT_ENABLE	(1 << 8)
++/* GT */
++#define PIPE_CONTROL_VF_CACHE_INVALIDATE	(1 << 4)
++#define PIPE_CONTROL_CONST_CACHE_INVALIDATE	(1 << 3)
++#define PIPE_CONTROL_STATE_CACHE_INVALIDATE	(1 << 2)
++#define PIPE_CONTROL_STALL_AT_SCOREBOARD	(1 << 1)
++#define PIPE_CONTROL_DEPTH_CACHE_FLUSH		(1 << 0)
++#define PIPE_CONTROL_PPGTT_WRITE	(0 << 2)
++#define PIPE_CONTROL_GLOBAL_GTT_WRITE	(1 << 2)
++
++/** @} */
++
++/** @{
++ * 915 definitions
++ *
++ * 915 documents say that bits 31:28 and 1 are "undefined, must be zero."
++ */
++#define S0_VB_OFFSET_MASK		0x0ffffffc
++#define S0_AUTO_CACHE_INV_DISABLE	(1<<0)
++/** @} */
++
++/** @{
++ * 830 definitions
++ */
++#define S0_VB_OFFSET_MASK_830		0xffffff80
++#define S0_VB_PITCH_SHIFT_830		1
++#define S0_VB_ENABLE_830		(1<<0)
++/** @} */
++
++#define S1_VERTEX_WIDTH_SHIFT          24
++#define S1_VERTEX_WIDTH_MASK           (0x3f<<24)
++#define S1_VERTEX_PITCH_SHIFT          16
++#define S1_VERTEX_PITCH_MASK           (0x3f<<16)
++
++#define TEXCOORDFMT_2D                 0x0
++#define TEXCOORDFMT_3D                 0x1
++#define TEXCOORDFMT_4D                 0x2
++#define TEXCOORDFMT_1D                 0x3
++#define TEXCOORDFMT_2D_16              0x4
++#define TEXCOORDFMT_4D_16              0x5
++#define TEXCOORDFMT_NOT_PRESENT        0xf
++#define S2_TEXCOORD_FMT0_MASK            0xf
++#define S2_TEXCOORD_FMT1_SHIFT           4
++#define S2_TEXCOORD_FMT(unit, type)    ((type)<<(unit*4))
++#define S2_TEXCOORD_NONE               (~0)
++#define S2_TEX_COUNT_SHIFT_830		12
++#define S2_VERTEX_1_WIDTH_SHIFT_830	0
++#define S2_VERTEX_0_WIDTH_SHIFT_830	6
++/* S3 not interesting */
++
++#define S4_POINT_WIDTH_SHIFT           23
++#define S4_POINT_WIDTH_MASK            (0x1ff<<23)
++#define S4_LINE_WIDTH_SHIFT            19
++#define S4_LINE_WIDTH_ONE              (0x2<<19)
++#define S4_LINE_WIDTH_MASK             (0xf<<19)
++#define S4_FLATSHADE_ALPHA             (1<<18)
++#define S4_FLATSHADE_FOG               (1<<17)
++#define S4_FLATSHADE_SPECULAR          (1<<16)
++#define S4_FLATSHADE_COLOR             (1<<15)
++#define S4_CULLMODE_BOTH	       (0<<13)
++#define S4_CULLMODE_NONE	       (1<<13)
++#define S4_CULLMODE_CW		       (2<<13)
++#define S4_CULLMODE_CCW		       (3<<13)
++#define S4_CULLMODE_MASK	       (3<<13)
++#define S4_VFMT_POINT_WIDTH            (1<<12)
++#define S4_VFMT_SPEC_FOG               (1<<11)
++#define S4_VFMT_COLOR                  (1<<10)
++#define S4_VFMT_DEPTH_OFFSET           (1<<9)
++#define S4_VFMT_XYZ     	       (1<<6)
++#define S4_VFMT_XYZW     	       (2<<6)
++#define S4_VFMT_XY     		       (3<<6)
++#define S4_VFMT_XYW     	       (4<<6)
++#define S4_VFMT_XYZW_MASK              (7<<6)
++#define S4_FORCE_DEFAULT_DIFFUSE       (1<<5)
++#define S4_FORCE_DEFAULT_SPECULAR      (1<<4)
++#define S4_LOCAL_DEPTH_OFFSET_ENABLE   (1<<3)
++#define S4_VFMT_FOG_PARAM              (1<<2)
++#define S4_SPRITE_POINT_ENABLE         (1<<1)
++#define S4_LINE_ANTIALIAS_ENABLE       (1<<0)
++
++#define S4_VFMT_MASK (S4_VFMT_POINT_WIDTH   | 	\
++		      S4_VFMT_SPEC_FOG      |	\
++		      S4_VFMT_COLOR         |	\
++		      S4_VFMT_DEPTH_OFFSET  |	\
++		      S4_VFMT_XYZW_MASK     |	\
++		      S4_VFMT_FOG_PARAM)
++
++
++#define S5_WRITEDISABLE_ALPHA          (1U<<31)
++#define S5_WRITEDISABLE_RED            (1<<30)
++#define S5_WRITEDISABLE_GREEN          (1<<29)
++#define S5_WRITEDISABLE_BLUE           (1<<28)
++#define S5_WRITEDISABLE_MASK           (0xf<<28)
++#define S5_FORCE_DEFAULT_POINT_SIZE    (1<<27)
++#define S5_LAST_PIXEL_ENABLE           (1<<26)
++#define S5_GLOBAL_DEPTH_OFFSET_ENABLE  (1<<25)
++#define S5_FOG_ENABLE                  (1<<24)
++#define S5_STENCIL_REF_SHIFT           16
++#define S5_STENCIL_REF_MASK            (0xff<<16)
++#define S5_STENCIL_TEST_FUNC_SHIFT     13
++#define S5_STENCIL_TEST_FUNC_MASK      (0x7<<13)
++#define S5_STENCIL_FAIL_SHIFT          10
++#define S5_STENCIL_FAIL_MASK           (0x7<<10)
++#define S5_STENCIL_PASS_Z_FAIL_SHIFT   7
++#define S5_STENCIL_PASS_Z_FAIL_MASK    (0x7<<7)
++#define S5_STENCIL_PASS_Z_PASS_SHIFT   4
++#define S5_STENCIL_PASS_Z_PASS_MASK    (0x7<<4)
++#define S5_STENCIL_WRITE_ENABLE        (1<<3)
++#define S5_STENCIL_TEST_ENABLE         (1<<2)
++#define S5_COLOR_DITHER_ENABLE         (1<<1)
++#define S5_LOGICOP_ENABLE              (1<<0)
++
++
++#define S6_ALPHA_TEST_ENABLE           (1U<<31)
++#define S6_ALPHA_TEST_FUNC_SHIFT       28
++#define S6_ALPHA_TEST_FUNC_MASK        (0x7<<28)
++#define S6_ALPHA_REF_SHIFT             20
++#define S6_ALPHA_REF_MASK              (0xff<<20)
++#define S6_DEPTH_TEST_ENABLE           (1<<19)
++#define S6_DEPTH_TEST_FUNC_SHIFT       16
++#define S6_DEPTH_TEST_FUNC_MASK        (0x7<<16)
++#define S6_CBUF_BLEND_ENABLE           (1<<15)
++#define S6_CBUF_BLEND_FUNC_SHIFT       12
++#define S6_CBUF_BLEND_FUNC_MASK        (0x7<<12)
++#define S6_CBUF_SRC_BLEND_FACT_SHIFT   8
++#define S6_CBUF_SRC_BLEND_FACT_MASK    (0xf<<8)
++#define S6_CBUF_DST_BLEND_FACT_SHIFT   4
++#define S6_CBUF_DST_BLEND_FACT_MASK    (0xf<<4)
++#define S6_DEPTH_WRITE_ENABLE          (1<<3)
++#define S6_COLOR_WRITE_ENABLE          (1<<2)
++#define S6_TRISTRIP_PV_SHIFT           0
++#define S6_TRISTRIP_PV_MASK            (0x3<<0)
++
++#define S7_DEPTH_OFFSET_CONST_MASK     ~0
++
++/* p143 */
++#define _3DSTATE_BUF_INFO_CMD	(CMD_3D | (0x1d<<24) | (0x8e<<16) | 1)
++/* Dword 1 */
++#define BUF_3D_ID_COLOR_BACK	(0x3<<24)
++#define BUF_3D_ID_DEPTH 	(0x7<<24)
++#define BUF_3D_USE_FENCE	(1<<23)
++#define BUF_3D_TILED_SURFACE	(1<<22)
++#define BUF_3D_TILE_WALK_X	0
++#define BUF_3D_TILE_WALK_Y	(1<<21)
++#define BUF_3D_PITCH(x)         (((x)/4)<<2)
++/* Dword 2 */
++#define BUF_3D_ADDR(x)		((x) & ~0x3)
++
++/* Primitive dispatch on 830-945 */
++#define _3DPRIMITIVE			(CMD_3D | (0x1f << 24))
++#define PRIM_INDIRECT            (1<<23)
++#define PRIM_INLINE              (0<<23)
++#define PRIM_INDIRECT_SEQUENTIAL (0<<17)
++#define PRIM_INDIRECT_ELTS       (1<<17)
++
++#define PRIM3D_TRILIST		(0x0<<18)
++#define PRIM3D_TRISTRIP 	(0x1<<18)
++#define PRIM3D_TRISTRIP_RVRSE	(0x2<<18)
++#define PRIM3D_TRIFAN		(0x3<<18)
++#define PRIM3D_POLY		(0x4<<18)
++#define PRIM3D_LINELIST 	(0x5<<18)
++#define PRIM3D_LINESTRIP	(0x6<<18)
++#define PRIM3D_RECTLIST 	(0x7<<18)
++#define PRIM3D_POINTLIST	(0x8<<18)
++#define PRIM3D_DIB		(0x9<<18)
++#define PRIM3D_MASK		(0x1f<<18)
++
++#define XY_SETUP_BLT_CMD		(CMD_2D | (0x01 << 22) | 6)
++
++#define XY_COLOR_BLT_CMD		(CMD_2D | (0x50 << 22) | 4)
++
++#define XY_SRC_COPY_BLT_CMD             (CMD_2D | (0x53 << 22) | 6)
++
++#define XY_TEXT_IMMEDIATE_BLIT_CMD	(CMD_2D | (0x31 << 22))
++# define XY_TEXT_BYTE_PACKED		(1 << 16)
++
++/* BR00 */
++#define XY_BLT_WRITE_ALPHA	(1 << 21)
++#define XY_BLT_WRITE_RGB	(1 << 20)
++#define XY_SRC_TILED		(1 << 15)
++#define XY_DST_TILED		(1 << 11)
++
++/* BR13 */
++#define BR13_8			(0x0 << 24)
++#define BR13_565		(0x1 << 24)
++#define BR13_8888		(0x3 << 24)
++
++#define FENCE_LINEAR 0
++#define FENCE_XMAJOR 1
++#define FENCE_YMAJOR 2
+--- /dev/null
++++ b/tests/kernel/test_intel_gen2.py
+@@ -0,0 +1,115 @@
++#!/usr/bin/env python3
++"""Gen2 production allocation, ABI transfers and packet validation (not a GPU emulator)."""
++from pathlib import Path
++import subprocess,tempfile
++root=Path(__file__).resolve().parents[2]
++s=(root/'kernel/drivers/graphics/intel_gma9xx_dvr.c').read_text()
++start=s.index('static bool gma_uncached_range(');end=s.index('\n}',start)+2
++code=r'''
++#include <stdint.h>
++#include <stdbool.h>
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++#include <assert.h>
++#include <math.h>
++#define TYPES_H
++#define PACKED __attribute__((packed))
++#include "kernel/include/gfx3d_driver.h"
++#define kmemset memset
++#define kmemcpy memcpy
++#define kprintf printf
++#define ALIGN_UP(v,a) (((v)+(a)-1U)&~((a)-1U))
++#define GMA_OWNED_BYTES (8U*1024U*1024U)
++static struct {bool accel,active;uint8_t *aperture;void *owned_raw;uint32_t owned_offset,fb_offset;
++ gfx_info_t mode;struct {unsigned generation;} *chip;} g_gma;
++static unsigned map_calls,emits,last_count;static uint32_t last[512];
++static bool paging_kernel_mmio_uncached(uint32_t address,uint32_t length){
++ assert(length && (address>>22)==((address+length-1)>>22));map_calls++;return true;
++}
++'''+s[start:end]+'\n'+'\n'.join(line for line in s.splitlines() if line.startswith('#define GMA_') and not line.startswith(('#define GMA_OWNED_BYTES','#define GMA_LOCKED')))+r'''
++static bool gma_emit(const uint32_t *words,uint32_t count){
++ assert(count && count<=512 && !(count&1U));
++ if(count!=2){memcpy(last,words,count*4);last_count=count;emits++;}return true;
++}
++static bool gma_wait_idle(void){return true;}
++static void gma_stop_accel(const char *why){(void)why;g_gma.accel=false;}
++static bool gfx3d_register_driver(const gfx3d_driver_ops_t *ops);
++'''
++# The production prototype is external, so the mock uses external linkage too.
++code=code.replace('static bool gfx3d_register_driver(', 'bool gfx3d_register_driver(')
++for signature in ['static bool gma_color_blt(', 'static bool gma_copy_blt(']:
++ start=s.index(signature);end=s.index('\n}',start)+2
++ code+=s[start:end]+'\n'
++a=s.index('#define GMA_LOCKED(');b=s.index('GMA_LOCKED(gma_locked_activate',a)
++code+=r'''
++static unsigned lock_depth,acquires,gma_engine_mutex;
++static void kmutex_lock(unsigned *m){(void)m;assert(!lock_depth);lock_depth++;acquires++;}
++static void kmutex_unlock(unsigned *m){(void)m;assert(lock_depth==1);lock_depth--;}
++static const gfx3d_driver_ops_t *registered;
++''' +s[a:b]+'\n'
++code+='#include "kernel/drivers/graphics/intel_i830_3d.inc"\n'
++code+=r'''
++bool gfx3d_register_driver(const gfx3d_driver_ops_t *ops){
++ registered=ops;
++ assert(ops->depth_upload && ops->depth_download && ops->draw_triangles && ops->selftest);
++ assert(!(ops->capabilities&GFX3D_CAP_TEXTURES));return true;
++}
++int main(void){
++ assert(gma_uncached_range(0xe7800000U,8U*1024*1024) && map_calls==2);
++ assert(gma_uncached_range(0xe03ff000U,8192) && map_calls==4);
++ assert(!gma_uncached_range(0xfffff000U,8192));
++ g_gma.mode.bpp=32;
++ assert(gma_color_blt(4096,128,1,2,3,4,0xff123456));
++ assert(last[0]==0x54300004U && last[1]==0x03cc0080U && last[4]==4096 && last[5]==0xff123456U);
++ assert(gma_copy_blt(4096,128,1,2,3,4,5,6));assert(last[0]==0x54f00006U && last[6]==128 && last[7]==4096);
++ g_gma.mode.bpp=16;assert(gma_color_blt(4096,64,0,0,8,8,0x1234));
++ assert(last[0]==0x54000004U && last[1]==0x01cc0040U);
++ g_gma.mode.bpp=32;
++ g_gma.accel=g_gma.active=true;g_gma.aperture=calloc(1,GMA_OWNED_BYTES);assert(g_gma.aperture);
++ g_gma.owned_raw=g_gma.aperture;
++ gfx3d_surface_desc_t d={31,17,GFX3D_FORMAT_ARGB8888,GFX3D_SURFACE_RENDER_TARGET};
++ uint32_t h;assert(gma3_create(&d,&h));gma3_surface *surface=gma3_get(h);
++ assert(surface && surface->offset>=18U*4096 && surface->depth+surface->zpitch*d.height<=GMA_OWNED_BYTES);
++ uint32_t pixels[37*17],copy[37*17];
++ for(unsigned i=0;i<37*17;i++)pixels[i]=0xff000000U+i;
++ memset(copy,0,sizeof copy);assert(gma3_upload(h,pixels,37,NULL));assert(gma3_download(h,copy,37,NULL));
++ for(unsigned y=0;y<17;y++)for(unsigned x=0;x<31;x++)assert(copy[y*37+x]==pixels[y*37+x]);
++ uint16_t z[37*17],zc[37*17];for(unsigned i=0;i<37*17;i++)z[i]=(uint16_t)i;
++ memset(zc,0,sizeof zc);assert(gma3_depth_upload(h,z,37,NULL));assert(gma3_depth_download(h,zc,37,NULL));
++ for(unsigned y=0;y<17;y++)for(unsigned x=0;x<31;x++)assert(zc[y*37+x]==z[y*37+x]);
++ assert(!gma3_depth_download(h,zc,30,NULL));
++ gfx_rect_t invalid={1,0,31,17};assert(!gma3_upload(h,pixels,37,&invalid));
++ gfx3d_vertex_t v[3]={{2,2,.5f,1,0xff123456,0,0},{20,2,.5f,1,0xff123456,0,0},{2,15,.5f,1,0xff123456,0,0}};
++ assert(gma3_draw(h,0,v,3,GFX3D_DRAW_DEPTH_TEST|GFX3D_DRAW_DEPTH_WRITE,NULL));
++ unsigned prim=0,buffers=0;
++ for(unsigned i=0;i<last_count;i++){
++  if(last[i]==0x7f00000bU){prim++;assert(last[i+4]==0xff123456U);}
++  if(last[i]==0x7d8e0001U){buffers++;assert(last[i+2]==(buffers==1?surface->offset:surface->depth));}
++ }
++ assert(prim==1 && buffers==2);
++ gfx3d_vertex_t many[99];for(unsigned i=0;i<99;i++)many[i]=v[i%3];
++ unsigned batches=emits;assert(gma3_draw(h,0,many,99,0,NULL) && emits==batches+2);
++ unsigned before=emits;
++ assert(!gma3_draw(h,1,v,3,0,NULL));assert(!gma3_draw(h,0,v,2,0,NULL));
++ v[2].x=NAN;assert(!gma3_draw(h,0,v,3,0,NULL));v[2].x=2;v[2].z=INFINITY;
++ assert(!gma3_draw(h,0,v,3,0,NULL));assert(emits==before);
++ uint32_t old=h;assert(gma3_destroy(h));assert(gma3_create(&d,&h) && h!=old && !gma3_get(old));assert(gma3_destroy(h));
++ uint32_t handles[64];for(unsigned i=0;i<64;i++)assert(gma3_create(&d,&handles[i]));
++ h=99;assert(!gma3_create(&d,&h) && !h);
++ for(unsigned i=0;i<64;i++)assert(gma3_destroy(handles[i]));
++ for(unsigned i=0;i<GMA3_PAGES/32;i++)assert(!gma3_pages[i]);
++ d.width=65535;assert(!gma3_create(&d,&h));assert(gma3_register());
++ unsigned locked_before=acquires;assert(!registered->surface_create(&d,&h));
++ assert(acquires==locked_before+1 && !lock_depth);
++ d.width=31;assert(registered->surface_create(&d,&h));assert(registered->surface_destroy(h));
++ assert(acquires==locked_before+3 && !lock_depth);free(g_gma.aperture);
++ puts("PASS production Gen2 MMIO chunking, surface bounds/exhaustion/reuse, color/depth pitches, command headers and reject-before-submit; hardware rasterization remains untested");
++}
++'''
++with tempfile.TemporaryDirectory(prefix='bk-intel-gen2-') as folder:
++ path=Path(folder)/'test.c';path.write_text(code)
++ for bits in [[],['-m32']]:
++  binary=Path(folder)/('test32' if bits else 'test')
++  subprocess.run(['gcc',*bits,'-O1','-g','-Wall','-Wextra','-Werror','-Wno-unused-function','-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie','-I'+str(root),'-I'+str(root/'kernel/drivers/graphics'),str(path),'-o',str(binary)],check=True)
++  subprocess.run([str(binary)],check=True)
+--- /dev/null
++++ b/tests/kernel/test_ac97_hardware_access.py
+@@ -0,0 +1,49 @@
++#!/usr/bin/env python3
++"""Exercise production AC97 full-width MMIO access and PCI D0 wake policy."""
++from pathlib import Path
++import subprocess,tempfile
++root=Path(__file__).resolve().parents[2];s=(root/'kernel/drivers/audio/ac97.c').read_text()
++a=s.index('static uint8_t ac97_inb(');b=s.index('static inline void ac97_io_wait',a)
++c=s.index('static uint8_t ac97_config8(');d=s.index('static bool ac97_init(',c)
++code=r'''
++#include <stdint.h>
++#include <stdbool.h>
++#include <stdio.h>
++#include <assert.h>
++#include <sys/mman.h>
++#define inb(p) ((uint8_t)(p))
++#define inl(p) ((uint32_t)(p))
++#define outb(p,v) ((void)(p),(void)(v))
++#define outl(p,v) ((void)(p),(void)(v))
++static bool g_ac97_mmio;
++typedef struct {uint8_t bus,slot,function;} pci_device_t;
++static pci_device_t dev,*g_ac97_pci=&dev;
++static uint32_t config[64],writes,delays;static uint16_t written;
++static uint32_t pci_config_read32(uint8_t b,uint8_t s,uint8_t f,uint8_t off){
++ (void)b;(void)s;(void)f;assert(!(off&3));return config[off/4];
++}
++static uint16_t pci_config_read16(uint8_t b,uint8_t s,uint8_t f,uint8_t off){
++ return (uint16_t)(pci_config_read32(b,s,f,off&~3U)>>((off&3U)*8));
++}
++static void pci_config_write16(uint8_t b,uint8_t s,uint8_t f,uint8_t off,uint16_t v){
++ (void)b;(void)s;(void)f;assert(off==0x44);writes++;written=v;
++}
++static void ac97_io_wait(void){delays++;}
++'''+s[a:b]+s[c:d]+r'''
++int main(void){
++ void *memory=mmap(NULL,4096,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANONYMOUS,-1,0);assert(memory!=MAP_FAILED);
++ uint32_t base=(uint32_t)(uintptr_t)memory;assert(base>65535);g_ac97_mmio=true;
++ ac97_outb(base+0x1b,5);ac97_outw(base+0x18,0xabcd);ac97_outl(base+0x30,0x12345678);
++ assert(ac97_inb(base+0x1b)==5 && ac97_inw(base+0x18)==0xabcd && ac97_inl(base+0x30)==0x12345678);
++ assert(*(uint16_t *)((uint8_t *)memory+0x18)==0xabcd);
++ config[1]=0x00100000;config[0x34/4]=0x40;config[0x40/4]=1;config[0x44/4]=0x8103;
++ ac97_wake_device();assert(writes==1 && written==0x100 && delays==10000);
++ config[0x44/4]=0x8100;ac97_wake_device();assert(writes==1);
++ config[0x40/4]=0x4005;ac97_wake_device();assert(writes==1); // capability cycle is bounded
++ munmap(memory,4096);puts("PASS production AC97 MMIO preserves full addresses/widths; D3->D0 preserves PME enable without W1C acknowledgement; bounded capability walk");
++}
++'''
++with tempfile.TemporaryDirectory(prefix='bk-ac97-access-') as folder:
++ path=Path(folder)/'test.c';path.write_text(code);binary=path.with_suffix('')
++ subprocess.run(['gcc','-m32','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-fno-sanitize-recover=all','-no-pie',str(path),'-o',str(binary)],check=True)
++ subprocess.run([str(binary)],check=True)
+--- /dev/null
++++ b/tests/kernel/test_travelmate_network.py
+@@ -0,0 +1,132 @@
++#!/usr/bin/env python3
++"""Production DHCP loss/malformed-packet and RTL8139 DMA ring regressions."""
++from pathlib import Path
++import subprocess,tempfile
++root=Path(__file__).resolve().parents[2]
++s=(root/'kernel/drivers/network/netstack.c').read_text()
++def fn(source,signature):
++ start=source.index(signature);end=source.index('\n}',start)+2
++ return source[start:end]
++packet=s[s.index('typedef struct {\n    uint8_t op,'):s.index('} PACKED dhcp_packet_t;')+len('} PACKED dhcp_packet_t;')]
++code=r'''
++#include <stdint.h>
++#include <stdbool.h>
++#include <stdio.h>
++#include <string.h>
++#include <assert.h>
++#define PACKED __attribute__((packed))
++#define kmemset memset
++#define kmemcpy memcpy
++#define kmemcmp memcmp
++#define DHCP_MAGIC 0x63825363U
++#define DHCP_CLIENT_PORT 68
++#define DHCP_SERVER_PORT 67
++static uint8_t g_mac[6]={2,3,4,5,6,7},g_ip[4],g_mask[4],g_gateway[4],g_dns[4];
++static bool g_configured,g_arp_valid;
++static volatile uint8_t g_dhcp_type,g_dhcp_phase;
++static volatile uint32_t g_dhcp_busy;
++static uint32_t g_dhcp_xid,ticks,discovers,requests;
++static uint8_t g_dhcp_offer[4],g_dhcp_server[4],g_dhcp_mask[4],g_dhcp_gateway[4],g_dhcp_dns[4];
++static uint32_t pit_get_ticks(void){return ticks;}
++static uint32_t timeout_ticks(uint32_t ms){return ms?ms:1;}
++static bool refresh_device_mac(void){return true;}
++static bool udp_send(const uint8_t *,uint16_t,uint16_t,const void *,uint16_t,bool);
++static void wait_one_tick(void);
++'''+packet+'\n'
++for signature in ['static uint16_t be16(', 'static uint32_t be32(', 'static bool bytes_equal(', 'static bool ip_zero(', 'static uint8_t *dhcp_option(', 'static bool dhcp_send(', 'static void dhcp_receive(', 'static bool stack_configure(', 'static bool dhcp_wait_phase(', 'static bool stack_dhcp(']:
++ # One-line helpers end on their own line, rather than the next function.
++ start=s.index(signature);line=s[start:s.index('\n',start)]
++ code+=(line if line.endswith('}') else fn(s,signature))+'\n'
++code+=r'''
++static void response(uint8_t type,bool params){
++ dhcp_packet_t p={0};p.op=2;p.htype=1;p.hlen=6;p.xid=be32(g_dhcp_xid);
++ p.magic=be32(DHCP_MAGIC);memcpy(p.chaddr,g_mac,6);
++ const uint8_t ip[4]={192,168,1,45},srv[4]={192,168,1,1},mask[4]={255,255,255,0},dns[4]={192,168,1,9};
++ memcpy(p.yiaddr,ip,4);uint8_t *o=p.options;
++ o=dhcp_option(o,53,&type,1);o=dhcp_option(o,54,srv,4);
++ if(params){o=dhcp_option(o,1,mask,4);o=dhcp_option(o,3,srv,4);o=dhcp_option(o,6,dns,4);}
++ *o++=255;dhcp_receive((void *)&p,(uint16_t)(o-(uint8_t *)&p));
++}
++static bool udp_send(const uint8_t *to,uint16_t src,uint16_t dst,const void *data,uint16_t n,bool broadcast){
++ const dhcp_packet_t *p=data;assert(to[0]==255 && src==68 && dst==67 && broadcast && n>=300 && n<=sizeof(*p));
++ assert(p->flags==be16(0x8000) && p->xid==be32(g_dhcp_xid));
++ assert(p->options[0]==53 && p->options[1]==1);
++ if(p->options[2]==1)discovers++;else {assert(p->options[2]==3);requests++;}
++ return true;
++}
++static void wait_one_tick(void){
++ ticks++;
++ if(g_dhcp_phase==1 && discovers>=2 && !g_dhcp_type)response(2,true);
++ if(g_dhcp_phase==2 && requests>=2 && !g_dhcp_type)response(5,false);
++}
++int main(void){
++ assert(stack_dhcp(6000));assert(discovers==2 && requests==2);
++ assert(g_configured && !g_dhcp_phase && !g_dhcp_busy);
++ assert(g_ip[3]==45 && g_mask[3]==0 && g_gateway[3]==1 && g_dns[3]==9);
++ /* Late, malformed and foreign replies cannot erase negotiated metadata. */
++ response(2,false);assert(g_dhcp_dns[3]==9);
++ g_dhcp_phase=2;response(2,false);assert(g_dhcp_type==5 && g_dhcp_dns[3]==9);
++ dhcp_packet_t bad={0};bad.op=2;bad.htype=1;bad.hlen=6;bad.xid=be32(g_dhcp_xid);
++ bad.magic=be32(DHCP_MAGIC);memcpy(bad.chaddr,g_mac,6);memcpy(bad.yiaddr,g_ip,4);
++ bad.options[0]=6;bad.options[1]=4;memset(bad.options+2,0,4);
++ bad.options[6]=53;bad.options[7]=2; // truncated option
++ dhcp_receive((void *)&bad,248);assert(g_dhcp_dns[3]==9);
++ bad.options[0]=53;bad.options[1]=1;bad.options[2]=5;bad.options[3]=54;bad.options[4]=4;
++ memset(bad.options+5,77,4);bad.options[9]=255;
++ dhcp_receive((void *)&bad,250);assert(g_dhcp_dns[3]==9);
++ g_dhcp_phase=0;g_dhcp_busy=1;assert(!stack_dhcp(100));g_dhcp_busy=0;
++ puts("PASS production DHCP retransmits lost DISCOVER/REQUEST, inherits OFFER DNS/routes, rejects malformed/foreign/late replies and serializes callers");
++}
++'''
++r=(root/'kernel/drivers/network/rtl8139.c').read_text()
++rtl=r'''
++#include <stdint.h>
++#include <stdbool.h>
++#include <assert.h>
++#include <stdio.h>
++#include <string.h>
++#define kmemcpy memcpy
++#define kmemset memset
++#define NET_FRAME_MAX 1600
++'''+ '\n'.join(line for line in r.splitlines() if line.startswith('#define RTL_'))+r'''
++static struct {uint8_t *rx_ring;uint32_t rx_offset,rx_pending_tick,tx_lock;bool rx_pending,running;uint16_t io;uint8_t tx_slot,tx_threshold;uint8_t *tx_buffer[4];} g_rtl;
++static bool empty;static unsigned received;static uint16_t capr;
++static uint32_t ticks;
++static uint32_t pit_get_ticks(void){return ticks;}
++static uint32_t pit_get_frequency_hz(void){return 1000;}
++static uint32_t transmit_status=RTL_TX_OWN,last_transmit;
++static void outl(uint16_t p,uint32_t v){if(p>=RTL_TX_STATUS && p<RTL_TX_STATUS+16)last_transmit=v;}
++static uint32_t inl(uint16_t p){(void)p;return transmit_status;}
++static void task_yield(void){ticks++;}
++static uint8_t inb(uint16_t p){(void)p;return empty?RTL_CMD_RX_EMPTY:0;}
++static uint16_t in16(uint16_t p){(void)p;return 0;}
++static void outb(uint16_t p,uint8_t v){(void)p;(void)v;}
++static void out16(uint16_t p,uint16_t v){if(p==RTL_CAPR){capr=v;empty=true;}}
++static void netdev_receive(const void *data,uint16_t length){
++ const uint8_t *p=data;assert(length==64);for(unsigned i=0;i<64;i++)assert(p[i]==(uint8_t)(i+1));received++;
++}
++'''+fn(r,'static void rtl_copy_from_ring(')+'\n'+fn(r,'static void rtl_receive_restart(')+'\n'+fn(r,'static void rtl_receive_poll(')+'\n'+fn(r,'static bool rtl_send(')+r'''
++int main(void){
++ uint8_t ring[RTL_RX_ALLOC_SIZE];memset(ring,0xa5,sizeof ring);g_rtl.rx_ring=ring;
++ unsigned start=RTL_RX_RING_SIZE-12;g_rtl.rx_offset=start;ring[start]=1;ring[start+1]=0;ring[start+2]=68;ring[start+3]=0;
++ for(unsigned i=0;i<64;i++)ring[start+4+i]=(uint8_t)(i+1);
++ rtl_receive_poll();assert(received==1 && g_rtl.rx_offset==60 && capr==44);
++ /* In-flight DMA is not corruption and must not reset CAPR. */
++ empty=false;g_rtl.rx_offset=0;ring[0]=1;ring[1]=0;ring[2]=0xf0;ring[3]=0xff;
++ rtl_receive_poll();assert(received==1 && capr==44 && g_rtl.rx_offset==0);
++ ticks=101;rtl_receive_poll();assert(capr==0xfff0 && !g_rtl.rx_pending);
++ uint8_t tx[4][1536],frame[14];memset(frame,0x39,sizeof frame);memset(tx,0xff,sizeof tx);
++ for(unsigned i=0;i<4;i++)g_rtl.tx_buffer[i]=tx[i];
++ g_rtl.running=true;g_rtl.tx_threshold=8;
++ assert(rtl_send(frame,sizeof frame) && last_transmit==0x0008003cU);
++ assert(!memcmp(tx[0],frame,14));for(unsigned i=14;i<60;i++)assert(!tx[0][i]);
++ transmit_status|=0x4000;assert(rtl_send(frame,sizeof frame) && last_transmit==0x000c003cU);
++ assert(g_rtl.tx_slot==2);
++ puts("PASS production RTL8139 RxNoWrap boundary copy, ring wrap, incomplete/stuck DMA, TX padding and correct/adaptive FIFO threshold bits");
++}
++'''
++with tempfile.TemporaryDirectory(prefix='bk-travelmate-net-') as directory:
++ for name,source in [('dhcp',code),('rtl',rtl)]:
++  path=Path(directory)/f'{name}.c';path.write_text(source);binary=path.with_suffix('')
++  subprocess.run(['gcc','-m32','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie',str(path),'-o',str(binary)],check=True)
++  subprocess.run([str(binary)],check=True)
+--- /dev/null
++++ b/docs/platform/travelmate250.md
+@@ -0,0 +1,145 @@
++# Acer TravelMate 250: soporte de hardware
++
++Implementación del 15 de octubre de 2026. Se trata del TravelMate **250 / serie
++240–250**, no del 2500, que usa otro chipset gráfico. La identificación siguiente
++procede de la guía de servicio de Acer; todavía debe confirmarse con el PCI del
++portátil del usuario, especialmente si tiene opciones regionales o piezas cambiadas.
++
++| Función | Hardware de la configuración de referencia | Soporte |
++|---|---|---|
++| Vídeo | Intel 852GME, familia 852/855, PCI 8086:3582 | INTELGMA.DVR |
++| Audio | Intel ICH4-M AC'97, PCI 8086:24c5, codec Cirrus CS4299-XQ | AC97.DVR |
++| Ethernet | Realtek RTL8101L 10/100, núcleo RTL8139 | RTL8139.DVR + NETSTACK.DVR |
++| Disco | IDE del ICH4 | Driver ATA existente |
++| Entrada | Teclado y touchpad PS/2 | Soporte PS/2 existente |
++
++El Wi-Fi mini-PCI es opcional; no se presume un modelo ni se anuncia soporte nuevo
++para él. CardBus, módem, suspensión y control térmico no se certifican en esta ronda.
++
++## Vídeo
++
++Se agregó 8086:3582 a la tabla real. Gen2 usa apertura en BAR0 y MMIO en BAR1,
++a diferencia de los GMA posteriores. Se conserva el modo programado por el BIOS,
++la selección del plano LCD, su stride y su offset. No se reemplazan PLL/LVDS ni
++se anuncian cambios arbitrarios de resolución: sólo el modo activo del firmware.
++
++Aceleración 2D de relleno y copia, incluidos solapamientos mediante una fila
++intermedia, a 16/32 bpp. Se exige una prueba real fuera de pantalla de COLOR_BLT y
++SRC_COPY_BLT antes de publicar capacidades. El CPU espera a las operaciones GPU
++pendientes antes de escribir el framebuffer.
++
++En Gen2 se reserva una arena propia de 8 MiB y se mapea en la cola de GGTT. No se
++usa memoria robada del BIOS como si fuera libre. Se verifican los planos activos,
++se conservan las entradas GTT originales y se usan accesos CPU por la apertura
++sin caché. Un fallo del motor desactiva aceleración; se conserva la memoria que
++pueda seguir referenciada por DMA hasta reiniciar.
++
++El backend 3D Gen2 implementa superficies ARGB/XRGB, triángulos ya transformados
++con color Gouraud, Z16 con funciones de comparación, mezcla alfa, transferencias
++de color/profundidad y presentación. Se integra mediante la ABI GFX3D con el
++backend existente de Mesa 3.5 que usan los protectores. Se habilita sólo en modo
++32 bpp y después de una autoprueba GPU de color, profundidad y mezcla. Las
++texturas, shaders, operaciones GL no soportadas y la falta de memoria permanecen
++en software. Esto **no es un driver OpenGL completo ni una certificación de
++aceleración en el equipo físico**. QEMU no emula esta GPU; la autoprueba en el
++TravelMate y una sesión real de los protectores siguen pendientes.
++
++## Audio
++
++El driver reconoce el ICH4 y ahora puede usar sus BAR2/BAR3 MMIO nativos, además
++de los BAR0/BAR1 de E/S. Los registros MMIO se mapean sin caché y conservan su
++dirección completa. Se contempla retorno de PCI D3 a D0, reset frío/caliente del
++AC-link, encendido de DAC/mixer/amplificador, desmute de master/headphone/mono/PCM,
++salida fija estéreo de 16 bits a 48 kHz y el valor AC mode del CS4299. La etapa
++PCM y sus mezclas existentes se conservan. Captura y ajustes OEM particulares
++no se consideran certificados por estas pruebas.
++
++## Ethernet, DHCP y DNS
++
++- Se corrige la copia de paquetes que cruzan el límite: RxNoWrap escribe el
++  resto del paquete en la extensión del buffer, no al inicio del anillo.
++- RX de 32 KiB con extensión, base alineada y sondeo cada tick de hasta 1 ms,
++  recuperación de overflow y de un DMA que no termina.
++- Se programa RCR después de habilitar RX/TX. Se configura TCR y se corrige
++  el desplazamiento del umbral FIFO TX (bits 16+, no bits 11+). El umbral se
++  adapta ante underrun. El estado de enlace se lee dos veces por su latch-low.
++- DHCP retransmite DISCOVER y REQUEST, preserva gateway/máscara/DNS de la oferta
++  cuando ACK no los repite, rechaza respuestas truncadas/ajenas/tardías y evita
++  que dos solicitantes mezclen transacciones. Añade client-id y tamaño máximo.
++- Resolver una IPv4 literal ya no requiere que exista un servidor DNS configurado.
++  Si falta DNS se permiten las alternativas ya existentes del resolver.
++
++La renovación automática de leases y la conformidad completa DHCP/DNS no se
++implementaron en esta ronda. Las pruebas no garantizan conexión con todos los
++routers; los resultados del portátil decidirán los siguientes ajustes.
++
++## Escritorio
++
++Classic se decodificaba pero se descartaba al intentar cambiar su propietario
++con un PID desde Vision: la API de metadatos de usuario rechaza esa operación.
++El cache permanece ahora en el heap del servicio que lo creó, con su vida útil
++correcta y sin ampliar permisos. Se conserva la opción de cambiar de fondo.
++Classic también se incluye en el bootstrap del CD, antes de desempaquetar ASSETS.
++El deskbar queda fijo en su ancho mínimo de 620 píxeles, o el ancho disponible
++en pantallas menores; sus asas decorativas ya no permiten agrandarlo.
++
++## Pruebas
++
++Los resultados y fuentes exactos se archivan en
++`tests/kernel/evidence/travelmate250-2026-10-15/`.
++
++- ASan/UBSan: DHCP con pérdida del primer paquete de ambas fases, ACK sin
++  opciones, paquetes malformados, servidor ajeno y exclusión de solicitantes.
++- ASan/UBSan: RX cruzando el anillo, DMA incompleto y estancado, padding TX y
++  bits correctos/adaptación del umbral FIFO.
++- ASan/UBSan, nativo e i386: arena 3D, agotamiento/reuso de superficies, pitch
++  de color/Z16, comandos 2D de 16/32 bits y 3D, rechazo de NaN/Inf y batching.
++  Esto valida software y paquetes, **no rasterización física**.
++- ASan/UBSan i386: accesos MMIO AC'97 de 8/16/32 bits, PMCSR D3→D0 sin borrar
++  PME status y recorrido acotado de capacidades PCI. Fragmentos PCM: PASS.
++- QEMU KVM, 256 MiB, una CPU: RTL8139 obtiene IP/gateway/DNS, ping y resolución
++  de example.com: PASS. Esa prueba DNS requiere un DNS upstream operativo.
++- QEMU AC'97: tono y PCM, captura WAV con muestras no nulas: PASS. QEMU usa
++  ICH con registros de E/S; el ICH4 MMIO y CS4299 físicos siguen pendientes.
++- Captura de escritorio: mosaico Classic comparado con sus píxeles originales;
++  deskbar compacto. Protectores SSPIPES y SSBALLS animan y salen con Escape.
++  Estas pruebas QEMU no certifican velocidad ni aceleración de la GPU Intel.
++
++Para repetir las pruebas del software:
++
++```sh
++python3 tests/kernel/test_travelmate_network.py
++python3 tests/kernel/test_ac97_hardware_access.py
++python3 tests/kernel/test_intel_gen2.py
++python3 tests/desktop/test_ac97_fragments.py
++python3 tests/kernel/run_ram_smoke.py --base build/bleskernos-travelmate250.img \
++  --fixture network --smoke --ram 256 --accel kvm --cpu host --smp 1 \
++  --network --network-dns-test --network-device rtl8139 --drivers-from-build \
++  --out build/travelmate250/mi-prueba
++```
++
++## Probar en el portátil
++
++Se entregan una imagen normal `build/bleskernos-travelmate250.img` y un CD de
++instalación `build/bleskernos-travelmate250.iso`. La imagen Wine anterior se conserva.
++Estas son imágenes completas, no actualizadores que deban escribirse sobre una
++instalación con datos. El CD permite probar el procedimiento de instalación.
++
++Desde la consola del sistema: `pci`, `bootlog 200`, `net info`, `net dhcp`,
++`dns example.com`, `nettest example.com` y `soundtest`. El informe del arranque
++permite ver INTELGMA, plano/stride, la autoprueba 2D/3D y el codec de audio.
++Comprobar sonido por altavoces y auriculares, mover ventanas, abrir/cerrar los
++protectores y sostener una sesión de red. Un escritorio visible mediante el
++fallback CPU no demuestra que haya pasado la autoprueba 3D.
++
++## Fuentes primarias
++
++- [Guía de servicio Acer 240/250](https://www.opweb.de/pdf/acer--travelmate-250-series--service--ID11004.pdf).
++- [Datasheet Intel 855GM/GME](https://www.intel.com/content/dam/doc/datasheet/855gm-gme-chipset-graphics-memory-controller-hub-datasheet.pdf).
++- [Mesa 7.11 i830_reg.h](https://github.com/notaz/mesa/blob/mesa-7.11/src/mesa/drivers/dri/i915/i830_reg.h)
++  y [i830_state.c](https://github.com/notaz/mesa/blob/mesa-7.11/src/mesa/drivers/dri/i915/i830_state.c).
++  Las definiciones de paquetes conservan su aviso MIT/Tungsten en los headers.
++- [Linux intel-gtt](https://github.com/torvalds/linux/blob/master/drivers/char/agp/intel-gtt.c),
++  [intel8x0](https://github.com/torvalds/linux/blob/master/sound/pci/intel8x0.c),
++  [codec Cirrus](https://github.com/torvalds/linux/blob/master/sound/pci/ac97/ac97_patch.c)
++  y [8139too](https://github.com/torvalds/linux/blob/master/drivers/net/ethernet/realtek/8139too.c).
+--- a/Makefile
++++ b/Makefile
+@@ -1345,6 +1345,8 @@
+ 	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
+ 
+ $(INTELGMA_DVR): kernel/drivers/graphics/intel_gma9xx_dvr.c \
++		kernel/drivers/graphics/intel_i830_3d.inc \
++		kernel/drivers/graphics/intel_i830_regs.h kernel/drivers/graphics/intel_i830_common.h \
+ 		kernel/include/driver.h kernel/include/gfx.h kernel/include/gfx_driver.h \
+ 		kernel/include/pci.h kernel/include/vesa.h | build
+ 	@mkdir -p $(dir $@)
+--- a/tools/build_cd_bkl_installer.py
++++ b/tools/build_cd_bkl_installer.py
+@@ -117,7 +117,7 @@
+         return None
+     if text.startswith("SYSTEM/LENG/"):
+         return None
+-    if text == "SYSTEM/WALLPAPR/NOCHE.BMP":
++    if text in {"SYSTEM/WALLPAPR/NOCHE.BMP", "SYSTEM/WALLPAPR/CLASSIC.BMP"}:
+         return None
+ 
+     if (text.startswith("SYSTEM/LIBS/WINE/") or
+@@ -233,6 +233,10 @@
+     if not night.is_file():
+         raise RuntimeError("NOCHE.BMP is required by graphical Setup")
+     shutil.copyfile(night, output / "SYSTEM" / "WALLPAPR" / "NOCHE.BMP")
++    classic = source / "SYSTEM" / "WALLPAPR" / "CLASSIC.BMP"
++    if not classic.is_file():
++        raise RuntimeError("CLASSIC.BMP is required by the default desktop")
++    shutil.copyfile(classic, output / "SYSTEM" / "WALLPAPR" / "CLASSIC.BMP")
+     (output / "SYSTEM" / "USER" / "START.INI").write_text(START_INI, encoding="ascii")
+     (output / "SYSTEM" / "SETUP" / "PACKAGES.INI").write_text(PACKAGE_INI, encoding="ascii")
+     (output / "SYSTEM" / "SETUP" / "TERMS.TXT").write_text(TERMS_TEXT, encoding="utf-8")
+--- a/kernel/exec/elf_loader.c
++++ b/kernel/exec/elf_loader.c
+@@ -451,6 +451,8 @@
+         EXPORT(mm_alloc_guarded_stack);
+         EXPORT(mm_free_guarded_stack);
+         EXPORT(paging_kernel_mmio_uncached);
++        EXPORT(kmutex_lock);
++        EXPORT(kmutex_unlock);
+     }
+     if (g_loading_vision_service) {
+         uint32_t private_target = elf_vision_private_symbol(name);
+--- a/kernel/drivers/network/rtl8139.c
++++ b/kernel/drivers/network/rtl8139.c
+@@ -13,7 +13,8 @@
+ #define RTL_DEVICE_8138    0x8138U
+ #define RTL_DEVICE_8129    0x8129U
+ 
+-#define RTL_RX_RING_SIZE 8192U
++#define RTL_RX_RING_SIZE 32768U
++#define RTL_RX_CONFIG ((4U<<13)|(2U<<11)|(4U<<8)|(1U<<7)|0x0EU)
+ #define RTL_RX_ALLOC_SIZE (RTL_RX_RING_SIZE + 16U + 1536U)
+ #define RTL_TX_SLOTS 4U
+ #define RTL_TX_BUFFER_SIZE 1536U
+@@ -26,7 +27,9 @@
+ #define RTL_CAPR       0x38U
+ #define RTL_IMR        0x3CU
+ #define RTL_ISR        0x3EU
++#define RTL_TCR        0x40U
+ #define RTL_RCR        0x44U
++#define RTL_TX_CONFIG  ((3U<<24)|(6U<<8))
+ #define RTL_CONFIG1    0x52U
+ #define RTL_BMSR       0x64U
+ 
+@@ -42,9 +45,13 @@
+     uint16_t io;
+     uint8_t mac[6];
+     uint8_t *rx_ring;
++    void *rx_raw;
+     uint32_t rx_offset;
++    uint32_t rx_pending_tick;
++    bool rx_pending;
+     uint8_t *tx_buffer[RTL_TX_SLOTS];
+     uint8_t tx_slot;
++    uint8_t tx_threshold;
+     volatile uint32_t tx_lock;
+     volatile bool running;
+     const pci_device_t *pci;
+@@ -85,33 +92,47 @@
+ 
+ static void rtl_copy_from_ring(uint8_t *destination, uint32_t offset,
+                                uint32_t length) {
+-    while (length--) {
+-        *destination++ = g_rtl.rx_ring[offset];
+-        offset = (offset + 1U) & (RTL_RX_RING_SIZE - 1U);
+-    }
++    /* RCR.RxNoWrap is set: the NIC writes a straddling packet into the
++     * trailing allocation, NOT back at offset zero (8139too uses the same
++     * linear copy for an 32-KiB ring). Only the next header wraps. */
++    kmemcpy(destination, g_rtl.rx_ring + offset, length);
++}
++
++static void rtl_receive_restart(void) {
++    outb((uint16_t)(g_rtl.io+RTL_COMMAND),RTL_CMD_TX_ENABLE);
++    outb((uint16_t)(g_rtl.io+RTL_COMMAND),RTL_CMD_RX_ENABLE|RTL_CMD_TX_ENABLE);
++    outl((uint16_t)(g_rtl.io+RTL_RX_BUFFER),(uint32_t)(uintptr_t)g_rtl.rx_ring);
++    outl((uint16_t)(g_rtl.io+RTL_RCR),RTL_RX_CONFIG);
++    g_rtl.rx_offset=0;g_rtl.rx_pending=false;
++    out16((uint16_t)(g_rtl.io+RTL_CAPR),0xFFF0U);
+ }
+ 
+ static void rtl_receive_poll(void) {
+     uint32_t work = 32U;
+     while (work-- && !(inb((uint16_t)(g_rtl.io + RTL_COMMAND)) & RTL_CMD_RX_EMPTY)) {
++        __asm__ volatile("":::"memory"); /* coherent PCI DMA publication */
+         uint32_t offset = g_rtl.rx_offset;
+         uint16_t status = (uint16_t)(g_rtl.rx_ring[offset] |
+-                          ((uint16_t)g_rtl.rx_ring[(offset + 1U) & 8191U] << 8));
+-        uint16_t wire_length = (uint16_t)(g_rtl.rx_ring[(offset + 2U) & 8191U] |
+-                               ((uint16_t)g_rtl.rx_ring[(offset + 3U) & 8191U] << 8));
++                          ((uint16_t)g_rtl.rx_ring[(offset + 1U) & (RTL_RX_RING_SIZE - 1U)] << 8));
++        uint16_t wire_length = (uint16_t)(g_rtl.rx_ring[(offset + 2U) & (RTL_RX_RING_SIZE - 1U)] |
++                               ((uint16_t)g_rtl.rx_ring[(offset + 3U) & (RTL_RX_RING_SIZE - 1U)] << 8));
++        if (wire_length == 0xFFF0U) { /* DMA still copying this packet. */
++            uint32_t now=pit_get_ticks(),limit=pit_get_frequency_hz()/10U;
++            if(!limit)limit=1;
++            if(!g_rtl.rx_pending){g_rtl.rx_pending=true;g_rtl.rx_pending_tick=now;}
++            else if((uint32_t)(now-g_rtl.rx_pending_tick)>=limit)rtl_receive_restart();
++            break;
++        }
++        g_rtl.rx_pending=false;
+         if (!(status & RTL_RX_OK) || wire_length < 18U || wire_length > 1522U) {
+             /* Un encabezado corrupto desincroniza el anillo: recuperar la NIC. */
+-            outb((uint16_t)(g_rtl.io + RTL_COMMAND), RTL_CMD_TX_ENABLE);
+-            outb((uint16_t)(g_rtl.io + RTL_COMMAND),
+-                 RTL_CMD_RX_ENABLE | RTL_CMD_TX_ENABLE);
+-            g_rtl.rx_offset = 0;
+-            out16((uint16_t)(g_rtl.io + RTL_CAPR), 0xFFF0U);
++            rtl_receive_restart();
+             return;
+         }
+         {
+             uint8_t frame[NET_FRAME_MAX];
+             uint16_t frame_length = (uint16_t)(wire_length - 4U); /* quitar FCS */
+-            rtl_copy_from_ring(frame, (offset + 4U) & 8191U, frame_length);
++            rtl_copy_from_ring(frame, offset + 4U, frame_length);
+             netdev_receive(frame, frame_length);
+         }
+         g_rtl.rx_offset = (offset + 4U + wire_length + 3U) & ~3U;
+@@ -121,12 +142,13 @@
+     }
+     {
+         uint16_t interrupts = in16((uint16_t)(g_rtl.io + RTL_ISR));
++        if(interrupts&0x50U)rtl_receive_restart(); /* RX overflow/FIFO overrun */
+         if (interrupts) out16((uint16_t)(g_rtl.io + RTL_ISR), interrupts);
+     }
+ }
+ 
+ static void rtl_poll_task(void *argument UNUSED) {
+-    uint32_t interval = (pit_get_frequency_hz() + 99U) / 100U;
++    uint32_t interval = (pit_get_frequency_hz() + 999U) / 1000U;
+     if (!interval) interval = 1U;
+     while (g_rtl.running) {
+         netdev_poll();
+@@ -147,6 +169,8 @@
+             uint8_t slot = g_rtl.tx_slot;
+             uint32_t status = inl((uint16_t)(g_rtl.io + RTL_TX_STATUS + slot * 4U));
+             if (status & RTL_TX_OWN) {
++                if((status&0x4000U) && g_rtl.tx_threshold<48U)g_rtl.tx_threshold+=4U;
++                if(status&0x40000000U)outl((uint16_t)(g_rtl.io+RTL_TCR),RTL_TX_CONFIG|1U);
+                 uint16_t transmit_length;
+                 kmemcpy(g_rtl.tx_buffer[slot], frame, length);
+                 transmit_length = length < 60U ? 60U : length;
+@@ -157,7 +181,7 @@
+                      (uint32_t)(uintptr_t)g_rtl.tx_buffer[slot]);
+                 /* Umbral FIFO 256 bytes (8 unidades de 32) y longitud. */
+                 outl((uint16_t)(g_rtl.io + RTL_TX_STATUS + slot * 4U),
+-                     (8U << 11) | transmit_length);
++                     ((uint32_t)g_rtl.tx_threshold << 16) | transmit_length);
+                 g_rtl.tx_slot = (uint8_t)((slot + 1U) & 3U);
+                 __sync_lock_release(&g_rtl.tx_lock);
+                 return true;
+@@ -172,6 +196,8 @@
+ }
+ 
+ static bool rtl_link_up(void) {
++    /* PHY link status is latch-low; the first read clears old link loss. */
++    (void)in16((uint16_t)(g_rtl.io + RTL_BMSR));
+     return (in16((uint16_t)(g_rtl.io + RTL_BMSR)) & 0x0004U) != 0U;
+ }
+ 
+@@ -181,10 +207,10 @@
+ };
+ 
+ static void rtl_release(void) {
+-    if (g_rtl.rx_ring) kfree(g_rtl.rx_ring);
++    if (g_rtl.rx_raw) kfree(g_rtl.rx_raw);
+     for (uint8_t i = 0; i < RTL_TX_SLOTS; i++)
+         if (g_rtl.tx_buffer[i]) kfree(g_rtl.tx_buffer[i]);
+-    g_rtl.rx_ring = NULL;
++    g_rtl.rx_ring = NULL; g_rtl.rx_raw = NULL;
+ }
+ 
+ static bool rtl_init(void) {
+@@ -198,7 +224,7 @@
+             break;
+         }
+     }
+-    if (!device || !(device->bars[0] & 1U)) return false;
++    if (!device || !(device->bars[0] & 1U) || (device->bars[0]&~3U)>0xFFFFU) return false;
+     g_rtl.pci = device;
+     g_rtl.io = (uint16_t)(device->bars[0] & ~3U);
+     if (!pci_enable_command(device, PCI_COMMAND_IO | PCI_COMMAND_BUSMASTER) ||
+@@ -207,7 +233,9 @@
+         g_rtl.mac[i] = inb((uint16_t)(g_rtl.io + RTL_MAC0 + i));
+     if ((g_rtl.mac[0] & 1U) || !(g_rtl.mac[0] | g_rtl.mac[1] |
+         g_rtl.mac[2] | g_rtl.mac[3] | g_rtl.mac[4] | g_rtl.mac[5])) return false;
+-    g_rtl.rx_ring = (uint8_t *)kzalloc(RTL_RX_ALLOC_SIZE);
++    g_rtl.rx_raw = kzalloc(RTL_RX_ALLOC_SIZE+255U);
++    if(g_rtl.rx_raw)g_rtl.rx_ring=(void *)(((uintptr_t)g_rtl.rx_raw+255U)&~255U);
++    g_rtl.tx_threshold=8U;
+     for (uint8_t i = 0; i < RTL_TX_SLOTS; i++)
+         g_rtl.tx_buffer[i] = (uint8_t *)kmalloc(RTL_TX_BUFFER_SIZE);
+     if (!g_rtl.rx_ring || !g_rtl.tx_buffer[0] || !g_rtl.tx_buffer[1] ||
+@@ -215,18 +243,18 @@
+         rtl_release();
+         return false;
+     }
+-    (void)mm_set_allocation_subsystem(g_rtl.rx_ring,MM_SUBSYSTEM_NETWORK);
++    (void)mm_set_allocation_subsystem(g_rtl.rx_raw,MM_SUBSYSTEM_NETWORK);
+     for(uint32_t i=0;i<RTL_TX_SLOTS;i++)
+         (void)mm_set_allocation_subsystem(g_rtl.tx_buffer[i],MM_SUBSYSTEM_NETWORK);
+     outl((uint16_t)(g_rtl.io + RTL_RX_BUFFER),
+          (uint32_t)(uintptr_t)g_rtl.rx_ring);
+     out16((uint16_t)(g_rtl.io + RTL_IMR), 0); /* sondeo: sin IRQ compartida */
+     out16((uint16_t)(g_rtl.io + RTL_ISR), 0xFFFFU);
+-    outl((uint16_t)(g_rtl.io + RTL_RCR),
+-         (4U << 13) | (4U << 8) | (1U << 7) | 0x0EU);
+-    out16((uint16_t)(g_rtl.io + RTL_CAPR), 0xFFF0U);
+-    outb((uint16_t)(g_rtl.io + RTL_COMMAND),
+-         RTL_CMD_RX_ENABLE | RTL_CMD_TX_ENABLE);
++    /* Real 8139/8101L parts latch DMA thresholds after RX/TX are enabled. */
++    outb((uint16_t)(g_rtl.io+RTL_COMMAND),RTL_CMD_RX_ENABLE|RTL_CMD_TX_ENABLE);
++    outl((uint16_t)(g_rtl.io+RTL_RCR),RTL_RX_CONFIG);
++    outl((uint16_t)(g_rtl.io+RTL_TCR),RTL_TX_CONFIG);
++    out16((uint16_t)(g_rtl.io+RTL_CAPR),0xFFF0U);
+     g_rtl.running = true;
+     if (!netdev_register(&g_net_ops)) {
+         g_rtl.running = false;
+--- a/kernel/drivers/network/netstack.c
++++ b/kernel/drivers/network/netstack.c
+@@ -52,6 +52,8 @@
+ static uint8_t g_dhcp_offer[4], g_dhcp_server[4];
+ static uint8_t g_dhcp_mask[4], g_dhcp_gateway[4], g_dhcp_dns[4];
+ static uint32_t g_dhcp_xid;
++static volatile uint32_t g_dhcp_busy;
++static volatile uint8_t g_dhcp_phase; /* 1=selecting, 2=requesting, 0=inactive */
+ static volatile bool g_ping_reply;
+ static uint16_t g_ping_id, g_ping_sequence;
+ static uint8_t g_ping_target[4];
+@@ -410,7 +412,7 @@
+     uint32_t per_try;
+     bool resolved = false;
+     uint32_t oldest = 0U;
+-    if (!hostname || !address || !g_configured || ip_zero(g_dns)) return false;
++    if (!hostname || !address || !g_configured) return false;
+     if (parse_numeric_ip(hostname, address)) return true;
+     if (kstrlen(hostname) >= sizeof(current)) return false;
+     net_spin_lock(&g_dns_lock);
+@@ -508,37 +510,56 @@
+         option = dhcp_option(option, 50, g_dhcp_offer, 4);
+         option = dhcp_option(option, 54, g_dhcp_server, 4);
+     }
+-    option = dhcp_option(option, 55, requested, sizeof(requested)); *option++ = 255;
++    option = dhcp_option(option, 55, requested, sizeof(requested));
++    uint8_t client_id[7] = {1}; kmemcpy(client_id + 1, g_mac, 6);
++    option = dhcp_option(option, 61, client_id, sizeof(client_id));
++    uint16_t maximum = be16(576U);
++    option = dhcp_option(option, 57, &maximum, sizeof(maximum));
++    *option++ = 255;
+     length = (uint16_t)((uintptr_t)option - (uintptr_t)dhcp);
+     if (length < 300U) length = 300U;
+     return udp_send(broadcast, DHCP_CLIENT_PORT, DHCP_SERVER_PORT, dhcp, length, true);
+ }
+ 
++/* Parse into temporary values: malformed/irrelevant packets must never erase
++ * a selected offer. ACK may omit parameters already supplied in the OFFER. */
+ static void dhcp_receive(const uint8_t *payload, uint16_t length) {
+     const dhcp_packet_t *dhcp = (const dhcp_packet_t *)payload;
+     const uint8_t *option, *end; uint8_t type = 0;
+-    if (length < 240U || dhcp->op != 2 || be32(dhcp->xid) != g_dhcp_xid ||
++    uint8_t mask[4], gateway[4], dns[4], server[4] = {0};
++    if (!g_dhcp_phase || length < 240U || dhcp->op != 2 ||
++        dhcp->htype != 1 || dhcp->hlen != 6 || be32(dhcp->xid) != g_dhcp_xid ||
+         be32(dhcp->magic) != DHCP_MAGIC || !bytes_equal(dhcp->chaddr, g_mac, 6)) return;
+-    kmemset(g_dhcp_mask, 0, 4); kmemset(g_dhcp_gateway, 0, 4); kmemset(g_dhcp_dns, 0, 4);
++    kmemcpy(mask,g_dhcp_mask,4); kmemcpy(gateway,g_dhcp_gateway,4);
++    kmemcpy(dns,g_dhcp_dns,4);
+     option = dhcp->options; end = payload + length;
+     while (option < end) {
+         uint8_t code = *option++;
+-        uint8_t size;
+         if (code == 255U) break;
+         if (code == 0U) continue;
+-        if (option >= end) break;
+-        size = *option++;
+-        if ((uint32_t)(end - option) < size) break;
+-        if (code == 53U && size >= 1U) type = option[0];
+-        else if (code == 1U && size >= 4U) kmemcpy(g_dhcp_mask, option, 4);
+-        else if (code == 3U && size >= 4U) kmemcpy(g_dhcp_gateway, option, 4);
+-        else if (code == 6U && size >= 4U) kmemcpy(g_dhcp_dns, option, 4);
+-        else if (code == 54U && size >= 4U) kmemcpy(g_dhcp_server, option, 4);
++        if (option >= end) return;
++        uint8_t size = *option++;
++        if ((uint32_t)(end - option) < size) return;
++        if (code == 53U && size == 1U) type = option[0];
++        else if (code == 1U && size == 4U) kmemcpy(mask, option, 4);
++        else if (code == 3U && size >= 4U && !(size & 3U)) kmemcpy(gateway, option, 4);
++        else if (code == 6U && size >= 4U && !(size & 3U)) kmemcpy(dns, option, 4);
++        else if (code == 54U && size == 4U) kmemcpy(server, option, 4);
+         option += size;
+     }
+-    if (type == 2U || type == 5U || type == 6U) {
+-        kmemcpy(g_dhcp_offer, dhcp->yiaddr, 4); g_dhcp_type = type;
+-    }
++    if (g_dhcp_phase == 1U) {
++        if (type != 2U || ip_zero(server) || ip_zero(dhcp->yiaddr)) return;
++    } else {
++        if ((type != 5U && type != 6U) ||
++            (!ip_zero(server) && !bytes_equal(server,g_dhcp_server,4))) return;
++        if (type == 5U && !bytes_equal(dhcp->yiaddr,g_dhcp_offer,4)) return;
++    }
++    kmemcpy(g_dhcp_mask,mask,4); kmemcpy(g_dhcp_gateway,gateway,4);
++    kmemcpy(g_dhcp_dns,dns,4);
++    if (type == 2U) {
++        kmemcpy(g_dhcp_offer,dhcp->yiaddr,4); kmemcpy(g_dhcp_server,server,4);
++    }
++    __sync_synchronize(); g_dhcp_type = type;
+ }
+ 
+ static void icmp_receive(const ipv4_header_t *ip, const uint8_t *payload, uint16_t length) {
+@@ -737,21 +758,42 @@
+     g_configured = true; g_arp_valid = false; return true;
+ }
+ 
++static bool dhcp_wait_phase(uint8_t message, bool request, uint8_t expected,
++                            uint32_t limit) {
++    uint32_t start=pit_get_ticks(), next=0, interval=timeout_ticks(1000U);
++    do {
++        uint32_t elapsed=pit_get_ticks()-start;
++        if(elapsed>=next) {
++            (void)dhcp_send(message,request);
++            next=elapsed+interval;
++            if(interval<timeout_ticks(4000U))interval*=2U;
++        }
++        if(g_dhcp_type==expected)return true;
++        if(g_dhcp_type==6U)return false;
++        wait_one_tick();
++    } while((uint32_t)(pit_get_ticks()-start)<limit);
++    return g_dhcp_type==expected;
++}
++
+ static bool stack_dhcp(uint32_t timeout_ms) {
+-    uint32_t start, limit;
+-    if (!refresh_device_mac()) return false;
+-    kmemset(g_ip, 0, 4); g_configured = false; g_dhcp_type = 0;
+-    g_dhcp_xid = 0xB1E50000U ^ pit_get_ticks();
+-    if (!dhcp_send(1, false)) return false;
+-    start = pit_get_ticks(); limit = timeout_ticks(timeout_ms / 2U);
+-    while ((uint32_t)(pit_get_ticks() - start) < limit && g_dhcp_type != 2U) wait_one_tick();
+-    if (g_dhcp_type != 2U) return false;
+-    g_dhcp_type = 0; if (!dhcp_send(3, true)) return false;
+-    start = pit_get_ticks();
+-    while ((uint32_t)(pit_get_ticks() - start) < limit && g_dhcp_type != 5U && g_dhcp_type != 6U) wait_one_tick();
+-    if (g_dhcp_type != 5U) return false;
+-    if (ip_zero(g_dhcp_mask)) { g_dhcp_mask[0] = g_dhcp_mask[1] = g_dhcp_mask[2] = 255; }
+-    return stack_configure(g_dhcp_offer, g_dhcp_mask, g_dhcp_gateway, g_dhcp_dns);
++    if (!refresh_device_mac() ||
++        !__sync_bool_compare_and_swap(&g_dhcp_busy,0U,1U)) return false;
++    bool ok=false;
++    uint32_t phase_limit=timeout_ticks(timeout_ms/2U);
++    kmemset(g_ip,0,4); g_configured=false; g_dhcp_type=0;
++    kmemset(g_dhcp_mask,0,4); kmemset(g_dhcp_gateway,0,4);
++    kmemset(g_dhcp_dns,0,4); kmemset(g_dhcp_server,0,4);
++    g_dhcp_xid=0xB1E50000U ^ pit_get_ticks() ^ ((uint32_t)g_mac[4]<<8) ^ g_mac[5];
++    g_dhcp_phase=1U;
++    if(!dhcp_wait_phase(1,false,2U,phase_limit))goto done;
++    g_dhcp_type=0; g_dhcp_phase=2U;
++    if(!dhcp_wait_phase(3,true,5U,phase_limit))goto done;
++    if(ip_zero(g_dhcp_mask))g_dhcp_mask[0]=g_dhcp_mask[1]=g_dhcp_mask[2]=255;
++    ok=stack_configure(g_dhcp_offer,g_dhcp_mask,g_dhcp_gateway,g_dhcp_dns);
++done:
++    g_dhcp_phase=0;
++    __sync_lock_release(&g_dhcp_busy);
++    return ok;
+ }
+ 
+ static bool stack_ping(const uint8_t address[4], uint32_t timeout_ms, uint32_t *elapsed_ms) {
+--- a/kernel/drivers/audio/ac97.c
++++ b/kernel/drivers/audio/ac97.c
+@@ -1,6 +1,7 @@
+ #include "../../include/driver.h"
+ #include "../../include/memory.h"
+ #include "../../include/pci.h"
++#include "../../include/paging.h"
+ #include "../../include/pic.h"
+ #include "../../include/pit.h"
+ #include "../../include/sound.h"
+@@ -102,8 +103,9 @@
+ 
+ static const pci_device_t *g_ac97_pci;
+ static const ac97_controller_id_t *g_ac97_controller;
+-static uint16_t g_ac97_nam;
+-static uint16_t g_ac97_nabm;
++static uint32_t g_ac97_nam;
++static uint32_t g_ac97_nabm;
++static bool g_ac97_mmio;
+ static uint16_t g_ac97_po_sr = AC97_PO_SR;
+ static ac97_bdl_entry_t g_ac97_bdl[AC97_BDL_COUNT]
+     __attribute__((aligned(128)));
+@@ -174,14 +176,33 @@
+ static uint16_t ac97_descriptor_length(uint32_t frames);
+ static uint32_t ac97_max_descriptor_frames(void);
+ 
+-static inline uint16_t ac97_inw(uint16_t port) {
++/* ICH4 exposes native memory BAR2/BAR3 as well as legacy I/O BAR0/BAR1.
++ * Keep register offsets identical; never truncate an MMIO address to 16 bits. */
++static uint8_t ac97_inb(uint32_t address) {
++    if(g_ac97_mmio)return *(volatile uint8_t *)(uintptr_t)address;
++    return inb((uint16_t)address);
++}
++static uint16_t ac97_inw(uint32_t address) {
++    if(g_ac97_mmio)return *(volatile uint16_t *)(uintptr_t)address;
+     uint16_t value;
+-    __asm__ volatile ("inw %1, %0" : "=a"(value) : "Nd"(port));
++    __asm__ volatile("inw %1, %0":"=a"(value):"Nd"((uint16_t)address));
+     return value;
+ }
+-
+-static inline void ac97_outw(uint16_t port, uint16_t value) {
+-    __asm__ volatile ("outw %0, %1" : : "a"(value), "Nd"(port));
++static uint32_t ac97_inl(uint32_t address) {
++    if(g_ac97_mmio)return *(volatile uint32_t *)(uintptr_t)address;
++    return inl((uint16_t)address);
++}
++static void ac97_outb(uint32_t address,uint8_t value) {
++    if(g_ac97_mmio)*(volatile uint8_t *)(uintptr_t)address=value;
++    else outb((uint16_t)address,value);
++}
++static void ac97_outw(uint32_t address,uint16_t value) {
++    if(g_ac97_mmio)*(volatile uint16_t *)(uintptr_t)address=value;
++    else __asm__ volatile("outw %0, %1"::"a"(value),"Nd"((uint16_t)address));
++}
++static void ac97_outl(uint32_t address,uint32_t value) {
++    if(g_ac97_mmio)*(volatile uint32_t *)(uintptr_t)address=value;
++    else outl((uint16_t)address,value);
+ }
+ 
+ static inline void ac97_io_wait(void) {
+@@ -199,9 +220,9 @@
+  * evita esperar al timeout si el motor queda DCH al arrancar.
+  */
+ static void ac97_run_with_lvi_kick(uint8_t lvi) {
+-    outb((uint16_t)(g_ac97_nabm + AC97_PO_CR), AC97_CR_RUN);
+-    if (ac97_inw((uint16_t)(g_ac97_nabm + g_ac97_po_sr)) & AC97_SR_DCH)
+-        outb((uint16_t)(g_ac97_nabm + AC97_PO_LVI), lvi);
++    ac97_outb(g_ac97_nabm + AC97_PO_CR, AC97_CR_RUN);
++    if (ac97_inw((g_ac97_nabm + g_ac97_po_sr)) & AC97_SR_DCH)
++        ac97_outb(g_ac97_nabm + AC97_PO_LVI, lvi);
+ }
+ 
+ static uint32_t ac97_ring_queued(void) {
+@@ -465,9 +486,9 @@
+     g_ac97_current_seq = 0;
+     g_ac97_last_civ = 0;
+     ac97_dma_publish();
+-    outl((uint16_t)(g_ac97_nabm + AC97_PO_BDBAR),
++    ac97_outl(g_ac97_nabm + AC97_PO_BDBAR,
+          (uint32_t)(uintptr_t)g_ac97_bdl);
+-    outb((uint16_t)(g_ac97_nabm + AC97_PO_LVI),
++    ac97_outb(g_ac97_nabm + AC97_PO_LVI,
+          (uint8_t)(descriptor_count - 1U));
+     ac97_run_with_lvi_kick((uint8_t)(descriptor_count - 1U));
+     g_ac97_observed_running = false;
+@@ -498,14 +519,14 @@
+ }
+ 
+ static void ac97_channel_reset(void) {
+-    outb((uint16_t)(g_ac97_nabm + AC97_PO_CR), 0);
+-    outb((uint16_t)(g_ac97_nabm + AC97_PO_CR), AC97_CR_RESET);
++    ac97_outb(g_ac97_nabm + AC97_PO_CR, 0);
++    ac97_outb(g_ac97_nabm + AC97_PO_CR, AC97_CR_RESET);
+     for (uint32_t i = 0; i < 100000U; i++) {
+-        if (!(inb((uint16_t)(g_ac97_nabm + AC97_PO_CR)) & AC97_CR_RESET))
++        if (!(ac97_inb(g_ac97_nabm + AC97_PO_CR) & AC97_CR_RESET))
+             break;
+         ac97_io_wait();
+     }
+-    ac97_outw((uint16_t)(g_ac97_nabm + g_ac97_po_sr), AC97_SR_CLEAR);
++    ac97_outw((g_ac97_nabm + g_ac97_po_sr), AC97_SR_CLEAR);
+ }
+ 
+ static bool ac97_start_stream(void) {
+@@ -521,9 +542,9 @@
+     if (!filled) return false;
+     g_ac97_producer_seq = filled;
+     ac97_dma_publish();
+-    outl((uint16_t)(g_ac97_nabm + AC97_PO_BDBAR),
++    ac97_outl(g_ac97_nabm + AC97_PO_BDBAR,
+          (uint32_t)(uintptr_t)g_ac97_bdl);
+-    outb((uint16_t)(g_ac97_nabm + AC97_PO_LVI),
++    ac97_outb(g_ac97_nabm + AC97_PO_LVI,
+          (uint8_t)((filled - 1U) & (AC97_BDL_COUNT - 1U)));
+     ac97_run_with_lvi_kick(
+         (uint8_t)((filled - 1U) & (AC97_BDL_COUNT - 1U)));
+@@ -545,7 +566,7 @@
+         if (!ac97_fill_descriptor(g_ac97_producer_seq)) break;
+         g_ac97_producer_seq++;
+         ac97_dma_publish();
+-        outb((uint16_t)(g_ac97_nabm + AC97_PO_LVI),
++        ac97_outb(g_ac97_nabm + AC97_PO_LVI,
+              (uint8_t)((g_ac97_producer_seq - 1U) &
+                        (AC97_BDL_COUNT - 1U)));
+     }
+@@ -558,14 +579,14 @@
+     uint32_t timeout_ticks;
+ 
+     if (!g_ac97_streaming) return;
+-    status = ac97_inw((uint16_t)(g_ac97_nabm + g_ac97_po_sr));
+-    civ = inb((uint16_t)(g_ac97_nabm + AC97_PO_CIV)) & 0x1FU;
++    status = ac97_inw((g_ac97_nabm + g_ac97_po_sr));
++    civ = ac97_inb(g_ac97_nabm + AC97_PO_CIV) & 0x1FU;
+     if (status & AC97_SR_FIFOE) {
+         g_ac97_fifo_errors++;
+         if (g_ac97_fifo_errors <= 4U)
+             SOUND_LOG("[AC97] FIFO underrun #%u SR=%x CIV=%u LVI=%u\n",
+                     g_ac97_fifo_errors, status, (uint32_t)civ,
+-                    (uint32_t)inb((uint16_t)(g_ac97_nabm + AC97_PO_LVI)));
++                    (uint32_t)ac97_inb(g_ac97_nabm + AC97_PO_LVI));
+     }
+     if (!(status & AC97_SR_DCH)) {
+         g_ac97_observed_running = true;
+@@ -577,7 +598,7 @@
+         g_ac97_last_civ = civ;
+     }
+     if (status & AC97_SR_CLEAR)
+-        ac97_outw((uint16_t)(g_ac97_nabm + g_ac97_po_sr),
++        ac97_outw((g_ac97_nabm + g_ac97_po_sr),
+                   (uint16_t)(status & AC97_SR_CLEAR));
+ 
+     if ((status & AC97_SR_DCH) && g_ac97_observed_running) {
+@@ -593,14 +614,14 @@
+             if (g_ac97_dch_restarts <= 4U)
+                 SOUND_LOG("[AC97] DMA alcanzo LVI antes de tiempo #%u CIV=%u LVI=%u\n",
+                         g_ac97_dch_restarts, (uint32_t)civ,
+-                        (uint32_t)inb((uint16_t)(g_ac97_nabm + AC97_PO_LVI)));
++                        (uint32_t)ac97_inb(g_ac97_nabm + AC97_PO_LVI));
+         }
+         g_ac97_current_seq = g_ac97_producer_seq;
+         g_ac97_streaming = false;
+         if (!g_ac97_short_ring_done_reported) {
+             SOUND_LOG("[AC97] PCM ring corto completado CIV=%u LVI=%u\n",
+                     (uint32_t)civ,
+-                    (uint32_t)inb((uint16_t)(g_ac97_nabm + AC97_PO_LVI)));
++                    (uint32_t)ac97_inb(g_ac97_nabm + AC97_PO_LVI));
+             g_ac97_short_ring_done_reported = true;
+         }
+         return;
+@@ -621,16 +642,16 @@
+             g_ac97_start_retries++;
+             ac97_channel_reset();
+             ac97_dma_publish();
+-            outl((uint16_t)(g_ac97_nabm + AC97_PO_BDBAR),
++            ac97_outl(g_ac97_nabm + AC97_PO_BDBAR,
+                  (uint32_t)(uintptr_t)g_ac97_bdl);
+-            outb((uint16_t)(g_ac97_nabm + AC97_PO_LVI), lvi);
++            ac97_outb(g_ac97_nabm + AC97_PO_LVI, lvi);
+             ac97_run_with_lvi_kick(lvi);
+             g_ac97_start_tick = pit_get_ticks();
+             return;
+         }
+ 
+         SOUND_LOG("[AC97] DMA no inicio tras reintentos, SR=%x CR=%x\n",
+-                status, inb((uint16_t)(g_ac97_nabm + AC97_PO_CR)));
++                status, ac97_inb(g_ac97_nabm + AC97_PO_CR));
+         int16_t *direct;
+         ac97_channel_reset();
+         ac97_clear_voices();
+@@ -809,11 +830,33 @@
+ static bool ac97_codec_ready(void) {
+     uint32_t ready = 0;
+     for (uint32_t i = 0; i < 200000U; i++) {
+-        ready = inl((uint16_t)(g_ac97_nabm + AC97_GLOB_STA));
++        ready = ac97_inl(g_ac97_nabm + AC97_GLOB_STA);
+         if (ready & AC97_GLOB_PCR) return true;
+         ac97_io_wait();
+     }
+     return false;
++}
++
++static uint8_t ac97_config8(const pci_device_t *d,uint8_t offset) {
++    return (uint8_t)(pci_config_read32(d->bus,d->slot,d->function,offset&~3U) >>
++        ((offset&3U)*8U));
++}
++static void ac97_wake_device(void) {
++    const pci_device_t *d=g_ac97_pci;
++    if(!(pci_config_read16(d->bus,d->slot,d->function,0x06U)&0x10U))return;
++    uint8_t cap=ac97_config8(d,0x34U)&~3U;
++    for(unsigned n=0;n<48 && cap>=0x40U && cap<=0xF8U;n++) {
++        if(ac97_config8(d,cap)==1U) {
++            uint16_t pm=pci_config_read16(d->bus,d->slot,d->function,cap+4U);
++            if(pm&3U) {
++                /* D0; PME status is W1C and must not be acknowledged here. */
++                pci_config_write16(d->bus,d->slot,d->function,cap+4U,pm&~0x8003U);
++                for(unsigned i=0;i<10000U;i++)ac97_io_wait();
++            }
++            return;
++        }
++        cap=ac97_config8(d,cap+1U)&~3U;
++    }
+ }
+ 
+ static bool ac97_init(void) {
+@@ -852,41 +895,76 @@
+                  ? AC97_PO_SIS_SR : AC97_PO_SR;
+     nam_bar = g_ac97_pci->bars[0];
+     nabm_bar = g_ac97_pci->bars[1];
+-    if (!(nam_bar & 1U) || !(nabm_bar & 1U) ||
+-        !(nam_bar & 0xFFFFFFFCU) || !(nabm_bar & 0xFFFFFFFCU) ||
+-        (nam_bar & 0xFFFFFFFCU) > 0xFFFFU ||
+-        (nabm_bar & 0xFFFFFFFCU) > 0xFFFFU) {
+-        SOUND_LOG("[AC97] BAR0/BAR1 de E/S invalidas\n");
++    uint32_t mem_nam=g_ac97_pci->bars[2], mem_bm=g_ac97_pci->bars[3];
++    g_ac97_mmio=g_ac97_pci->vendor_id==0x8086U &&
++        g_ac97_pci->device_id==0x24C5U && mem_nam && mem_bm &&
++        !(mem_nam&1U) && !(mem_bm&1U) &&
++        (mem_nam&~15U) && (mem_bm&~15U);
++    if(g_ac97_mmio &&
++       (!paging_kernel_mmio_uncached(mem_nam&~15U,512U) ||
++        !paging_kernel_mmio_uncached(mem_bm&~15U,256U)))g_ac97_mmio=false;
++    if(g_ac97_mmio) {
++        g_ac97_nam=mem_nam&~15U; g_ac97_nabm=mem_bm&~15U;
++    } else {
++        if(!(nam_bar&1U) || !(nabm_bar&1U) || !(nam_bar&~3U) ||
++           !(nabm_bar&~3U) || (nam_bar&~3U)>0xFFFFU ||
++           (nabm_bar&~3U)>0xFFFFU) {
++            SOUND_LOG("[AC97] sin BARs de registros utilizables\n");
++            return false;
++        }
++        g_ac97_nam=nam_bar&~3U; g_ac97_nabm=nabm_bar&~3U;
++    }
++    ac97_wake_device();
++    if(!pci_enable_command(g_ac97_pci, PCI_COMMAND_BUSMASTER |
++        (g_ac97_mmio?PCI_COMMAND_MEMORY:PCI_COMMAND_IO)))return false;
++    /* Preserve routing bits; bring AC-link up in stereo, 16-bit mode.
++     * An already running link needs a warm reset, not another cold assertion. */
++    uint32_t control=ac97_inl(g_ac97_nabm+AC97_GLOB_CNT);
++    control &= ~(0x00300000U | 0x00400000U | 0x08U);
++    control |= (control&AC97_GLOB_COLD)?4U:AC97_GLOB_COLD;
++    ac97_outl(g_ac97_nabm+AC97_GLOB_CNT,control);
++    for(uint32_t i=0;i<200000U && (ac97_inl(g_ac97_nabm+AC97_GLOB_CNT)&4U);i++)
++        ac97_io_wait();
++    if (!ac97_codec_ready()) {
++        kprintf("[AC97] codec primario no responde, GLOB_STA=%x\n",
++                ac97_inl(g_ac97_nabm + AC97_GLOB_STA));
+         return false;
+     }
+-    g_ac97_nam = (uint16_t)(nam_bar & 0xFFFFFFFCU);
+-    g_ac97_nabm = (uint16_t)(nabm_bar & 0xFFFFFFFCU);
+-    if (!pci_enable_command(g_ac97_pci,
+-            PCI_COMMAND_IO | PCI_COMMAND_BUSMASTER)) return false;
+-
+-    outl((uint16_t)(g_ac97_nabm + AC97_GLOB_CNT), AC97_GLOB_COLD);
+-    if (!ac97_codec_ready()) {
+-        SOUND_LOG("[AC97] codec primario no responde, GLOB_STA=%x\n",
+-                inl((uint16_t)(g_ac97_nabm + AC97_GLOB_STA)));
+-        return false;
+-    }
+-    ac97_outw((uint16_t)(g_ac97_nam + AC97_NAM_RESET), 0);
+-    ac97_outw((uint16_t)(g_ac97_nam + AC97_NAM_MASTER_VOL), 0);
+-    ac97_outw((uint16_t)(g_ac97_nam + AC97_NAM_PCM_VOL), 0);
++    ac97_outw((g_ac97_nam + AC97_NAM_RESET), 0);
++    /* Wake DAC, mixer and external amplifier before unmuting output paths. */
++    ac97_outw(g_ac97_nam+0x26U,0);
++    for(uint32_t i=0;i<200000U;i++) {
++        if((ac97_inw(g_ac97_nam+0x26U)&0x0FU)==0x0FU)break;
++        ac97_io_wait();
++    }
++    ac97_outw(g_ac97_nam+0x04U,0); /* headphone/aux out */
++    ac97_outw(g_ac97_nam+0x06U,0); /* mono out */
++    uint16_t extended=ac97_inw(g_ac97_nam+0x2AU);
++    if(extended!=0xFFFFU)ac97_outw(g_ac97_nam+0x2AU,extended&~0x0009U);
++
++    ac97_outw((g_ac97_nam + AC97_NAM_MASTER_VOL), 0);
++    ac97_outw((g_ac97_nam + AC97_NAM_PCM_VOL), 0);
+     if (g_ac97_controller->type == AC97_CONTROLLER_SIS7012) {
+         /* SiS intercambia SR/PICB y requiere habilitar la salida PCM. */
+-        uint16_t sis_output = ac97_inw((uint16_t)(g_ac97_nabm + 0x4CU));
+-        ac97_outw((uint16_t)(g_ac97_nabm + 0x4CU),
++        uint16_t sis_output = ac97_inw((g_ac97_nabm + 0x4CU));
++        ac97_outw((g_ac97_nabm + 0x4CU),
+                   (uint16_t)(sis_output | 1U));
+     }
+-    vendor1 = ac97_inw((uint16_t)(g_ac97_nam + AC97_NAM_VENDOR1));
+-    vendor2 = ac97_inw((uint16_t)(g_ac97_nam + AC97_NAM_VENDOR2));
++    vendor1 = ac97_inw((g_ac97_nam + AC97_NAM_VENDOR1));
++    vendor2 = ac97_inw((g_ac97_nam + AC97_NAM_VENDOR2));
+     if ((vendor1 == 0xFFFFU && vendor2 == 0xFFFFU) ||
+         (!vendor1 && !vendor2)) {
+         SOUND_LOG("[AC97] codec presente pero ID invalido\n");
+         return false;
+     }
+ 
++    if(vendor1==0x4352U && (vendor2&0xFFF8U)==0x5930U) {
++        /* CS4299 AC mode default, as specified by the Cirrus codec patch. */
++        ac97_outw(g_ac97_nam+0x5EU,0x0080U);
++    }
++    kprintf("[AC97] access=%s power=%x master=%x headphone=%x PCM=%x\n",
++        g_ac97_mmio?"MMIO":"PIO",ac97_inw(g_ac97_nam+0x26U),
++        ac97_inw(g_ac97_nam+2U),ac97_inw(g_ac97_nam+4U),ac97_inw(g_ac97_nam+0x18U));
+     kmemset(g_ac97_buffers, 0, sizeof(g_ac97_buffers));
+     ac97_prepare_ring_bdl();
+     ac97_clear_voices();
+--- a/kernel/drivers/graphics/intel_gma9xx_dvr.c
++++ b/kernel/drivers/graphics/intel_gma9xx_dvr.c
+@@ -4,8 +4,9 @@
+  * The video BIOS remains responsible for clocks, pipes and panel fitting.
+  * BlesKernOS adopts the active display plane, including its hardware stride
+  * and aperture offset.  Indexed, RGB565 and RGB888 modes are presented by a
+- * safe CPU conversion; the legacy XY blitter is restricted to later 32-bpp
+- * chips and enabled only after an off-screen color-BLT smoke test succeeds.
++ * safe CPU conversion. The 16/32-bpp XY blitter is enabled only after a bounded
++ * off-screen test; Gen2 uses explicitly owned GGTT backing and a separately
++ * tested fixed-function 3D subset (see intel_i830_3d.inc).
+  */
+ 
+ #include "../../include/types.h"
+@@ -14,6 +15,9 @@
+ #include "../../include/gfx.h"
+ #include "../../include/gfx_driver.h"
+ #include "../../include/pci.h"
++#include "../../include/paging.h"
++#include "../../include/klock.h"
++#include "../../include/gfx3d_driver.h"
+ #include "../../include/vesa.h"
+ #include "../../libc/include/stdio.h"
+ 
+@@ -65,6 +69,7 @@
+ } gma_device_t;
+ 
+ static const gma_device_t gma_devices[] = {
++    {0x3582U,2U,"852GM/852GME/855GM Extreme Graphics 2"},
+     {0x2582U,3U,"915G/GMA 900"}, {0x2592U,3U,"915GM/GMA 900"},
+     {0x2772U,3U,"945G/GMA 950"}, {0x27A2U,3U,"945GM/GMA 950"},
+     {0x27AEU,3U,"945GME/GMA 950"}, {0x2972U,4U,"946GZ/GMA 3000"},
+@@ -81,6 +86,10 @@
+     volatile uint8_t *aperture;
+     uint32_t aperture_base;
+     uint32_t aperture_size;
++    uint32_t mmio_size;
++    void *owned_raw;
++    uint32_t owned_offset;
++    uint32_t *saved_ptes;
+     uint32_t fb_offset;
+     uint32_t ring_offset;
+     volatile uint32_t *ring;
+@@ -89,6 +98,7 @@
+     uint32_t *hws;
+     bool active;
+     bool accel;
++    bool dma_fault;
+     bool saved;
+     uint32_t saved_tail, saved_head, saved_start, saved_ctl, saved_hws;
+     gfx_info_t mode;
+@@ -128,7 +138,7 @@
+         uint8_t aperture_bar = chip->generation == 2U ? 0U : 2U;
+         if(!pci_get_bar_info(dev,mmio_bar,&mmio)||mmio.is_io||
+            !pci_get_bar_info(dev,aperture_bar,&aperture)||aperture.is_io||
+-           !mmio.base||!aperture.base||mmio.size<0x10000U||
++           !mmio.base||!aperture.base||mmio.size<0x80000U||
+            aperture.size<4U*1024U*1024U)continue;
+         if(!pci_enable_command(dev,PCI_COMMAND_MEMORY|PCI_COMMAND_BUSMASTER))
+             continue;
+@@ -136,6 +146,8 @@
+         g_gma.mmio=(volatile uint8_t *)(uintptr_t)mmio.base;
+         g_gma.aperture=(volatile uint8_t *)(uintptr_t)aperture.base;
+         g_gma.aperture_base=aperture.base;g_gma.aperture_size=aperture.size;
++        g_gma.mmio_size=mmio.size;
++        if(!paging_kernel_mmio_uncached(mmio.base,mmio.size))return false;
+         return true;
+     }
+     return false;
+@@ -186,6 +198,7 @@
+ static void gma_stop_accel(const char *where) {
+     if(g_gma.accel)
+         kprintf("[INTELGMA.DVR] timeout/fallo en %s; 2D vuelve a CPU\n",where);
++    if(g_gma.accel)g_gma.dma_fault=true;
+     g_gma.accel=false;
+     gma_restore_ring();
+ }
+@@ -203,8 +216,9 @@
+ static bool gma_color_blt(uint32_t offset,uint32_t pitch,int x,int y,int w,int h,
+                           uint32_t color) {
+     uint32_t cmd[8];
+-    cmd[0]=GMA_XY_COLOR_BLT|GMA_BLT_WRITE_ALPHA|GMA_BLT_WRITE_RGB;
+-    cmd[1]=GMA_BLT_DEPTH_32|GMA_ROP_COPY|(pitch&0xFFFFU);
++    bool rgb32=g_gma.mode.bpp==32U;
++    cmd[0]=GMA_XY_COLOR_BLT|(rgb32?(GMA_BLT_WRITE_ALPHA|GMA_BLT_WRITE_RGB):0U);
++    cmd[1]=(rgb32?GMA_BLT_DEPTH_32:(1U<<24))|GMA_ROP_COPY|(pitch&0xFFFFU);
+     cmd[2]=((uint32_t)y<<16)|(uint32_t)x;
+     cmd[3]=((uint32_t)(y+h)<<16)|(uint32_t)(x+w);
+     cmd[4]=offset;cmd[5]=color;cmd[6]=GMA_MI_FLUSH;cmd[7]=GMA_MI_NOOP;
+@@ -214,8 +228,9 @@
+ static bool gma_copy_blt(uint32_t offset,uint32_t pitch,int sx,int sy,int dx,
+                          int dy,int w,int h) {
+     uint32_t cmd[10];
+-    cmd[0]=GMA_XY_SRC_COPY_BLT|GMA_BLT_WRITE_ALPHA|GMA_BLT_WRITE_RGB;
+-    cmd[1]=GMA_BLT_DEPTH_32|GMA_ROP_COPY|(pitch&0xFFFFU);
++    bool rgb32=g_gma.mode.bpp==32U;
++    cmd[0]=GMA_XY_SRC_COPY_BLT|(rgb32?(GMA_BLT_WRITE_ALPHA|GMA_BLT_WRITE_RGB):0U);
++    cmd[1]=(rgb32?GMA_BLT_DEPTH_32:(1U<<24))|GMA_ROP_COPY|(pitch&0xFFFFU);
+     cmd[2]=((uint32_t)dy<<16)|(uint32_t)dx;
+     cmd[3]=((uint32_t)(dy+h)<<16)|(uint32_t)(dx+w);
+     cmd[4]=offset;cmd[5]=((uint32_t)sy<<16)|(uint32_t)sx;
+@@ -223,16 +238,77 @@
+     return gma_emit(cmd,10U);
+ }
+ 
++/* Gen2 has no local VRAM. Install owned system-memory pages in an isolated
++ * tail of GGTT rather than scribbling into firmware-owned stolen memory.
++ * The display plane and the firmware ring must be idle before this is called. */
++#define GMA_OWNED_BYTES (8U*1024U*1024U)
++static bool gma_uncached_range(uint32_t address,uint32_t length) {
++    if(!length || address+length<address)return false;
++    while(length) {
++        uint32_t chunk=0x400000U-(address&0x3FFFFFU);
++        if(chunk>length)chunk=length;
++        if(!paging_kernel_mmio_uncached(address,chunk))return false;
++        address+=chunk;length-=chunk;
++    }
++    return true;
++}
++static bool gma_map_owned(void) {
++    if(g_gma.owned_raw)return true;
++    if(!(gma_read(0x2020U)&1U) || g_gma.aperture_size<GMA_OWNED_BYTES*2U ||
++       0x10000U+(g_gma.aperture_size/4096U)*4U>g_gma.mmio_size)return false;
++    uint32_t offset=(g_gma.aperture_size-GMA_OWNED_BYTES)&~4095U;
++    uint32_t visible=g_gma.fb_offset+(uint32_t)g_gma.mode.pitch*g_gma.mode.height;
++    if(offset<visible || !gma_wait_idle())return false;
++    const uint32_t controls[2]={GMA_DSPA_CNTR,GMA_DSPB_CNTR};
++    for(unsigned plane=0;plane<2;plane++)if(gma_read(controls[plane])&GMA_DISPLAY_PLANE_ENABLED) {
++        uint32_t base=gma_read(controls[plane]+4U),pitch=gma_read(controls[plane]+8U)&0xFFC0U;
++        if((uint64_t)base+(uint64_t)pitch*g_gma.mode.height>offset)return false;
++    }
++    void *raw=kmalloc(GMA_OWNED_BYTES+4095U);
++    uint32_t *saved=kmalloc((GMA_OWNED_BYTES/4096U)*4U);
++    if(!raw || !saved){if(raw)kfree(raw);if(saved)kfree(saved);return false;}
++    if(!gma_uncached_range(g_gma.aperture_base+offset,GMA_OWNED_BYTES)) {
++        kfree(raw);kfree(saved);return false;
++    }
++    (void)mm_set_allocation_owner(raw,0);(void)mm_set_allocation_owner(saved,0);
++    uint32_t physical=ALIGN_UP((uint32_t)(uintptr_t)raw,4096U);
++    volatile uint32_t *gtt=(volatile uint32_t *)(g_gma.mmio+0x10000U)+offset/4096U;
++    /* CPU access thereafter uses ONLY the uncached aperture alias. */
++    __asm__ volatile("wbinvd":::"memory");
++    for(uint32_t i=0;i<GMA_OWNED_BYTES/4096U;i++) {
++        saved[i]=gtt[i];gtt[i]=(physical+i*4096U)|1U;
++    }
++    (void)gtt[GMA_OWNED_BYTES/4096U-1U];
++    gma_write(0x2020U,gma_read(0x2020U)); /* GGTT translation invalidation */
++    (void)gma_read(0x2020U);
++    g_gma.owned_raw=raw;g_gma.saved_ptes=saved;g_gma.owned_offset=offset;
++    return true;
++}
++static void gma_unmap_owned(void) {
++    if(!g_gma.owned_raw)return;
++    volatile uint32_t *gtt=(volatile uint32_t *)(g_gma.mmio+0x10000U)+g_gma.owned_offset/4096U;
++    for(uint32_t i=0;i<GMA_OWNED_BYTES/4096U;i++)gtt[i]=g_gma.saved_ptes[i];
++    (void)gtt[GMA_OWNED_BYTES/4096U-1U];
++    gma_write(0x2020U,gma_read(0x2020U));(void)gma_read(0x2020U);
++    kfree(g_gma.saved_ptes);kfree(g_gma.owned_raw);
++    g_gma.saved_ptes=NULL;g_gma.owned_raw=NULL;
++}
++
+ static bool gma_init_ring(void) {
+-    uint32_t visible_end,scratch,old;
++    uint32_t visible_end,scratch;
++    if(g_gma.dma_fault)return false;
+     visible_end=g_gma.fb_offset+(uint32_t)g_gma.mode.pitch*g_gma.mode.height;
+-    g_gma.ring_offset=ALIGN_UP(visible_end,4096U);
++    if(g_gma.chip->generation==2U) {
++        if(!gma_map_owned())return false;
++        g_gma.ring_offset=g_gma.owned_offset;
++    } else g_gma.ring_offset=ALIGN_UP(visible_end,4096U);
+     scratch=g_gma.ring_offset+GMA_RING_SIZE;
+     if(scratch+8192U>g_gma.aperture_size||
+        !gma_mapped_pages_distinct(g_gma.ring_offset)||
+        !gma_mapped_pages_distinct(scratch))return false;
+     g_gma.hws_raw=kmalloc(8192U);
+     if(!g_gma.hws_raw)return false;
++    (void)mm_set_allocation_owner(g_gma.hws_raw,0U);
+     g_gma.hws=(uint32_t *)(uintptr_t)ALIGN_UP((uint32_t)(uintptr_t)g_gma.hws_raw,4096U);
+     kmemset(g_gma.hws,0,4096U);
+     g_gma.saved_tail=gma_read(GMA_RING_TAIL);g_gma.saved_head=gma_read(GMA_RING_HEAD);
+@@ -247,13 +323,24 @@
+     gma_write(GMA_RING_HEAD,0U);gma_write(GMA_RING_TAIL,0U);
+     gma_write(GMA_RING_CTL,(GMA_RING_SIZE-4096U)|GMA_RING_VALID);
+     g_gma.ring_tail=0U;g_gma.accel=true;
+-    old=*(volatile uint32_t *)(g_gma.aperture+scratch);
+-    if(!gma_color_blt(scratch,32U,0,0,8,8,0xFF39A7E0U)||!gma_wait_idle()||
+-       *(volatile uint32_t *)(g_gma.aperture+scratch)!=0xFF39A7E0U) {
+-        *(volatile uint32_t *)(g_gma.aperture+scratch)=old;
+-        gma_stop_accel("autoprueba XY_COLOR_BLT");return false;
+-    }
+-    *(volatile uint32_t *)(g_gma.aperture+scratch)=old;
++    uint32_t saved_pixels[128];
++    kmemcpy(saved_pixels,(const void *)(g_gma.aperture+scratch),256U);
++    kmemcpy(saved_pixels+64,(const void *)(g_gma.aperture+scratch+4096U),256U);
++    uint32_t expected=g_gma.mode.bpp==16U?0xA7E0A7E0U:0xFF39A7E0U;
++    bool tested=gma_color_blt(scratch,32U,0,0,8,8,0xFF39A7E0U) && gma_wait_idle();
++    if(tested)tested=gma_copy_blt(scratch,32U,0,0,0,128,8,8) && gma_wait_idle();
++    uint32_t columns=g_gma.mode.bpp==16U?4U:8U;
++    for(uint32_t row=0;tested && row<8U;row++)for(uint32_t col=0;col<columns;col++) {
++        uint32_t at=row*32U+col*4U;
++        if(*(volatile uint32_t *)(g_gma.aperture+scratch+at)!=expected ||
++           *(volatile uint32_t *)(g_gma.aperture+scratch+4096U+at)!=expected)tested=false;
++    }
++    if(!tested)gma_stop_accel("autoprueba XY_COLOR/SRC_COPY_BLT");
++    if(!g_gma.dma_fault) {
++        kmemcpy((void *)(g_gma.aperture+scratch),saved_pixels,256U);
++        kmemcpy((void *)(g_gma.aperture+scratch+4096U),saved_pixels+64,256U);
++    }
++    if(!tested)return false;
+     kprintf("[INTELGMA.DVR] ring 64KiB + XY blitter OK, GGTT=0x%x\n",
+             g_gma.ring_offset);
+     return true;
+@@ -391,7 +478,7 @@
+        !vesa_attach_lfb(&boot,boot.framebuffer,boot.width,boot.height,
+                         boot.pitch,boot.bpp))return false;
+     g_gma.mode=boot;g_gma.mode.mode=GFX_MODE_INTEL_GMA9XX;g_gma.active=true;
+-    if(g_gma.chip->generation>=3U&&boot.bpp==32U)(void)gma_init_ring();
++    if(boot.bpp==32U || boot.bpp==16U)(void)gma_init_ring();
+     if(info)*info=g_gma.mode;
+     kprintf("[INTELGMA.DVR] %s Gen%u %ux%ux%u pitch=%u fb=%x, aceleracion=%s\n",
+             g_gma.chip->name,g_gma.chip->generation,boot.width,boot.height,
+@@ -406,11 +493,11 @@
+     return g_gma.active?c:0U;
+ }
+ static void gma_disable(void) {
+-    if(g_gma.accel)(void)gma_wait_idle();
++    bool idle=!g_gma.dma_fault && (!g_gma.accel || gma_wait_idle());
+     g_gma.accel=false;
+     gma_restore_ring();
+-    if(g_gma.hws_raw)kfree(g_gma.hws_raw);
+-    g_gma.hws_raw=NULL;g_gma.hws=NULL;
++    if(idle)gma_unmap_owned(); /* Keep DMA backing pinned on a GPU timeout. */
++    if(idle && g_gma.hws_raw){kfree(g_gma.hws_raw);g_gma.hws_raw=NULL;g_gma.hws=NULL;}
+     g_gma.active=false;
+ }
+ static bool gma_list(gfx_display_mode_t *m,uint32_t max,uint32_t *count) {
+@@ -427,6 +514,7 @@
+                         const gfx_rect_t *rects,uint32_t n,uint32_t *fence) {
+     if(fence)*fence=0U;
+     if(!g_gma.active||!info||!pixels||sp<info->width)return false;
++    if(g_gma.accel && !gma_wait_idle()){gma_stop_accel("present");return false;}
+     if(!rects||!n){gfx_rect_t full={0,0,info->width,info->height};rects=&full;n=1U;}
+     for(uint32_t i=0;i<n;i++){int x=rects[i].x,y=rects[i].y,w=rects[i].w,h=rects[i].h;
+         if(!gma_clip(info,&x,&y,&w,&h))continue;
+@@ -458,31 +546,79 @@
+ static bool gma_fill(const gfx_info_t *info,int x,int y,int w,int h,uint32_t rgb,uint32_t *f) {
+     if(f)*f=0U;
+     if(!g_gma.accel||!gma_clip(info,&x,&y,&w,&h))return false;
+-    if(!gma_color_blt(g_gma.fb_offset,info->pitch,x,y,w,h,0xFF000000U|(rgb&0xFFFFFFU))){gma_stop_accel("fill");return false;}
++    uint32_t color=info->bpp==16U?
++        ((g_gma.scanout_format==GMA_FORMAT_BGRA555||g_gma.scanout_format==GMA_FORMAT_BGRX555)
++         ?gma_rgb555(rgb):gma_rgb565(rgb)):(0xFF000000U|(rgb&0xFFFFFFU));
++    if(!gma_color_blt(g_gma.fb_offset,info->pitch,x,y,w,h,color)){gma_stop_accel("fill");return false;}
+     g_gma.fence++;if(!g_gma.fence)g_gma.fence=1U;if(f)*f=g_gma.fence;return true;
+ }
+ static bool gma_blt(const gfx_info_t *info,int sx,int sy,int dx,int dy,int w,int h,gfx_rop_t rop,uint32_t *f) {
+     if(f)*f=0U;
+     if(!g_gma.accel||!info||rop!=GFX_ROP_COPY||w<=0||h<=0)return false;
+     if(sx<0||sy<0||dx<0||dy<0||sx+w>info->width||dx+w>info->width||sy+h>info->height||dy+h>info->height)return false;
+-    /* Reverse-overlap copies need a directional command variant; use CPU fallback. */
+-    if((dy>sy&&dy<sy+h)||(dy==sy&&dx>sx&&dx<sx+w))return false;
++    /* Stage overlapping rectangles through one off-screen row. This avoids
++     * relying on undocumented direction handling in XY_SRC_COPY_BLT. */
++    if(dx<sx+w && sx<dx+w && dy<sy+h && sy<dy+h) {
++        uint32_t scratch=g_gma.ring_offset+GMA_RING_SIZE;
++        uint32_t row_pitch=ALIGN_UP((uint32_t)w*((info->bpp+7U)/8U),4U);
++        uint32_t command=GMA_XY_SRC_COPY_BLT|(info->bpp==32U?(GMA_BLT_WRITE_ALPHA|GMA_BLT_WRITE_RGB):0U);
++        uint32_t format=(info->bpp==32U?GMA_BLT_DEPTH_32:(1U<<24))|GMA_ROP_COPY;
++        if(row_pitch>8192U)return false;
++        for(int i=0;i<h;i++) {
++            int row=dy>sy?h-1-i:i;
++            uint32_t c[20]={command,
++                format|row_pitch,0,(1U<<16)|(uint32_t)w,
++                scratch,((uint32_t)(sy+row)<<16)|(uint32_t)sx,info->pitch,g_gma.fb_offset,
++                GMA_MI_FLUSH,0,
++                command,
++                format|info->pitch,
++                ((uint32_t)(dy+row)<<16)|(uint32_t)dx,
++                ((uint32_t)(dy+row+1)<<16)|(uint32_t)(dx+w),g_gma.fb_offset,
++                0,row_pitch,scratch,GMA_MI_FLUSH,0};
++            if(!gma_emit(c,20U) || !gma_wait_idle()){gma_stop_accel("overlap");return false;}
++        }
++        if(f)*f=0;
++        return true;
++    }
+     if(!gma_copy_blt(g_gma.fb_offset,info->pitch,sx,sy,dx,dy,w,h)){gma_stop_accel("bitblt");return false;}
+     g_gma.fence++;if(!g_gma.fence)g_gma.fence=1U;if(f)*f=g_gma.fence;return true;
+ }
++
++/* One sleeping mutex for both APIs: GFX3D's own lock does not serialize
++ * ordinary compositor blits. Hold this over complete batches and CPU access. */
++static kmutex_t gma_engine_mutex=KMUTEX_INITIALIZER;
++#define GMA_LOCKED(name,args,operation) \
++    static bool name args { \
++        kmutex_lock(&gma_engine_mutex); \
++        bool result=(operation); \
++        kmutex_unlock(&gma_engine_mutex); \
++        return result; \
++    }
++GMA_LOCKED(gma_locked_activate,(gfx_info_t *i,uint16_t w,uint16_t h),gma_activate(i,w,h))
++GMA_LOCKED(gma_locked_present,(const gfx_info_t *i,const uint32_t *p,uint32_t pitch,const gfx_rect_t *r,uint32_t n,uint32_t *f),gma_present(i,p,pitch,r,n,f))
++GMA_LOCKED(gma_locked_flush,(uint32_t *f),gma_flush(f))
++GMA_LOCKED(gma_locked_wait,(uint32_t f),gma_wait(f))
++GMA_LOCKED(gma_locked_fill,(const gfx_info_t *i,int x,int y,int w,int h,uint32_t c,uint32_t *f),gma_fill(i,x,y,w,h,c,f))
++GMA_LOCKED(gma_locked_blt,(const gfx_info_t *i,int sx,int sy,int dx,int dy,int w,int h,gfx_rop_t r,uint32_t *f),gma_blt(i,sx,sy,dx,dy,w,h,r,f))
++static void gma_locked_disable(void) {
++    kmutex_lock(&gma_engine_mutex);gma_disable();kmutex_unlock(&gma_engine_mutex);
++}
++#include "intel_i830_3d.inc"
+ 
+ static bool gma_driver_init(void) {
+     static const gfx_driver_ops_t ops={BK_GFX_DRIVER_ABI_VERSION,sizeof(gfx_driver_ops_t),
+         "intel_gma9xx",235U,GFX_CAP_PRESENT_BUFFER|GFX_CAP_DIRTY_RECTS|
+         GFX_CAP_FILL|GFX_CAP_BITBLT|GFX_CAP_BITBLT_COPY_HW|GFX_CAP_FENCE,
+-        gma_activate,gma_caps,gma_disable,gma_list,gma_set_mode,gma_present,
+-        gma_update,gma_flush,gma_wait,gma_fill,gma_blt,
++        gma_locked_activate,gma_caps,gma_locked_disable,gma_list,gma_set_mode,gma_locked_present,
++        gma_update,gma_locked_flush,gma_locked_wait,gma_locked_fill,gma_locked_blt,
+         NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
+     kmemset(&g_gma,0,sizeof(g_gma));
+-    if(!gma_find()){kprintf("[INTELGMA.DVR] Intel GMA 915/945/965 no detectada\n");return false;}
+-    return gfx_register_driver(&ops);
+-}
+-static void gma_driver_shutdown(void){gma_disable();}
++    if(!gma_find()){kprintf("[INTELGMA.DVR] Intel 852/855/915/945/965 no detectada\n");return false;}
++    if(!gfx_register_driver(&ops))return false;
++    if(g_gma.chip->generation==2U)(void)gma3_register();
++    return true;
++}
++static void gma_driver_shutdown(void){gma_locked_disable();}
+ 
+ const bk_driver_module_t *bleskernos_driver_query(void) {
+     static const bk_driver_module_t module={BK_DRIVER_ABI_VERSION,sizeof(bk_driver_module_t),1U,0U,
+--- a/system/desktop/deskbar.c
++++ b/system/desktop/deskbar.c
+@@ -229,14 +229,13 @@
+ static int deskbar_panel_width_clamp(const gui_desktop_t *desktop, int width) {
+     int available;
+     int minimum;
+-    if (!desktop) return width;
++    (void)width;
++    if (!desktop) return DESKBAR_PANEL_MIN_W;
+     available = (int)desktop->surface.width - DESKBAR_PANEL_MARGIN * 2;
+     if (available < 1) available = (int)desktop->surface.width;
+     minimum = DESKBAR_PANEL_MIN_W;
+     if (minimum > available) minimum = available;
+-    if (width < minimum) width = minimum;
+-    if (width > available) width = available;
+-    return width;
++    return minimum;
+ }
+ 
+ static gui_rect_t deskbar_bar_rect(const gui_desktop_t *desktop) {
+@@ -246,12 +245,7 @@
+     int y;
+     if (!desktop) return (gui_rect_t){0, 0, 0, 0};
+ 
+-    width = (int)desktop->surface.width - DESKBAR_PANEL_MARGIN * 2;
+-    if (g_deskbar_panel_width > 0)
+-        width = deskbar_panel_width_clamp(desktop, g_deskbar_panel_width);
+-    else if (width > DESKBAR_PANEL_MAX_W)
+-        width = DESKBAR_PANEL_MAX_W;
+-    if (width < 1) width = (int)desktop->surface.width;
++    width = deskbar_panel_width_clamp(desktop, DESKBAR_PANEL_MIN_W);
+     height = (int)desktop->surface.height < DESKBAR_HEIGHT
+         ? (int)desktop->surface.height : DESKBAR_HEIGHT;
+     x = ((int)desktop->surface.width - width) / 2;
+@@ -286,11 +280,8 @@
+ }
+ 
+ static int deskbar_resize_hit_side(const gui_desktop_t *desktop, int x, int y) {
+-    if (gui_rect_contains(deskbar_resize_handle_rect(desktop, -1), x, y))
+-        return -1;
+-    if (gui_rect_contains(deskbar_resize_handle_rect(desktop, 1), x, y))
+-        return 1;
+-    return 0;
++    (void)desktop; (void)x; (void)y;
++    return 0; /* Fixed compact panel: decorative grips do not resize it. */
+ }
+ 
+ static void deskbar_resize_to_pointer(gui_desktop_t *desktop,
+--- a/system/desktop/deskmanager.c
++++ b/system/desktop/deskmanager.c
+@@ -356,16 +356,16 @@
+         kfree(pixels);
+     }
+     if (!cache) return false;
+-    /* El cache queda instalado globalmente aunque cierre DISPLAY.CPL. */
+-#ifdef BLES_VISION_SERVICE
+-    uint32_t wallpaper_owner=bk_sys_getpid();
+-#else
+-    uint32_t wallpaper_owner=0U;
+-#endif
+-    if (!mm_set_allocation_owner(cache, wallpaper_owner)) {
++    /* Vision allocated this cache in its own user heap. It already has the
++     * correct service lifetime: requesting an owner PID through the public
++     * metadata API is forbidden and used to discard every decoded wallpaper.
++     * Only the legacy kernel-side image loader needs an ownership transfer. */
++#ifndef BLES_VISION_SERVICE
++    if (!mm_set_allocation_owner(cache, 0U)) {
+         kfree(cache);
+         return false;
+     }
++#endif
+     desk_wallpaper_release();
+     g_desktop_wallpaper = cache;
+     g_wallpaper_tiled_source = g_wallpaper_mode == DESK_WALLPAPER_TILE &&
+@@ -374,6 +374,8 @@
+     g_wallpaper_h = g_wallpaper_tiled_source ? output_h : screen_h;
+     kstrncpy(g_wallpaper_path, path, sizeof(g_wallpaper_path) - 1);
+     g_wallpaper_path[sizeof(g_wallpaper_path) - 1] = '\0';
++    kprintf("[WALLPAPER] installed %s %ux%u tiled=%u\n",g_wallpaper_path,
++        g_wallpaper_w,g_wallpaper_h,g_wallpaper_tiled_source);
+     return true;
+ }
+ 
+--- a/tests/installer/test_firstboot_bootstrap.py
++++ b/tests/installer/test_firstboot_bootstrap.py
+@@ -31,6 +31,7 @@
+         put(source, "SYSTEM/SERVICES/VISION.BEX", b"vision-service")
+         put(source, "SYSTEM/DRIVERS/VESA.DVR")
+         put(source, "SYSTEM/WALLPAPR/NOCHE.BMP")
++        put(source, "SYSTEM/WALLPAPR/CLASSIC.BMP", b"classic-tile")
+         put(source, "SYSTEM/PROGRAMS/EXAMPLE.BEX")
+         setup.write_bytes(b"setup-wizard")
+         import subprocess
+@@ -44,6 +45,8 @@
+         assert (out / "SYSTEM/PROGRAMS/SETUP.BEX").read_bytes() == b"setup-wizard"
+         group = {p.name: cd.classify(p.relative_to(source))
+                  for p in source.rglob("*") if p.is_file()}
++        assert (out / "SYSTEM/WALLPAPR/CLASSIC.BMP").read_bytes() == b"classic-tile"
++        assert group["CLASSIC.BMP"] is None
+         assert group["VISION.BEX"] is None
+         assert group["EXAMPLE.BEX"] == "PROGRAMS"
+         (source / "SYSTEM/SERVICES/VISION.BEX").unlink()
+@@ -54,7 +57,7 @@
+         ], capture_output=True, text=True)
+         assert run.returncode != 0, "Missing Vision must fail before ISO creation"
+         assert "VISION.BEX" in run.stderr
+-    print("PASS: first-boot Vision bootstrap / fail-closed on missing Vision")
++    print("PASS: first-boot Vision and Classic wallpaper bootstrap / fail-closed on missing Vision")
+ 
+ 
+ if __name__ == "__main__":
+--- a/tests/kernel/run_ram_smoke.py
++++ b/tests/kernel/run_ram_smoke.py
+@@ -24,6 +24,7 @@
+ p.add_argument('--cpu',default='qemu32,+rdrand')
+ p.add_argument('--smp',type=int,default=1)
+ p.add_argument('--network',action='store_true')
++p.add_argument('--network-dns-test',action='store_true',help='also require guest resolution of example.com; needs working upstream DNS')
+ p.add_argument('--network-device',default='rtl8139')
+ p.add_argument('--drivers-from-build',action='store_true')
+ p.add_argument('--default-devices',action='store_true',help='retain QEMU automatic devices when testing file swap')
+@@ -74,7 +75,7 @@
+ if a.smoke:
+  obj=out/'ram_smoke.o'
+  fixture_source={'ram':'ram_smoke.c','preferences':'display_preferences_smoke.c','benchmark':'perf_smoke.c','idle':'idle_smoke.c','quake':'quake_smoke.c','swap':'swap_smoke.c','runtime':'runtime_smoke.c','filesystem':'bfs4_smoke.c','vision':'vision_restart_smoke.c','vm':'vm_metadata_smoke.c','hardening':'kernel_hardening_smoke.c','network':'legacy_network_smoke.c','audio':'legacy_audio_smoke.c','driverimports':'legacy_import_smoke.c','printing':'legacy_print_smoke.c','framebuffer':'legacy_framebuffer_smoke.c','usbinput':'usb_input_smoke.c','printerfamily':'print_family_smoke.c'}[a.fixture]
+- subprocess.run(['gcc','-m32','-march=pentium3','-mfpmath=387','-mno-sse','-mno-sse2','-ffreestanding','-fno-builtin','-nostdlib','-nostdinc','-Os','-fno-pic','-fno-pie','-fno-stack-protector','-I'+str(ROOT),'-I'+str(ROOT/'kernel/libc/include'),'-DRUNTIME_CASE='+str(a.runtime_case or 0),'-DVISION_EXPECT_FAULT='+str(int(a.vision_fault)),'-DSWAP_EXPECT_ENABLED='+str(int(a.swap or a.swap_file)),'-c',str(ROOT/'tests/userland'/fixture_source),'-o',str(obj)],check=True)
++ subprocess.run(['gcc','-m32','-march=pentium3','-mfpmath=387','-mno-sse','-mno-sse2','-ffreestanding','-fno-builtin','-nostdlib','-nostdinc','-Os','-fno-pic','-fno-pie','-fno-stack-protector','-I'+str(ROOT),'-I'+str(ROOT/'kernel/libc/include'),'-DRUNTIME_CASE='+str(a.runtime_case or 0),'-DNETWORK_VERIFY_DNS='+str(int(a.network_dns_test)),'-DVISION_EXPECT_FAULT='+str(int(a.vision_fault)),'-DSWAP_EXPECT_ENABLED='+str(int(a.swap or a.swap_file)),'-c',str(ROOT/'tests/userland'/fixture_source),'-o',str(obj)],check=True)
+  gfx=out/'gfx_context_smoke.elf'
+  subprocess.run(['gcc','-m32','-Os','-fno-pie','-no-pie','-fno-stack-protector','-fno-asynchronous-unwind-tables','-nostdlib','-static','-Wl,--build-id=none',str(ROOT/'tests/userland/gfx_context_smoke.c'),'-o',str(gfx)],check=True)
+  if a.fixture=='runtime':
+--- a/tests/userland/legacy_network_smoke.c
++++ b/tests/userland/legacy_network_smoke.c
+@@ -11,6 +11,14 @@
+     bool ping = configured && bk_net_ping(gateway, 5000, &rtt);
+     bool result =
+         bk_net_get_info(&info) && configured && ping && info.rx_packets > 0 && info.tx_packets > 0;
++#if NETWORK_VERIFY_DNS
++    uint8_t resolved[4];
++    bool dns=configured && bk_net_resolve("example.com",resolved,7000);
++    kprintf("[DRIVERTEST] DNS example.com=%u",dns);
++    if(dns)kprintf(" address=%u.%u.%u.%u",resolved[0],resolved[1],resolved[2],resolved[3]);
++    kprintf("\n");
++    result=result && dns;
++#endif
+     kprintf("[DRIVERTEST] DHCP=%u ping=%u rtt=%u rx=%u tx=%u\n", configured, ping, rtt,
+             info.rx_packets, info.tx_packets);
+     kprintf("[DRIVERTEST] DONE result=%s\n", result ? "PASS" : "FAIL");

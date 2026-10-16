@@ -3,6 +3,9 @@
 
 #include "types.h"
 #include "gfx.h"
+#include "../../ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesvirgl.h"
+
+void gfx3d_process_cleanup(uint32_t pid);
 
 #define GFX3D_SURFACE_INVALID 0U
 
@@ -26,6 +29,13 @@ typedef uint32_t gfx3d_surface_handle_t;
 #define GFX3D_CAP_DEPTH_FUNCS           (1U << 14)
 #define GFX3D_CAP_BLEND_ADDITIVE        (1U << 15)
 #define GFX3D_CAP_TEXTURE_REGION_UPLOAD (1U << 16)
+#define GFX3D_CAP_ALPHA_TEST            (1U << 17)
+#define GFX3D_CAP_TEXTURE_DECAL         (1U << 18)
+#define GFX3D_CAP_TEXTURE_MIPMAPS       (1U << 19)
+/* end submits an ordered GPU stream; CPU access/destruction synchronizes in
+ * the driver. Consumers may defer fence waits until explicit completion. */
+#define GFX3D_CAP_ORDERED_SUBMIT        (1U << 20)
+#define GFX3D_CAP_BLEND_MULTIPLY        (1U << 21)
 
 typedef enum {
     GFX3D_FORMAT_XRGB8888 = 1,
@@ -39,6 +49,8 @@ typedef enum {
 #define GFX3D_SURFACE_WINDOW        (1U << 3)
 #define GFX3D_SURFACE_TINYGL        (1U << 4)
 #define GFX3D_SURFACE_DEPTH         (1U << 5)
+/* Zero in this optional field means one level, preserving old descriptors. */
+#define GFX3D_SURFACE_MIP_LEVELS(n) ((((uint32_t)(n) - 1U) & 15U) << 8U)
 
 typedef struct {
     uint16_t width;
@@ -83,6 +95,13 @@ typedef struct PACKED {
 } gfx3d_vertex_t;
 typedef char gfx3d_vertex_layout_must_be_28_bytes[
     sizeof(gfx3d_vertex_t) == 28U ? 1 : -1];
+typedef char gfx3d_vertex_position_layout[
+    __builtin_offsetof(gfx3d_vertex_t, x) == 0U &&
+    __builtin_offsetof(gfx3d_vertex_t, rhw) == 12U ? 1 : -1];
+typedef char gfx3d_vertex_attribute_layout[
+    __builtin_offsetof(gfx3d_vertex_t, color) == 16U &&
+    __builtin_offsetof(gfx3d_vertex_t, u) == 20U &&
+    __builtin_offsetof(gfx3d_vertex_t, v) == 24U ? 1 : -1];
 
 #define GFX3D_DRAW_DEPTH_TEST     (1U << 0)
 #define GFX3D_DRAW_DEPTH_WRITE    (1U << 1)
@@ -102,6 +121,18 @@ typedef char gfx3d_vertex_layout_must_be_28_bytes[
 #define GFX3D_DRAW_DEPTH_FUNC_SHIFT 12U
 #define GFX3D_DRAW_DEPTH_FUNC_MASK  (7U << GFX3D_DRAW_DEPTH_FUNC_SHIFT)
 #define GFX3D_DRAW_BLEND_ADDITIVE   (1U << 15)
+/* Alpha compare uses the same NEVER..ALWAYS enumeration as depth, with an
+ * 8-bit reference. Kept in flags so existing driver/vertex ABI sizes stay valid. */
+#define GFX3D_DRAW_TEXTURE_DECAL    (1U << 28)
+#define GFX3D_DRAW_MIPMAP_NEAREST   (1U << 29)
+#define GFX3D_DRAW_BLEND_MULTIPLY   (1U << 30)
+#define GFX3D_DRAW_ALPHA_TEST       (1U << 16)
+#define GFX3D_DRAW_ALPHA_FUNC_SHIFT 17U
+#define GFX3D_DRAW_ALPHA_REF_SHIFT  20U
+#define GFX3D_DRAW_ALPHA(func_, ref_) \
+    (GFX3D_DRAW_ALPHA_TEST | (((uint32_t)(func_) & 7U) << 17U) | \
+     (((uint32_t)(ref_) & 255U) << 20U))
+
 
 typedef enum {
     GFX3D_DEPTH_NEVER = 0,
@@ -144,6 +175,8 @@ uint32_t gfx3d_capabilities(void);
 
 bool gfx3d_surface_create(const gfx3d_surface_desc_t *desc,
                           gfx3d_surface_handle_t *handle_out);
+bool gfx3d_surface_upload_mip(gfx3d_surface_handle_t handle, uint32_t level,
+                              const uint32_t *pixels, uint32_t source_pitch);
 bool gfx3d_surface_destroy(gfx3d_surface_handle_t handle);
 bool gfx3d_surface_upload(gfx3d_surface_handle_t handle,
                           const uint32_t *pixels, uint32_t source_pitch,
@@ -191,5 +224,8 @@ bool gfx3d_end(gfx3d_surface_handle_t target, uint32_t *fence_out);
 bool gfx3d_wait_fence(uint32_t fence);
 bool gfx3d_selftest(uint32_t *fence_out);
 void gfx3d_reset(void);
+/* Kernel-owned buffers only. The Linux gate handles userspace copies and
+ * owns the context attached to its open description. */
+bool gfx3d_virgl(bles_virgl_t *request, void *data);
 
 #endif

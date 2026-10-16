@@ -1,0 +1,9 @@
+BFS4 OK: 5532 entries, 50029 free blocks, clean
+/SYSTEM/SERVICES/VISION.BEX 255152 bytes; mode 0o100644
+/SYSTEM/DRIVERS/PS2MOUSE.DVR 7140 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/WINE.BEX 1116 bytes; mode 0o100644
+/WINEGATE/bin/wine-launch 48100 bytes; mode 0o100644
+/WINEGATE/bin/wine-launch.ELF 48100 bytes; mode 0o100644
+/WINEGATE/bin/XFBDEV 818644 bytes; mode 0o100644
+BFS4 OK: 5532 entries, 50028 free blocks, clean
+Release payload bytes verified. Original image preserved: build/bleskernos-wine-optimized.img

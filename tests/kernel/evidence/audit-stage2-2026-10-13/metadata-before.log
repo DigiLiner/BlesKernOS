@@ -1,0 +1,8 @@
+FAIL VMA metadata allocated in legacy user-visible heap
+test: /tmp/bk-vm-metadata-npopth_r/test.c:101: main: Assertion `supervisor(vm.maps) && vm.map_capacity==64 && live_pages()==1' failed.
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/test_vm_metadata.py", line 103, in <module>
+    subprocess.run([str(binary)], check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/tmp/bk-vm-metadata-npopth_r/test']' died with <Signals.SIGABRT: 6>.

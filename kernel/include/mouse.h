@@ -40,6 +40,9 @@ bool mouse_register_driver(const mouse_driver_ops_t *ops);
 void mouse_init(void);
 bool mouse_is_present(void);
 void mouse_get_state(mouse_state_t *state);
+/* IRQ producers preserve button transitions across slow user-space frames. */
+void mouse_publish_state(const mouse_state_t *state);
+bool mouse_pop_event(mouse_state_t *state);
 void mouse_set_bounds(int32_t width, int32_t height);
 void mouse_set_position(int32_t x, int32_t y);
 void mouse_set_sensitivity(uint8_t sensitivity);
@@ -47,6 +50,11 @@ uint8_t mouse_get_sensitivity(void);
 /* Relative pointer injection for USB HID and other independent buses. */
 void mouse_inject_relative(int32_t dx, int32_t dy, int32_t wheel,
                            uint8_t buttons);
+/* Absolute pointer injection (USB tablet/touch-style devices). Coordinates
+ * are expressed in a device-native 0..max range and scaled to current GUI
+ * bounds by the generic mouse core. */
+void mouse_inject_absolute(int32_t x, int32_t y, int32_t max_x, int32_t max_y,
+                           int32_t wheel, uint8_t buttons);
 void mouse_inject_disconnect(void);
 
 #endif

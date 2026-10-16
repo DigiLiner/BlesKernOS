@@ -43,6 +43,10 @@
 #define SVGA_REG_MEM_REGS                30
 #define SVGA_REG_GMR_MAX_IDS             43
 #define SVGA_REG_GMRS_MAX_PAGES          46
+#define SVGA_REG_DEV_CAP                 52
+
+/* Modern VMware capability selector. */
+#define SVGA3D_DEVCAP_3D                  0U
 
 #define SVGA_CAP_RECT_FILL               (1U << 0) /* legacy/QEMU */
 #define SVGA_CAP_RECT_COPY               0x00000002U
@@ -53,6 +57,7 @@
 #define SVGA_CAP_GMR                     0x00100000U
 #define SVGA_CAP_GMR2                    0x00400000U
 #define SVGA_CAP_SCREEN_OBJECT_2         0x00800000U
+#define SVGA_CAP_GBOBJECTS               0x08000000U
 
 #define SVGA_FIFO_MIN                     0
 #define SVGA_FIFO_MAX                     1
@@ -65,6 +70,7 @@
 #define SVGA_FIFO_CURSOR_Y               11
 #define SVGA_FIFO_CURSOR_COUNT           12
 #define SVGA_FIFO_CURSOR_LAST_UPDATED    13
+#define SVGA_FIFO_BUSY                  290U
 
 #define SVGA_FIFO_CAP_FENCE              (1U << 0)
 #define SVGA_FIFO_CAP_ACCELFRONT         (1U << 1)
@@ -108,7 +114,7 @@
 #define SVGA_SYNC_SPIN_LIMIT       10000000U
 #define SVGA_MAX_DIRTY_RECTS             32U
 #define SVGA_MAX_SURFACES                32U
-#define SVGA_MAX_TRANSPORT_ALLOCS         16U
+#define SVGA_MAX_TRANSPORT_ALLOCS BK_SVGA_TRANSPORT_MAX_ALLOCATIONS
 #define SVGA_SURFACE_ALIGN               64U
 #define SVGA_GMR_ID                       1U
 
@@ -187,6 +193,14 @@ typedef struct {
     bool gmr_defined;
     bool screen_defined;
     bool gmr_present;
+
+    /* SVGA3D is negotiated independently from the experimental 2D
+     * ScreenObject/GMR2 paths.  Modern Workstation exposes 3D even when
+     * BlesKernOS deliberately keeps those 2D paths disabled. */
+    bool svga3d_guest_advertised;
+    uint32_t svga3d_host_version;
+    bool svga3d_modern_compat;
+    uint32_t svga3d_modern_devcap;
 } vmware_svga_state_t;
 
 static vmware_svga_state_t g_svga;
@@ -225,6 +239,19 @@ static uint32_t svga_fifo_free_bytes(void) {
         return 0;
     if (next >= stop) return (max - next) + (stop - min) - 4U;
     return stop - next - 4U;
+}
+
+/* NEXT_CMD is committed before this call. A busy FIFO already has a host
+ * consumer; avoid one port-I/O VM exit for every glEnd or 2D submission.
+ * Match VMware's reference RingDoorbell: mark busy BEFORE waking the host. */
+static void svga_ring_doorbell(void) {
+    __asm__ volatile ("" : : : "memory");
+    if (g_svga.fifo && g_svga.fifo[SVGA_FIFO_MIN] > SVGA_FIFO_BUSY * 4U) {
+        if (g_svga.fifo[SVGA_FIFO_BUSY]) return;
+        g_svga.fifo[SVGA_FIFO_BUSY] = 1U;
+        __asm__ volatile ("" : : : "memory");
+    }
+    svga_write_reg(SVGA_REG_SYNC, 1U);
 }
 
 static bool svga_sync_fifo(void) {
@@ -365,7 +392,7 @@ static bool svga_submit(bool wait, uint32_t *fence_out) {
     if (!svga_emit_dirty_updates()) return false;
     if (!svga_emit_fence(&fence)) return false;
     __asm__ volatile ("" : : : "memory");
-    svga_write_reg(SVGA_REG_SYNC, 1U);
+    svga_ring_doorbell();
     /* QEMU suele exponer FIFO sin fences (fifo caps=0). En ese caso el
      * camino anterior esperaba SVGA_REG_BUSY incluso cuando wait=false,
      * convirtiendo cada repintado de GUI en una barrera sincrona. Solo
@@ -373,13 +400,7 @@ static bool svga_submit(bool wait, uint32_t *fence_out) {
      * svga_fifo_emit() conserva su sincronizacion de emergencia. */
     if (!svga_has_fence()) {
         if (wait && !svga_sync_fifo()) return false;
-    } else if (wait) {
-        uint32_t spins = 0;
-        while (!svga_fence_passed(fence)) {
-            if (++spins >= SVGA_SYNC_SPIN_LIMIT) return false;
-            __asm__ volatile ("pause");
-        }
-    }
+    } else if (wait && !svga_wait_fence(fence)) return false;
     if (fence_out) *fence_out = fence;
     return true;
 }
@@ -396,17 +417,50 @@ static bool svga_negotiate_id(void) {
     return false;
 }
 
+static uint32_t svga3d_read_host_version(uint32_t fifo_caps,
+                                           uint32_t *legacy_out,
+                                           uint32_t *revised_out) {
+    uint32_t legacy = 0U;
+    uint32_t revised = 0U;
+    if (g_svga.fifo &&
+        g_svga.fifo_register_count > SVGA_FIFO_3D_HWVERSION)
+        legacy = g_svga.fifo[SVGA_FIFO_3D_HWVERSION];
+    if (g_svga.fifo &&
+        (fifo_caps & SVGA_FIFO_CAP_3D_HWVERSION_REVISED) &&
+        g_svga.fifo_register_count > SVGA_FIFO_3D_HWVERSION_REVISED)
+        revised = g_svga.fifo[SVGA_FIFO_3D_HWVERSION_REVISED];
+    if (legacy_out) *legacy_out = legacy;
+    if (revised_out) *revised_out = revised;
+    return revised ? revised : legacy;
+}
+
 static bool svga_init_fifo(void) {
-    uint32_t register_count, minimum;
+    uint32_t host_register_count, register_count, minimum;
+    uint32_t host_3d_version = 0U;
+    uint32_t host_3d_legacy = 0U;
+    uint32_t host_3d_revised = 0U;
+    uint32_t guest_readback = 0U;
+    uint32_t modern_devcap_3d = 0U;
+    uint32_t enable_readback = 0U;
+    uint32_t config_readback = 0U;
+    uint32_t spins;
     if (!g_svga.fifo_start || g_svga.fifo_size < SVGA_FIFO_MIN_QUEUE + 16U)
         return false;
     g_svga.fifo = (volatile uint32_t *)(uintptr_t)g_svga.fifo_start;
     svga_write_reg(SVGA_REG_CONFIG_DONE, 0U);
-    register_count = svga_read_reg(SVGA_REG_MEM_REGS);
+
+    /* Reserve all FIFO registers understood by this guest. */
+    host_register_count = svga_read_reg(SVGA_REG_MEM_REGS);
+    register_count = host_register_count;
     if (register_count < SVGA_FIFO_LEGACY_REGS ||
         register_count > g_svga.fifo_size / 4U)
         register_count = (g_svga.capabilities & SVGA_CAP_EXTENDED_FIFO)
             ? SVGA_FIFO_EXT_REGS : SVGA_FIFO_LEGACY_REGS;
+    if ((g_svga.capabilities & SVGA_CAP_EXTENDED_FIFO) &&
+        register_count < SVGA_FIFO_EXT_REGS &&
+        SVGA_FIFO_EXT_REGS * 4U + SVGA_FIFO_MIN_QUEUE <= g_svga.fifo_size)
+        register_count = SVGA_FIFO_EXT_REGS;
+
     minimum = register_count * 4U;
     if (minimum + SVGA_FIFO_MIN_QUEUE > g_svga.fifo_size) {
         minimum = SVGA_FIFO_LEGACY_REGS * 4U;
@@ -417,20 +471,88 @@ static bool svga_init_fifo(void) {
     g_svga.fifo[SVGA_FIFO_MAX] = g_svga.fifo_size & ~3U;
     g_svga.fifo[SVGA_FIFO_NEXT_CMD] = minimum;
     g_svga.fifo[SVGA_FIFO_STOP] = minimum;
-    /* VMware requires the guest 3D hardware version to be advertised before
-     * CONFIG_DONE. QEMU lacks SVGA_CAP_3D, so this write is never attempted
-     * there and the 2D path remains unchanged. */
-    if (BLES_VMWARE_EXPERIMENTAL_ACCEL &&
-        (g_svga.capabilities & (SVGA_CAP_3D | SVGA_CAP_EXTENDED_FIFO)) ==
+
+    /* VMware's reference driver advertises CURRENT (WS8_B1 / 2.1). */
+    g_svga.svga3d_guest_advertised = false;
+    g_svga.svga3d_host_version = 0U;
+    g_svga.svga3d_modern_compat = false;
+    g_svga.svga3d_modern_devcap = 0U;
+    if ((g_svga.capabilities & (SVGA_CAP_3D | SVGA_CAP_EXTENDED_FIFO)) ==
             (SVGA_CAP_3D | SVGA_CAP_EXTENDED_FIFO) &&
-        g_svga.fifo_register_count > SVGA_FIFO_GUEST_3D_HWVERSION)
-        g_svga.fifo[SVGA_FIFO_GUEST_3D_HWVERSION] =
-            SVGA3D_GUEST_HWVERSION;
+        g_svga.fifo_register_count > SVGA_FIFO_GUEST_3D_HWVERSION) {
+        g_svga.fifo[SVGA_FIFO_GUEST_3D_HWVERSION] = SVGA3D_GUEST_HWVERSION;
+        __asm__ volatile ("" : : : "memory");
+        guest_readback = g_svga.fifo[SVGA_FIFO_GUEST_3D_HWVERSION];
+        g_svga.svga3d_guest_advertised =
+            guest_readback == SVGA3D_GUEST_HWVERSION;
+    }
+
+    kprintf("[SVGA.DVR] SVGA3D preflight guest=%x rb=%x memregs=%u "
+            "reserved=%u modern=%u\n",
+            SVGA3D_GUEST_HWVERSION, guest_readback,
+            host_register_count, g_svga.fifo_register_count,
+            (g_svga.capabilities & SVGA_CAP_GBOBJECTS) ? 1U : 0U);
+
     __asm__ volatile ("" : : : "memory");
+    /* BLES_SVGA3D_MODERN_DEVCAP_V4
+     * Match VMware's documented FIFO bring-up ordering: the guest 3D version
+     * is already published, then ENABLE is asserted immediately before
+     * CONFIG_DONE. */
+    svga_write_reg(SVGA_REG_ENABLE, 1U);
+    enable_readback = svga_read_reg(SVGA_REG_ENABLE);
     svga_write_reg(SVGA_REG_CONFIG_DONE, 1U);
+    config_readback = svga_read_reg(SVGA_REG_CONFIG_DONE);
+
     g_svga.fifo_capabilities = 0U;
     if ((g_svga.capabilities & SVGA_CAP_EXTENDED_FIFO) && minimum >= 20U)
         g_svga.fifo_capabilities = g_svga.fifo[SVGA_FIFO_CAPABILITIES];
+
+    if (g_svga.svga3d_guest_advertised) {
+        for (spins = 0U; spins < 65536U; spins++) {
+            if ((g_svga.capabilities & SVGA_CAP_EXTENDED_FIFO) && minimum >= 20U)
+                g_svga.fifo_capabilities = g_svga.fifo[SVGA_FIFO_CAPABILITIES];
+            host_3d_version = svga3d_read_host_version(
+                g_svga.fifo_capabilities,
+                &host_3d_legacy, &host_3d_revised);
+            if (host_3d_version) break;
+            __asm__ volatile ("pause");
+        }
+        /* Current VMware hosts exposing GBOBJECTS advertise 3D through
+         * SVGA_REG_DEV_CAP rather than relying on the old FIFO HWVERSION.
+         * Query DEVCAP_3D exactly as vmwgfx does.  Only a non-zero host reply
+         * permits a candidate probe; the 3D extension must validate real
+         * pixels before advertising a working legacy backend. */
+        if (!host_3d_version && (g_svga.capabilities & SVGA_CAP_GBOBJECTS)) {
+            svga_write_reg(SVGA_REG_DEV_CAP, SVGA3D_DEVCAP_3D);
+            modern_devcap_3d = svga_read_reg(SVGA_REG_DEV_CAP);
+            g_svga.svga3d_modern_devcap = modern_devcap_3d;
+            if (modern_devcap_3d) {
+                host_3d_version = SVGA3D_HWVERSION_WS8_B1;
+                g_svga.svga3d_modern_compat = true;
+            }
+        }
+        if (g_svga.svga3d_modern_compat)
+            kprintf("[SVGA.DVR] modern 3D capability is not legacy support; "
+                    "SVGA3D pixel validation required\n");
+        g_svga.svga3d_host_version = host_3d_version;
+        kprintf("[SVGA.DVR] SVGA3D candidate guest=%x protocol=%x legacy=%x "
+                "revised=%x fifocaps=%x devcap3d=%x inferred=%u "
+                "enable=%x config=%x wait=%u\n",
+                SVGA3D_GUEST_HWVERSION, host_3d_version,
+                host_3d_legacy, host_3d_revised,
+                g_svga.fifo_capabilities, modern_devcap_3d,
+                g_svga.svga3d_modern_compat ? 1U : 0U,
+                enable_readback, config_readback, spins);
+        if (!host_3d_version && (g_svga.capabilities & SVGA_CAP_GBOBJECTS))
+            kprintf("[SVGA.DVR] GBOBJECTS presente pero DEVCAP_3D=0; "
+                    "3D queda fail-closed\n");
+    } else if (g_svga.capabilities & SVGA_CAP_3D) {
+        kprintf("[SVGA.DVR] SVGA3D anunciado pero FIFO guest-version "
+                "no disponible regs=%u ext=%u rb=%x\n",
+                g_svga.fifo_register_count,
+                (g_svga.capabilities & SVGA_CAP_EXTENDED_FIFO) ? 1U : 0U,
+                guest_readback);
+    }
     return true;
 }
 
@@ -793,10 +915,12 @@ static void svga_disable(void) {
 static bool svga_list_modes(gfx_display_mode_t *modes, uint32_t max_modes,
                             uint32_t *count) {
     static const gfx_display_mode_t candidates[] = {
-        {640, 480, 32}, {800, 600, 32}, {1024, 768, 32},
-        {1152, 864, 32}, {1280, 720, 32}, {1280, 800, 32},
-        {1280, 1024, 32}, {1366, 768, 32}, {1440, 900, 32},
-        {1600, 900, 32}, {1680, 1050, 32}, {1920, 1080, 32}
+        {640, 480, 32}, {720, 480, 32}, {800, 600, 32},
+        {960, 540, 32}, {1024, 600, 32}, {1024, 768, 32},
+        {1152, 864, 32}, {1280, 720, 32}, {1280, 768, 32},
+        {1280, 800, 32}, {1280, 1024, 32}, {1360, 768, 32},
+        {1366, 768, 32}, {1440, 900, 32}, {1600, 900, 32},
+        {1680, 1050, 32}, {1920, 1080, 32}
     };
     uint32_t found = 0;
     if (!count) return false;
@@ -909,10 +1033,18 @@ static bool svga_flush(uint32_t *fence_out) {
 static bool svga_wait_fence(uint32_t fence) {
     uint32_t spins = 0;
     if (!g_svga.active || !fence || !svga_has_fence()) return true;
-    svga_write_reg(SVGA_REG_SYNC, 1U);
+    /* Most ring slots have already completed. Avoid a port-I/O VM exit for
+     * each reused slot or texture when no synchronization is necessary. */
+    if (svga_fence_passed(fence)) return true;
+    /* A fence wait is a real synchronization point, so ring the doorbell once.
+     * Do not monopolize the only vCPU while Workstation drains a long 3D FIFO. */
+    svga_ring_doorbell();
     while (!svga_fence_passed(fence)) {
         if (++spins >= SVGA_SYNC_SPIN_LIMIT) return false;
-        __asm__ volatile ("pause");
+        /* Legacy SyncToFence must drive progress with BUSY reads, as in
+         * VMware's reference driver. A memory-only wait depended on earlier
+         * full-FIFO drains and could stall once those barriers were removed. */
+        (void)svga_read_reg(SVGA_REG_BUSY);
     }
     return true;
 }
@@ -1428,17 +1560,34 @@ static uint32_t svga_transport_generation(void *context UNUSED) {
 
 static uint32_t svga_transport_device_capabilities(void *context UNUSED) {
     uint32_t caps = g_svga.active ? g_svga.capabilities : 0U;
+
+    /*
+     * The private transport is also consumed by VMWARESVGA3D.DVR.  Do not
+     * hide SVGA_CAP_3D just because the optional accelerated 2D path is off.
+     * Expose 3D only after the pre-CONFIG_DONE version handshake succeeded.
+     */
     if (!BLES_VMWARE_EXPERIMENTAL_ACCEL)
-        caps &= ~(SVGA_CAP_3D | SVGA_CAP_GMR | SVGA_CAP_GMR2 |
-                  SVGA_CAP_SCREEN_OBJECT_2);
+        caps &= ~(SVGA_CAP_GMR | SVGA_CAP_GMR2 | SVGA_CAP_SCREEN_OBJECT_2);
+    if (g_svga.svga3d_host_version < SVGA3D_HWVERSION_WS65_B1)
+        caps &= ~SVGA_CAP_3D;
     return caps;
 }
 
 static uint32_t svga_transport_fifo_capabilities(void *context UNUSED) {
     uint32_t caps = g_svga.active ? g_svga.fifo_capabilities : 0U;
-    if (!BLES_VMWARE_EXPERIMENTAL_ACCEL)
+    if (!BLES_VMWARE_EXPERIMENTAL_ACCEL) {
+        /*
+         * Bit 8 has two protocol meanings: GMR2 for 2D and
+         * 3D_HWVERSION_REVISED for SVGA3D negotiation.  Mask the experimental
+         * 2D capabilities, then restore bit 8 solely for the 3D extension
+         * after a successful negotiation.
+         */
+        uint32_t revised = caps & SVGA_FIFO_CAP_3D_HWVERSION_REVISED;
         caps &= ~(SVGA_FIFO_CAP_SCREEN_OBJECT | SVGA_FIFO_CAP_GMR2 |
                   SVGA_FIFO_CAP_SCREEN_OBJECT_2);
+        if (g_svga.svga3d_host_version >= SVGA3D_HWVERSION_WS65_B1)
+            caps |= revised;
+    }
     return caps;
 }
 
@@ -1448,9 +1597,20 @@ static uint32_t svga_transport_fifo_register_count(void *context UNUSED) {
 
 static uint32_t svga_transport_fifo_register_read(void *context UNUSED,
                                                    uint32_t index) {
+    uint32_t value;
     if (!g_svga.active || !g_svga.fifo ||
         index >= g_svga.fifo_register_count) return 0U;
-    return g_svga.fifo[index];
+    value = g_svga.fifo[index];
+    /* VMWARESVGA3D.DVR still consumes a HWVERSION through this transport.
+     * On a modern DEVCAP_3D host this is only a candidate protocol
+     * version, NOT a host-reported legacy HWVERSION. The extension gates
+     * activation on a fenced DMA/clear/draw pixel self-test. Linux uses
+     * GBOBJECTS here; this driver currently emits legacy objects. */
+    if (!value && g_svga.svga3d_modern_compat &&
+        (index == SVGA_FIFO_3D_HWVERSION ||
+         index == SVGA_FIFO_3D_HWVERSION_REVISED))
+        return g_svga.svga3d_host_version;
+    return value;
 }
 
 static bool svga_transport_fifo_register_write(void *context UNUSED,
@@ -1471,7 +1631,34 @@ static bool svga_transport_emit(void *context UNUSED, const void *bytes,
 
 static bool svga_transport_submit(void *context UNUSED, bool wait,
                                   uint32_t *fence_out) {
-    return svga_submit(wait, fence_out);
+    uint32_t fence = 0U;
+    if (fence_out) *fence_out = 0U;
+    if (!g_svga.active) return false;
+
+    /* BLESKERNOS_SVGA3D_BATCHED_DOORBELL_V7
+     * 3D commands are already committed to NEXT_CMD by transport_emit().
+     * The reference VMware FIFO driver does not write SVGA_REG_SYNC after
+     * every command. Doing so here caused one expensive port-I/O VM exit per
+     * texture upload / draw batch. Keep cheap FIFO fences when the caller
+     * needs staging lifetime tracking, but only ring the doorbell at an
+     * explicit batch boundary (fence_out == NULL) or a synchronous wait. */
+    if ((wait || fence_out) && !svga_emit_fence(&fence)) return false;
+    __asm__ volatile ("" : : : "memory");
+
+    if (wait) {
+        svga_ring_doorbell();
+        if (svga_has_fence()) {
+            if (!svga_wait_fence(fence)) return false;
+        } else if (!svga_sync_fifo()) {
+            return false;
+        }
+    } else if (!fence_out) {
+        /* One asynchronous kick for the whole 3D frame/batch. */
+        svga_ring_doorbell();
+    }
+
+    if (fence_out) *fence_out = fence;
+    return true;
 }
 
 static bool svga_transport_wait_fence(void *context UNUSED, uint32_t fence) {
@@ -1645,6 +1832,7 @@ const bk_driver_module_t *bleskernos_driver_query(void) {
     static const bk_driver_module_t module = {
         BK_DRIVER_ABI_VERSION,
         sizeof(bk_driver_module_t),
+        1U, 0U,
         "vmware_svga",
         "VMware SVGA-II 2D: framebuffer, FIFO, BitBlt, VRAM y transporte SVGA3D",
         vmware_svga_driver_init,

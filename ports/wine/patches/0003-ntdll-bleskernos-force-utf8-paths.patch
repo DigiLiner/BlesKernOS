@@ -1,0 +1,22 @@
+--- a/dlls/ntdll/unix/env.c
++++ b/dlls/ntdll/unix/env.c
+@@ -260,7 +260,19 @@ static const struct { const char *name; UINT cp; } charset_names[] =
+     { "UTF8", CP_UTF8 }
+ };
+ static void init_unix_codepage(void)
+ {
++    /* BlesKernOS exposes Unix/VFS pathnames as UTF-8 byte strings.  The
++     * bundled glibc runtime intentionally does not ship a locale database,
++     * so setlocale(LC_CTYPE, "") falls back to the C locale and reports
++     * ANSI_X3.4-1968.  Upstream Wine then replaces unix_cp (whose default is
++     * CP_UTF8) with code page 20127, making strict filename conversion reject
++     * characters such as U+00F1 (ñ) before mkdir/open ever reaches the
++     * BlesKernOS Linux ABI.
++     *
++     * Keep Wine's native CP_UTF8 default for this BlesKernOS-specific build.
++     * This is a host ABI property, not a Windows application workaround. */
++    return;
++
+     char charset_name[16];
+     const char *name;
+     size_t i, j;

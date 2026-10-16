@@ -4,6 +4,7 @@
 #include "../../include/memory.h"
 #include "../../include/pci.h"
 #include "../../include/block.h"
+#include "../../include/vfs.h"
 #include "../../include/vga.h"
 #include "../../include/task.h"
 #include "../../include/pic.h"
@@ -32,6 +33,7 @@
 #define UHCI_TD_ALIGN        16U
 #define UHCI_ROOT_PORTS      2
 #define UHCI_CTRL_DMA_SIZE   1024U
+#define UHCI_BULK_DMA_SIZE   (UHCI_MAX_TD * 64U)
 #define UHCI_DIAG_MAX_TDS    12U
 
 /*
@@ -289,6 +291,7 @@ typedef struct {
     uhci_td_t *td_pool;
     uint8_t *setup_buffer;
     uint8_t *control_buffer;
+    uint8_t *bulk_buffer;
     uint8_t swdbg_done_mask;
     uint8_t low_speed_probe_mask;
     uint8_t next_address;
@@ -327,10 +330,14 @@ static uhci_controller_t g_uhci[UHCI_MAX_CONTROLLERS];
 static uhci_mass_device_t g_mass[UHCI_MAX_CONTROLLERS];
 static uint32_t g_uhci_count = 0;
 static uint32_t g_uhci_fail_log_budget = 32;
-static uint32_t g_uhci_bot_trace_budget = 12;
-static uint32_t g_uhci_td_trace_budget = 24;
+/* Las trazas completas BOT/TD son útiles al desarrollar el HCD, pero cada
+ * transferencia producía varias líneas por COM1/VGA y frenaba muchísimo un
+ * Pentium III arrancando desde USB 1.1. Los fallos conservan su log acotado. */
+static uint32_t g_uhci_bot_trace_budget = 0;
+static uint32_t g_uhci_td_trace_budget = 0;
 #define USB_MAX_CLASS_DRIVERS 8U
 static usb_device_t g_usb_devices[BK_USB_MAX_DEVICES];
+static volatile uint32_t g_usb_slot_reserved[BK_USB_MAX_DEVICES];
 static uint32_t g_usb_next_id = 1U;
 static const usb_class_driver_t *g_usb_class_drivers[USB_MAX_CLASS_DRIVERS];
 static uint32_t g_usb_class_driver_count;
@@ -358,6 +365,10 @@ static uhci_td_t g_uhci_td_pools[UHCI_MAX_CONTROLLERS][UHCI_MAX_TD]
 static uint8_t g_uhci_setup_buffers[UHCI_MAX_CONTROLLERS][16]
     __attribute__((aligned(16)));
 static uint8_t g_uhci_control_buffers[UHCI_MAX_CONTROLLERS][UHCI_CTRL_DMA_SIZE]
+    __attribute__((aligned(64)));
+/* Bulk transfers can fill the TD pool. Keep control requests in their smaller
+ * arena: they also need setup/status descriptors and have different limits. */
+static uint8_t g_uhci_bulk_buffers[UHCI_MAX_CONTROLLERS][UHCI_BULK_DMA_SIZE]
     __attribute__((aligned(64)));
 
 static inline uint16_t uhci_inw(uint16_t port) {
@@ -438,24 +449,13 @@ static void usb_delay_ms(uint32_t ms) {
 
 static bool uhci_transfer_lock(uhci_controller_t *hc) {
     if (!hc) return false;
-    for (;;) {
-        bool acquired = false;
-        task_preempt_disable();
-        if (!hc->transfer_locked) {
-            hc->transfer_locked = true;
-            acquired = true;
-        }
-        task_preempt_enable();
-        if (acquired) return true;
+    /* A per-CPU preemption guard does not serialize different CPUs. */
+    while (!__sync_bool_compare_and_swap(&hc->transfer_locked, false, true))
         task_yield();
-    }
+    return true;
 }
-
 static void uhci_transfer_unlock(uhci_controller_t *hc) {
-    if (!hc) return;
-    task_preempt_disable();
-    hc->transfer_locked = false;
-    task_preempt_enable();
+    if (hc) __sync_lock_release(&hc->transfer_locked);
 }
 
 static uint16_t rd16(const void *p) {
@@ -607,16 +607,6 @@ static bool uhci_chain_active(uhci_td_t *head) {
     return false;
 }
 
-static bool uhci_chain_failed(uhci_td_t *head) {
-    for (uhci_td_t *td = head; td;
-         td = (uhci_td_t *)(uintptr_t)td->next) {
-        if (!(td->status & UHCI_TD_STS_ACTIVE) &&
-            (td->status & UHCI_TD_STS_FATAL))
-            return true;
-    }
-    return false;
-}
-
 static bool uhci_chain_ok(uhci_td_t *head) {
     for (uhci_td_t *td = head; td;
          td = (uhci_td_t *)(uintptr_t)td->next) {
@@ -647,6 +637,22 @@ static bool uhci_td_is_short_in(const uhci_td_t *td) {
         return false;
     expected = uhci_td_expected_length(td->token);
     return uhci_td_actual_length(status) < expected;
+}
+
+/* UHCI executes this queue in TD order. Completed descriptors cannot become
+ * active again until we retire the queue. Remember the completed prefix so
+ * a long bulk transfer does not rescan 128 descriptors on every poll. Keep a
+ * failed/short descriptor in place for the final accounting below. */
+static bool uhci_chain_pending(uhci_td_t **pending, bool stop_on_short) {
+    while (*pending) {
+        uhci_td_t *td = *pending;
+        uint32_t status = td->status;
+        if (status & UHCI_TD_STS_ACTIVE) return true;
+        if ((status & UHCI_TD_STS_FATAL) ||
+            (stop_on_short && uhci_td_is_short_in(td))) return false;
+        *pending = (uhci_td_t *)(uintptr_t)td->next;
+    }
+    return false;
 }
 
 /* A QH deliberately does not advance past an SPD short packet.  Only scan
@@ -796,14 +802,20 @@ static void uhci_log_chain_error(uhci_controller_t *hc, uhci_td_t *head,
 }
 
 static bool uhci_wait_frame_advance(uhci_controller_t *hc,
-                                    uint16_t start, uint32_t frames) {
+                                    uint16_t start, uint32_t frames, bool cooperative) {
     uint32_t timeout = 2000000U;
+    uint32_t started = pit_get_ticks();
     if (!hc || !frames) return true;
     while (timeout--) {
         uint16_t now = uhci_inw((uint16_t)(hc->io_base + UHCI_FRNUM));
         uint16_t elapsed = (uint16_t)((now - start) & 0x07FFU);
         if (elapsed >= frames) return true;
-        __asm__ volatile ("pause");
+        if (cooperative) {
+            /* Quiescence still requires two actual USB frames before freeing
+             * TDs. Give other tasks the CPU while the controller advances. */
+            if (pit_get_ticks() - started > pit_get_frequency_hz() / 10U + 1U) return false;
+            task_sleep(1U);
+        } else __asm__ volatile ("pause");
     }
     return false;
 }
@@ -830,12 +842,15 @@ static bool uhci_run_chain(uhci_controller_t *hc, uhci_td_t *head,
     uint16_t detach_frame;
     uint16_t last_frame;
     uint32_t elapsed_ms = 0;
+    uint32_t poll_started = pit_get_ticks();
     uint32_t frame_stall_guard = UHCI_FRAME_STALL_GUARD;
     bool timed_out = false;
     bool stopped_for_abort = false;
     bool detached_for_abort = false;
     bool stop_on_short = result != NULL;
     bool short_packet = false;
+    bool cooperative = task_current_pid() && !task_current_is_user();
+    uhci_td_t *pending = head;
     bool ok;
 
     if (result) kmemset(result, 0, sizeof(*result));
@@ -883,8 +898,7 @@ static bool uhci_run_chain(uhci_controller_t *hc, uhci_td_t *head,
 
     if (!timeout_ms) timeout_ms = 1;
     last_frame = uhci_inw((uint16_t)(hc->io_base + UHCI_FRNUM)) & 0x07FFU;
-    while (uhci_chain_active(head) && !uhci_chain_failed(head) &&
-           !(stop_on_short && uhci_chain_has_short_in(head))) {
+    while (uhci_chain_pending(&pending, stop_on_short)) {
         uint16_t now;
         uint16_t delta;
 
@@ -903,11 +917,17 @@ static bool uhci_run_chain(uhci_controller_t *hc, uhci_td_t *head,
             frame_stall_guard--;
         }
 
-        if (elapsed_ms >= timeout_ms || !frame_stall_guard) {
+        if (elapsed_ms >= timeout_ms || !frame_stall_guard ||
+            (cooperative && (uint64_t)(pit_get_ticks() - poll_started) * 1000U >=
+             (uint64_t)timeout_ms * pit_get_frequency_hz())) {
             timed_out = true;
             break;
         }
-        __asm__ volatile ("pause");
+        /* HID NAKs and hub control requests both wait for USB frames.
+         * Busy-polling their ports consumed a large fraction of the vCPU.
+         * Keep the queue/TDs owned and intact; only relinquish CPU time. */
+        if (cooperative) task_sleep(1U);
+        else __asm__ volatile ("pause");
     }
 
     uhci_dma_fence();
@@ -927,7 +947,7 @@ static bool uhci_run_chain(uhci_controller_t *hc, uhci_td_t *head,
         detach_frame = uhci_inw((uint16_t)(hc->io_base + UHCI_FRNUM));
         uhci_park_schedule(hc);
         uhci_dma_fence();
-        detached_for_abort = uhci_wait_frame_advance(hc, detach_frame, 2U);
+        detached_for_abort = uhci_wait_frame_advance(hc, detach_frame, 2U, cooperative);
         if (!detached_for_abort) {
             uhci_outw((uint16_t)(hc->io_base + UHCI_USBCMD),
                       UHCI_CMD_CF | UHCI_CMD_MAXP);
@@ -956,7 +976,7 @@ static bool uhci_run_chain(uhci_controller_t *hc, uhci_td_t *head,
         uhci_dma_fence();
     }
     if (!detached_for_abort && !stopped_for_abort &&
-        !uhci_wait_frame_advance(hc, detach_frame, 2)) {
+        !uhci_wait_frame_advance(hc, detach_frame, 2, cooperative)) {
         uhci_outw((uint16_t)(hc->io_base + UHCI_USBCMD),
                   UHCI_CMD_CF | UHCI_CMD_MAXP);
         stopped_for_abort = uhci_wait_halted(hc, true, 2000000U);
@@ -1608,7 +1628,7 @@ static bool uhci_bulk_unlocked(uhci_mass_device_t *dev, bool in, void *data,
     if (len == 0) return true;
     if (!data) return false;
     hc = dev->hc;
-    if (!hc->control_buffer) return false;
+    if (!hc->bulk_buffer) return false;
     max_packet = in ? dev->bulk_in_packet : dev->bulk_out_packet;
     if (!max_packet || max_packet > 64U) return false;
 
@@ -1622,18 +1642,18 @@ static bool uhci_bulk_unlocked(uhci_mass_device_t *dev, bool in, void *data,
         uint32_t bytes = 0;
         bool short_packet = false;
 
-        if (max_batch > UHCI_CTRL_DMA_SIZE)
-            max_batch = UHCI_CTRL_DMA_SIZE;
+        if (max_batch > UHCI_BULK_DMA_SIZE)
+            max_batch = UHCI_BULK_DMA_SIZE;
         batch = len > max_batch ? max_batch : len;
         if (!in)
-            kmemcpy(hc->control_buffer, cursor, batch);
+            kmemcpy(hc->bulk_buffer, cursor, batch);
         else
-            kmemset(hc->control_buffer, 0, batch);
+            kmemset(hc->bulk_buffer, 0, batch);
         if (!in && batch == MSC_CBW_WIRE_SIZE)
-            usb_msc_trace_cbw_dma(dev, hc->control_buffer);
+            usb_msc_trace_cbw_dma(dev, hc->bulk_buffer);
         uhci_dma_fence();
 
-        if (!uhci_bulk_batch(dev, in, hc->control_buffer, batch,
+        if (!uhci_bulk_batch(dev, in, hc->bulk_buffer, batch,
                              &packets, &bytes, &short_packet,
                              stage, timeout_ms))
             return false;
@@ -1641,7 +1661,7 @@ static bool uhci_bulk_unlocked(uhci_mass_device_t *dev, bool in, void *data,
 
         uhci_dma_fence();
         if (in) {
-            if (bytes) kmemcpy(cursor, hc->control_buffer, bytes);
+            if (bytes) kmemcpy(cursor, hc->bulk_buffer, bytes);
             transferred += bytes;
             if (actual_len) *actual_len = transferred;
             if (short_packet) return true;
@@ -2001,10 +2021,25 @@ static bool usb_msc_rw(uhci_mass_device_t *dev, uint32_t lba,
                                  (uint32_t)count * BLOCK_SECTOR_SIZE);
 }
 
+static uint32_t g_uhci_block_read_failures = 0;
+static uint32_t g_uhci_block_read_ok = 0;
+static uint32_t g_uhci_io_fail_log_budget = 24;
 static bool usb_block_read(block_device_t *block, uint32_t lba,
                            uint8_t count, void *buffer) {
     uhci_mass_device_t *dev = (uhci_mass_device_t *)block->driver_data;
-    return dev && usb_msc_rw(dev, lba, count, buffer, false);
+    bool ok = dev && usb_msc_rw(dev, lba, count, buffer, false);
+    if (ok) g_uhci_block_read_ok++;
+    else {
+        g_uhci_block_read_failures++;
+        if (g_uhci_io_fail_log_budget) {
+            kprintf("[USB:IO] UHCI READ FAIL disk=%s lba=%u sectors=%u csw=%x count=%u\n",
+                    block ? block->name : "?", lba, count,
+                    dev ? dev->last_csw_status : 0xFFU,
+                    g_uhci_block_read_failures);
+            g_uhci_io_fail_log_budget--;
+        }
+    }
+    return ok;
 }
 
 static bool usb_block_write(block_device_t *block, uint32_t lba,
@@ -2036,10 +2071,10 @@ static usb_device_t *usb_core_find_id(uint32_t id) {
 
 static usb_device_t *usb_core_alloc_device(void) {
     for (uint32_t i = 0; i < BK_USB_MAX_DEVICES; i++) {
-        if (!g_usb_devices[i].connected) {
+        if (__sync_bool_compare_and_swap(&g_usb_slot_reserved[i], 0U, 1U)) {
             kmemset(&g_usb_devices[i], 0, sizeof(g_usb_devices[i]));
             g_usb_devices[i].core_abi = BK_USB_CORE_ABI_VERSION;
-            g_usb_devices[i].id = g_usb_next_id++;
+            g_usb_devices[i].id = __sync_fetch_and_add(&g_usb_next_id, 1U);
             if (!g_usb_next_id) g_usb_next_id = 1U;
             return &g_usb_devices[i];
         }
@@ -2075,6 +2110,17 @@ static void usb_core_disconnect(usb_device_t *device) {
     uint32_t id;
     if (!device || !device->connected) return;
     id = device->id;
+    /* Storage isn't a class callback here: retire block slot before the
+     * controller can reuse its BOT state for another device. */
+    for (uint32_t i = 0; i < UHCI_MAX_CONTROLLERS; ++i) {
+        uhci_mass_device_t *mass = &g_mass[i];
+        if (mass->registered && mass->hc == device->hcd_private &&
+            mass->addr == device->address) {
+            (void)block_unregister(mass->name);
+            mass->registered = false;
+            kprintf("  [USB] %s: bloque retirado\n", mass->name);
+        }
+    }
     for (uint32_t i = 0; i < BK_USB_MAX_DEVICES; i++) {
         if (g_usb_devices[i].connected && g_usb_devices[i].parent_id == id)
             usb_core_disconnect(&g_usb_devices[i]);
@@ -2092,6 +2138,8 @@ static void usb_core_disconnect(usb_device_t *device) {
             device->id, device->address, device->vendor_id,
             device->product_id);
     device->connected = false;
+    __sync_synchronize();
+    __sync_lock_release(&g_usb_slot_reserved[device - g_usb_devices]);
 }
 
 bool usb_class_register(const usb_class_driver_t *driver) {
@@ -2167,6 +2215,8 @@ bool usb_control_transfer(usb_device_t *device, uint8_t request_type,
                           void *data, uint16_t length) {
     uhci_controller_t *hc;
     if (!device || !device->connected || !device->hcd_private) return false;
+    if (device->host_ops) return device->host_ops->control(device, request_type,
+        request, value, index, data, length);
     hc = (uhci_controller_t *)device->hcd_private;
     return usb_request(hc, device->address, device->max_packet0,
                        device->speed == USB_SPEED_LOW, request_type, request,
@@ -2193,9 +2243,9 @@ static bool uhci_endpoint_batch(usb_device_t *device,
     bool interrupt = (endpoint->attributes & 3U) == USB_EP_INTERRUPT;
 
     if (actual_length) *actual_length = 0;
-    if (!hc || !data || !length || !max_packet || max_packet > 64U)
+    if (!hc || !data || !max_packet || max_packet > 64U)
         return false;
-    while (remaining && packets < UHCI_MAX_TD) {
+    while ((remaining || !packets) && packets < UHCI_MAX_TD) {
         uint32_t chunk = remaining > max_packet ? max_packet : remaining;
         uhci_td_t *td = uhci_alloc_td(hc);
         if (!td) {
@@ -2217,7 +2267,7 @@ static bool uhci_endpoint_batch(usb_device_t *device,
         if (head) uhci_free_chain(head);
         return false;
     }
-    if (!uhci_run_chain(hc, head, !interrupt,
+    if (!uhci_run_chain(hc, head, !interrupt && pid != UHCI_PID_IN,
                         interrupt ? "INTERRUPT" :
                         (pid == UHCI_PID_IN ? "BULK-IN" : "BULK-OUT"),
                         timeout_ms ? timeout_ms :
@@ -2248,13 +2298,23 @@ bool usb_endpoint_transfer(usb_device_t *device, usb_endpoint_t *endpoint,
     uint32_t total = 0;
     bool in;
     if (actual_length) *actual_length = 0;
-    if (!device || !device->connected || !endpoint || !data || !length ||
+    if (!device || !device->connected || !endpoint || (!data && length) ||
         !device->hcd_private) return false;
     if ((endpoint->attributes & 3U) != USB_EP_BULK &&
         (endpoint->attributes & 3U) != USB_EP_INTERRUPT) return false;
+    if (!length && (USB_ENDPOINT_IN(endpoint->address) ||
+        (endpoint->attributes & 3U) != USB_EP_BULK)) return false;
+    if (device->host_ops) return device->host_ops->endpoint(device, endpoint,
+        data, length, actual_length, timeout_ms);
     hc = (uhci_controller_t *)device->hcd_private;
     in = USB_ENDPOINT_IN(endpoint->address);
     if (!uhci_transfer_lock(hc)) return false;
+    if (!length) {
+        bool ok = uhci_endpoint_batch(device, endpoint, hc->control_buffer, 0U,
+                                      actual_length, timeout_ms);
+        uhci_transfer_unlock(hc);
+        return ok;
+    }
     while (length) {
         uint32_t batch = length;
         uint32_t actual = 0;
@@ -2324,7 +2384,7 @@ static bool usb_core_attach_mass(usb_device_t *device,
     hc_index = usb_core_hc_index((uhci_controller_t *)device->hcd_private);
     if (hc_index < 0) return false;
     mass = &g_mass[hc_index];
-    if (mass->registered) return false;
+    if (mass->registered || (mass->name[0] && vfs_volume_busy(mass->name))) return false;
     bulk_in = usb_interface_endpoint(interface, USB_EP_BULK, true, 0);
     bulk_out = usb_interface_endpoint(interface, USB_EP_BULK, false, 0);
     if (!bulk_in || !bulk_out) return false;
@@ -2398,6 +2458,46 @@ static void usb_core_parse_config(usb_device_t *device,
     }
 }
 
+/* Publish only a fully configured root device; shared parsers and class probes
+ * now apply to EHCI as well. HCDs own reset, addresses and serialized DMA. */
+usb_device_t *usb_host_publish(void *host, const usb_host_ops_t *ops,
+                               uint8_t address, uint8_t root_port,
+                               usb_speed_t speed, const uint8_t *dd,
+                               const uint8_t *config, uint16_t length) {
+    if (!host || !ops || !ops->control || !ops->endpoint || !dd || !config ||
+        !address || address > 127U || dd[0] != 18U || dd[1] != 1U ||
+        length < 9U || config[0] < 9U || config[0] > length || config[1] != 2U ||
+        rd16(config + 2U) != length || !config[5]) return NULL;
+    uint32_t pos = config[0];
+    while (pos < length) {
+        if (length - pos < 2U || config[pos] < 2U || config[pos] > length - pos)
+            return NULL;
+        pos += config[pos];
+    }
+    usb_device_t *device = usb_core_alloc_device();
+    if (!device) return NULL;
+    device->address = address;
+    device->max_packet0 = dd[7];
+    device->speed = speed;
+    device->vendor_id = rd16(dd + 8U);
+    device->product_id = rd16(dd + 10U);
+    device->device_version = rd16(dd + 12U);
+    device->device_class = dd[4];
+    device->device_subclass = dd[5];
+    device->device_protocol = dd[6];
+    device->configuration = config[5];
+    device->root_port = root_port;
+    device->hcd_private = host;
+    device->host_ops = ops;
+    usb_core_parse_config(device, config, length);
+    device->connected = true;
+    kprintf("  [USB] HCD dev=%u addr=%u vid=%x pid=%x intf=%u\n",
+        device->id, address, device->vendor_id, device->product_id, device->interface_count);
+    usb_core_probe_device(device);
+    return device;
+}
+void usb_host_disconnect(usb_device_t *device) { usb_core_disconnect(device); }
+
 static uint8_t usb_core_allocate_address(uhci_controller_t *hc) {
     uint8_t candidate;
     if (!hc) return 0;
@@ -2466,7 +2566,41 @@ static usb_device_t *usb_core_enumerate(uhci_controller_t *hc,
                      RT_DEV_TO_HOST | RT_STANDARD | RT_DEVICE,
                      REQ_GET_DESC, DESC_CONFIG << 8, 0,
                      total_length, config)) goto failed;
-    if (!config_descriptor->config_value) goto failed;
+    /* Prefer standard Ethernet over an RNDIS-only first configuration. Some
+     * composite devices (including QEMU usb-net) offer ECM as configuration 2. */
+    bool has_ecm = false, has_acm = false;
+    for (uint32_t off = config[0]; off + 9U <= total_length && config[off] >= 2U;
+         off += config[off]) {
+        if (config[off] > total_length - off) goto failed;
+        if (config[off + 1U] == DESC_INTERFACE && config[off] >= 9U && config[off + 5U] == 2U) {
+            has_ecm |= config[off + 6U] == 6U;
+            has_acm |= config[off + 6U] == 2U;
+        }
+    }
+    if (has_acm && !has_ecm && descriptor.configs > 1U) {
+        uint8_t alternate[512];
+        for (uint8_t n = 1U; n < descriptor.configs && n < 8U; n++) {
+            kmemset(alternate, 0, sizeof(alternate));
+            if (!usb_request(hc, address, descriptor.max_packet0, low_speed,
+                0x80U, REQ_GET_DESC, (uint16_t)((DESC_CONFIG << 8) | n), 0, 9U, alternate)) continue;
+            uint16_t size = rd16(alternate + 2U);
+            if (size < 9U || size > sizeof(alternate) || alternate[0] < 9U) continue;
+            if (!usb_request(hc, address, descriptor.max_packet0, low_speed,
+                0x80U, REQ_GET_DESC, (uint16_t)((DESC_CONFIG << 8) | n), 0, size, alternate)) continue;
+            for (uint32_t off = alternate[0]; off + 9U <= size && alternate[off] >= 2U;
+                 off += alternate[off]) {
+                if (alternate[off] > size - off) break;
+                if (alternate[off + 1U] == DESC_INTERFACE && alternate[off] >= 9U &&
+                    alternate[off + 5U] == 2U && alternate[off + 6U] == 6U) {
+                    kmemcpy(config, alternate, size); total_length = size; has_ecm = true; break;
+                }
+            }
+            if (has_ecm) break;
+        }
+    }
+    if (descriptor.len != 18U || descriptor.type != DESC_DEVICE ||
+        config[0] < 9U || config[0] > total_length || config[1] != DESC_CONFIG ||
+        rd16(config + 2U) != total_length || !config_descriptor->config_value) goto failed;
     if (!usb_request(hc, address, descriptor.max_packet0, low_speed,
                      RT_HOST_TO_DEV | RT_STANDARD | RT_DEVICE,
                      REQ_SET_CONF, config_descriptor->config_value,
@@ -2501,6 +2635,7 @@ static usb_device_t *usb_core_enumerate(uhci_controller_t *hc,
     return device;
 failed:
     kmemset(device, 0, sizeof(*device));
+    __sync_lock_release(&g_usb_slot_reserved[device - g_usb_devices]);
     return NULL;
 }
 
@@ -2511,6 +2646,7 @@ bool usb_enumerate_hub_port(usb_device_t *hub, uint8_t port,
         hub->depth >= 5U ||
         (speed != USB_SPEED_LOW && speed != USB_SPEED_FULL)) return false;
     usb_disconnect_hub_port(hub, port);
+    if (hub->host_ops) return false; /* Only UHCI currently routes downstream hubs. */
     child = usb_core_enumerate((uhci_controller_t *)hub->hcd_private,
                                hub->id, port, hub->root_port,
                                (uint8_t)(hub->depth + 1U), speed);
@@ -3069,9 +3205,14 @@ static bool uhci_reset_port(uhci_controller_t *hc, uint32_t port) {
             status & UHCI_PORT_RWC,
             (status >> 4) & 3U,
             uhci_inw((uint16_t)(hc->io_base + UHCI_USBCMD)));
-    return (status & (UHCI_PORT_CONNECT | UHCI_PORT_ENABLE)) ==
-               (UHCI_PORT_CONNECT | UHCI_PORT_ENABLE) &&
-           !(status & UHCI_PORT_OVERCURRENT);
+    if ((status & (UHCI_PORT_CONNECT | UHCI_PORT_ENABLE)) !=
+            (UHCI_PORT_CONNECT | UHCI_PORT_ENABLE) ||
+        (status & UHCI_PORT_OVERCURRENT)) return false;
+    /* A reset/enabling transition can leave the connect-change W1C bit
+     * latched. Once we have verified the port is stable, retire only the
+     * historical event; the next physical change will relatch CSC. */
+    uhci_ack_port_changes(hc, port);
+    return true;
 }
 
 static uint16_t uhci_find_io_base(const pci_device_t *pci) {
@@ -3253,6 +3394,7 @@ static void uhci_init_controller(const pci_device_t *pci) {
     hc->td_pool = g_uhci_td_pools[g_uhci_count];
     hc->setup_buffer = g_uhci_setup_buffers[g_uhci_count];
     hc->control_buffer = g_uhci_control_buffers[g_uhci_count];
+    hc->bulk_buffer = g_uhci_bulk_buffers[g_uhci_count];
 
     /* The kernel currently runs without paging, so these identity-mapped
        addresses are also the physical addresses programmed into UHCI. */
@@ -3262,7 +3404,8 @@ static void uhci_init_controller(const pci_device_t *pci) {
         (uint32_t)(uintptr_t)hc->term_td >= 0x01000000U ||
         (uint32_t)(uintptr_t)hc->td_pool >= 0x01000000U ||
         (uint32_t)(uintptr_t)hc->setup_buffer >= 0x01000000U ||
-        (uint32_t)(uintptr_t)hc->control_buffer >= 0x01000000U) {
+        (uint32_t)(uintptr_t)hc->control_buffer >= 0x01000000U ||
+        (uint32_t)(uintptr_t)hc->bulk_buffer + UHCI_BULK_DMA_SIZE > 0x01000000U) {
         kprintf("  [USB] UHCI DMA fuera de memoria baja frame=%x qh=%x xqh=%x term=%x td=%x\n",
                 (uint32_t)(uintptr_t)hc->frame_list,
                 (uint32_t)(uintptr_t)hc->qh,
@@ -3280,6 +3423,7 @@ static void uhci_init_controller(const pci_device_t *pci) {
     kmemset(hc->td_pool, 0, UHCI_MAX_TD * sizeof(hc->td_pool[0]));
     kmemset(hc->setup_buffer, 0, 16U);
     kmemset(hc->control_buffer, 0, UHCI_CTRL_DMA_SIZE);
+    kmemset(hc->bulk_buffer, 0, UHCI_BULK_DMA_SIZE);
     hc->term_td->link = UHCI_LINK_TERM;
     hc->term_td->status = 0;
     hc->term_td->token = uhci_token(UHCI_PID_IN, 0x7FU, 0, 0, 0);
@@ -3391,6 +3535,13 @@ static void usb_uhci_scan_ports(void) {
                 hc->swdbg_done_mask &= (uint8_t)~(1U << port);
                 continue;
             }
+            /* A fast unplug/replug may have returned to CCS=1 before this
+             * poll. CSC still marks the old device as physically replaced. */
+            if (current && (portsc & UHCI_PORT_CONNECT_CHG)) {
+                usb_core_disconnect(current);
+                hc->root_device_id[port] = 0;
+                current = NULL;
+            }
             if (current) continue;
             if (uhci_reset_port(hc, port)) {
                 usb_device_t *device;
@@ -3417,11 +3568,12 @@ void usb_uhci_init(void) {
     int index = -1;
     g_uhci_count = 0;
     g_uhci_fail_log_budget = 32;
-    g_uhci_bot_trace_budget = 12;
-    g_uhci_td_trace_budget = 24;
+    g_uhci_bot_trace_budget = 0;
+    g_uhci_td_trace_budget = 0;
     kmemset(g_uhci, 0, sizeof(g_uhci));
     kmemset(g_mass, 0, sizeof(g_mass));
     kmemset(g_usb_devices, 0, sizeof(g_usb_devices));
+    kmemset((void *)g_usb_slot_reserved, 0, sizeof(g_usb_slot_reserved));
     kmemset(g_usb_class_drivers, 0, sizeof(g_usb_class_drivers));
     g_usb_class_driver_count = 0;
     g_usb_next_id = 1U;
@@ -3435,6 +3587,39 @@ void usb_uhci_init(void) {
                 dev->bus, dev->slot, dev->function,
                 dev->vendor_id, dev->device_id, dev->revision_id);
         uhci_init_controller(dev);
+    }
+}
+
+/* Read-only ICH4 diagnostics for the framebuffer recovery shell. */
+void usb_uhci_diagnostics(void) {
+    kprintf("[USB-DIAG] UHCI reads_ok=%u reads_fail=%u\n",
+            g_uhci_block_read_ok, g_uhci_block_read_failures);
+    kprintf("[USB-DIAG] UHCI ready=%u\n", g_uhci_count);
+    for (uint32_t i = 0; i < pci_device_count(); ++i) {
+        const pci_device_t *pci = pci_device_at(i);
+        uint16_t io_base;
+        uint16_t cmd;
+        if (!pci || pci->class_code != 0x0CU ||
+            pci->subclass != 0x03U || pci->prog_if != 0x00U) continue;
+        cmd = pci_config_read16(pci->bus, pci->slot, pci->function, 0x04);
+        io_base = uhci_find_io_base(pci);
+        kprintf("[USB-DIAG] UHCI PCI %u:%u.%u %x:%x cmd=%x io=%x legsup=%x\n",
+                pci->bus, pci->slot, pci->function, pci->vendor_id,
+                pci->device_id, cmd, io_base,
+                pci_config_read16(pci->bus, pci->slot, pci->function, 0xC0));
+        if (!io_base || !(cmd & PCI_COMMAND_IO)) continue;
+        kprintf("  usbcmd=%x sts=%x fr=%u flbase=%x\n",
+                uhci_inw((uint16_t)(io_base + UHCI_USBCMD)),
+                uhci_inw((uint16_t)(io_base + UHCI_USBSTS)),
+                uhci_inw((uint16_t)(io_base + UHCI_FRNUM)),
+                inl((uint16_t)(io_base + UHCI_FLBASEADD)));
+        for (uint32_t port = 0; port < UHCI_ROOT_PORTS; ++port) {
+            uint16_t st = uhci_inw((uint16_t)(io_base + UHCI_PORTSC0 + 2U * port));
+            kprintf("  port%u status=%x connect=%u enable=%u speed=%s\n",
+                    port + 1U, st, (st & UHCI_PORT_CONNECT) != 0,
+                    (st & UHCI_PORT_ENABLE) != 0,
+                    (st & UHCI_PORT_LOW_SPEED) ? "low" : "full");
+        }
     }
 }
 

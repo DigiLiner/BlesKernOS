@@ -1,5 +1,7 @@
 #include <bleskernos_mesa.h>
 
+static bk_mesa_context_t *g_current_context;
+
 static void bk_mesa_zero(void *pointer, uint32_t size)
 {
     uint8_t *bytes = (uint8_t *)pointer;
@@ -27,6 +29,7 @@ static bool bk_mesa_renderer_valid(bk_mesa_renderer_t renderer)
 static bool bk_mesa_bind(bk_mesa_context_t *context)
 {
     if (!context || !context->osmesa || !context->pixels) return false;
+    if (g_current_context == context) return true;
     if (!OSMesaMakeCurrent(context->osmesa, context->pixels,
                            GL_UNSIGNED_BYTE,
                            (GLsizei)context->width,
@@ -35,6 +38,7 @@ static bool bk_mesa_bind(bk_mesa_context_t *context)
 
     OSMesaPixelStore(OSMESA_ROW_LENGTH, (GLint)(context->pitch_bytes / 4U));
     OSMesaPixelStore(OSMESA_Y_UP, 0);
+    g_current_context = context;
     return true;
 }
 
@@ -184,6 +188,7 @@ bool bk_mesa_resize(bk_mesa_context_t *context,
         uint32_t old_height = context->height;
         uint32_t old_pitch = context->pitch_bytes;
 
+        if (g_current_context == context) g_current_context = NULL;
         context->pixels = replacement;
         context->width = width;
         context->height = height;
@@ -209,14 +214,18 @@ bool bk_mesa_present(bk_mesa_context_t *context)
     if (!context || !context->initialized) return false;
     if (!bk_mesa_make_current(context)) return false;
     glFinish();
-    return OSMesaBleskResolve(context->osmesa) ? true : false;
+    /* Presentation exposes color pixels, not Mesa's depth buffer. Explicit
+     * depth reads and CPU rendering retain their own synchronization. */
+    return OSMesaBleskResolveColor(context->osmesa) ? true : false;
 }
 
 bool bk_mesa_present_gpu(bk_mesa_context_t *context)
 {
     if (!context || !context->initialized) return false;
     if (!bk_mesa_make_current(context)) return false;
-    glFinish();
+    /* Presentation consumes the same ordered GPU stream. CPU users and
+     * explicit glFinish still wait for completion. */
+    glFlush();
     return OSMesaBleskGPUSurface(context->osmesa) != 0U;
 }
 
@@ -359,6 +368,7 @@ const char *bk_mesa_version_string(void)
 void bk_mesa_destroy(bk_mesa_context_t *context)
 {
     if (!context) return;
+    if (g_current_context == context) g_current_context = NULL;
     if (context->osmesa) {
         OSMesaDestroyContext(context->osmesa);
         context->osmesa = NULL;

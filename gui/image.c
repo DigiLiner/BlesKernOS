@@ -187,8 +187,21 @@ fail:
     return false;
 }
 
+static uint8_t bmp_mask_to_u8(uint32_t value, uint32_t mask) {
+    uint32_t shift = 0U, bits = 0U, component, max_value;
+    if (!mask) return 0U;
+    while (((mask >> shift) & 1U) == 0U && shift < 32U) shift++;
+    while (shift + bits < 32U && ((mask >> (shift + bits)) & 1U)) bits++;
+    if (!bits) return 0U;
+    component = (value & mask) >> shift;
+    if (bits >= 8U) return (uint8_t)(component >> (bits - 8U));
+    max_value = (1U << bits) - 1U;
+    return (uint8_t)((component * 255U + max_value / 2U) / max_value);
+}
+
 bool gui_bmp_decode(gui_image_t *image, const uint8_t *data, uint32_t length) {
-    uint32_t offset, stride, compression;
+    uint32_t offset, stride, compression, dib_size;
+    uint32_t red_mask = 0U, green_mask = 0U, blue_mask = 0U, alpha_mask = 0U;
     int32_t width, raw_height, height;
     uint16_t bpp;
     uint32_t *pixels;
@@ -198,6 +211,7 @@ bool gui_bmp_decode(gui_image_t *image, const uint8_t *data, uint32_t length) {
     image->height = 0U;
     if (data[0] != 'B' || data[1] != 'M' || le32(data + 14U) < 40U)
         return false;
+    dib_size = le32(data + 14U);
     offset = le32(data + 10U);
     width = (int32_t)le32(data + 18U);
     raw_height = (int32_t)le32(data + 22U);
@@ -205,7 +219,21 @@ bool gui_bmp_decode(gui_image_t *image, const uint8_t *data, uint32_t length) {
     compression = le32(data + 30U);
     if (width <= 0 || raw_height == 0 || raw_height == (int32_t)0x80000000U ||
         width > 4096 || raw_height > 4096 || raw_height < -4096 ||
-        (bpp != 24U && bpp != 32U) || compression != 0U) return false;
+        (bpp != 24U && bpp != 32U) ||
+        (compression != 0U && compression != 3U)) return false;
+
+    /* BI_BITFIELDS is common for 32-bit BMPs with a real alpha channel.
+       BITMAPV2+/V4/V5 store the masks inside the DIB header; a 40-byte
+       BITMAPINFOHEADER stores RGB masks immediately after it. */
+    if (compression == 3U) {
+        if (bpp != 32U || length < 66U) return false;
+        red_mask = le32(data + 54U);
+        green_mask = le32(data + 58U);
+        blue_mask = le32(data + 62U);
+        if (!red_mask || !green_mask || !blue_mask) return false;
+        if (dib_size >= 56U && length >= 70U)
+            alpha_mask = le32(data + 66U);
+    }
     height = raw_height < 0 ? -raw_height : raw_height;
     stride = ((uint32_t)width * (uint32_t)(bpp / 8U) + 3U) & ~3U;
     if (offset >= length || stride > length ||
@@ -218,11 +246,22 @@ bool gui_bmp_decode(gui_image_t *image, const uint8_t *data, uint32_t length) {
         const uint8_t *row = data + offset + (uint32_t)source_y * stride;
         for (int32_t x = 0; x < width; x++) {
             const uint8_t *pixel = row + (uint32_t)x * (uint32_t)(bpp / 8U);
-            uint32_t alpha = bpp == 32U ? pixel[3] : 0xFFU;
-            if (bpp == 32U && alpha == 0U) alpha = 0xFFU;
+            uint32_t alpha, red, green, blue;
+            if (compression == 3U) {
+                uint32_t packed = le32(pixel);
+                red = bmp_mask_to_u8(packed, red_mask);
+                green = bmp_mask_to_u8(packed, green_mask);
+                blue = bmp_mask_to_u8(packed, blue_mask);
+                alpha = alpha_mask ? bmp_mask_to_u8(packed, alpha_mask) : 0xFFU;
+            } else {
+                red = pixel[2]; green = pixel[1]; blue = pixel[0];
+                alpha = bpp == 32U ? pixel[3] : 0xFFU;
+                /* Preserve the old BI_RGB convention: many legacy 32-bit BMPs
+                   leave the unused high byte at zero but still mean opaque. */
+                if (bpp == 32U && alpha == 0U) alpha = 0xFFU;
+            }
             pixels[(uint32_t)y * (uint32_t)width + (uint32_t)x] =
-                (alpha << 24) | ((uint32_t)pixel[2] << 16) |
-                ((uint32_t)pixel[1] << 8) | pixel[0];
+                (alpha << 24) | (red << 16) | (green << 8) | blue;
         }
     }
     image->pixels = pixels;

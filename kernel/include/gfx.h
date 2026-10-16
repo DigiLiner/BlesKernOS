@@ -18,6 +18,7 @@ typedef enum {
     GFX_MODE_VIRTIO_GPU = 5,
     GFX_MODE_ATI_RAGE128 = 6,
     GFX_MODE_INTEL_GMA9XX = 7,
+    GFX_MODE_RPI_FRAMEBUFFER = 8,
 } gfx_mode_t;
 
 typedef struct {

@@ -3,5 +3,6 @@
 
 void usb_storage_init(void);
 void usb_storage_start_hotplug_task(void);
+void usb_storage_diagnostics(void);
 
 #endif

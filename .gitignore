@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.orig
 *.bak
+*.BAK
 *.bak.*
 *.before-*
 *.broken-*
@@ -10,3 +11,23 @@ __pycache__/
 *~
 *.o
 *.d
+
+# Local installation media and standalone release archives
+/media/installers/*
+!/media/installers/README.md
+/extras/archives/*
+!/extras/archives/README.md
+# Editor, patch and migration leftovers
+*.rej
+*.pre-*
+*.bak-*
+
+# Generated standalone builds and release staging (keep docs/build/ tracked)
+/extras/**/build/
+/extras/**/build-bles/
+/extras/**/dist/
+/programs/**/build/
+/tests/fixtures/disk-images/programas-extra.img
+.pytest_cache/
+.repair-backup-*/
+.gl117-*-backup/

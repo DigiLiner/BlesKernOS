@@ -1,0 +1,13 @@
+pulseaudio: set_sink_input_volume() failed
+pulseaudio: Reason: Invalid argument
+pulseaudio: set_sink_input_mute() failed
+pulseaudio: Reason: Invalid argument
+pulseaudio: set_sink_input_volume() failed
+pulseaudio: Reason: Invalid argument
+pulseaudio: set_sink_input_mute() failed
+pulseaudio: Reason: Invalid argument
+pulseaudio: set_source_output_volume() failed
+pulseaudio: Reason: Invalid argument
+pulseaudio: set_source_output_mute() failed
+pulseaudio: Reason: Invalid argument
+Failed to create fence sync object

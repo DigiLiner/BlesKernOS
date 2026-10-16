@@ -5,6 +5,10 @@
 #include "../../include/bootsplash.h"
 #include "../../include/task.h"
 #include "../../include/pit.h"
+#include "../../include/smp.h"
+#include "../../include/klock.h"
+#include "../../include/w3_profile.h"
+#include "../../include/bfs4.h"
 
 static bool name_equals(const char *a, const char *b);
 static bool fat_commit_table(const fat_fs_t *fs, const uint8_t *table);
@@ -13,6 +17,16 @@ static bool fat_read_sector_run(const fat_fs_t *fs, uint32_t sector,
 static bool fat_write_sector_run(const fat_fs_t *fs, uint32_t sector,
                                  uint32_t count, const void *buffer);
 static bool fat_device_writable(const fat_fs_t *fs);
+
+/* FAT short entries reserve byte 12 for NT case flags and byte 13 for the
+ * creation-time hundredths field. BlesKernOS has never emitted either field,
+ * so entries created by us contain zero there. A high-nibble tag in byte 12
+ * therefore gives us a backwards-compatible on-disk extension for the 12
+ * POSIX permission/special bits (07777). Standard FAT readers ignore these
+ * bytes for file contents, attributes, cluster chains and sizes. */
+#define FAT_POSIX_MODE_TAG       0xA0U
+#define FAT_POSIX_MODE_TAG_MASK  0xF0U
+#define FAT_POSIX_MODE_MASK      0x0FFFU
 
 static fat_fs_t g_current_fs;
 static bool g_fs_ready = false;
@@ -27,11 +41,13 @@ static const char *g_active_name = "none";
  * el sector de la FAT. Eso convertia cada doble clic del FileBrowser en
  * varias operaciones ATA PIO sincronas.
  *
- * Treinta y dos lineas direct-mapped consumen 16 KiB y alcanzan para mantener
- * residentes la raiz, /SYSTEM, /PROGRAMS, /TEMP y los sectores FAT usados por
- * sus cadenas. Tambien se alimenta desde las lecturas por lotes.
+ * Cuatro vias evitan expulsiones sistematicas entre directorios alineados
+ * a clusters y sus sectores FAT. El tamaño depende de la RAM: además de
+ * directorios, mantiene bibliotecas que varios procesos cargan repetidamente.
+ * Tambien se alimenta desde las lecturas por lotes.
  */
-#define FAT_SECTOR_CACHE_SLOTS 32U
+#define FAT_SECTOR_CACHE_WAYS 4U
+#define FAT_SECTOR_CACHE_SLOTS 131072U
 
 typedef struct {
     bool valid;
@@ -40,13 +56,106 @@ typedef struct {
     uint8_t data[BLOCK_SECTOR_SIZE];
 } fat_sector_cache_entry_t;
 
-static fat_sector_cache_entry_t g_sector_cache[FAT_SECTOR_CACHE_SLOTS];
+static fat_sector_cache_entry_t g_sector_cache_small[32];
+static fat_sector_cache_entry_t *g_sector_cache = g_sector_cache_small;
+static uint32_t g_sector_cache_slots = 32U;
+static uint8_t g_sector_cache_small_victim[8];
+static uint8_t *g_sector_cache_victim = g_sector_cache_small_victim;
 static uint32_t g_sector_cache_generation = 1U;
+/* Protect both tags and sector bytes on every CPU. No disk I/O or sleeping
+ * operations run under this lock; misses drop it before reading the device.
+ * A generation change prevents publishing a read across an invalidation. */
+static kspinlock_t g_sector_cache_lock = KSPINLOCK_INITIALIZER;
+
+/* Grow the cache on supported hosts (at least 64 MiB RAM), and publish under
+ * the cache lock so concurrent mounts/readers see one table. */
+static void fat_sector_cache_grow(void) {
+    uint32_t ram = mm_total_bytes();
+    if (ram < 64U * 1024U * 1024U) return;
+    /* Wine's shared bootstrap working set exceeds 16 MiB (shell32 alone
+     * is 9 MiB). Retain the common DLLs while another process starts its
+     * service, instead of evicting them during the parallel desktop load. */
+    uint32_t slots = ram >= 512U * 1024U * 1024U ? FAT_SECTOR_CACHE_SLOTS :
+                     ram >= 128U * 1024U * 1024U ? 8192U : 2048U;
+    uint32_t irq = kspin_lock_irqsave(&g_sector_cache_lock);
+    bool needed = g_sector_cache == g_sector_cache_small;
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
+    if (!needed) return;
+    fat_sector_cache_entry_t *table = kzalloc(sizeof(*table) * slots +
+                                             slots / FAT_SECTOR_CACHE_WAYS);
+    if (!table) return;
+    (void)mm_set_allocation_owner(table, 0U);
+    irq = kspin_lock_irqsave(&g_sector_cache_lock);
+    if (g_sector_cache == g_sector_cache_small) {
+        g_sector_cache = table;
+        g_sector_cache_slots = slots;
+        g_sector_cache_victim = (uint8_t *)(table + slots);
+        table = NULL;
+    }
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
+    if (table) kfree(table);
+}
+
+/* statfs is also used to identify the filesystem during every Wine path
+ * lookup. Cache an exact count from a scanned/committed FAT, not FSInfo
+ * (which older BlesK versions did not maintain). */
+static struct {
+    bool valid;
+    fat_fs_t fs;
+    uint32_t free_clusters;
+    uint32_t generation;
+} g_space_cache;
+
+static uint32_t fat_space_invalidate(void) {
+    uint32_t irq = kspin_lock_irqsave(&g_sector_cache_lock);
+    g_space_cache.valid = false;
+    uint32_t generation = ++g_space_cache.generation;
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
+    return generation;
+}
+
+static bool fat_space_cached(const fat_fs_t *fs, uint32_t *count,
+                              uint32_t *generation) {
+    uint32_t irq = kspin_lock_irqsave(&g_sector_cache_lock);
+    bool hit = g_space_cache.valid &&
+        g_space_cache.fs.device == fs->device &&
+        g_space_cache.fs.volume_lba == fs->volume_lba &&
+        g_space_cache.fs.type == fs->type &&
+        g_space_cache.fs.total_clusters == fs->total_clusters &&
+        g_space_cache.fs.fat_size_sectors == fs->fat_size_sectors;
+    *generation = g_space_cache.generation;
+    if (hit) *count = g_space_cache.free_clusters;
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
+    return hit;
+}
+
+static void fat_space_publish(const fat_fs_t *fs, uint32_t count,
+                               uint32_t generation) {
+    uint32_t irq = kspin_lock_irqsave(&g_sector_cache_lock);
+    if (generation == g_space_cache.generation) {
+        g_space_cache.fs = *fs;
+        g_space_cache.free_clusters = count;
+        g_space_cache.valid = true;
+    }
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
+}
 
 static uint32_t fat_sector_cache_slot(block_device_t *device, uint32_t lba) {
     uintptr_t tag = (uintptr_t)device;
     return (uint32_t)((lba ^ (uint32_t)(tag >> 4U)) &
-                      (FAT_SECTOR_CACHE_SLOTS - 1U));
+                      (g_sector_cache_slots / FAT_SECTOR_CACHE_WAYS - 1U)) * FAT_SECTOR_CACHE_WAYS;
+}
+
+/* Caller holds g_sector_cache_lock. */
+static fat_sector_cache_entry_t *fat_sector_cache_find(block_device_t *device,
+                                                       uint32_t lba) {
+    uint32_t base = fat_sector_cache_slot(device, lba);
+    for (uint32_t way = 0; way < FAT_SECTOR_CACHE_WAYS; ++way) {
+        fat_sector_cache_entry_t *entry = &g_sector_cache[base + way];
+        if (entry->valid && entry->device == device && entry->lba == lba)
+            return entry;
+    }
+    return NULL;
 }
 
 static bool fat_sector_cache_read(block_device_t *device, uint32_t lba,
@@ -54,32 +163,30 @@ static bool fat_sector_cache_read(block_device_t *device, uint32_t lba,
     fat_sector_cache_entry_t *entry;
     bool hit = false;
     if (!device || !buffer) return false;
-    task_preempt_disable();
-    entry = &g_sector_cache[fat_sector_cache_slot(device, lba)];
-    if (entry->valid && entry->device == device && entry->lba == lba) {
+    uint32_t irq = kspin_lock_irqsave(&g_sector_cache_lock);
+    entry = fat_sector_cache_find(device, lba);
+    if (entry) {
         kmemcpy(buffer, entry->data, BLOCK_SECTOR_SIZE);
         hit = true;
     }
-    task_preempt_enable();
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
     return hit;
 }
 
 static bool fat_sector_cache_contains(block_device_t *device, uint32_t lba) {
-    fat_sector_cache_entry_t *entry;
     bool hit;
     if (!device) return false;
-    task_preempt_disable();
-    entry = &g_sector_cache[fat_sector_cache_slot(device, lba)];
-    hit = entry->valid && entry->device == device && entry->lba == lba;
-    task_preempt_enable();
+    uint32_t irq = kspin_lock_irqsave(&g_sector_cache_lock);
+    hit = fat_sector_cache_find(device, lba) != NULL;
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
     return hit;
 }
 
 static uint32_t fat_sector_cache_get_generation(void) {
     uint32_t generation;
-    task_preempt_disable();
+    uint32_t irq = kspin_lock_irqsave(&g_sector_cache_lock);
     generation = g_sector_cache_generation;
-    task_preempt_enable();
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
     return generation;
 }
 
@@ -88,58 +195,73 @@ static void fat_sector_cache_store(block_device_t *device, uint32_t lba,
                                    uint32_t expected_generation) {
     fat_sector_cache_entry_t *entry;
     if (!device || !buffer) return;
-    task_preempt_disable();
+    uint32_t irq = kspin_lock_irqsave(&g_sector_cache_lock);
     /* Una escritura puede completar mientras el PIO de lectura estaba en
      * curso. No publique datos anteriores a esa invalidacion. */
     if (g_sector_cache_generation != expected_generation) {
-        task_preempt_enable();
+        kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
         return;
     }
-    entry = &g_sector_cache[fat_sector_cache_slot(device, lba)];
+    entry = fat_sector_cache_find(device, lba);
+    if (!entry) {
+        uint32_t base = fat_sector_cache_slot(device, lba);
+        for (uint32_t way = 0; way < FAT_SECTOR_CACHE_WAYS; ++way) {
+            if (!g_sector_cache[base + way].valid) {
+                entry = &g_sector_cache[base + way];
+                break;
+            }
+        }
+        if (!entry) {
+            uint32_t set = base / FAT_SECTOR_CACHE_WAYS;
+            uint32_t way = g_sector_cache_victim[set];
+            g_sector_cache_victim[set] = (way + 1U) % FAT_SECTOR_CACHE_WAYS;
+            entry = &g_sector_cache[base + way];
+        }
+    }
     entry->device = device;
     entry->lba = lba;
     kmemcpy(entry->data, buffer, BLOCK_SECTOR_SIZE);
     entry->valid = true;
-    task_preempt_enable();
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
 }
 
 static void fat_sector_cache_invalidate_all(void) {
-    task_preempt_disable();
+    fat_space_invalidate();
+    uint32_t irq = kspin_lock_irqsave(&g_sector_cache_lock);
     g_sector_cache_generation++;
     if (!g_sector_cache_generation) g_sector_cache_generation = 1U;
-    for (uint32_t i = 0; i < FAT_SECTOR_CACHE_SLOTS; i++)
+    for (uint32_t i = 0; i < g_sector_cache_slots; i++)
         g_sector_cache[i].valid = false;
-    task_preempt_enable();
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
 }
 
 static void fat_sector_cache_invalidate_device(block_device_t *device) {
+    fat_space_invalidate();
     if (!device) return;
-    task_preempt_disable();
+    uint32_t irq = kspin_lock_irqsave(&g_sector_cache_lock);
     g_sector_cache_generation++;
     if (!g_sector_cache_generation) g_sector_cache_generation = 1U;
-    for (uint32_t i = 0; i < FAT_SECTOR_CACHE_SLOTS; i++) {
+    for (uint32_t i = 0; i < g_sector_cache_slots; i++) {
         if (g_sector_cache[i].valid && g_sector_cache[i].device == device)
             g_sector_cache[i].valid = false;
     }
-    task_preempt_enable();
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
 }
 
 static void fat_sector_cache_invalidate_range(block_device_t *device,
                                               uint32_t first_lba,
                                               uint32_t count) {
-    uint32_t final_lba;
     if (!device || !count) return;
-    final_lba = first_lba + count;
-    task_preempt_disable();
+    uint32_t irq = kspin_lock_irqsave(&g_sector_cache_lock);
     g_sector_cache_generation++;
     if (!g_sector_cache_generation) g_sector_cache_generation = 1U;
-    for (uint32_t i = 0; i < FAT_SECTOR_CACHE_SLOTS; i++) {
-        fat_sector_cache_entry_t *entry = &g_sector_cache[i];
-        if (entry->valid && entry->device == device &&
-            entry->lba >= first_lba && entry->lba < final_lba)
-            entry->valid = false;
+    /* Writes arrive in short sector runs. Probe their sets instead of
+     * scanning the entire read cache for every metadata-sector write. */
+    for (uint32_t i = 0; i < count; i++) {
+        fat_sector_cache_entry_t *entry = fat_sector_cache_find(device, first_lba + i);
+        if (entry) entry->valid = false;
     }
-    task_preempt_enable();
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
 }
 
 /* BLES_SETUP_FAT_BULK_CACHE_20260723
@@ -189,6 +311,7 @@ static bool fat_bulk_reload(void) {
 }
 
 bool fat_bulk_write_begin(const fat_fs_t *fs) {
+    if (fs && fs->type == FAT_TYPE_BFS4) return true;
     uint32_t start;
     if (!fs || !fat_device_writable(fs) || !fs->fat_size_sectors ||
         !fs->bytes_per_sector)
@@ -231,12 +354,11 @@ bool fat_bulk_write_is_active(void) {
  * Diagnostico conservador: solo guarda/imprime el ultimo fallo, nunca cada
  * operacion exitosa. */
 /*
- * Un cluster FAT32 de 512 bytes contiene 16 entradas. El directorio Wine
- * distribuido con BlesKernOS contiene mas de 380 DLL, por lo que 8 clusters
- * (128 entradas) no alcanzan durante Setup. Reservar 32 ofrece 512 entradas;
- * el crecimiento dinamico sigue disponible si una carpeta supera ese limite.
+ * Directories grow through fat_extend_directory_chain(). Start with one
+ * cluster: reserving 32 for every empty directory wrote 128 KiB per mkdir
+ * on 4-KiB-cluster volumes, including Wine's numerous small directories.
  */
-#define FAT_DIRECTORY_PREALLOC_CLUSTERS 32U
+#define FAT_DIRECTORY_PREALLOC_CLUSTERS 1U
 static const char *g_fat_last_error = "none";
 
 const char *fat_last_error(void) {
@@ -586,7 +708,9 @@ static uint8_t fat_short_checksum(const uint8_t raw[11]) {
 
 static void fat_lfn_reset(fat_lfn_state_t *state) {
     if (!state) return;
-    kmemset(state, 0, sizeof(*state));
+    state->active = false;
+    state->checksum = 0;
+    state->name[0] = 0;
 }
 
 static void fat_lfn_put_char(fat_lfn_state_t *state, uint32_t index,
@@ -614,6 +738,7 @@ static bool fat_lfn_consume(fat_lfn_state_t *state, const uint8_t *entry) {
     }
     if (entry[0] & 0x40) {
         fat_lfn_reset(state);
+        kmemset(state->name, 0, sizeof(state->name));
         state->active = true;
         state->checksum = entry[13];
     }
@@ -681,7 +806,32 @@ static bool parse_dir_entry_lfn(const uint8_t *entry, fat_lfn_state_t *lfn,
     return true;
 }
 
+/* Directory lookup only needs the full parsed entry for its match. Avoid
+ * clearing/copying hundreds of bytes for every other name in system32. */
+static bool fat_match_dir_entry(const uint8_t *entry, fat_lfn_state_t *lfn,
+                                const char *name, fat_dir_entry_t *out) {
+    if (!entry[0] || entry[0] == 0xE5U) {
+        fat_lfn_reset(lfn);
+        return false;
+    }
+    if (entry[11] == FAT_ATTR_LONG_NAME) {
+        (void)fat_lfn_consume(lfn, entry);
+        return false;
+    }
+    if (!(entry[11] & FAT_ATTR_VOLUME_ID)) {
+        char short_name[13];
+        copy_name(entry, short_name);
+        if (name_equals(short_name, name) ||
+            (lfn->active && lfn->name[0] && name_equals(lfn->name, name) &&
+             lfn->checksum == fat_short_checksum(entry)))
+            return parse_dir_entry_lfn(entry, lfn, out);
+    }
+    fat_lfn_reset(lfn);
+    return false;
+}
+
 static bool read_sector(const fat_fs_t *fs, uint32_t sector, void *buffer) {
+    W3P_SCOPE(W3P_FAT_SECTOR_R, BLOCK_SECTOR_SIZE);
     uint32_t lba;
     uint32_t cache_generation;
 
@@ -836,7 +986,7 @@ static bool fat_read_full_file_fast(const fat_fs_t *fs,
 }
 
 
-static bool list_directory_chain(const fat_fs_t *fs, uint32_t start_cluster, fat_dir_entry_t *entries, uint32_t max_entries, uint32_t *count) {
+static bool list_directory_chain(const fat_fs_t *fs, uint32_t start_cluster, fat_dir_entry_t *entries, uint32_t max_entries, uint32_t *count, fat_dir_metadata_t *metadata) {
     uint32_t current_cluster = start_cluster;
     uint32_t found = 0;
     bool done = false;
@@ -864,6 +1014,11 @@ static bool list_directory_chain(const fat_fs_t *fs, uint32_t start_cluster, fat
                     continue;
                 }
                 if (found < max_entries) {
+                    if (metadata) {
+                        metadata[found].position = ((uint64_t)sector * fs->bytes_per_sector + i * 32U) / 32U + 2U;
+                        metadata[found].mode = (entry[12] & FAT_POSIX_MODE_TAG_MASK) == 0xB0U
+                            ? 0120000U : parsed.is_directory ? 0040000U : 0100000U;
+                    }
                     entries[found++] = parsed;
                 }
             }
@@ -893,6 +1048,12 @@ static bool list_directory_chain(const fat_fs_t *fs, uint32_t start_cluster, fat
                 continue;
             }
             if (found < max_entries) {
+                if (metadata) {
+                    uint32_t sector = fs->first_data_sector + (current_cluster - 2U) * fs->sectors_per_cluster;
+                    metadata[found].position = ((uint64_t)sector * fs->bytes_per_sector + i * 32U) / 32U + 2U;
+                    metadata[found].mode = (entry[12] & FAT_POSIX_MODE_TAG_MASK) == 0xB0U
+                        ? 0120000U : parsed.is_directory ? 0040000U : 0100000U;
+                }
                 entries[found++] = parsed;
             }
         }
@@ -912,71 +1073,42 @@ static bool find_directory_chain_entry(const fat_fs_t *fs,
                                        uint32_t start_cluster,
                                        const char *name,
                                        fat_dir_entry_t *result) {
-    uint32_t current_cluster = start_cluster;
-    uint32_t cluster_size;
-    uint32_t visited = 0;
-    uint8_t *cluster_buf = NULL;
+    W3P_SCOPE(W3P_FAT_DIR_FIND, 0U);
+    uint32_t cluster = start_cluster, visited = 0, sectors_since_yield = 0;
+    uint8_t sector_buf[512];
     fat_lfn_state_t lfn;
-
     if (!fs || !name || !result) return false;
+    bool fixed_root = start_cluster == 0U && fs->type != FAT_TYPE_FAT32;
     fat_lfn_reset(&lfn);
-
-    if ((fs->type == FAT_TYPE_FAT12 || fs->type == FAT_TYPE_FAT16) &&
-        start_cluster == 0U) {
-        uint32_t sector = fs->first_fat_sector +
-                          (fs->num_fats * fs->fat_size_sectors);
-        uint32_t sectors_left = fs->root_dir_sectors;
-        while (sectors_left--) {
-            uint8_t sector_buf[512];
-            if (!read_sector(fs, sector++, sector_buf)) return false;
-            for (uint32_t i = 0; i < fs->bytes_per_sector / 32U; i++) {
+    /* Lookup needs only the sector containing the match. Avoid allocating a
+     * whole cluster for every path component and reading past early matches.
+     * Keep LFN state across sector/cluster boundaries, including FAT12/16. */
+    while (fixed_root || (cluster >= 2U && visited++ <= fs->total_clusters)) {
+        uint32_t first = fixed_root
+            ? fs->first_fat_sector + fs->num_fats * fs->fat_size_sectors
+            : fs->first_data_sector + (cluster - 2U) * fs->sectors_per_cluster;
+        uint32_t count = fixed_root ? fs->root_dir_sectors : fs->sectors_per_cluster;
+        for (uint32_t sector = 0; sector < count; ++sector) {
+            if (!read_sector(fs, first + sector, sector_buf)) return false;
+            for (uint32_t i = 0; i < fs->bytes_per_sector / 32U; ++i) {
                 const uint8_t *raw = sector_buf + i * 32U;
                 fat_dir_entry_t parsed;
-                if (!parse_dir_entry_lfn(raw, &lfn, &parsed)) {
-                    if (raw[0] == 0x00U) return false;
+                if (!fat_match_dir_entry(raw, &lfn, name, &parsed)) {
+                    if (raw[0] == 0U) return false;
                     continue;
                 }
-                if (name_equals(parsed.name, name) ||
-                    name_equals(parsed.short_name, name)) {
-                    *result = parsed;
-                    return true;
-                }
-            }
-            task_yield();
-        }
-        return false;
-    }
-
-    cluster_size = fs->bytes_per_sector * fs->sectors_per_cluster;
-    cluster_buf = (uint8_t *)kmalloc(cluster_size);
-    if (!cluster_buf) return false;
-
-    while (current_cluster >= 2U &&
-           visited++ <= fs->total_clusters + 1U) {
-        if (!read_cluster(fs, current_cluster, cluster_buf)) break;
-        for (uint32_t i = 0; i < cluster_size / 32U; i++) {
-            const uint8_t *raw = cluster_buf + i * 32U;
-            fat_dir_entry_t parsed;
-            if (!parse_dir_entry_lfn(raw, &lfn, &parsed)) {
-                if (raw[0] == 0x00U) {
-                    kfree(cluster_buf);
-                    return false;
-                }
-                continue;
-            }
-            if (name_equals(parsed.name, name) ||
-                name_equals(parsed.short_name, name)) {
                 *result = parsed;
-                kfree(cluster_buf);
                 return true;
             }
+            if (++sectors_since_yield == 64U) {
+                sectors_since_yield = 0;
+                task_yield();
+            }
         }
-        current_cluster = get_next_cluster(fs, current_cluster);
-        if (current_cluster == 0xFFFFFFFFU) break;
-        task_yield();
+        if (fixed_root) break;
+        cluster = get_next_cluster(fs, cluster);
+        if (cluster == 0xFFFFFFFFU) break;
     }
-
-    kfree(cluster_buf);
     return false;
 }
 
@@ -993,6 +1125,7 @@ static bool looks_like_fat_bpb(const uint8_t *bpb) {
 }
 
 bool fat_mount(fat_fs_t *fs, block_device_t *dev, uint32_t volume_lba) {
+    fat_sector_cache_grow();
     uint8_t bpb[512];
     uint32_t data_sectors;
 
@@ -1223,6 +1356,7 @@ static bool fat_try_mount_device(fat_fs_t *fs, block_device_t *dev,
     uint8_t sector[512];
 
     if (!fs || !dev) return false;
+    if (bfs4_mount(fs, dev, 0U)) return true;
 
     /*
      * Primero probamos superfloppy/volumen directo.
@@ -1251,6 +1385,15 @@ static bool fat_try_mount_device(fat_fs_t *fs, block_device_t *dev,
 
     for (uint32_t i = 0; i < 4; i++) {
         uint32_t off = 446U + i * 16U;
+        uint32_t lba = read_le32(sector + off + 8U);
+        uint32_t count = read_le32(sector + off + 12U);
+        if (sector[off + 4U] == 0x83U && lba && count &&
+            lba < dev->sector_count && count <= dev->sector_count - lba &&
+            bfs4_mount(fs, dev, lba)) return true;
+    }
+
+    for (uint32_t i = 0; i < 4; i++) {
+        uint32_t off = 446U + i * 16U;
         uint8_t type = sector[off + 4U];
         uint32_t base = read_le32(sector + off + 8U);
         if (!is_extended_partition_type(type) || !base) continue;
@@ -1261,13 +1404,24 @@ static bool fat_try_mount_device(fat_fs_t *fs, block_device_t *dev,
 }
 
 static inline bool fat_running_in_user_cpl(void) {
+#if defined(__arm__) && !defined(__aarch64__)
+    /* The ARM32 port currently enters FAT from SVC/kernel mode only.  Once
+     * ARM user mode exists this helper will become an arch hook rather than
+     * encoding x86 CPL semantics in the filesystem. */
+    return false;
+#else
     uint16_t cs;
-
     __asm__ volatile ("mov %%cs, %0" : "=r"(cs));
     return (cs & 0x3U) == 0x3U;
+#endif
 }
 
 static inline uint32_t fat_irq_save(void) {
+#if defined(__arm__) && !defined(__aarch64__)
+    uint32_t cpsr;
+    __asm__ volatile ("mrs %0, cpsr\n\tcpsid i" : "=r"(cpsr) : : "memory", "cc");
+    return cpsr;
+#else
     uint32_t flags;
     if (fat_running_in_user_cpl()) {
         __asm__ volatile ("pushfl; popl %0" : "=r"(flags) : : "memory");
@@ -1275,13 +1429,20 @@ static inline uint32_t fat_irq_save(void) {
     }
     __asm__ volatile ("pushfl; popl %0; cli" : "=r"(flags) : : "memory");
     return flags;
+#endif
 }
 
 static inline void fat_irq_restore(uint32_t flags) {
+#if defined(__arm__) && !defined(__aarch64__)
+    /* CPSR.I == 0 means IRQs were enabled on entry. */
+    if ((flags & (1U << 7)) == 0U)
+        __asm__ volatile ("cpsie i" : : : "memory", "cc");
+#else
     if (fat_running_in_user_cpl()) return;
     if (flags & (1U << 9)) {
         __asm__ volatile ("sti" : : : "memory");
     }
+#endif
 }
 
 /*
@@ -1297,6 +1458,10 @@ static inline void fat_irq_restore(uint32_t flags) {
  * del kernel antes de copiar estructuras.
  */
 static inline void fat_reload_kernel_segments(void) {
+#if defined(__arm__) && !defined(__aarch64__)
+    /* ARM has no x86-style DS/ES segment registers. */
+    __asm__ volatile ("" : : : "memory");
+#else
     __asm__ volatile (
         "cld\n\t"
         "movw $0x10, %%ax\n\t"
@@ -1308,6 +1473,7 @@ static inline void fat_reload_kernel_segments(void) {
         :
         : "ax", "memory"
     );
+#endif
 }
 
 bool fat_get_current(fat_fs_t *fs) {
@@ -1395,7 +1561,7 @@ bool fat_mount_named(fat_fs_t *fs, const char *name) {
 
         kprintf("LBA = %u\n", lba);
 
-        if (!fat_mount(fs, dev, lba)) {
+        if (!bfs4_mount(fs, dev, lba) && !fat_mount(fs, dev, lba)) {
             kprintf("fat_mount fallo\n");
             return false;
         }
@@ -1455,8 +1621,11 @@ bool fat_mount_default(void) {
     }
 
     const char *preferred_ata[] = {"ata0", "ata1", "ata2", "ata3"};
+    const char *preferred_ahci[] = {"ahci0", "ahci1", "ahci2", "ahci3"};
+    const char *preferred_sd[] = {"sd0", "sd1", "sd2", "sd3"};
     const char *preferred_usb[] = {"usb0", "usb1", "usb2", "usb3"};
     bool have_ata = false;
+    bool have_sd = false;
 
     /*
      * Si hay un disco ATA registrado, probarlo antes que fd0.
@@ -1467,9 +1636,20 @@ bool fat_mount_default(void) {
      */
     for (uint32_t i = 0; i < block_count(); i++) {
         block_device_t *dev = block_at(i);
-        if (dev && dev->type == BLOCK_DEVICE_ATA) {
-            have_ata = true;
-            break;
+        if (dev && dev->type == BLOCK_DEVICE_ATA) have_ata = true;
+        if (dev && dev->type == BLOCK_DEVICE_SD) have_sd = true;
+    }
+
+    /* ARM boards normally boot from SD.  Keep this in the shared FAT probe
+     * rather than teaching the ARM platform about FAT partition layouts. */
+    if (have_sd) {
+        for (uint32_t i = 0; i < sizeof(preferred_sd)/sizeof(preferred_sd[0]); i++) {
+            kprintf("Intentando montar %s...\n", preferred_sd[i]);
+            if (fat_set_active(preferred_sd[i])) {
+                kprintf("Montado %s OK\n", preferred_sd[i]);
+                return true;
+            }
+            kprintf("Fallo %s\n", preferred_sd[i]);
         }
     }
 
@@ -1484,6 +1664,18 @@ bool fat_mount_default(void) {
 
             kprintf("Fallo %s\n", preferred_ata[i]);
         }
+    }
+
+    /* A SATA-only boot has no legacy ataN device.  Probe AHCI before USB,
+     * while retaining the historical IDE boot preference when both exist. */
+    for (uint32_t i = 0; i < sizeof(preferred_ahci)/sizeof(preferred_ahci[0]); i++) {
+        if (!block_get(preferred_ahci[i])) continue;
+        kprintf("Intentando montar %s...\n", preferred_ahci[i]);
+        if (fat_set_active(preferred_ahci[i])) {
+            kprintf("Montado %s OK\n", preferred_ahci[i]);
+            return true;
+        }
+        kprintf("Fallo %s\n", preferred_ahci[i]);
     }
 
     for (uint32_t i = 0; i < sizeof(preferred_usb)/sizeof(preferred_usb[0]); i++) {
@@ -1506,24 +1698,46 @@ const char *fat_get_active_name(void) {
 
 void fat_print_info(const fat_fs_t *fs) {
     if (!fs) return;
-    kprintf("FAT%u device=%s lba=%u label=%s\n", fs->type, fs->device ? fs->device->name : "?", fs->volume_lba, fs->volume_label);
+    if (fs->type == FAT_TYPE_BFS4)
+        kprintf("BFS4 device=%s lba=%u label=%s\n",
+                fs->device ? fs->device->name : "?", fs->volume_lba,
+                fs->volume_label);
+    else
+        kprintf("FAT%u device=%s lba=%u label=%s\n", fs->type,
+                fs->device ? fs->device->name : "?", fs->volume_lba,
+                fs->volume_label);
     kprintf("  bytes/sector=%u sectors/cluster=%u\n", fs->bytes_per_sector, fs->sectors_per_cluster);
     kprintf("  clusters=%u root_cluster=%u\n", fs->total_clusters, fs->root_dir_cluster);
 }
 
 bool fat_list_root(const fat_fs_t *fs, fat_dir_entry_t *entries, uint32_t max_entries, uint32_t *count) {
+    if (fs && fs->type == FAT_TYPE_BFS4)
+        return bfs4_list(fs, NULL, entries, NULL, max_entries, count);
     if (!fs || !entries || !count) return false;
     if (fs->type == FAT_TYPE_FAT12 || fs->type == FAT_TYPE_FAT16) {
-        return list_directory_chain(fs, 0, entries, max_entries, count);
+        return list_directory_chain(fs, 0, entries, max_entries, count, NULL);
     }
-    return list_directory_chain(fs, fs->root_dir_cluster, entries, max_entries, count);
+    return list_directory_chain(fs, fs->root_dir_cluster, entries, max_entries, count, NULL);
 }
 
 bool fat_list_dir(const fat_fs_t *fs, const fat_dir_entry_t *dir, fat_dir_entry_t *entries, uint32_t max_entries, uint32_t *count) {
+    if (fs && fs->type == FAT_TYPE_BFS4)
+        return bfs4_list(fs, dir, entries, NULL, max_entries, count);
     if (!fs || !entries || !count) return false;
     if (!dir || dir->first_cluster == 0) return fat_list_root(fs, entries, max_entries, count);
     if (!dir->is_directory) return false;
-    return list_directory_chain(fs, dir->first_cluster, entries, max_entries, count);
+    return list_directory_chain(fs, dir->first_cluster, entries, max_entries, count, NULL);
+}
+
+bool fat_list_dir_metadata(const fat_fs_t *fs, const fat_dir_entry_t *dir,
+    fat_dir_entry_t *entries, fat_dir_metadata_t *metadata,
+    uint32_t max_entries, uint32_t *count) {
+    if (fs && fs->type == FAT_TYPE_BFS4)
+        return bfs4_list(fs, dir, entries, metadata, max_entries, count);
+    if (!fs || !entries || !metadata || !count || (dir && !dir->is_directory)) return false;
+    uint32_t cluster = dir ? dir->first_cluster : 0U;
+    if (!cluster && fs->type == FAT_TYPE_FAT32) cluster = fs->root_dir_cluster;
+    return list_directory_chain(fs, cluster, entries, max_entries, count, metadata);
 }
 
 static bool fat_find_in_dir(const fat_fs_t *fs, const fat_dir_entry_t *dir,
@@ -1538,10 +1752,16 @@ static bool fat_find_in_dir(const fat_fs_t *fs, const fat_dir_entry_t *dir,
 }
 
 bool fat_find_file(const fat_fs_t *fs, const char *name, fat_dir_entry_t *entry) {
+    if (fs && fs->type == FAT_TYPE_BFS4) {
+        char path[FAT_MAX_NAME + 2U];
+        if (!name || kstrlen(name) >= FAT_MAX_NAME) return false;
+        path[0] = '/'; kstrcpy(path + 1, name);
+        return bfs4_resolve(fs, path, entry);
+    }
     return fat_find_in_dir(fs, NULL, name, entry);
 }
 
-bool fat_resolve_path(const fat_fs_t *fs, const char *path, fat_dir_entry_t *entry) {
+static bool fat_resolve_path_uncached(const fat_fs_t *fs, const char *path, fat_dir_entry_t *entry) {
     fat_dir_entry_t current;
     fat_dir_entry_t next;
     char component[FAT_MAX_NAME];
@@ -1598,9 +1818,61 @@ bool fat_resolve_path(const fat_fs_t *fs, const char *path, fat_dir_entry_t *ent
     }
 }
 
+/* Positive path entries avoid re-walking all parents during the repeated
+ * symlink/stat/identity checks of a single Linux openat. Every disk write
+ * advances the sector-cache generation, so size, cluster and names cannot
+ * survive a mutation. Failed lookups (including I/O failures) aren't cached. */
+#define FAT_PATH_CACHE_SLOTS 32U
+static struct {
+    block_device_t *device;
+    uint32_t volume_lba, generation;
+    char path[260];
+    fat_dir_entry_t entry;
+} g_path_cache[FAT_PATH_CACHE_SLOTS];
+
+bool fat_resolve_path(const fat_fs_t *fs, const char *path, fat_dir_entry_t *entry) {
+    if (fs && fs->type == FAT_TYPE_BFS4) return bfs4_resolve(fs, path, entry);
+    W3P_SCOPE(W3P_FAT_RESOLVE, 0U);
+    uint32_t hash = 2166136261U, length = 0U, generation, irq;
+    if (!fs || !path || !entry) return false;
+    for (const char *p = path; *p; ++p) {
+        uint8_t ch = (uint8_t)*p;
+        if (ch >= 'A' && ch <= 'Z') ch += 'a' - 'A';
+        hash = (hash ^ ch) * 16777619U;
+        ++length;
+    }
+    if (length >= sizeof(g_path_cache[0].path))
+        return fat_resolve_path_uncached(fs, path, entry);
+    uint32_t slot = hash & (FAT_PATH_CACHE_SLOTS - 1U);
+    irq = kspin_lock_irqsave(&g_sector_cache_lock);
+    generation = g_sector_cache_generation;
+    if (g_path_cache[slot].generation == generation &&
+        g_path_cache[slot].device == fs->device &&
+        g_path_cache[slot].volume_lba == fs->volume_lba &&
+        name_equals(g_path_cache[slot].path, path)) {
+        *entry = g_path_cache[slot].entry;
+        kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
+        return true;
+    }
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
+    if (!fat_resolve_path_uncached(fs, path, entry)) return false;
+    irq = kspin_lock_irqsave(&g_sector_cache_lock);
+    if (g_sector_cache_generation == generation) {
+        g_path_cache[slot].device = fs->device;
+        g_path_cache[slot].volume_lba = fs->volume_lba;
+        g_path_cache[slot].entry = *entry;
+        kmemcpy(g_path_cache[slot].path, path, length + 1U);
+        g_path_cache[slot].generation = generation;
+    }
+    kspin_unlock_irqrestore(&g_sector_cache_lock, irq);
+    return true;
+}
+
 bool fat_read_file_at(const fat_fs_t *fs, const fat_dir_entry_t *entry,
                       uint32_t file_offset, void *buffer, uint32_t max_size,
                       uint32_t *bytes_read) {
+    if (fs && fs->type == FAT_TYPE_BFS4)
+        return bfs4_read(fs, entry, file_offset, buffer, max_size, bytes_read);
     uint8_t *cluster_buf = NULL;
     uint32_t cluster = entry ? entry->first_cluster : 0U;
     uint32_t bytes_left = entry ? entry->size : 0U;
@@ -1625,10 +1897,6 @@ bool fat_read_file_at(const fat_fs_t *fs, const fat_dir_entry_t *entry,
     while (cluster >= 2U && bytes_left > 0U) {
         uint32_t cluster_file_bytes;
         uint32_t local_offset = 0U;
-        if (!read_cluster(fs, cluster, cluster_buf)) {
-            io_ok = false;
-            break;
-        }
         cluster_file_bytes = cluster_size;
         if (cluster_file_bytes > bytes_left) cluster_file_bytes = bytes_left;
 
@@ -1637,6 +1905,12 @@ bool fat_read_file_at(const fat_fs_t *fs, const fat_dir_entry_t *entry,
             bytes_left -= cluster_file_bytes;
         } else {
             uint32_t chunk = cluster_file_bytes;
+            /* Seek walks allocation links, not the contents of every
+             * preceding cluster. ELF loaders repeatedly read near EOF. */
+            if (!read_cluster(fs, cluster, cluster_buf)) {
+                io_ok = false;
+                break;
+            }
             if (file_offset > skipped) {
                 local_offset = file_offset - skipped;
                 chunk -= local_offset;
@@ -1689,13 +1963,20 @@ static bool fat_device_writable(const fat_fs_t *fs) {
 #define FAT_METADATA_IO_SECTORS 32U
 
 static bool write_sector(const fat_fs_t *fs, uint32_t sector, const void *buffer) {
+    W3P_SCOPE(W3P_FAT_SECTOR_W, BLOCK_SECTOR_SIZE);
     uint32_t lba;
+    uint32_t generation;
 
     if (!fat_device_writable(fs) || !buffer) return false;
     lba = fs->volume_lba + sector;
-    if (!block_write(fs->device, lba, 1, buffer)) return false;
+    if (!block_write(fs->device, lba, 1, buffer)) {
+        fat_sector_cache_invalidate_range(fs->device, lba, 1U);
+        return false;
+    }
 
     fat_sector_cache_invalidate_range(fs->device, lba, 1U);
+    generation = fat_sector_cache_get_generation();
+    fat_sector_cache_store(fs->device, lba, buffer, generation);
     return true;
 }
 
@@ -1742,23 +2023,34 @@ static bool fat_read_sector_run(const fat_fs_t *fs, uint32_t sector,
 
 static bool fat_write_sector_run(const fat_fs_t *fs, uint32_t sector,
                                  uint32_t count, const void *buffer) {
+    W3P_SCOPE(W3P_FAT_SECTOR_W, count * BLOCK_SECTOR_SIZE);
     const uint8_t *in = (const uint8_t *)buffer;
     uint32_t first_lba;
     uint32_t final_lba;
+    uint32_t generation;
     if (!fat_device_writable(fs) || !buffer || !count) return false;
     first_lba = fs->volume_lba + sector;
     final_lba = first_lba + count;
     while (count) {
         uint8_t chunk = count > FAT_METADATA_IO_SECTORS
             ? FAT_METADATA_IO_SECTORS : (uint8_t)count;
-        if (!block_write(fs->device, fs->volume_lba + sector, chunk, in))
+        if (!block_write(fs->device, fs->volume_lba + sector, chunk, in)) {
+            fat_sector_cache_invalidate_range(fs->device, first_lba,
+                                              final_lba - first_lba);
             return false;
+        }
         sector += chunk;
         count -= chunk;
         in += (uint32_t)chunk * fs->bytes_per_sector;
     }
     fat_sector_cache_invalidate_range(fs->device, first_lba,
                                       final_lba - first_lba);
+    generation = fat_sector_cache_get_generation();
+    for (uint32_t i = 0U; i < final_lba - first_lba; i++)
+        fat_sector_cache_store(fs->device, first_lba + i,
+                               (const uint8_t *)buffer +
+                                   i * fs->bytes_per_sector,
+                               generation);
     return true;
 }
 
@@ -2055,6 +2347,7 @@ bool fat_check_current(fat_check_report_t *report) {
     report->fat_copies_match = true;
     report->backup_boot_matches = true;
     if (!fat_get_current(&fs) || !fs.device) return false;
+    if (fs.type == FAT_TYPE_BFS4) return bfs4_check(&fs, report);
     if (!read_sector(&fs, 0, boot)) {
         report->io_errors++;
         report->errors++;
@@ -2207,6 +2500,10 @@ bool fat_repair_current(fat_repair_report_t *repair,
     repair->attempted = true;
     if (!fat_check_current(&before) || !fat_get_current(&fs) || !fs.device)
         return false;
+    if(fs.type==FAT_TYPE_BFS4) {
+        fat_check_report_t bfs_after;
+        return bfs4_repair(&fs,repair,after?after:&bfs_after);
+    }
     repair->errors_before = before.errors;
     if (fs.device->read_only || !fs.device->write) {
         repair->read_only = true;
@@ -2412,11 +2709,15 @@ static bool fat_make_alias(const char *name, uint32_t number,
 
 static bool fat_find_free_run(const fat_fs_t *fs, const fat_dir_entry_t *dir,
                               uint32_t required, uint32_t *sector_out,
-                              uint32_t *offset_out) {
+                              uint32_t *offset_out, bool *bridge_needed) {
+    W3P_SCOPE(W3P_FAT_FREE_RUN, 0U);
     bool fixed_root;
     uint32_t cluster;
+    bool saw_end_marker = false;
+    bool run_has_prior_end_marker = false;
     if (!fs || !dir || !dir->is_directory || !required || required > 21U ||
         !sector_out || !offset_out) return false;
+    if (bridge_needed) *bridge_needed = false;
 
     fixed_root = dir->first_cluster == 0U && fs->type != FAT_TYPE_FAT32;
     cluster = fixed_root ? 0U : dir->first_cluster;
@@ -2441,10 +2742,14 @@ static bool fat_find_free_run(const fat_fs_t *fs, const fat_dir_entry_t *dir,
                     if (!run) {
                         run_sector = first_sector + s;
                         run_offset = off;
+                        run_has_prior_end_marker = saw_end_marker;
                     }
+                    if (buffer[off] == 0U) saw_end_marker = true;
                     if (++run >= required) {
                         *sector_out = run_sector;
                         *offset_out = run_offset;
+                        if (bridge_needed)
+                            *bridge_needed = run_has_prior_end_marker;
                         return true;
                     }
                 } else {
@@ -2460,16 +2765,75 @@ static bool fat_find_free_run(const fat_fs_t *fs, const fat_dir_entry_t *dir,
     return false;
 }
 
-static bool fat_write_directory_slot(const fat_fs_t *fs, uint32_t first_sector,
-                                     uint32_t first_offset, uint32_t slot,
-                                     const uint8_t data[32]) {
-    uint8_t sector_data[512];
-    uint32_t linear = first_offset + slot * 32U;
-    uint32_t sector = first_sector + linear / 512U;
-    uint32_t offset = linear % 512U;
-    if (!read_sector(fs, sector, sector_data)) return false;
-    kmemcpy(sector_data + offset, data, 32);
-    return write_sector(fs, sector, sector_data);
+/* FAT marks 0x00 as end-of-directory, not merely as a free slot.
+ *
+ * Directories created by BlesKernOS are preallocated across several clusters.
+ * fat_find_free_run() deliberately keeps an LFN + short entry inside one
+ * cluster because fat_write_named_entry() advances by physical sectors.
+ * When the tail of one cluster has fewer free slots than an LFN needs, the
+ * chosen run can therefore begin in the next cluster.  If a 0x00 entry was
+ * skipped at the end of the previous cluster, normal FAT readers stop there
+ * and the newly-written file becomes invisible immediately after creation.
+ *
+ * Before publishing such a later run, convert any earlier 0x00 markers to the
+ * deleted-entry marker 0xE5.  The first untouched 0x00 after the new entry
+ * remains the directory terminator, preserving standard FAT semantics. */
+static bool fat_bridge_end_markers_before_slot(const fat_fs_t *fs,
+                                               const fat_dir_entry_t *dir,
+                                               uint32_t target_sector,
+                                               uint32_t target_offset,
+                                               uint32_t *bridged_out) {
+    bool fixed_root;
+    uint32_t cluster;
+    uint32_t bridged = 0U;
+    uint32_t visited = 0U;
+
+    if (bridged_out) *bridged_out = 0U;
+    if (!fs || !dir || !dir->is_directory ||
+        target_offset >= fs->bytes_per_sector ||
+        (target_offset & 31U) != 0U)
+        return false;
+
+    fixed_root = dir->first_cluster == 0U && fs->type != FAT_TYPE_FAT32;
+    cluster = fixed_root ? 0U : dir->first_cluster;
+    if (!fixed_root && cluster < 2U) return false;
+
+    for (;;) {
+        uint32_t first_sector = fixed_root
+            ? fs->first_fat_sector + fs->num_fats * fs->fat_size_sectors
+            : fs->first_data_sector +
+              (cluster - 2U) * fs->sectors_per_cluster;
+        uint32_t sectors = fixed_root ? fs->root_dir_sectors
+                                      : fs->sectors_per_cluster;
+
+        for (uint32_t s = 0U; s < sectors; s++) {
+            uint8_t data[BLOCK_SECTOR_SIZE];
+            bool dirty = false;
+            uint32_t sector = first_sector + s;
+
+            if (!read_sector(fs, sector, data)) return false;
+            for (uint32_t off = 0U; off < fs->bytes_per_sector; off += 32U) {
+                if (sector == target_sector && off == target_offset) {
+                    if (dirty && !write_sector(fs, sector, data)) return false;
+                    if (bridged_out) *bridged_out = bridged;
+                    return true;
+                }
+                if (data[off] == 0x00U) {
+                    data[off] = 0xE5U;
+                    dirty = true;
+                    bridged++;
+                }
+            }
+            if (dirty && !write_sector(fs, sector, data)) return false;
+        }
+
+        if (fixed_root) break;
+        if (visited++ > fs->total_clusters) break;
+        cluster = get_next_cluster(fs, cluster);
+        if (cluster == 0xFFFFFFFFU || cluster < 2U) break;
+    }
+
+    return false;
 }
 
 static void fat_write_lfn_entry(uint8_t entry[32], const char *name,
@@ -2496,10 +2860,38 @@ static void fat_write_lfn_entry(uint8_t entry[32], const char *name,
     }
 }
 
+/* The slot finder keeps each name in one cluster. Coalesce its LFN and
+ * short entries by sector, publishing the short entry last. One ATA flush
+ * per 32-byte LFN slot made Wine's builtin installation needlessly slow. */
+static bool fat_write_named_entry(const fat_fs_t *fs, uint32_t sector,
+                                  uint32_t offset, const char *name,
+                                  uint8_t lfn_count, const uint8_t entry[32]) {
+    uint8_t data[512];
+    uint8_t checksum = fat_short_checksum(entry);
+    if (!read_sector(fs, sector, data)) return false;
+    for (uint32_t slot = 0; slot <= lfn_count; ++slot) {
+        if (slot < lfn_count)
+            fat_write_lfn_entry(data + offset, name,
+                                (uint8_t)(lfn_count - slot), lfn_count, checksum);
+        else
+            kmemcpy(data + offset, entry, 32);
+        offset += 32U;
+        if (offset == 512U || slot == lfn_count) {
+            if (!write_sector(fs, sector, data)) return false;
+            if (slot == lfn_count) break;
+            ++sector;
+            offset = 0;
+            if (!read_sector(fs, sector, data)) return false;
+        }
+    }
+    return true;
+}
+
 static bool fat_find_dir_slot(const fat_fs_t *fs, const fat_dir_entry_t *dir,
                               const uint8_t raw_name[11], uint32_t *sector_out,
                               uint32_t *offset_out, fat_dir_entry_t *old,
                               bool *exists) {
+    W3P_SCOPE(W3P_FAT_SLOT_FIND, 0U);
     bool fixed_root;
     uint32_t cluster;
     uint32_t free_sector = 0xFFFFFFFFU;
@@ -2525,7 +2917,19 @@ static bool fat_find_dir_slot(const fat_fs_t *fs, const fat_dir_entry_t *dir,
             if (!read_sector(fs, first_sector + s, buffer)) return false;
             for (uint32_t off = 0; off < fs->bytes_per_sector; off += 32U) {
                 uint8_t *entry = buffer + off;
-                if ((entry[0] == 0U || entry[0] == 0xE5U) &&
+                /* 0x00 terminates a FAT directory. No valid alias can
+                 * follow it, even when the directory has spare clusters. */
+                if (entry[0] == 0U) {
+                    if (free_sector == 0xFFFFFFFFU) {
+                        free_sector = first_sector + s;
+                        free_offset = off;
+                    }
+                    *sector_out = free_sector;
+                    *offset_out = free_offset;
+                    *exists = false;
+                    return true;
+                }
+                if (entry[0] == 0xE5U &&
                     free_sector == 0xFFFFFFFFU) {
                     free_sector = first_sector + s;
                     free_offset = off;
@@ -2554,8 +2958,140 @@ static bool fat_find_dir_slot(const fat_fs_t *fs, const fat_dir_entry_t *dir,
     return true;
 }
 
+/* Retain a copy of the last successfully committed allocation table.
+ * Each transaction still edits its own buffer and commits synchronously.
+ * Reusing disk contents avoids reading megabytes for every tiny prefix file.
+ * The space-cache generation invalidates this snapshot before any FAT write.
+ * Keep large optional allocations away from the low-memory boot path. */
+static kmutex_t g_allocation_cache_lock = KMUTEX_INITIALIZER;
+static struct {
+    uint8_t *table;
+    uint32_t bytes, generation;
+    fat_fs_t fs;
+} g_allocation_cache;
+
+/* Wine creates thousands of small files outside the explicit setup bulk
+ * writer. Starting each transaction's free-cluster scan at 2 makes the Nth
+ * allocation revisit all N-1 occupied clusters. This hint only changes the
+ * starting point: every candidate is still checked in the current FAT and
+ * the search wraps, so a stale hint cannot allocate an occupied cluster. */
+static struct {
+    block_device_t *device;
+    uint32_t volume_lba;
+    uint32_t next;
+} g_allocation_hint;
+
+static uint32_t fat_allocation_hint_get(const fat_fs_t *fs) {
+    uint32_t next = 2U;
+    kmutex_lock(&g_allocation_cache_lock);
+    if (g_allocation_hint.device == fs->device &&
+        g_allocation_hint.volume_lba == fs->volume_lba &&
+        g_allocation_hint.next >= 2U &&
+        g_allocation_hint.next < fs->total_clusters + 2U)
+        next = g_allocation_hint.next;
+    kmutex_unlock(&g_allocation_cache_lock);
+    return next;
+}
+
+static void fat_allocation_hint_set(const fat_fs_t *fs, uint32_t next) {
+    kmutex_lock(&g_allocation_cache_lock);
+    g_allocation_hint.device = fs->device;
+    g_allocation_hint.volume_lba = fs->volume_lba;
+    g_allocation_hint.next = next < fs->total_clusters + 2U ? next : 2U;
+    kmutex_unlock(&g_allocation_cache_lock);
+}
+
+static bool fat_read_allocation_table(const fat_fs_t *fs, uint8_t *table) {
+    uint32_t bytes = fs->fat_size_sectors * fs->bytes_per_sector;
+    uint32_t count, generation;
+    bool hit;
+    kmutex_lock(&g_allocation_cache_lock);
+    hit = fat_space_cached(fs, &count, &generation) &&
+        g_allocation_cache.table && g_allocation_cache.bytes == bytes &&
+        g_allocation_cache.generation == generation &&
+        g_allocation_cache.fs.device == fs->device &&
+        g_allocation_cache.fs.volume_lba == fs->volume_lba &&
+        g_allocation_cache.fs.type == fs->type &&
+        g_allocation_cache.fs.total_clusters == fs->total_clusters;
+    if (hit) kmemcpy(table, g_allocation_cache.table, bytes);
+    kmutex_unlock(&g_allocation_cache_lock);
+    if (hit) return true;
+    return fat_read_sector_run(fs, fs->first_fat_sector,
+                               fs->fat_size_sectors, table);
+}
+
+static void fat_cache_allocation_table(const fat_fs_t *fs,
+                                        const uint8_t *table,
+                                        uint32_t generation) {
+    uint32_t bytes = fs->fat_size_sectors * fs->bytes_per_sector;
+    if (mm_total_bytes() < 64U * 1024U * 1024U || bytes > 4U * 1024U * 1024U)
+        return;
+    kmutex_lock(&g_allocation_cache_lock);
+    if (g_allocation_cache.bytes != bytes) {
+        uint8_t *next = (uint8_t *)krealloc(g_allocation_cache.table, bytes);
+        if (!next) {
+            kmutex_unlock(&g_allocation_cache_lock);
+            return;
+        }
+        g_allocation_cache.table = next;
+        (void)mm_set_allocation_owner(next, 0U);
+        g_allocation_cache.bytes = bytes;
+    }
+    kmemcpy(g_allocation_cache.table, table, bytes);
+    g_allocation_cache.fs = *fs;
+    g_allocation_cache.generation = generation;
+    kmutex_unlock(&g_allocation_cache_lock);
+}
+
+static uint32_t fat_count_free(const fat_fs_t *fs, const uint8_t *table) {
+    uint32_t count = 0;
+    for (uint32_t cluster = 2; cluster < fs->total_clusters + 2U; cluster++)
+        if (fat_table_get(fs, table, cluster) == 0) count++;
+    return count;
+}
+
+/* A tiny prefix file normally changes one FAT32 sector. Recounting every
+ * cluster at each commit makes directory/file creation proportional to the
+ * volume size. Derive the change from the previous committed snapshot when
+ * it is still authoritative; retain the full scan for a cold cache and FAT12
+ * (whose packed entries can straddle sectors). */
+static uint32_t fat_count_free_after_dirty(const fat_fs_t *fs,
+                                           const uint8_t *table,
+                                           const uint8_t *dirty) {
+    uint32_t count, generation;
+    bool hit;
+    if (fs->type != FAT_TYPE_FAT32) return fat_count_free(fs, table);
+    kmutex_lock(&g_allocation_cache_lock);
+    hit = fat_space_cached(fs, &count, &generation) &&
+        g_allocation_cache.table &&
+        g_allocation_cache.bytes == fs->fat_size_sectors * fs->bytes_per_sector &&
+        g_allocation_cache.generation == generation &&
+        g_allocation_cache.fs.device == fs->device &&
+        g_allocation_cache.fs.volume_lba == fs->volume_lba &&
+        g_allocation_cache.fs.type == fs->type &&
+        g_allocation_cache.fs.total_clusters == fs->total_clusters;
+    if (hit) {
+        for (uint32_t sector = 0; sector < fs->fat_size_sectors; sector++) {
+            if (!dirty[sector]) continue;
+            uint32_t first = sector * (fs->bytes_per_sector / 4U);
+            uint32_t end = first + fs->bytes_per_sector / 4U;
+            if (first < 2U) first = 2U;
+            if (end > fs->total_clusters + 2U) end = fs->total_clusters + 2U;
+            for (uint32_t cluster = first; cluster < end; cluster++) {
+                bool old_free = fat_table_get(fs, g_allocation_cache.table, cluster) == 0U;
+                bool new_free = fat_table_get(fs, table, cluster) == 0U;
+                if (old_free && !new_free) count--;
+                else if (!old_free && new_free) count++;
+            }
+        }
+    }
+    kmutex_unlock(&g_allocation_cache_lock);
+    return hit ? count : fat_count_free(fs, table);
+}
+
 static bool fat_commit_table(const fat_fs_t *fs, const uint8_t *table) {
     if (!fs || !table) return false;
+    uint32_t generation = fat_space_invalidate();
     /* Las copias secundarias se escriben primero. Los sectores se agrupan para
      * evitar un CACHE FLUSH ATA por cada bloque de 512 bytes. */
     for (uint8_t pass = 0; pass < fs->num_fats; pass++) {
@@ -2567,12 +3103,17 @@ static bool fat_commit_table(const fat_fs_t *fs, const uint8_t *table) {
                 table))
             return false;
     }
+    fat_space_publish(fs, fat_count_free(fs, table), generation);
+    fat_cache_allocation_table(fs, table, generation);
     return true;
 }
 
 static bool fat_commit_dirty_table(const fat_fs_t *fs, const uint8_t *table,
                                    const uint8_t *dirty) {
+    W3P_SCOPE(W3P_FAT_COMMIT, 0U);
     if (!fs || !table || !dirty) return false;
+    uint32_t free_clusters = fat_count_free_after_dirty(fs, table, dirty);
+    uint32_t generation = fat_space_invalidate();
     for (uint8_t pass = 0; pass < fs->num_fats; pass++) {
         uint8_t copy = (uint8_t)((pass + 1U) % fs->num_fats);
         uint32_t sector = 0U;
@@ -2594,6 +3135,8 @@ static bool fat_commit_dirty_table(const fat_fs_t *fs, const uint8_t *table,
             sector += run;
         }
     }
+    fat_space_publish(fs, free_clusters, generation);
+    fat_cache_allocation_table(fs, table, generation);
     return true;
 }
 
@@ -2657,6 +3200,120 @@ static bool fat_write_chain_data(const fat_fs_t *fs, const uint8_t *table,
     return true;
 }
 
+/* Grow a cluster-backed directory when every existing directory slot is used.
+ *
+ * Host-created FAT directories (for example BUILD in the source image) often
+ * start with a single cluster.  Self-hosting then creates enough objects and
+ * subdirectories to exhaust those 16 entries.  FAT directories are ordinary
+ * cluster chains, so reaching the end of the current chain must not be treated
+ * as a permanent "directory full" condition: allocate one free cluster, zero
+ * it, append it to the chain, and let the normal slot search retry.
+ *
+ * FAT12/16 fixed root directories are the only exception; their root table has
+ * a fixed size and cannot be extended this way. */
+static bool fat_extend_directory_chain(const fat_fs_t *fs,
+                                       const fat_dir_entry_t *dir) {
+    uint32_t fat_bytes;
+    uint32_t tail;
+    uint32_t next;
+    uint32_t free_cluster = 0U;
+    uint32_t next_candidate = 2U;
+    uint8_t *table = NULL;
+    uint8_t *dirty = NULL;
+    bool using_bulk;
+    bool ok = false;
+
+    if (!fs || !dir || !dir->is_directory) return false;
+    if (dir->first_cluster == 0U && fs->type != FAT_TYPE_FAT32)
+        return false;
+    if (dir->first_cluster < 2U) return false;
+
+    fat_bytes = fs->fat_size_sectors * fs->bytes_per_sector;
+    using_bulk = fat_bulk_matches(fs);
+    if (using_bulk) {
+        table = g_fat_bulk.table;
+        dirty = g_fat_bulk.dirty;
+        if (!table || !dirty) return false;
+        kmemset(dirty, 0, fs->fat_size_sectors);
+        next_candidate = g_fat_bulk.next_free_hint;
+        if (next_candidate < 2U ||
+            next_candidate >= fs->total_clusters + 2U)
+            next_candidate = 2U;
+    } else {
+        table = (uint8_t *)kmalloc(fat_bytes);
+        dirty = (uint8_t *)kzalloc(fs->fat_size_sectors);
+        if (!table || !dirty) goto cleanup;
+        if (!fat_read_allocation_table(fs, table))
+            goto cleanup;
+        next_candidate = fat_allocation_hint_get(fs);
+    }
+
+    tail = dir->first_cluster;
+    for (uint32_t visited = 0U; visited <= fs->total_clusters; visited++) {
+        next = fat_table_get(fs, table, tail);
+        if (fat_cluster_is_eoc(fs, next)) break;
+        if (next < 2U || next >= fs->total_clusters + 2U)
+            goto cleanup;
+        tail = next;
+        if (visited == fs->total_clusters) goto cleanup;
+    }
+
+    {
+        uint32_t limit = fs->total_clusters + 2U;
+        for (uint32_t candidate = next_candidate; candidate < limit; candidate++) {
+            if (fat_table_get(fs, table, candidate) == 0U) {
+                free_cluster = candidate;
+                next_candidate = candidate + 1U;
+                break;
+            }
+        }
+        if (!free_cluster && next_candidate > 2U) {
+            for (uint32_t candidate = 2U; candidate < next_candidate; candidate++) {
+                if (fat_table_get(fs, table, candidate) == 0U) {
+                    free_cluster = candidate;
+                    next_candidate = candidate + 1U;
+                    break;
+                }
+            }
+        }
+    }
+    if (!free_cluster) goto cleanup;
+
+    /* Zero the still-unlinked cluster first.  If a later FAT commit fails,
+     * the cluster remains free rather than leaving a half-published chain. */
+    {
+        uint8_t zeros[BLOCK_SECTOR_SIZE];
+        uint32_t first_sector = fs->first_data_sector +
+            (free_cluster - 2U) * fs->sectors_per_cluster;
+        kmemset(zeros, 0, sizeof(zeros));
+        for (uint32_t s = 0U; s < fs->sectors_per_cluster; s++)
+            if (!write_sector(fs, first_sector + s, zeros))
+                goto cleanup;
+    }
+
+    fat_table_set_dirty(fs, table, tail, free_cluster, dirty);
+    fat_table_set_dirty(fs, table, free_cluster, fat_eoc_value(fs), dirty);
+    if (!fat_commit_dirty_table(fs, table, dirty)) goto cleanup;
+
+    if (using_bulk) {
+        g_fat_bulk.next_free_hint = next_candidate;
+        g_fat_bulk.stores++;
+    } else fat_allocation_hint_set(fs, next_candidate);
+    kprintf("[FAT:DIR] extended directory cluster=%u -> %u\n",
+            tail, free_cluster);
+    ok = true;
+
+cleanup:
+    if (using_bulk) {
+        if (g_fat_bulk.active && g_fat_bulk.dirty)
+            kmemset(g_fat_bulk.dirty, 0, fs->fat_size_sectors);
+    } else {
+        if (dirty) kfree(dirty);
+        if (table) kfree(table);
+    }
+    return ok;
+}
+
 static bool fat_store_path(fat_fs_t *fs, const char *path, const void *data,
                            uint32_t size, bool directory) {
     char parent_path[260] = {0};
@@ -2677,10 +3334,15 @@ static bool fat_store_path(fat_fs_t *fs, const char *path, const void *data,
     uint32_t previous = 0U;
     uint32_t next_candidate = 2U;
     bool needs_lfn = false;
+    bool bridge_needed = false;
     uint8_t lfn_count = 0U;
     bool using_bulk = false;
     bool fat_committed = false;
     const char *failure = "unknown";
+#ifdef BLESK_FAT_PROFILE
+    uint32_t profile_start=pit_get_ticks(), profile_lookup=profile_start;
+    uint32_t profile_alloc=profile_start, profile_data=profile_start;
+#endif
 
     fat_set_last_error("none");
 
@@ -2715,8 +3377,13 @@ static bool fat_store_path(fat_fs_t *fs, const char *path, const void *data,
                 FAT_STORE_FAIL("could not make an 8.3 alias");
             if (!fat_find_dir_slot(fs, &parent, raw_name,
                                    &alias_sector, &alias_offset,
-                                   &alias_old, &alias_exists))
-                FAT_STORE_FAIL("directory table full while choosing alias");
+                                   &alias_old, &alias_exists)) {
+                if (!fat_extend_directory_chain(fs, &parent) ||
+                    !fat_find_dir_slot(fs, &parent, raw_name,
+                                       &alias_sector, &alias_offset,
+                                       &alias_old, &alias_exists))
+                    FAT_STORE_FAIL("directory table full while choosing alias");
+            }
             alias_ready = !alias_exists;
         }
         if (!alias_ready)
@@ -2727,14 +3394,32 @@ static bool fat_store_path(fat_fs_t *fs, const char *path, const void *data,
         lfn_count = (uint8_t)((kstrlen(name) + 12U) / 13U);
 
     if (!fat_find_dir_slot(fs, &parent, raw_name, &dir_sector,
-                           &dir_offset, &old, &exists))
-        FAT_STORE_FAIL("directory table full");
+                           &dir_offset, &old, &exists)) {
+        if (!fat_extend_directory_chain(fs, &parent) ||
+            !fat_find_dir_slot(fs, &parent, raw_name, &dir_sector,
+                               &dir_offset, &old, &exists))
+            FAT_STORE_FAIL("directory table full and could not extend directory");
+    }
     if (!exists && lfn_count &&
         !fat_find_free_run(fs, &parent, (uint32_t)lfn_count + 1U,
-                           &dir_sector, &dir_offset))
-        FAT_STORE_FAIL("no contiguous directory slots for long file name");
+                           &dir_sector, &dir_offset, &bridge_needed)) {
+        if (!fat_extend_directory_chain(fs, &parent) ||
+            !fat_find_free_run(fs, &parent, (uint32_t)lfn_count + 1U,
+                               &dir_sector, &dir_offset, &bridge_needed))
+            FAT_STORE_FAIL("no contiguous directory slots after extending directory");
+    }
     if (exists && old.is_directory != directory)
         FAT_STORE_FAIL("file/directory type conflict");
+
+#ifdef BLESK_FAT_PROFILE
+    profile_lookup=pit_get_ticks();profile_alloc=profile_data=profile_lookup;
+#endif
+    /* Empty regular files have no cluster chain. Creating one (or rewriting
+     * an already empty one) only changes directory entries; do not read the
+     * entire allocation table for Wine's O_CREAT/temporary-file probes.
+     * Truncating a nonempty file still follows the transaction below. */
+    if (!directory && !size && (!exists || old.first_cluster < 2U))
+        goto publish_entry;
 
     fat_bytes = fs->fat_size_sectors * fs->bytes_per_sector;
     using_bulk = fat_bulk_matches(fs);
@@ -2751,9 +3436,9 @@ static bool fat_store_path(fat_fs_t *fs, const char *path, const void *data,
         dirty = (uint8_t *)kzalloc(fs->fat_size_sectors);
         if (!table || !dirty)
             FAT_STORE_FAIL("not enough memory for FAT transaction");
-        if (!fat_read_sector_run(fs, fs->first_fat_sector,
-                                 fs->fat_size_sectors, table))
+        if (!fat_read_allocation_table(fs, table))
             FAT_STORE_FAIL("could not read FAT table");
+        next_candidate = fat_allocation_hint_get(fs);
     }
 
     if (exists && old.first_cluster >= 2U) {
@@ -2804,10 +3489,13 @@ static bool fat_store_path(fat_fs_t *fs, const char *path, const void *data,
     if (!fat_commit_dirty_table(fs, table, dirty))
         FAT_STORE_FAIL("could not commit FAT sectors");
     fat_committed = true;
+#ifdef BLESK_FAT_PROFILE
+    profile_alloc=pit_get_ticks();
+#endif
     if (using_bulk) {
         g_fat_bulk.next_free_hint = next_candidate;
         g_fat_bulk.stores++;
-    }
+    } else fat_allocation_hint_set(fs, next_candidate);
 
     if (directory) {
         uint32_t directory_bytes = needed * cluster_size;
@@ -2833,30 +3521,29 @@ static bool fat_store_path(fat_fs_t *fs, const char *path, const void *data,
         FAT_STORE_FAIL("could not write file data clusters");
     }
 
+#ifdef BLESK_FAT_PROFILE
+    profile_data=pit_get_ticks();
+#endif
+publish_entry:
     {
-        uint8_t sector_data[BLOCK_SECTOR_SIZE];
-        uint8_t *entry;
-        if (!exists && lfn_count) {
-            uint8_t checksum = fat_short_checksum(raw_name);
-            for (uint8_t physical = 0U; physical < lfn_count; physical++) {
-                uint8_t lfn_entry[32];
-                uint8_t ordinal = (uint8_t)(lfn_count - physical);
-                fat_write_lfn_entry(lfn_entry, name, ordinal, lfn_count,
-                                    checksum);
-                if (!fat_write_directory_slot(fs, dir_sector, dir_offset,
-                                              physical, lfn_entry))
-                    FAT_STORE_FAIL("could not write long-name directory entry");
-            }
-            {
-                uint32_t linear = dir_offset + (uint32_t)lfn_count * 32U;
-                dir_sector += linear / fs->bytes_per_sector;
-                dir_offset = linear % fs->bytes_per_sector;
-            }
+        uint8_t entry[32] = {0};
+        if (!exists && lfn_count && bridge_needed) {
+            uint32_t bridged = 0U;
+            if (!fat_bridge_end_markers_before_slot(fs, &parent, dir_sector,
+                                                    dir_offset, &bridged))
+                FAT_STORE_FAIL("could not preserve FAT directory end marker");
+            if (bridged)
+                kprintf("[FAT:DIR] bridged %u end marker(s) before %s\n",
+                        bridged, path);
         }
-        if (!read_sector(fs, dir_sector, sector_data))
-            FAT_STORE_FAIL("could not read destination directory sector");
-        entry = sector_data + dir_offset;
-        kmemset(entry, 0, 32U);
+        if (exists) {
+            uint8_t sector_data[512];
+            if (!read_sector(fs, dir_sector, sector_data))
+                FAT_STORE_FAIL("could not read destination directory sector");
+            /* Preserve POSIX mode and legacy creation metadata on rewrite. */
+            entry[12] = sector_data[dir_offset + 12U];
+            entry[13] = sector_data[dir_offset + 13U];
+        }
         kmemcpy(entry, raw_name, 11U);
         entry[11] = directory ? FAT_ATTR_DIRECTORY : FAT_ATTR_ARCHIVE;
         fat_entry_set_cluster(entry, first);
@@ -2864,7 +3551,8 @@ static bool fat_store_path(fat_fs_t *fs, const char *path, const void *data,
         entry[29] = (uint8_t)(size >> 8);
         entry[30] = (uint8_t)(size >> 16);
         entry[31] = (uint8_t)(size >> 24);
-        if (!write_sector(fs, dir_sector, sector_data))
+        if (!fat_write_named_entry(fs, dir_sector, dir_offset, name,
+                                   exists ? 0 : lfn_count, entry))
             FAT_STORE_FAIL("could not write destination directory entry");
     }
 
@@ -2874,6 +3562,14 @@ static bool fat_store_path(fat_fs_t *fs, const char *path, const void *data,
     } else {
         kmemset(dirty, 0, fs->fat_size_sectors);
     }
+#ifdef BLESK_FAT_PROFILE
+    uint32_t profile_end=pit_get_ticks();
+    if(profile_end-profile_start>=10U)
+        kprintf("[FAT:SLOW-STORE] pid=%u bytes=%u dir=%u lookup=%u alloc=%u data=%u publish=%u path=%s\n",
+                task_current_process_id(),size,directory?1U:0U,
+                profile_lookup-profile_start,profile_alloc-profile_lookup,
+                profile_data-profile_alloc,profile_end-profile_data,path);
+#endif
     fat_set_last_error("none");
 #undef FAT_STORE_FAIL
     return true;
@@ -2900,13 +3596,190 @@ fail:
     return false;
 }
 
+/* Commit only the appended part of a VFS write cache. Existing bytes in the
+ * cache are known unchanged, so the old chain remains allocated. Data goes
+ * out before the new FAT links and directory size become visible. */
+bool fat_append_path(fat_fs_t *fs, const char *path, const void *data,
+                     uint32_t old_size, uint32_t new_size) {
+    if (fs && fs->type == FAT_TYPE_BFS4)
+        return bfs4_append(fs, path, data, old_size, new_size);
+    char parent_path[260] = {0}, name[FAT_MAX_NAME] = {0};
+    uint8_t raw_name[11], sector_data[BLOCK_SECTOR_SIZE];
+    fat_dir_entry_t parent, resolved, old;
+    uint32_t dir_sector, dir_offset, cluster_size, old_count, new_count;
+    uint32_t fat_bytes, first, tail = 0U, next_candidate = 2U;
+    uint32_t position, cluster, cluster_index, target_index;
+    uint8_t *table = NULL, *dirty = NULL;
+    bool exists = false, using_bulk = false, committed = false, ok = false;
+
+    if (!fat_device_writable(fs) || !path || !data || new_size <= old_size ||
+        (fs->type != FAT_TYPE_FAT12 && fs->type != FAT_TYPE_FAT16 &&
+         fs->type != FAT_TYPE_FAT32)) return false;
+    if (!fat_split_parent(path, parent_path, name) ||
+        !fat_resolve_path(fs, parent_path, &parent) || !parent.is_directory ||
+        !fat_resolve_path(fs, path, &resolved) || resolved.is_directory ||
+        resolved.size != old_size ||
+        !fat_make_short_name(resolved.short_name, raw_name) ||
+        !fat_find_dir_slot(fs, &parent, raw_name, &dir_sector, &dir_offset,
+                           &old, &exists) || !exists || old.size != old_size ||
+        old.first_cluster != resolved.first_cluster) return false;
+
+    cluster_size = fs->bytes_per_sector * fs->sectors_per_cluster;
+    if (!cluster_size || fs->bytes_per_sector != BLOCK_SECTOR_SIZE) return false;
+    old_count = (old_size + cluster_size - 1U) / cluster_size;
+    new_count = (new_size + cluster_size - 1U) / cluster_size;
+    if (new_count > fs->total_clusters) return false;
+    if ((!old_count && old.first_cluster >= 2U) ||
+        (old_count && old.first_cluster < 2U)) return false;
+
+    fat_bytes = fs->fat_size_sectors * fs->bytes_per_sector;
+    using_bulk = fat_bulk_matches(fs);
+    if (using_bulk) {
+        table = g_fat_bulk.table;
+        dirty = g_fat_bulk.dirty;
+        kmemset(dirty, 0, fs->fat_size_sectors);
+        next_candidate = g_fat_bulk.next_free_hint;
+        if (next_candidate < 2U || next_candidate >= fs->total_clusters + 2U)
+            next_candidate = 2U;
+    } else {
+        table = (uint8_t *)kmalloc(fat_bytes);
+        dirty = (uint8_t *)kzalloc(fs->fat_size_sectors);
+        if (!table || !dirty || !fat_read_allocation_table(fs, table))
+            goto cleanup;
+        next_candidate = fat_allocation_hint_get(fs);
+    }
+
+    first = old.first_cluster;
+    cluster = first;
+    for (uint32_t i = 0U; i < old_count; i++) {
+        uint32_t next;
+        if (cluster < 2U || cluster >= fs->total_clusters + 2U) goto cleanup;
+        tail = cluster;
+        next = fat_table_get(fs, table, cluster);
+        if (i + 1U < old_count) {
+            if (next < 2U || fat_cluster_is_eoc(fs, next)) goto cleanup;
+            cluster = next;
+        } else if (!fat_cluster_is_eoc(fs, next)) {
+            /* A prior interrupted commit may have left extra clusters.
+             * Let the regular rewrite path reclaim that chain. */
+            goto cleanup;
+        }
+    }
+
+    for (uint32_t i = old_count; i < new_count; i++) {
+        uint32_t free_cluster = 0U;
+        uint32_t limit = fs->total_clusters + 2U;
+        for (uint32_t candidate = next_candidate; candidate < limit; candidate++)
+            if (fat_table_get(fs, table, candidate) == 0U) {
+                free_cluster = candidate;
+                next_candidate = candidate + 1U;
+                break;
+            }
+        if (!free_cluster && next_candidate > 2U)
+            for (uint32_t candidate = 2U; candidate < next_candidate; candidate++)
+                if (fat_table_get(fs, table, candidate) == 0U) {
+                    free_cluster = candidate;
+                    next_candidate = candidate + 1U;
+                    break;
+                }
+        if (!free_cluster) goto cleanup;
+        fat_table_set_dirty(fs, table, free_cluster, fat_eoc_value(fs), dirty);
+        if (tail) fat_table_set_dirty(fs, table, tail, free_cluster, dirty);
+        else first = free_cluster;
+        tail = free_cluster;
+    }
+
+    /* Rewrite at most the one existing partial sector plus appended sectors.
+     * The full VFS cache supplies the unchanged prefix of that sector. */
+    position = old_size & ~(uint32_t)(BLOCK_SECTOR_SIZE - 1U);
+    target_index = position / cluster_size;
+    cluster = first;
+    for (cluster_index = 0U; cluster_index < target_index; cluster_index++) {
+        cluster = fat_table_get(fs, table, cluster);
+        if (cluster < 2U || cluster >= fs->total_clusters + 2U) goto cleanup;
+    }
+    while (position < new_size) {
+        uint32_t local = position % cluster_size;
+        uint32_t last = cluster;
+        uint32_t run_clusters = 1U;
+        uint32_t span = cluster_size - local;
+        uint32_t max_run_clusters = 255U / fs->sectors_per_cluster;
+        uint32_t sector = fs->first_data_sector +
+            (cluster - 2U) * fs->sectors_per_cluster +
+            local / BLOCK_SECTOR_SIZE;
+        uint32_t bytes = new_size - position;
+        uint32_t full_sectors;
+        if (!max_run_clusters) max_run_clusters = 1U;
+        while (span < bytes && run_clusters < max_run_clusters) {
+            uint32_t next = fat_table_get(fs, table, last);
+            if (next != last + 1U) break;
+            last = next;
+            run_clusters++;
+            span += cluster_size;
+        }
+        if (bytes > span) bytes = span;
+        full_sectors = bytes / BLOCK_SECTOR_SIZE;
+        if (full_sectors && !fat_write_sector_run(fs, sector, full_sectors,
+                                                  (const uint8_t *)data + position))
+            goto cleanup;
+        if (bytes % BLOCK_SECTOR_SIZE) {
+            kmemset(sector_data, 0, sizeof(sector_data));
+            kmemcpy(sector_data,
+                    (const uint8_t *)data + position +
+                        full_sectors * BLOCK_SECTOR_SIZE,
+                    bytes % BLOCK_SECTOR_SIZE);
+            if (!write_sector(fs, sector + full_sectors, sector_data))
+                goto cleanup;
+        }
+        position += bytes;
+        if (position < new_size) {
+            cluster = fat_table_get(fs, table, last);
+            if (cluster < 2U || cluster >= fs->total_clusters + 2U)
+                goto cleanup;
+        }
+    }
+
+    if (new_count > old_count) {
+        if (!fat_commit_dirty_table(fs, table, dirty)) goto cleanup;
+        committed = true;
+    }
+    if (!read_sector(fs, dir_sector, sector_data)) goto cleanup;
+    fat_entry_set_cluster(sector_data + dir_offset, first);
+    sector_data[dir_offset + 28U] = (uint8_t)new_size;
+    sector_data[dir_offset + 29U] = (uint8_t)(new_size >> 8);
+    sector_data[dir_offset + 30U] = (uint8_t)(new_size >> 16);
+    sector_data[dir_offset + 31U] = (uint8_t)(new_size >> 24);
+    if (!write_sector(fs, dir_sector, sector_data)) goto cleanup;
+    if (using_bulk) {
+        g_fat_bulk.next_free_hint = next_candidate;
+        g_fat_bulk.stores++;
+    } else fat_allocation_hint_set(fs, next_candidate);
+    fat_set_last_error("none");
+    ok = true;
+
+cleanup:
+    if (using_bulk) {
+        if (!ok && !committed && !fat_bulk_reload())
+            fat_bulk_write_end();
+        else if (g_fat_bulk.active && g_fat_bulk.dirty)
+            kmemset(g_fat_bulk.dirty, 0, fs->fat_size_sectors);
+    } else {
+        if (dirty) kfree(dirty);
+        if (table) kfree(table);
+    }
+    return ok;
+}
+
 bool fat_write_path(fat_fs_t *fs, const char *path, const void *data,
                     uint32_t size) {
+    if (fs && fs->type == FAT_TYPE_BFS4)
+        return bfs4_write(fs, path, data, size);
     if (size && !data) return false;
     return fat_store_path(fs, path, data, size, false);
 }
 
 bool fat_mkdir_path(fat_fs_t *fs, const char *path) {
+    if (fs && fs->type == FAT_TYPE_BFS4) return bfs4_mkdir(fs, path);
     fat_dir_entry_t existing;
     if (fs && path && fat_resolve_path(fs, path, &existing))
         return existing.is_directory;
@@ -2920,7 +3793,7 @@ typedef struct {
     fat_dir_entry_t entry;
 } fat_entry_location_t;
 
-static bool fat_locate_in_directory(const fat_fs_t *fs,
+static bool fat_locate_in_directory_uncached(const fat_fs_t *fs,
                                     const fat_dir_entry_t *dir,
                                     const char *name,
                                     fat_entry_location_t *location) {
@@ -2967,7 +3840,7 @@ static bool fat_locate_in_directory(const fat_fs_t *fs,
                     (void)fat_lfn_consume(&lfn, raw);
                     continue;
                 }
-                if (!parse_dir_entry_lfn(raw, &lfn, &parsed)) {
+                if (!fat_match_dir_entry(raw, &lfn, name, &parsed)) {
                     pending = 0;
                     continue;
                 }
@@ -2994,14 +3867,265 @@ static bool fat_locate_in_directory(const fat_fs_t *fs,
     return false;
 }
 
+/* stat, permission and symlink probes revisit the same short entry. Keep its
+ * complete LFN location too, with the same write generation as the path
+ * cache; mutations cannot reuse a stale location for chmod/rename/unlink. */
+#define FAT_LOCATION_CACHE_SLOTS 32U
+static struct {
+    block_device_t *device;
+    uint32_t volume_lba, cluster, generation;
+    char name[FAT_MAX_NAME];
+    fat_entry_location_t location;
+} g_location_cache[FAT_LOCATION_CACHE_SLOTS];
+
+static bool fat_locate_in_directory(const fat_fs_t *fs,
+                                    const fat_dir_entry_t *dir,
+                                    const char *name,
+                                    fat_entry_location_t *location) {
+    if(!fs || !dir || !dir->is_directory || !name || !location)return false;
+    uint32_t hash=2166136261U ^ dir->first_cluster,length=0U;
+    for(const char *p=name;*p;p++) {
+        uint8_t ch=(uint8_t)*p;
+        if(ch>='A' && ch<='Z')ch+='a'-'A';
+        hash=(hash^ch)*16777619U;length++;
+    }
+    if(length>=FAT_MAX_NAME)return false;
+    uint32_t slot=hash&(FAT_LOCATION_CACHE_SLOTS-1U);
+    uint32_t irq=kspin_lock_irqsave(&g_sector_cache_lock);
+    uint32_t generation=g_sector_cache_generation;
+    if(g_location_cache[slot].device==fs->device &&
+       g_location_cache[slot].volume_lba==fs->volume_lba &&
+       g_location_cache[slot].cluster==dir->first_cluster &&
+       g_location_cache[slot].generation==generation &&
+       name_equals(g_location_cache[slot].name,name)) {
+        *location=g_location_cache[slot].location;
+        kspin_unlock_irqrestore(&g_sector_cache_lock,irq);return true;
+    }
+    kspin_unlock_irqrestore(&g_sector_cache_lock,irq);
+    if(!fat_locate_in_directory_uncached(fs,dir,name,location))return false;
+    irq=kspin_lock_irqsave(&g_sector_cache_lock);
+    if(generation==g_sector_cache_generation) {
+        g_location_cache[slot].device=fs->device;
+        g_location_cache[slot].volume_lba=fs->volume_lba;
+        g_location_cache[slot].cluster=dir->first_cluster;
+        g_location_cache[slot].generation=generation;
+        kmemcpy(g_location_cache[slot].name,name,length+1U);
+        g_location_cache[slot].location=*location;
+    }
+    kspin_unlock_irqrestore(&g_sector_cache_lock,irq);return true;
+}
+
+/* Identidad del registro corto, compartida por el alias 8.3 y el nombre largo.
+ * No usamos first_cluster: vale cero para todos los archivos vacios y cambia
+ * cuando FAT reemplaza la cadena al escribir. */
+bool fat_path_inode(const fat_fs_t *fs, const char *path, uint64_t *inode) {
+    if (fs && fs->type == FAT_TYPE_BFS4) return bfs4_inode(fs, path, inode);
+    char parent_path[260], name[FAT_MAX_NAME];
+    fat_dir_entry_t parent;
+    fat_entry_location_t location;
+    if (!path[0] || (path[0]=='/' && !path[1])) { *inode=1; return true; }
+    if (!fat_split_parent(path,parent_path,name) ||
+        !fat_resolve_path(fs,parent_path,&parent) ||
+        !fat_locate_in_directory(fs,&parent,name,&location)) return false;
+    unsigned i=location.count-1U;
+    *inode=((uint64_t)location.sector[i]*fs->bytes_per_sector+location.offset[i])/32U+2U;
+    return true;
+}
+
+bool fat_get_posix_mode(const fat_fs_t *fs, const char *path, uint16_t *mode) {
+    if (fs && fs->type == FAT_TYPE_BFS4) return bfs4_get_mode(fs, path, mode);
+    char parent_path[260], name[FAT_MAX_NAME];
+    fat_dir_entry_t parent;
+    fat_entry_location_t location;
+    uint8_t data[BLOCK_SECTOR_SIZE];
+    uint8_t index;
+    const uint8_t *entry;
+    if (!fs || !path || !mode || !path[0] ||
+        (path[0] == '/' && !path[1]) ||
+        !fat_split_parent(path, parent_path, name) ||
+        !fat_resolve_path(fs, parent_path, &parent) ||
+        !fat_locate_in_directory(fs, &parent, name, &location) ||
+        !location.count)
+        return false;
+    index = (uint8_t)(location.count - 1U);
+    if (!read_sector(fs, location.sector[index], data)) return false;
+    entry = data + location.offset[index];
+    uint8_t tag=entry[12] & FAT_POSIX_MODE_TAG_MASK;
+    if (tag != FAT_POSIX_MODE_TAG && tag != 0xB0U) return false;
+    *mode = (uint16_t)((((uint16_t)entry[12] & 0x0FU) << 8U) |
+                       (uint16_t)entry[13]);
+    if(tag==0xB0U) *mode|=0120000U;
+    return true;
+}
+
+bool fat_set_posix_mode(fat_fs_t *fs, const char *path, uint16_t mode) {
+    if (fs && fs->type == FAT_TYPE_BFS4) return bfs4_set_mode(fs, path, mode);
+    char parent_path[260], name[FAT_MAX_NAME];
+    fat_dir_entry_t parent;
+    fat_entry_location_t location;
+    uint8_t data[BLOCK_SECTOR_SIZE];
+    uint8_t index;
+    uint8_t *entry;
+    if (!fat_device_writable(fs) || !path || !path[0] ||
+        (path[0] == '/' && !path[1]) ||
+        !fat_split_parent(path, parent_path, name) ||
+        !fat_resolve_path(fs, parent_path, &parent) ||
+        !fat_locate_in_directory(fs, &parent, name, &location) ||
+        !location.count)
+        return false;
+    index = (uint8_t)(location.count - 1U);
+    if (!read_sector(fs, location.sector[index], data)) return false;
+    entry = data + location.offset[index];
+    uint8_t tag=(mode&0170000U)==0120000U?0xB0U:FAT_POSIX_MODE_TAG;
+    mode &= FAT_POSIX_MODE_MASK;
+    entry[12] = (uint8_t)(tag | ((mode >> 8U) & 0x0FU));
+    entry[13] = (uint8_t)(mode & 0xFFU);
+    return write_sector(fs, location.sector[index], data);
+}
+
+static void fat_encode_unix_time(uint64_t seconds, uint16_t *date,
+                                 uint16_t *time) {
+    static const uint8_t month_days[12] =
+        {31,28,31,30,31,30,31,31,30,31,30,31};
+    uint32_t capped = seconds > 0xffffffffULL ? 0xffffffffU : (uint32_t)seconds;
+    uint32_t days = capped / 86400U;
+    uint32_t day_seconds = capped % 86400U;
+    uint32_t year = 1970U, month = 1U;
+    while (year < 2107U) {
+        uint32_t leap = (year % 4U == 0U &&
+                         (year % 100U != 0U || year % 400U == 0U));
+        uint32_t length = leap ? 366U : 365U;
+        if (days < length) break;
+        days -= length;
+        year++;
+    }
+    if (year < 1980U) {
+        *date = (1U << 5U) | 1U;
+        *time = 0U;
+        return;
+    }
+    if (year >= 2107U && days >= 365U) {
+        *date = (uint16_t)(((2107U - 1980U) << 9U) | (12U << 5U) | 31U);
+        *time = (23U << 11U) | (59U << 5U) | 29U;
+        return;
+    }
+    for (month = 1U; month <= 12U; month++) {
+        uint32_t length = month_days[month - 1U];
+        if (month == 2U && (year % 4U == 0U) &&
+            (year % 100U != 0U || year % 400U == 0U)) length++;
+        if (days < length) break;
+        days -= length;
+    }
+    *date = (uint16_t)(((year - 1980U) << 9U) | (month << 5U) |
+                       ((uint32_t)days + 1U));
+    *time = (uint16_t)(((day_seconds / 3600U) << 11U) |
+                       (((day_seconds / 60U) % 60U) << 5U) |
+                       ((day_seconds % 60U) / 2U));
+}
+
+static bool fat_decode_unix_time(uint16_t date, uint16_t time,
+                                 uint32_t *seconds) {
+    static const uint8_t month_days[12] =
+        {31,28,31,30,31,30,31,31,30,31,30,31};
+    uint32_t year = 1980U + (date >> 9U);
+    uint32_t month = (date >> 5U) & 15U;
+    uint32_t day = date & 31U;
+    uint32_t hour = time >> 11U;
+    uint32_t minute = (time >> 5U) & 63U;
+    uint32_t second = (time & 31U) * 2U;
+    uint32_t leap = (year % 4U == 0U &&
+                     (year % 100U != 0U || year % 400U == 0U));
+    uint32_t days = 0U, month_length;
+    if (!seconds || month < 1U || month > 12U || !day ||
+        hour > 23U || minute > 59U || second > 59U) return false;
+    month_length = month_days[month - 1U] + (month == 2U && leap ? 1U : 0U);
+    if (day > month_length) return false;
+    for (uint32_t y = 1970U; y < year; y++)
+        days += (y % 4U == 0U && (y % 100U != 0U || y % 400U == 0U))
+            ? 366U : 365U;
+    for (uint32_t m = 1U; m < month; m++)
+        days += month_days[m - 1U] + (m == 2U && leap ? 1U : 0U);
+    days += day - 1U;
+    uint64_t value = (uint64_t)days * 86400U +
+                     hour * 3600U + minute * 60U + second;
+    if (value > 0xffffffffULL) return false;
+    *seconds = (uint32_t)value;
+    return true;
+}
+
+bool fat_get_times(const fat_fs_t *fs, const char *path,
+                   uint32_t *access_seconds, uint32_t *modify_seconds) {
+    if (fs && fs->type == FAT_TYPE_BFS4)
+        return bfs4_get_times(fs, path, access_seconds, modify_seconds);
+    char parent_path[260], name[FAT_MAX_NAME];
+    fat_dir_entry_t parent;
+    fat_entry_location_t location;
+    uint8_t data[BLOCK_SECTOR_SIZE];
+    const uint8_t *entry;
+    uint32_t accessed, modified;
+    if (!fs || !path || !access_seconds || !modify_seconds || !path[0] ||
+        (path[0] == '/' && !path[1]) ||
+        !fat_split_parent(path, parent_path, name) ||
+        !fat_resolve_path(fs, parent_path, &parent) ||
+        !fat_locate_in_directory(fs, &parent, name, &location) ||
+        !location.count ||
+        !read_sector(fs, location.sector[location.count - 1U], data)) return false;
+    entry = data + location.offset[location.count - 1U];
+    if (!fat_decode_unix_time(read_le16(entry + 24U),
+                              read_le16(entry + 22U), &modified)) return false;
+    if (!fat_decode_unix_time(read_le16(entry + 18U), 0U, &accessed))
+        accessed = modified;
+    *access_seconds = accessed;
+    *modify_seconds = modified;
+    return true;
+}
+
+bool fat_set_times(fat_fs_t *fs, const char *path,
+                   bool set_access, uint64_t access_seconds,
+                   bool set_modify, uint64_t modify_seconds) {
+    if (fs && fs->type == FAT_TYPE_BFS4)
+        return bfs4_set_times(fs, path, set_access, access_seconds,
+                              set_modify, modify_seconds);
+    char parent_path[260], name[FAT_MAX_NAME];
+    fat_dir_entry_t parent;
+    fat_entry_location_t location;
+    uint8_t data[BLOCK_SECTOR_SIZE], *entry;
+    uint8_t index;
+    uint16_t date, time;
+    if (!fat_device_writable(fs) || !path || !path[0] ||
+        (path[0] == '/' && !path[1]) ||
+        !fat_split_parent(path, parent_path, name) ||
+        !fat_resolve_path(fs, parent_path, &parent) ||
+        !fat_locate_in_directory(fs, &parent, name, &location) ||
+        !location.count) return false;
+    if (!set_access && !set_modify) return true;
+    index = (uint8_t)(location.count - 1U);
+    if (!read_sector(fs, location.sector[index], data)) return false;
+    entry = data + location.offset[index];
+    if (set_access) {
+        fat_encode_unix_time(access_seconds, &date, &time);
+        write_le16(entry + 18U, date);
+    }
+    if (set_modify) {
+        fat_encode_unix_time(modify_seconds, &date, &time);
+        write_le16(entry + 22U, time);
+        write_le16(entry + 24U, date);
+    }
+    return write_sector(fs, location.sector[index], data);
+}
+
 static bool fat_mark_location_deleted(const fat_fs_t *fs,
                                       const fat_entry_location_t *location) {
     if (!fs || !location || !location->count) return false;
-    for (uint8_t i = 0; i < location->count; i++) {
+    for (uint8_t i = 0; i < location->count;) {
         uint8_t data[512];
-        if (!read_sector(fs, location->sector[i], data)) return false;
-        data[location->offset[i]] = 0xE5;
-        if (!write_sector(fs, location->sector[i], data)) return false;
+        uint32_t sector = location->sector[i];
+        if (!read_sector(fs, sector, data)) return false;
+        do {
+            data[location->offset[i]] = 0xE5;
+            i++;
+        } while (i < location->count && location->sector[i] == sector);
+        if (!write_sector(fs, sector, data)) return false;
     }
     return true;
 }
@@ -3018,8 +4142,7 @@ static bool fat_release_chain(const fat_fs_t *fs, uint32_t first_cluster) {
     table = (uint8_t *)kmalloc(fat_bytes);
     dirty = (uint8_t *)kzalloc(fs->fat_size_sectors);
     if (!table || !dirty) goto cleanup;
-    if (!fat_read_sector_run(fs, fs->first_fat_sector,
-                             fs->fat_size_sectors, table))
+    if (!fat_read_allocation_table(fs, table))
         goto cleanup;
 
     cluster = first_cluster;
@@ -3040,6 +4163,7 @@ cleanup:
 }
 
 bool fat_remove_path(fat_fs_t *fs, const char *path) {
+    if (fs && fs->type == FAT_TYPE_BFS4) return bfs4_remove(fs, path);
     char parent_path[260];
     char name[FAT_MAX_NAME];
     fat_dir_entry_t parent;
@@ -3061,12 +4185,16 @@ bool fat_remove_path(fat_fs_t *fs, const char *path) {
 }
 
 bool fat_rename_path(fat_fs_t *fs, const char *old_path, const char *new_path) {
+    if (fs && fs->type == FAT_TYPE_BFS4)
+        return bfs4_rename(fs, old_path, new_path);
     char old_parent_path[260], new_parent_path[260];
     char old_name[FAT_MAX_NAME], new_name[FAT_MAX_NAME];
     fat_dir_entry_t parent, destination;
     fat_entry_location_t old_location;
+    fat_entry_location_t destination_location;
     uint8_t raw_name[11];
     bool needs_lfn = false;
+    bool bridge_needed = false;
     uint8_t lfn_count = 0;
     uint32_t sector, offset;
     fat_dir_entry_t unused;
@@ -3077,8 +4205,34 @@ bool fat_rename_path(fat_fs_t *fs, const char *old_path, const char *new_path) {
         !fat_split_parent(new_path, new_parent_path, new_name) ||
         !name_equals(old_parent_path, new_parent_path) ||
         !fat_resolve_path(fs, old_parent_path, &parent) ||
-        !fat_locate_in_directory(fs, &parent, old_name, &old_location) ||
-        fat_resolve_path(fs, new_path, &destination)) return false;
+        !fat_locate_in_directory(fs, &parent, old_name, &old_location)) return false;
+    /* POSIX rename replaces an existing regular file. Wine relies on this
+     * when it commits each registry hive from regXXXX.tmp. Reuse the target
+     * directory slots so its long-name entries and short-name checksum stay
+     * valid. Publish the new chain before removing the temporary name, then
+     * reclaim the old target chain only after both names are consistent. */
+    if (fat_locate_in_directory(fs, &parent, new_name, &destination_location)) {
+        uint8_t source_index = (uint8_t)(old_location.count - 1U);
+        uint8_t target_index = (uint8_t)(destination_location.count - 1U);
+        uint8_t source_sector[512], target_sector[512];
+        if (old_location.sector[source_index] == destination_location.sector[target_index] &&
+            old_location.offset[source_index] == destination_location.offset[target_index])
+            return true;
+        destination = destination_location.entry;
+        if (old_location.entry.is_directory || destination.is_directory ||
+            !read_sector(fs, old_location.sector[source_index], source_sector) ||
+            !read_sector(fs, destination_location.sector[target_index], target_sector))
+            return false;
+        uint8_t *target = target_sector + destination_location.offset[target_index];
+        kmemcpy(raw_name, target, 11);
+        kmemcpy(short_entry, source_sector + old_location.offset[source_index], 32);
+        kmemcpy(short_entry, raw_name, 11);
+        kmemcpy(target, short_entry, 32);
+        if (!write_sector(fs, destination_location.sector[target_index], target_sector))
+            return false;
+        if (!fat_mark_location_deleted(fs, &old_location)) return false;
+        return fat_release_chain(fs, destination.first_cluster);
+    }
     if (fat_make_short_name(new_name, raw_name)) {
         needs_lfn = fat_name_needs_lfn(new_name, raw_name);
     } else {
@@ -3095,7 +4249,7 @@ bool fat_rename_path(fat_fs_t *fs, const char *old_path, const char *new_path) {
     if (needs_lfn) lfn_count = (uint8_t)((kstrlen(new_name) + 12U) / 13U);
     if (lfn_count) {
         if (!fat_find_free_run(fs, &parent, (uint32_t)lfn_count + 1U,
-                               &sector, &offset)) return false;
+                               &sector, &offset, &bridge_needed)) return false;
     } else if (!fat_find_dir_slot(fs, &parent, raw_name, &sector, &offset,
                                   &unused, &exists) || exists) return false;
     {
@@ -3105,51 +4259,34 @@ bool fat_rename_path(fat_fs_t *fs, const char *old_path, const char *new_path) {
         kmemcpy(short_entry, data + old_location.offset[old_index], 32);
         kmemcpy(short_entry, raw_name, 11);
     }
-    if (lfn_count) {
-        uint8_t checksum = fat_short_checksum(raw_name);
-        for (uint8_t physical = 0; physical < lfn_count; physical++) {
-            uint8_t lfn_entry[32];
-            uint8_t ordinal = (uint8_t)(lfn_count - physical);
-            fat_write_lfn_entry(lfn_entry, new_name, ordinal, lfn_count,
-                                checksum);
-            if (!fat_write_directory_slot(fs, sector, offset, physical,
-                                          lfn_entry)) return false;
-        }
-        {
-            uint32_t linear = offset + (uint32_t)lfn_count * 32U;
-            sector += linear / 512U;
-            offset = linear % 512U;
-        }
-    }
-    {
-        uint8_t data[512];
-        if (!read_sector(fs, sector, data)) return false;
-        kmemcpy(data + offset, short_entry, 32);
-        if (!write_sector(fs, sector, data)) return false;
-    }
+    if (bridge_needed &&
+        !fat_bridge_end_markers_before_slot(fs, &parent, sector, offset, NULL))
+        return false;
+    if (!fat_write_named_entry(fs, sector, offset, new_name, lfn_count,
+                               short_entry)) return false;
     return fat_mark_location_deleted(fs, &old_location);
 }
 
 bool fat_get_space(const fat_fs_t *fs, uint64_t *total_bytes,
                    uint64_t *free_bytes) {
-    uint32_t fat_bytes;
-    uint8_t *table;
-    uint32_t free_clusters = 0;
+    if (fs && fs->type == FAT_TYPE_BFS4)
+        return bfs4_space(fs, total_bytes, free_bytes);
+    uint32_t free_clusters = 0, generation;
     uint64_t cluster_size;
     if (!fs || !total_bytes || !free_bytes) return false;
-    fat_bytes = fs->fat_size_sectors * fs->bytes_per_sector;
-    table = (uint8_t *)kmalloc(fat_bytes);
-    if (!table) return false;
-    for (uint32_t s = 0; s < fs->fat_size_sectors; s++) {
-        if (!read_sector(fs, fs->first_fat_sector + s,
-                         table + s * fs->bytes_per_sector)) {
+    if (!fat_space_cached(fs, &free_clusters, &generation)) {
+        uint32_t fat_bytes = fs->fat_size_sectors * fs->bytes_per_sector;
+        uint8_t *table = (uint8_t *)kmalloc(fat_bytes);
+        if (!table) return false;
+        if (!fat_read_sector_run(fs, fs->first_fat_sector,
+                                  fs->fat_size_sectors, table)) {
             kfree(table);
             return false;
         }
+        free_clusters = fat_count_free(fs, table);
+        kfree(table);
+        fat_space_publish(fs, free_clusters, generation);
     }
-    for (uint32_t cluster = 2; cluster < fs->total_clusters + 2U; cluster++)
-        if (fat_table_get(fs, table, cluster) == 0) free_clusters++;
-    kfree(table);
     cluster_size = (uint64_t)fs->bytes_per_sector * fs->sectors_per_cluster;
     *total_bytes = (uint64_t)fs->total_clusters * cluster_size;
     *free_bytes = (uint64_t)free_clusters * cluster_size;

@@ -1,0 +1,9 @@
+{
+  "ram_mib": 16,
+  "desktop_started": true,
+  "swap_file_validated": true,
+  "disks": 1,
+  "heap_oom": false,
+  "seconds_after_ready": 20,
+  "snapshot": true
+}

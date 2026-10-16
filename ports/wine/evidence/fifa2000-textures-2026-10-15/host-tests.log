@@ -1,0 +1,11 @@
+test_virgl_buffer_reuse.py
+PASS: buffer reuse waits before upload; fresh uploads and textures stay asynchronous; failed waits prevent overwrites
+test_virgl_async.py
+PASS: async map/readback barriers, completed public fences with zero-timeout polling, legacy fallback and failure handling
+test_virgl_ranges.py
+PASS: buffer subranges preserve neighbours, reject overflow, retain texture layout, avoid redundant waits
+test_virgl_transport.py
+PASS: context isolation, transfer bounds, packet validation, legacy fenced submission, asynchronous barriers and safe cleanup
+test_gallium_package.py
+PASS: actual packaged GPU closure is i386 and complete; missing dependencies and host ELF rejected
+PASS: buffer reuse waits before upload; fresh uploads and textures stay asynchronous; failed waits prevent overwrites

@@ -11,13 +11,15 @@
 
 #define SVGA_CAP_3D 0x00004000U
 #define SVGA_FIFO_3D_HWVERSION 7U
-#define SVGA_FIFO_3D_HWVERSION_REVISED 19U
+#define SVGA_FIFO_3D_HWVERSION_REVISED 17U
 #define SVGA_FIFO_GUEST_3D_HWVERSION 288U
 #define SVGA_FIFO_CAP_3D_HWVERSION_REVISED (1U << 8)
 #define SVGA3D_MAKE_HWVERSION(major, minor) \
     (((uint32_t)(major) << 16) | (uint32_t)(minor))
 #define SVGA3D_HWVERSION_WS65_B1 SVGA3D_MAKE_HWVERSION(2U, 0U)
-#define SVGA3D_GUEST_HWVERSION SVGA3D_HWVERSION_WS65_B1
+#define SVGA3D_HWVERSION_WS8_B1  SVGA3D_MAKE_HWVERSION(2U, 1U)
+#define SVGA3D_HWVERSION_CURRENT SVGA3D_HWVERSION_WS8_B1
+#define SVGA3D_GUEST_HWVERSION   SVGA3D_HWVERSION_CURRENT
 
 #define SVGA_3D_CMD_SURFACE_DEFINE      1040U
 #define SVGA_3D_CMD_SURFACE_DESTROY     1041U
@@ -25,6 +27,7 @@
 #define SVGA_3D_CMD_SURFACE_DMA         1044U
 #define SVGA_3D_CMD_CONTEXT_DEFINE      1045U
 #define SVGA_3D_CMD_CONTEXT_DESTROY     1046U
+#define SVGA_3D_CMD_SETZRANGE           1048U
 #define SVGA_3D_CMD_SETRENDERSTATE      1049U
 #define SVGA_3D_CMD_SETRENDERTARGET     1050U
 #define SVGA_3D_CMD_SETTEXTURESTATE     1051U
@@ -58,24 +61,44 @@
 #define SVGA3D_RT_DEPTH    0U
 #define SVGA3D_RT_COLOR0   2U
 
-#define SVGA3D_RS_ZENABLE        1U
-#define SVGA3D_RS_ZWRITEENABLE   2U
-#define SVGA3D_RS_BLENDENABLE    5U
-#define SVGA3D_RS_LIGHTINGENABLE 9U
+#define SVGA3D_RS_ZENABLE             1U
+#define SVGA3D_RS_ZWRITEENABLE        2U
+#define SVGA3D_RS_ALPHATESTENABLE     3U
+#define SVGA3D_RS_DITHERENABLE        4U
+#define SVGA3D_RS_BLENDENABLE         5U
+#define SVGA3D_RS_FOGENABLE           6U
+#define SVGA3D_RS_SPECULARENABLE      7U
+#define SVGA3D_RS_STENCILENABLE       8U
+#define SVGA3D_RS_LIGHTINGENABLE      9U
+#define SVGA3D_RS_NORMALIZENORMALS   10U
+#define SVGA3D_RS_POINTSPRITEENABLE  11U
+#define SVGA3D_RS_POINTSCALEENABLE   12U
+#define SVGA3D_RS_FILLMODE           29U
+#define SVGA3D_RS_SHADEMODE          30U
 #define SVGA3D_RS_SRCBLEND       32U
 #define SVGA3D_RS_DSTBLEND       33U
 #define SVGA3D_RS_BLENDEQUATION  34U
 #define SVGA3D_RS_CULLMODE       35U
 #define SVGA3D_RS_ZFUNC          36U
+#define SVGA3D_RS_ALPHAFUNC      37U
+#define SVGA3D_RS_ALPHAREF       42U
+#define SVGA3D_RS_COORDINATETYPE  44U
 #define SVGA3D_RS_COLORWRITEENABLE 47U
 #define SVGA3D_RS_SCISSORTESTENABLE 55U
-#define SVGA3D_COLORWRITE_ALL 0xFU
+#define SVGA3D_COLORWRITE_ALL       0xFU
+#define SVGA3D_FILLMODE_FILL         3U
+#define SVGA3D_SHADEMODE_SMOOTH      2U
+#define SVGA3D_COORDINATE_LEFTHANDED 1U
 
 #define SVGA3D_BLENDOP_ONE         2U
 #define SVGA3D_BLENDOP_SRCALPHA    5U
 #define SVGA3D_BLENDOP_INVSRCALPHA 6U
 #define SVGA3D_BLENDEQ_ADD          1U
 #define SVGA3D_FACE_NONE            1U
+#define SVGA3D_FACE_FRONT_BACK      4U
+/* SVGA3dFillMode is a pair of uint16 values, not a bare mode enum. */
+#define SVGA3D_FILL_MODE(mode_, face_) \
+    ((uint32_t)(mode_) | ((uint32_t)(face_) << 16))
 #define SVGA3D_CMP_LESSEQUAL        4U
 #define SVGA3D_CMP_GREATEREQUAL     7U
 
@@ -91,9 +114,14 @@
 #define SVGA3D_TS_MIPFILTER   10U
 #define SVGA3D_TS_MAGFILTER   11U
 #define SVGA3D_TS_MINFILTER   12U
+#define SVGA3D_TS_TEXCOORDINDEX 14U
+#define SVGA3D_TS_TEXTURETRANSFORMFLAGS 15U
+#define SVGA3D_TS_TEXCOORDGEN 16U
 
 #define SVGA3D_TC_DISABLE    1U
 #define SVGA3D_TC_SELECTARG1 2U
+#define SVGA3D_TC_SELECTARG2         3U
+#define SVGA3D_TC_BLENDTEXTUREALPHA  8U
 #define SVGA3D_TC_MODULATE   4U
 #define SVGA3D_TA_DIFFUSE    3U
 #define SVGA3D_TA_TEXTURE    4U
@@ -125,6 +153,7 @@ typedef struct {
 } bk_svga3d_define_surface_t;
 typedef struct { uint32_t sid; } bk_svga3d_destroy_surface_t;
 typedef struct { uint32_t cid; } bk_svga3d_context_t;
+typedef struct { uint32_t cid; float minimum, maximum; } bk_svga3d_zrange_t;
 typedef struct { uint32_t gmr_id, offset; } bk_svga_guest_ptr_t;
 typedef struct { bk_svga_guest_ptr_t ptr; uint32_t pitch; } bk_svga_guest_image_t;
 typedef struct {
@@ -198,6 +227,12 @@ BK_SVGA3D_SIZE_ASSERT(render_target,
 BK_SVGA3D_SIZE_ASSERT(clear, sizeof(bk_svga3d_clear_t) == 20U);
 BK_SVGA3D_SIZE_ASSERT(copy_rect, sizeof(bk_svga3d_copy_rect_t) == 24U);
 BK_SVGA3D_SIZE_ASSERT(vertex_decl, sizeof(bk_svga3d_vertex_decl_t) == 36U);
+BK_SVGA3D_SIZE_ASSERT(vertex_decl_offsets,
+    __builtin_offsetof(bk_svga3d_vertex_decl_t, array) == 16U &&
+    __builtin_offsetof(bk_svga3d_vertex_decl_t, range_hint) == 28U);
+BK_SVGA3D_SIZE_ASSERT(zrange, sizeof(bk_svga3d_zrange_t) == 12U);
+BK_SVGA3D_SIZE_ASSERT(fill_mode_encoding,
+    SVGA3D_FILL_MODE(SVGA3D_FILLMODE_FILL, SVGA3D_FACE_FRONT_BACK) == 0x00040003U);
 BK_SVGA3D_SIZE_ASSERT(primitive_range,
                       sizeof(bk_svga3d_primitive_range_t) == 28U);
 BK_SVGA3D_SIZE_ASSERT(draw_primitives,

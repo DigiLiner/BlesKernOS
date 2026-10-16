@@ -1,0 +1,32 @@
+{
+  "ram_mib": 1024,
+  "backend": "std",
+  "desktop_started": true,
+  "completed": true,
+  "kernel_sha256": "3da8816b02adfa94803884ef9c0fc37a5cf28bce9827434b62ef1644184c45ce",
+  "wine_boot_started": false,
+  "smoke_pass": true,
+  "memory": {
+    "DESKTOP": {
+      "installed_kib": 1048063,
+      "managed_kib": 917376,
+      "used_kib": 21136,
+      "free_kib": 896239,
+      "unmanaged_kib": 130686,
+      "heap_used_kib": 21008,
+      "heap_free_kib": 200143,
+      "vm_free_kib": 696096
+    },
+    "IDLE": {
+      "installed_kib": 1048063,
+      "managed_kib": 917376,
+      "used_kib": 25576,
+      "free_kib": 891799,
+      "unmanaged_kib": 130686,
+      "heap_used_kib": 25448,
+      "heap_free_kib": 195703,
+      "vm_free_kib": 696096
+    }
+  },
+  "depths": []
+}

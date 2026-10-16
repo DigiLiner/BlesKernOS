@@ -1,0 +1,15 @@
+/SYSTEM/USER/CONFIG/STARTUP.INI 143 bytes; mode 0o100755
+/SYSTEM/TESTS/DEFRAG-FIXTURE.BIN 274432 bytes; mode 0o100755
+BFS4 OK: 5534 entries, 50404 free blocks, dirty
+PASS 256m-2cpu: Start overlays repainting windows; Este equipo stays closed
+Stop clicked: {'state': 3, 'error': 0, 'owner': 11, 'optimize': 0, 'total': 196096, 'free': 50400, 'block_size': 4096, 'data_start': 1032, 'work': 144662, 'processed': 151, 'verified': 151, 'files': 5221, 'before': 2, 'after': 2, 'moved': 0, 'skipped': 0, 'inode': 0, 'block': 1182, 'failed': 0}
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/desktop/run_defrag_smoke.py", line 136, in <module>
+    args=parser.parse_args();run(args.memory,args.cpus,args.output,args.timeout)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/desktop/run_defrag_smoke.py", line 108, in run
+    click(255,503);wait_for(lambda:report()['state']==1,15)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/desktop/run_defrag_smoke.py", line 70, in wait_for
+    raise TimeoutError('Timed out waiting for desktop condition')
+TimeoutError: Timed out waiting for desktop condition

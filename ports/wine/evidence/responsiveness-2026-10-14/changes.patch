@@ -1,0 +1,142 @@
+--- a/kernel/sched/task.c
++++ b/kernel/sched/task.c
+@@ -1795,6 +1795,16 @@
+     bool ready=false;
+     if(task->running_cpu==TASK_CPU_HANDOFF) {
+         task->running_cpu=-1;
++        /* A producer may have signalled while this stack was in handoff.
++         * It could only advance wake_tick then, not enqueue a live stack.
++         * We are on the next stack now: publish the completed wake here
++         * instead of waiting for CPU0's next timer scan on every IPC round.
++         * The same signed deadline check preserves timed sleeps and wrap. */
++        if(task->state==TASK_SLEEPING &&
++           (int32_t)(pit_get_ticks()-task->wake_tick)>=0) {
++            if(task->linux_signals)task->linux_signals->futex_key=0U;
++            task->state=TASK_READY;
++        }
+         ready=task->state==TASK_READY;
+     }
+     kspin_unlock_irqrestore(&g_task_table_lock,flags);
+--- a/ports/tinyx/scripts/build-stage2-kernel.py
++++ b/ports/tinyx/scripts/build-stage2-kernel.py
+@@ -161,7 +161,9 @@
+         run(*command)
+     link_command = command_for("build/kernel/core/kernel.o", "build/kernel.elf", linked)
+     if args.profile_w3:
+-        link_command.insert(link_command.index("--whole-archive"), profiler)
++        # The kernel no longer necessarily uses --whole-archive. Put the
++        # profiler before libraries so its runtime helpers resolve either way.
++        link_command.insert(1, profiler)
+     run(*link_command)
+     run("objcopy", "-O", "binary", elf_file, bin_file)
+     kernel = bin_file.read_bytes()
+--- a/tests/kernel/run_futex_bench.py
++++ b/tests/kernel/run_futex_bench.py
+@@ -88,7 +88,7 @@
+             pending = lines.pop()
+             for line in lines:
+                 events.append({'host_s': time.monotonic()-begin, 'line': line})
+-                if '[FUTEX' in line:
++                if '[FUTEX' in line or '[IPC' in line:
+                     print(events[-1], flush=True)
+                 if ('[FUTEX' in line and 'FAIL' in line) or '[PANIC]' in line:
+                     raise RuntimeError(line)
+@@ -120,5 +120,10 @@
+ for row in events:
+     match=re.search(r'\[PATH-LOOKUP\] sample=(\d+) calls=(\d+) us=(\d+) size=(\d+)',row['line'])
+     if match:path_lookup.append(dict(zip(['sample','calls','us','size'],map(int,match.groups()))))
+-(out/'result.json').write_text(json.dumps({'result':'PASS','runs':results,'path_lookup':path_lookup},indent=2)+'\n')
++ipc_latency=[]
++for row in events:
++    match=re.search(r'\[IPC-LATENCY\] poll=(\d+) sample=(\d+) rounds=(\d+) us=(\d+)',row['line'])
++    if match:ipc_latency.append(dict(zip(['poll','sample','rounds','us'],map(int,match.groups()))))
++if 'ipc-latency' in programs:assert len(ipc_latency)==6, 'missing IPC latency samples'
++(out/'result.json').write_text(json.dumps({'result':'PASS','runs':results,'path_lookup':path_lookup,'ipc_latency':ipc_latency},indent=2)+'\n')
+ print(json.dumps(results,indent=2))
+--- a/tests/kernel/run_wine_gui_smoke.py
++++ b/tests/kernel/run_wine_gui_smoke.py
+@@ -11,6 +11,8 @@
+ p.add_argument('--out',type=Path,default=ROOT/'tests/kernel/evidence/phase4-wine-ui')
+ p.add_argument('--ram',type=int,default=512);p.add_argument('--smp',type=int,default=2)
+ p.add_argument('--wine-debug',default='err+all');p.add_argument('--vga',default='std')
++p.add_argument('--disk-bus',choices=['ide','ahci'],default='ide',help='isolate storage transport while keeping the same disk contents')
++p.add_argument('--kernel-dir',type=Path,help='use saved kernel.bin/kernel.elf/stage2.bin for reproducible comparisons')
+ p.add_argument('--tinyx',type=Path,help='install this TinyX only in the disposable image')
+ p.add_argument('--latency-samples',type=int,default=0,help='measure key to displayed glyph before the functional checks (1-32)')
+ p.add_argument('--latency-only',action='store_true',help='finish after the latency measurements')
+@@ -22,7 +24,8 @@
+ if a.latency_only and not a.latency_samples:p.error('--latency-only requires --latency-samples')
+ if a.input_probe and not a.latency_samples:p.error('--input-probe requires --latency-samples')
+ if a.launch_failure and not a.startup_probe:p.error('--launch-failure requires --startup-probe')
+-subprocess.run(['make','build/stage2.bin','build/system/services/vision.o','build/system/drivers/PS2MOUSE.DVR'],cwd=ROOT,check=True)
++subprocess.run(['make',*([] if a.kernel_dir else ['build/stage2.bin']),'build/system/services/vision.o','build/system/drivers/PS2MOUSE.DVR'],cwd=ROOT,check=True)
++kernel_dir=a.kernel_dir.resolve() if a.kernel_dir else ROOT/'build'
+ obj=out/'wine_gui_smoke.o'
+ fixture=ROOT/'tests/userland/wine_gui_smoke.c'
+ if a.launch_failure:
+@@ -39,9 +42,9 @@
+ subprocess.run(['gcc','-m32','-I'+str(ROOT),str(offsets),'-o',str(out/'offsets')],check=True)
+ keys=['first','mouse_x','mouse_y','window_size','bounds','title','next','visible','listed','owner','controller','stream','stream_width','border','title_height','busy_count']
+ layout=dict(zip(keys,map(int,subprocess.check_output([str(out/'offsets')],text=True).split())))
+-symbols=subprocess.check_output(['nm',str(ROOT/'build/kernel.elf')],text=True)
++symbols=subprocess.check_output(['nm',str(kernel_dir/'kernel.elf')],text=True)
+ (out/'loaded-kernel.nm').write_text(symbols)
+-__import__('shutil').copyfile(ROOT/'build/kernel.elf',out/'loaded-kernel.elf')
++__import__('shutil').copyfile(kernel_dir/'kernel.elf',out/'loaded-kernel.elf')
+ desktop_address=int(re.search(r'^([0-9a-f]+) b g_desktop$',symbols,re.M)[1],16)
+ # Diagnostic-only build changes logging, retaining the production launcher path.
+ launcher_source=out/'wine-launch.c'
+@@ -50,13 +53,14 @@
+ subprocess.run(['gcc','-m32','-O2','-no-pie','-I'+str(ROOT/'ports/tinyx'),'-Wl,--disable-new-dtags','-Wl,--dynamic-linker=/WINEGATE/lib/ld-linux.so.2','-Wl,-rpath,/WINEGATE/lib',str(launcher_source),'-o',str(launcher),'-L/usr/lib/i386-linux-gnu','-l:libX11.so.6','-l:libXfixes.so.3'],check=True)
+ image=out/'test.img';subprocess.run(['cp','--reflink=auto',str(a.base),str(image)],check=True)
+ with image.open('r+b') as f:
+- f.seek(512);f.write((ROOT/'build/stage2.bin').read_bytes())
+- kernel=(ROOT/'build/kernel.bin').read_bytes();f.seek(9*512);f.write(kernel.ljust(1280*1024,b'\0'))
++ f.seek(512);f.write((kernel_dir/'stage2.bin').read_bytes())
++ kernel=(kernel_dir/'kernel.bin').read_bytes();f.seek(9*512);f.write(kernel.ljust(1280*1024,b'\0'))
+ e=Editor(image);e.update('/SYSTEM/DRIVERS/PS2MOUSE.DVR',(ROOT/'build/system/drivers/PS2MOUSE.DVR').read_bytes());e.update('/WINEGATE/bin/wine-phase4.ELF',launcher.read_bytes());e.update('/SYSTEM/SERVICES/VISION.BEX',(ROOT/'build/system/services/vision.o').read_bytes());e.update('/SYSTEM/PROGRAMS/WINEUITEST.BEX',obj.read_bytes());e.update('/SYSTEM/USER/CONFIG/STARTUP.INI',b'4|1|1|10|0|1|30000|Wine UI test|/SYSTEM/PROGRAMS/WINEUITEST.BEX||Disposable Notepad test\n');e.update('/SYSTEM/USER/CONFIG/SCREENSV.INI',b'enabled=0\ntimeout=3600\npath=/SYSTEM/SCREENS/SSPIPES.SCV\n');e.finish()
+ if a.tinyx:
+  e=Editor(image);e.update('/WINEGATE/bin/XFBDEV',a.tinyx.read_bytes());e.finish()
+ sock=Path('/tmp/bk-wine-ui-'+str(__import__('os').getpid())+'.sock');serial=out/'boot.log';serial.unlink(missing_ok=True)
+-proc=subprocess.Popen(['qemu-system-i386','-accel','kvm','-cpu','host','-smp',str(a.smp),'-m',str(a.ram),'-drive',f'file={image},format=raw,if=ide','-snapshot','-vga',a.vga,'-display','none','-serial',f'file:{serial}','-qmp',f'unix:{sock},server=on,wait=off','-nodefaults','-d','int,cpu_reset,guest_errors','-D',str(out/'cpu-debug.log'),'-no-reboot','-no-shutdown'],stderr=(out/'qemu.log').open('w'))
++disk_args=['-drive',f'file={image},format=raw,if=ide'] if a.disk_bus=='ide' else ['-drive',f'file={image},format=raw,if=none,id=osdisk','-device','ich9-ahci,id=ahci','-device','ide-hd,drive=osdisk,bus=ahci.0']
++proc=subprocess.Popen(['qemu-system-i386','-accel','kvm','-cpu','host','-smp',str(a.smp),'-m',str(a.ram),*disk_args,'-snapshot','-vga',a.vga,'-display','none','-serial',f'file:{serial}','-qmp',f'unix:{sock},server=on,wait=off','-nodefaults','-d','int,cpu_reset,guest_errors','-D',str(out/'cpu-debug.log'),'-no-reboot','-no-shutdown'],stderr=(out/'qemu.log').open('w'))
+ try:
+  deadline=time.monotonic()+900
+  while not sock.exists():
+@@ -208,7 +212,7 @@
+    ipc=(ROOT/'kernel/linux/i386_ipc.inc').read_text()
+    structs=ipc[ipc.index('#define BLES_GFX_MAX_SURFACES'):ipc.index('static linux_device linux_devices')]
+    probe_source=out/'input-offsets.c'
+-   probe_source.write_text('#include <stdint.h>\n#include <stdbool.h>\n#include <stddef.h>\n#include <stdio.h>\n#include "ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesgfx.h"\n#include "kernel/include/klock.h"\ntypedef void gui_window_t;\n'+structs+'\nint main(void){printf("%u %u %u",(unsigned)sizeof(linux_device),(unsigned)offsetof(bles_gfx_context,width),(unsigned)offsetof(bles_gfx_context,read_pos));}\n')
++   probe_source.write_text('#include "kernel/include/klock.h"\n#include <stddef.h>\n#include <stdio.h>\n#include "ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesgfx.h"\ntypedef void gui_window_t;\n'+structs+'\nint main(void){printf("%u %u %u",(unsigned)sizeof(linux_device),(unsigned)offsetof(bles_gfx_context,width),(unsigned)offsetof(bles_gfx_context,read_pos));}\n')
+    subprocess.run(['gcc','-m32','-I'+str(ROOT),str(probe_source),'-o',str(out/'input-offsets')],check=True)
+    device_size,width_offset,queue_offset=map(int,subprocess.check_output([str(out/'input-offsets')],text=True).split())
+    devices_address=int(re.search(r'^([0-9a-f]+) b linux_devices$',symbols,re.M)[1],16)
+@@ -251,7 +255,16 @@
+     current=capture_mask()
+     if sum(v!=0 for v in current.getdata())>=old_ink+10:break
+     time.sleep(.002)
+-   else:raise AssertionError('No new glyph for latency sample '+str(index))
++   else:
++    failure={'sample':index,'key':code,'injection_ms':injection_ms,
++             'native_route_ms':route_ms,'tinyx_consume_ms':consume_ms,
++             'stream_publish_ms':publish_ms,'old_ink':old_ink,
++             'current_ink':sum(v!=0 for v in current.getdata()),
++             'queue_before':list(positions) if positions is not None else None,
++             'queue_after':list(input_positions()) if positions is not None else None}
++    (out/'latency-failure.json').write_text(json.dumps(failure,indent=2)+'\n')
++    shot('latency-failure')
++    raise AssertionError('No new glyph for latency sample '+str(index))
+    elapsed_ms=(time.monotonic()-before)*1000
+    samples.append({'key_to_glyph_ms':elapsed_ms,'injection_ms':injection_ms,
+                    'native_route_ms':route_ms,'tinyx_consume_ms':consume_ms,
+@@ -261,6 +274,8 @@
+    previous=current;time.sleep(.8+(index%5)*.017)
+   values=sorted(row['key_to_glyph_ms'] for row in samples)
+   latency={'samples':samples,'p50_ms':statistics.median(values),'p95_ms':values[max(0,__import__('math').ceil(.95*len(values))-1)],'max_ms':max(values),'capture_p50_ms':statistics.median(capture_ms),'capture_max_ms':max(capture_ms),'ram_mib':a.ram,'smp':a.smp,'vga':a.vga,'tinyx':str(a.tinyx),'framebuffer':hex(fb),'method':'host monotonic from QMP key-down until new glyph ink in displayed VRAM scanlines; no guest stop while timing; includes VRAM query and QMP overhead'}
++  first_surface=re.search(r'\[WINE:TIME\] first-surface ms=(\d+)',log())
++  latency.update(disk_bus=a.disk_bus,kernel_sha256=__import__('hashlib').sha256(kernel).hexdigest(),first_surface_ms=int(first_surface[1]) if first_surface else None)
+   (out/'latency.json').write_text(json.dumps(latency,indent=2)+'\n');shot('latency-final')
+   if a.latency_only:
+    cmd('quit');proc.wait(timeout=10);s.close();print(json.dumps(latency,indent=2));sys.exit(0)

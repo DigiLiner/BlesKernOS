@@ -1,0 +1,6 @@
+make: 'build/wine/wine-launch' is up to date.
+make: 'build/system/services/vision.o' is up to date.
+make: 'build/system/drivers/PS2MOUSE.DVR' is up to date.
+[GCC]  Compilando lanzador PE/Win32...
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel/libc/include -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -c programs/wine.c -o build/programs/wine.o
+[OK]   Wine/PE launcher object: build/programs/wine.o

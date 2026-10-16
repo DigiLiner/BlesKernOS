@@ -1,0 +1,151 @@
+make: 'build/system/drivers/PS2MOUSE.DVR' is up to date.
+/SYSTEM/DRIVERS/PS2MOUSE.DVR 7140 bytes; mode 0o100644
+/WINEGATE/bin/wine-phase4.ELF 48100 bytes; mode 0o100755
+/SYSTEM/SERVICES/VISION.BEX 255436 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/WINEUITEST.BEX 3432 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/STARTUP.INI 89 bytes; mode 0o100644
+/SYSTEM/USER/CONFIG/SCREENSV.INI 56 bytes; mode 0o100644
+Notepad mapped: {'handle': 62072412, 'bounds': (36, 70, 511, 376), 'title': 'notepad.exe', 'visible': True, 'listed': True, 'owner': 8, 'controller': 7}
+LATENCY 0 282.92
+LATENCY 1 282.05
+LATENCY 2 292.51
+LATENCY 3 233.31
+LATENCY 4 281.27
+LATENCY 5 260.16
+LATENCY 6 245.88
+LATENCY 7 217.83
+LATENCY 8 248.31
+LATENCY 9 281.37
+LATENCY 10 257.98
+LATENCY 11 297.15
+LATENCY 12 279.92
+LATENCY 13 230.99
+LATENCY 14 295.72
+LATENCY 15 247.27
+{
+  "samples": [
+    {
+      "key_to_glyph_ms": 282.9203330038581,
+      "injection_ms": 2.4754379992373288,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 282.0476159977261,
+      "injection_ms": 1.3620769896078855,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 292.51463699620217,
+      "injection_ms": 2.6552790077403188,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 233.30721200909466,
+      "injection_ms": 3.5363280039746314,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 281.2670720159076,
+      "injection_ms": 1.4358939952217042,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 260.1554019784089,
+      "injection_ms": 3.1099019979592413,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 245.88171500363387,
+      "injection_ms": 1.3129140133969486,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 217.83436101395637,
+      "injection_ms": 2.629053022246808,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 248.30746298539452,
+      "injection_ms": 1.903505006339401,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 281.37160500045866,
+      "injection_ms": 1.3995289918966591,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 257.97649499145336,
+      "injection_ms": 1.5309650043491274,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 297.15490600210615,
+      "injection_ms": 1.335323991952464,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 279.91521600051783,
+      "injection_ms": 1.6127009876072407,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 230.98780098371208,
+      "injection_ms": 1.7379159980919212,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 295.71653800667264,
+      "injection_ms": 1.544430007925257,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 247.26564201409929,
+      "injection_ms": 1.4594719978049397,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    }
+  ],
+  "p50_ms": 270.0353089894634,
+  "p95_ms": 297.15490600210615,
+  "max_ms": 297.15490600210615,
+  "capture_p50_ms": 8.820388000458479,
+  "capture_max_ms": 30.164452007738873,
+  "ram_mib": 1536,
+  "smp": 2,
+  "vga": "vmware",
+  "tinyx": "None",
+  "framebuffer": "0xfd000000",
+  "method": "host monotonic from QMP key-down until new glyph ink in displayed VRAM scanlines; no guest stop while timing; includes VRAM query and QMP overhead"
+}

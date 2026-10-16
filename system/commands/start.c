@@ -25,15 +25,22 @@ static bool has_extension(const char *text) {
     return false;
 }
 
-static void arguments(char *out, uint32_t capacity, int argc, char **argv) {
-    out[0] = '\0';
-    for (int i = 2; i < argc; i++) {
-        uint32_t used = (uint32_t)bk_runtime_strlen(out);
-        uint32_t length = (uint32_t)bk_runtime_strlen(argv[i]);
-        if (used + length + 2U >= capacity) break;
-        if (used) bk_runtime_strcat(out, " ");
-        bk_runtime_strcat(out, argv[i]);
+static bool arguments(char *out,uint32_t cap,int argc,char **argv) {
+    uint32_t used=0;
+    out[0]=0;
+    for(int i=2;i<argc;i++) {
+        if(used+3>=cap)return false;
+        if(i>2)out[used++]=' ';
+        out[used++]='"';
+        for(const char *p=argv[i];*p;p++) {
+            if(used+3>=cap)return false;
+            if(*p=='"'||*p=='\\')out[used++]='\\';
+            out[used++]=*p;
+        }
+        out[used++]='"';
+        out[used]=0;
     }
+    return true;
 }
 
 static int launch(const char *path, const char *args) {
@@ -50,7 +57,7 @@ static int run(int argc, char **argv) {
     int result;
     if (argc < 2)
         return command_error("start", "@HF5BBD4DE");
-    arguments(args, sizeof(args), argc, argv);
+    if(!arguments(args,sizeof(args),argc,argv))return command_error("start","argumentos demasiado largos");
     if (has_separator(argv[1]) || has_extension(argv[1])) {
         result = launch(argv[1], args);
         return result >= 0 ? result : command_error("start", "@HC6CAD505");

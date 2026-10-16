@@ -1,0 +1,1 @@
+PASS actual SMP handoff: runnable/sleeping/zombie stacks stay owned until retirement; timer wake and reaping wait, and a concurrent exit never queues a zombie

@@ -1,5 +1,3 @@
 #include "common.h"
-
-static int run(int argc UNUSED,char **argv UNUSED){ return command_error("curl","@HB7831565"); }
-
+static int run(int argc,char **argv){return command_network(argc,argv);}
 BK_COMMAND_MAIN(run)

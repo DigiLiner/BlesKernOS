@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-13",
+  "production_kernel_files_unchanged": true,
+  "fingerprinted_files": 228,
+  "comparison_scope": "nine topics, no performance ranking or full security certification",
+  "upstream_code_snapshots": 9,
+  "static_exports": 677,
+  "findings": 11,
+  "diagnostics": [
+    {
+      "log": "native-api-reproduction.log",
+      "result": {
+        "diagnostic": "native API boundary",
+        "unsafe_write_observed": true,
+        "token_bounds_checked": true,
+        "environment": "controlled host mocks, not hardware exploit"
+      },
+      "interpretation": "successful vulnerability reproduction, not passing safety regression"
+    },
+    {
+      "log": "elf-alignment-reproduction.log",
+      "result": {
+        "diagnostic": "ELF arithmetic",
+        "alignment_wrap_observed": true,
+        "section_bytes": 2147483647,
+        "allocation_bytes": 2,
+        "environment": "i386 host arithmetic, no malformed ELF loaded"
+      },
+      "interpretation": "successful vulnerability reproduction, not passing safety regression"
+    }
+  ],
+  "previous_regression_matrix": "../audit-stage2-2026-10-13/result.json",
+  "regression_matrix_rerun": false,
+  "artifacts": {
+    "docs/kernel/COMPARACION-ARQUITECTONICA-1.0-2026-10-13.md": {
+      "sha256": "67927b0f76a93fb7f8ab00062a400e36cb5719b13df7a84f99e5f30859af5d3a",
+      "bytes": 23529
+    },
+    "tests/kernel/audit_native_api_boundary.py": {
+      "sha256": "f3ea47fb13de172a74b84459b476732792b803ab6eb01254145958d7f8e4a43a",
+      "bytes": 3435
+    },
+    "tests/kernel/audit_elf_alignment.py": {
+      "sha256": "93991e5357e013972ff2db89116779c48be5b3587d5a611d453d7bedde3819b6",
+      "bytes": 1887
+    }
+  }
+}

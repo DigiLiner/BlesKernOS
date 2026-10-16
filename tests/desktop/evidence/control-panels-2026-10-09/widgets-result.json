@@ -1,0 +1,10 @@
+{
+  "status": "pass",
+  "memory_mib": 256,
+  "cpus": 2,
+  "keyboard_delay_ms": 250,
+  "internet_images": false,
+  "mouse_trail": true,
+  "modem_port": "COM2",
+  "modem_baud": 57600
+}

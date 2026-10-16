@@ -9,7 +9,7 @@ static int run(int argc, char **argv) {
     uint8_t *output;
     uint32_t size=0, expected, in=8, out=0;
     if(argc!=3)return command_error("extract","@H2F381EE4");
-    if(!bk_file_read_all(argv[1],&raw,&size)||size<8U)return command_error("extract","@H4534725D");
+    if(!bk_file_read_all(argv[1],&raw,&size)||size<8U) {if(raw)bk_sys_free(raw);return command_error("extract","cabecera incompleta");}
     if(((uint8_t*)raw)[0]!='B'||((uint8_t*)raw)[1]!='K'||((uint8_t*)raw)[2]!='Z'||((uint8_t*)raw)[3]!='1'){
         bk_sys_free(raw);return command_error("extract","@H34C8FFA9");
     }
@@ -18,10 +18,10 @@ static int run(int argc, char **argv) {
     if(!output){bk_sys_free(raw);return command_error("extract","@HBB0954F3");}
     while(in+1U<size&&out<expected){
         uint8_t count=((uint8_t*)raw)[in++],value=((uint8_t*)raw)[in++];
-        if(!count||out+count>expected){bk_sys_free(output);bk_sys_free(raw);return command_error("extract","@H84B760D1");}
+        if(!count||count>expected-out){bk_sys_free(output);bk_sys_free(raw);return command_error("extract","@H84B760D1");}
         for(uint32_t n=0;n<count;n++)output[out++]=value;
     }
-    if(out!=expected||!bk_file_write_all(argv[2],output,expected)){
+    if(out!=expected||in!=size||!bk_file_write_all(argv[2],output,expected)){
         bk_sys_free(output);bk_sys_free(raw);return command_error("extract","@H2E9E890F");
     }
     kprintf("%u bytes extraidos en %s\n",expected,argv[2]);

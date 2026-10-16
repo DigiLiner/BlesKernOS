@@ -1,0 +1,260 @@
+--- a/gui/gui.h
++++ b/gui/gui.h
+@@ -451,6 +451,7 @@
+     bool drag_icon_ghost;
+     uint8_t drag_icon_size, drag_icon_count;
+     uint8_t drag_icon_mask[64 * 64];
++    uint32_t cursor_busy_count; /* Shared with the Ring-3 Vision compositor. */
+ 
+ };
+ 
+--- a/gui/compositor.c
++++ b/gui/compositor.c
+@@ -260,31 +260,42 @@
+     return cursor;
+ }
+ 
+-static volatile uint32_t g_cursor_busy_count;
+ static bool g_cursor_busy_was_active;
+ 
++static bool compositor_busy(const gui_desktop_t *desktop) {
++    return desktop && __atomic_load_n(&desktop->cursor_busy_count, __ATOMIC_RELAXED);
++}
++
++static bool compositor_custom_cursor(const gui_desktop_t *desktop) {
++    return desktop && desktop->cursor_custom && !compositor_busy(desktop);
++}
++
+ void gui_compositor_busy_begin(void) {
+-    __atomic_add_fetch(&g_cursor_busy_count, 1U, __ATOMIC_RELAXED);
++    gui_desktop_t *desktop = gui_get_desktop();
++    if (!desktop) return;
++    __atomic_add_fetch(&desktop->cursor_busy_count, 1U, __ATOMIC_RELAXED);
+     gui_request_paint();
+ }
+ 
+ void gui_compositor_busy_end(void) {
+-    __atomic_sub_fetch(&g_cursor_busy_count, 1U, __ATOMIC_RELAXED);
++    gui_desktop_t *desktop = gui_get_desktop();
++    if (!desktop) return;
++    uint32_t count = __atomic_load_n(&desktop->cursor_busy_count, __ATOMIC_RELAXED);
++    while (count && !__atomic_compare_exchange_n(&desktop->cursor_busy_count,
++            &count, count - 1U, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED)) { }
+     gui_request_paint();
+ }
+ 
+ static gui_cursor_style_t compositor_cursor_style(const gui_desktop_t *desktop) {
+-    gui_cursor_style_t style = desktop ? desktop->cursor_style : GUI_CURSOR_ARROW;
+-    if (style == GUI_CURSOR_ARROW && __atomic_load_n(&g_cursor_busy_count, __ATOMIC_RELAXED))
+-        return GUI_CURSOR_PROGRESS;
+-    return style;
++    if (compositor_busy(desktop)) return GUI_CURSOR_PROGRESS;
++    return desktop ? desktop->cursor_style : GUI_CURSOR_ARROW;
+ }
+ 
+ bool gui_compositor_tick_cursor(gui_desktop_t *desktop, uint32_t now_tick) {
+-    bool busy = __atomic_load_n(&g_cursor_busy_count, __ATOMIC_RELAXED) != 0U;
++    bool busy = compositor_busy(desktop);
+     bool changed = busy != g_cursor_busy_was_active;
+     g_cursor_busy_was_active = busy;
+-    if (!desktop || desktop->cursor_custom) return false;
++    if (!desktop || compositor_custom_cursor(desktop)) return false;
+     system_cursor_t *cursor = (system_cursor_t *)compositor_system_cursor(
+         compositor_cursor_style(desktop));
+     if (cursor && cursor->animation) {
+@@ -330,7 +341,7 @@
+      * software cursor. Rage128 and VirtIO GPU both expose native ARGB cursor
+      * planes that are safe for the stock arrow. Moving those cursors must not
+      * invalidate/present a desktop rectangle for every PS/2 packet. */
+-    if (bk_input_preference_get(BK_INPUT_CURSOR_SCHEME) || !desktop || desktop->cursor_custom ||
++    if (bk_input_preference_get(BK_INPUT_CURSOR_SCHEME) || !desktop || compositor_custom_cursor(desktop) ||
+         compositor_cursor_style(desktop) != GUI_CURSOR_ARROW || !info ||
+         (info->mode != GFX_MODE_ATI_RAGE128 &&
+          info->mode != GFX_MODE_VIRTIO_GPU)) {
+@@ -375,7 +386,7 @@
+     /* Do not initialize/transition the cursor here: those paths need one real
+      * compositor frame to restore any previous software backing. This helper
+      * is the hot path once Rage128/VirtIO's native arrow is live. */
+-    if (!desktop || desktop->cursor_trail_enabled || desktop->cursor_custom ||
++    if (!desktop || desktop->cursor_trail_enabled || compositor_custom_cursor(desktop) ||
+         compositor_cursor_style(desktop) != GUI_CURSOR_ARROW || !info ||
+         (info->mode != GFX_MODE_ATI_RAGE128 &&
+          info->mode != GFX_MODE_VIRTIO_GPU) ||
+@@ -396,7 +407,7 @@
+ }
+ 
+ static gui_rect_t cursor_rect(const gui_desktop_t *desktop, int x, int y) {
+-    bool custom = desktop && desktop->cursor_custom;
++    bool custom = desktop && compositor_custom_cursor(desktop);
+     const system_cursor_t *system = custom ? NULL : compositor_system_cursor(
+         compositor_cursor_style(desktop));
+     int hot_x = custom ? desktop->cursor_hotspot_x :
+@@ -579,7 +590,7 @@
+                          int x, int y) {
+     int origin_x;
+     int origin_y;
+-    if (!desktop || !desktop->cursor_custom || !desktop->cursor_width ||
++    if (!desktop || !compositor_custom_cursor(desktop) || !desktop->cursor_width ||
+         !desktop->cursor_height) {
+         const system_cursor_t *system = compositor_system_cursor(
+             compositor_cursor_style(desktop));
+@@ -642,7 +653,7 @@
+     kmemset(pixels, 0,
+             GUI_CURSOR_WIDTH * GUI_CURSOR_HEIGHT * sizeof(uint32_t));
+ 
+-    if (desktop->cursor_custom && desktop->cursor_width &&
++    if (compositor_custom_cursor(desktop) && desktop->cursor_width &&
+         desktop->cursor_height &&
+         desktop->cursor_width <= GUI_CURSOR_WIDTH &&
+         desktop->cursor_height <= GUI_CURSOR_HEIGHT) {
+--- a/kernel/linux/i386_ipc.inc
++++ b/kernel/linux/i386_ipc.inc
+@@ -115,6 +115,8 @@
+     uint16_t width, height;
+     uint16_t view_x, view_y, view_width, view_height;
+     bool force_present;
++    bool launch_busy;
++    kmutex_t launch_lock;
+     struct { uint32_t handle, width, height, flags; } gpu_surfaces[128];
+     uint32_t gpu_fence;
+     uint32_t virgl_context;
+@@ -349,9 +351,26 @@
+ 
+ #include "i386_gfx3d.inc"
+ 
++/* The control descriptor owns its busy reference, including failure/exit.
++ * Called outside linux_io_lock: cursor invalidation may enter the GUI. */
++static void bles_gfx_launch_busy(bles_gfx_context *gfx, bool busy) {
++    kmutex_lock(&gfx->launch_lock);
++    if (gfx->launch_busy != busy) {
++        gfx->launch_busy = busy;
++        if (busy) gui_compositor_busy_begin();
++        else gui_compositor_busy_end();
++    }
++    kmutex_unlock(&gfx->launch_lock);
++}
++
+ static int32_t bles_gfx_ioctl(linux_device *device,uint32_t request,uint32_t argument) {
+     bles_gfx_context *gfx=device->gfx;
+     if(!gfx)return -BK_ENOTTY;
++    if(request==BLES_GFX_LAUNCH_BUSY) {
++        if(argument>1U)return -BK_EINVAL;
++        bles_gfx_launch_busy(gfx,argument!=0U);
++        return 0;
++    }
+     if(request==BLES_GFX_3D)return bles_gfx_3d_ioctl(gfx,argument);
+     if(request==BLES_GFX_VIRGL)return bles_gfx_virgl_ioctl(gfx,argument);
+     if(request==BLES_GFX_WINE_BOOT_READY) {
+@@ -815,6 +834,7 @@
+         kspin_unlock_irqrestore(&linux_io_lock,lock);
+         if(pcm)kfree(pcm);
+         if(gfx) {
++            bles_gfx_launch_busy(gfx,false);
+             bles_gfx_3d_close(gfx);
+             if(gfx->window) {
+                 gui_window_set_event_handler(gfx->window,NULL,NULL);
+--- a/kernel/api/syscall.c
++++ b/kernel/api/syscall.c
+@@ -2839,7 +2839,7 @@
+                 linux_device *device=linux_device_for(resource_fd(resource,regs->ebx));
+                 regs->eax=device && (device->kind==4 || device->kind==5)
+                     ? (uint32_t)linux_oss_ioctl(device,regs->ecx,regs->edx) : (uint32_t)-BK_ENOTTY;
+-            } else if (regs->ecx >= BLES_GFX_OPEN && regs->ecx <= BLES_GFX_HEAP_SUBSYSTEMS) {
++            } else if (regs->ecx >= BLES_GFX_OPEN && regs->ecx <= BLES_GFX_LAUNCH_BUSY) {
+                 syscall_resources_t *resource=resource_for(task_current_process_id(),false);
+                 int raw=resource_fd(resource,regs->ebx);
+                 linux_device *device=linux_device_for(raw);
+--- a/kernel/mm/usercopy.c
++++ b/kernel/mm/usercopy.c
+@@ -37,12 +37,30 @@
+ bool copy_string_from_user(char *destination, uint32_t capacity,
+                            const char *source) {
+     if (!destination || !source || capacity < 2U) return false;
+-    for (uint32_t i = 0U; i < capacity; i++) {
+-        char value;
+-        if (!copy_from_user(&value, source + i, 1U)) return false;
+-        destination[i] = value;
+-        if (!value) return true;
++    uint32_t pid = task_current_process_id();
++    if (!paging_process_pin(pid)) return false;
++    uint32_t used = 0U;
++    bool terminated = false;
++    while (used < capacity) {
++        uintptr_t address = (uintptr_t)source + used;
++        if (address < (uintptr_t)source) break;
++        /* Validate/pin once per page rather than once per character. Do not
++         * touch the next page before finding out whether this one has NUL. */
++        uint32_t chunk = 4096U - (address & 4095U);
++        if (chunk > capacity - used) chunk = capacity - used;
++        if (!pager_pin(pid, (uint32_t)address, chunk, false)) break;
++        bool readable = user_access_ok((const void *)address, chunk, false);
++        if (readable) {
++            for (uint32_t i = 0U; i < chunk; i++) {
++                char value = ((const volatile char *)address)[i];
++                destination[used++] = value;
++                if (!value) { terminated = true; break; }
++            }
++        }
++        pager_unpin(pid, (uint32_t)address, chunk);
++        if (!readable || terminated) break;
+     }
+-    destination[capacity - 1U] = '\0';
+-    return false;
++    paging_process_unpin(pid);
++    if (used == capacity && !terminated) destination[capacity - 1U] = '\0';
++    return terminated;
+ }
+--- a/ports/tinyx/wine-launch.c
++++ b/ports/tinyx/wine-launch.c
+@@ -1112,12 +1112,15 @@
+     (void)clock_gettime(CLOCK_MONOTONIC, &launch_started);
+     wine_trace("[WINE:DESKTOP] rootless start %s\n", argv[1]);
+     fflush(stdout);
++    control_fd = open("/dev/blesgfx", O_RDWR | O_CLOEXEC);
++    if (control_fd >= 0 && !warmup)
++        (void)ioctl(control_fd, BLES_GFX_LAUNCH_BUSY, 1UL);
+     mkdir("/tmp", 01777);
+     chmod("/tmp", 01777);
+     mkdir("/tmp/.X11-unix", 01777);
+ 
+     display = start_private_x(&server, &display_number);
+-    if (!display) return 4;
++    if (!display) { if (control_fd >= 0) close(control_fd); return 4; }
+     XSetErrorHandler(ignore_x_error);
+     XSelectInput(display, DefaultRootWindow(display),
+                  SubstructureNotifyMask | SubstructureRedirectMask);
+@@ -1137,7 +1140,6 @@
+     wine_trace("[WINE:TIME] x-ready ms=%lu\n", perf_x_ready_ms);
+     fflush(stdout);
+ 
+-    control_fd = open("/dev/blesgfx", O_RDWR);
+     if (control_fd < 0) perror("/dev/blesgfx control");
+ 
+     /* Prefix bootstrap and theme import are one serialized transaction.
+@@ -1404,6 +1406,8 @@
+                 (!surfaces_synced || structure_changed ||
+                  now_ms - last_sync_ms >= 1000UL)) {
+                 visible = sync_surfaces(display, control_fd, instance_id);
++                if (visible || app_done)
++                    (void)ioctl(control_fd, BLES_GFX_LAUNCH_BUSY, 0UL);
+                 last_sync_ms = now_ms;
+                 surfaces_synced = 1;
+                 structure_changed = 0;
+@@ -1441,6 +1445,7 @@
+     }
+ 
+ cleanup:
++    if (control_fd >= 0) (void)ioctl(control_fd, BLES_GFX_LAUNCH_BUSY, 0UL);
+     if(warmup)wine_boot_report(control_fd,status?status:8);
+     if (control_fd >= 0) {
+         /* One last pass removes any stale host surfaces before XFBDEV exits. */
+--- a/ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesgfx.h
++++ b/ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesgfx.h
+@@ -3,6 +3,7 @@
+ #define BLES_GFX_H
+ #include <stdint.h>
+ 
++#define BLES_GFX_LAUNCH_BUSY       0xB110U /* ioctl arg: 0/1; owned by descriptor */
+ #define BLES_GFX_OPEN             0xB100U
+ #define BLES_GFX_PRESENT          0xB101U
+ #define BLES_GFX_EVENT            0xB102U

@@ -1,0 +1,80 @@
+{
+  "g_desktop_paint_lock": {
+    "owner": 0,
+    "depth": 0,
+    "waiters": 0,
+    "contentions": 0
+  },
+  "g_bfs_lock": {
+    "owner": 52,
+    "depth": 1,
+    "waiters": 0,
+    "contentions": 26
+  },
+  "g_block_io_lock": {
+    "owner": 52,
+    "depth": 1,
+    "waiters": 0,
+    "contentions": 0
+  },
+  "g_ata_primary_lock": {
+    "owner": 52,
+    "depth": 1,
+    "waiters": 0,
+    "contentions": 0
+  },
+  "task": {
+    "owner": 0,
+    "depth": 0,
+    "waiters": 0,
+    "contentions": 398
+  },
+  "vfs": {
+    "owner": 52,
+    "depth": 1,
+    "waiters": 0,
+    "contentions": 1522
+  },
+  "gui": {
+    "owner": 0,
+    "depth": 0,
+    "waiters": 0,
+    "contentions": 12
+  },
+  "gfx": {
+    "owner": 0,
+    "depth": 0,
+    "waiters": 0,
+    "contentions": 1
+  },
+  "net": {
+    "owner": 0,
+    "depth": 0,
+    "waiters": 0,
+    "contentions": 0
+  },
+  "audio": {
+    "owner": 0,
+    "depth": 0,
+    "waiters": 0,
+    "contentions": 0
+  },
+  "driver": {
+    "owner": 0,
+    "depth": 0,
+    "waiters": 0,
+    "contentions": 0
+  },
+  "wine": {
+    "owner": 0,
+    "depth": 0,
+    "waiters": 0,
+    "contentions": 0
+  },
+  "legacy": {
+    "owner": 0,
+    "depth": 0,
+    "waiters": 0,
+    "contentions": 9
+  }
+}

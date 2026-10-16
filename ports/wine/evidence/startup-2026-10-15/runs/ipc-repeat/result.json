@@ -1,0 +1,71 @@
+{
+  "result": "PASS",
+  "runs": [
+    {
+      "run": 0,
+      "rounds": 1000,
+      "us": 43333,
+      "waits_main": 1019,
+      "waits_peer": 1019,
+      "wakes_main": 1019,
+      "wakes_peer": 1019
+    },
+    {
+      "run": 1,
+      "rounds": 1000,
+      "us": 23334,
+      "waits_main": 1017,
+      "waits_peer": 1017,
+      "wakes_main": 1017,
+      "wakes_peer": 1017
+    },
+    {
+      "run": 2,
+      "rounds": 1000,
+      "us": 40000,
+      "waits_main": 1019,
+      "waits_peer": 1019,
+      "wakes_main": 1019,
+      "wakes_peer": 1019
+    }
+  ],
+  "path_lookup": [],
+  "ipc_latency": [
+    {
+      "poll": 0,
+      "sample": 0,
+      "rounds": 500,
+      "us": 30000
+    },
+    {
+      "poll": 0,
+      "sample": 1,
+      "rounds": 500,
+      "us": 16667
+    },
+    {
+      "poll": 0,
+      "sample": 2,
+      "rounds": 500,
+      "us": 36667
+    },
+    {
+      "poll": 1,
+      "sample": 0,
+      "rounds": 500,
+      "us": 30000
+    },
+    {
+      "poll": 1,
+      "sample": 1,
+      "rounds": 500,
+      "us": 30000
+    },
+    {
+      "poll": 1,
+      "sample": 2,
+      "rounds": 500,
+      "us": 30000
+    }
+  ]
+}

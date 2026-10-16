@@ -1,0 +1,114 @@
+[
+  {
+    "test": "kernel/test_pager_ranges.py",
+    "exit_code": 0,
+    "seconds": 0.39,
+    "retest_log": "ranges-final.log"
+  },
+  {
+    "test": "kernel/test_swap_pager.py",
+    "exit_code": 0,
+    "seconds": 3.968
+  },
+  {
+    "test": "kernel/test_pager_lookup.py",
+    "exit_code": 0,
+    "seconds": 1.386
+  },
+  {
+    "test": "kernel/test_paging_map.py",
+    "exit_code": 0,
+    "seconds": 0.728
+  },
+  {
+    "test": "kernel/test_paging_tlb.py",
+    "exit_code": 0,
+    "seconds": 1.585
+  },
+  {
+    "test": "kernel/test_memory_accounting.py",
+    "exit_code": 0,
+    "seconds": 1.353
+  },
+  {
+    "test": "kernel/test_guarded_allocation.py",
+    "exit_code": 0,
+    "seconds": 0.551
+  },
+  {
+    "test": "kernel/test_heap_realloc.py",
+    "exit_code": 0,
+    "seconds": 2.164
+  },
+  {
+    "test": "kernel/test_smp_sleep_handoff.py",
+    "exit_code": 0,
+    "seconds": 1.168
+  },
+  {
+    "test": "kernel/test_signal_return.py",
+    "exit_code": 0,
+    "seconds": 1.033
+  },
+  {
+    "test": "kernel/test_signal_copy_lock.py",
+    "exit_code": 0,
+    "seconds": 0.822
+  },
+  {
+    "test": "kernel/test_native_api_abi.py",
+    "exit_code": 0,
+    "seconds": 0.544
+  },
+  {
+    "test": "kernel/test_upcall_cleanup.py",
+    "exit_code": 0,
+    "seconds": 1.277
+  },
+  {
+    "test": "desktop/test_vm_protect.py",
+    "exit_code": 0,
+    "seconds": 0.57
+  },
+  {
+    "test": "desktop/test_vm_auto_reservations.py",
+    "exit_code": 0,
+    "seconds": 0.736
+  },
+  {
+    "test": "kernel/test_block_writes.py",
+    "exit_code": 0,
+    "seconds": 4.376,
+    "retest_log": "block-final.log"
+  },
+  {
+    "test": "kernel/test_ata_swap_writes.py",
+    "exit_code": 0,
+    "seconds": 1.071
+  },
+  {
+    "test": "kernel/test_ata_dma_writes.py",
+    "exit_code": 0,
+    "seconds": 1.132
+  },
+  {
+    "test": "storage/test_recovery.py",
+    "exit_code": 0,
+    "seconds": 9.585
+  },
+  {
+    "test": "storage/test_smp.py",
+    "exit_code": 0,
+    "seconds": 3.496
+  },
+  {
+    "test": "storage/test_journal.py",
+    "exit_code": 0,
+    "seconds": 9.579
+  },
+  {
+    "test": "storage/test_swap_file.py",
+    "exit_code": 0,
+    "seconds": 3.716
+  }
+]

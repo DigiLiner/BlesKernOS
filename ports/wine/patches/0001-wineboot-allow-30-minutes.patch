@@ -1,0 +1,13 @@
+--- a/dlls/ntdll/unix/env.c
++++ b/dlls/ntdll/unix/env.c
+@@ -1600,7 +1600,9 @@
+     handles[count++] = process;
+ 
+ wait:
+-    timeout.QuadPart = (ULONGLONG)5 * 60 * 1000 * -10000;
++    /* BlesKernOS: allow the initial prefix installation on polled IDE and
++     * emulated CPUs to complete. Keep a finite wait and report failures. */
++    timeout.QuadPart = (ULONGLONG)30 * 60 * 1000 * -10000;
+     if (NtWaitForMultipleObjects( count, handles, WaitAny, FALSE, &timeout ) == WAIT_TIMEOUT)
+         ERR( "boot event wait timed out\n" );
+     while (count) NtClose( handles[--count] );

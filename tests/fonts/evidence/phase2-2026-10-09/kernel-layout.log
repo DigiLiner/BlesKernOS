@@ -1,0 +1,10 @@
+kernel.bin       : 780228 bytes (1524 sectores)
+destino kernel   : 0x00100000
+fin kernel plano : 0x001BE7C4
+limite PROGBITS  : 0x00240000
+.text            : 0x00110000
+.data            : 0x001BE000 .. 0x001BE7C4
+.bss             : 0x02000000 .. 0x02239EF4
+stage2.bin       : 4096 bytes
+
+OK: layout HighMem consistente

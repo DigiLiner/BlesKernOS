@@ -1,0 +1,101 @@
+{
+  "configuration": {
+    "accel": "KVM",
+    "ram_mib": 1536,
+    "cpus": 2,
+    "storage": "BFS4/AHCI",
+    "application": "/SYSTEM/WINE/windows/system32/notepad.exe",
+    "route": "normal EXE association",
+    "warm_launch_delay_seconds": 30
+  },
+  "runs": {
+    "before": {
+      "ready": [
+        {
+          "total_ms": 16653,
+          "x_ms": 296,
+          "prefix_ms": 410,
+          "theme_ms": 463,
+          "target_begin_ms": 490,
+          "spawn_ms": 570,
+          "spawn_to_surface_ms": 16083
+        }
+      ],
+      "vm": [
+        "[WINE:VM-PERF] phase=spawn-to-surface mmap=3620 file=2561 cached=558 hits=541 misses=17 fallback=2003 file_io_kib=374070 file_io_ms=2280"
+      ]
+    },
+    "cache": {
+      "ready": [
+        {
+          "total_ms": 16123,
+          "x_ms": 503,
+          "prefix_ms": 616,
+          "theme_ms": 680,
+          "target_begin_ms": 713,
+          "spawn_ms": 800,
+          "spawn_to_surface_ms": 15323
+        }
+      ],
+      "vm": [
+        "[WINE:VM-PERF] phase=spawn-to-surface mmap=3624 file=2561 cached=2409 hits=1907 misses=502 fallback=152 file_io_kib=192462 file_io_ms=1360"
+      ]
+    },
+    "after": {
+      "ready": [
+        {
+          "total_ms": 10843,
+          "x_ms": 273,
+          "prefix_ms": 386,
+          "theme_ms": 440,
+          "target_begin_ms": 470,
+          "spawn_ms": 586,
+          "spawn_to_surface_ms": 10257
+        }
+      ],
+      "vm": [
+        "[WINE:VM-PERF] phase=spawn-to-surface mmap=3628 file=2561 cached=2409 hits=1907 misses=502 fallback=152 file_io_kib=192462 file_io_ms=1266"
+      ]
+    },
+    "warm": {
+      "ready": [
+        {
+          "total_ms": 3646,
+          "x_ms": 266,
+          "prefix_ms": 383,
+          "theme_ms": 440,
+          "target_begin_ms": 470,
+          "spawn_ms": 556,
+          "spawn_to_surface_ms": 3090
+        }
+      ],
+      "vm": [
+        "[WINE:VM-PERF] phase=warmup-wineserver mmap=9 file=7 cached=6 hits=3 misses=3 fallback=1 file_io_kib=3560 file_io_ms=3",
+        "[WINE:VM-PERF] phase=warmup-prime mmap=3803 file=2705 cached=2550 hits=1995 misses=555 fallback=155 file_io_kib=211413 file_io_ms=1914",
+        "[WINE:VM-PERF] phase=spawn-to-surface mmap=1009 file=768 cached=708 hits=549 misses=159 fallback=60 file_io_kib=70152 file_io_ms=364"
+      ]
+    }
+  },
+  "sha256": {
+    "kernel/syscall.c": "14125bcda451d9c27cb226d66a4f74936b407955d76ffbb1b78862d993926bb8",
+    "kernel/include/vfs.h": "e01ec3db2d0a3ed25ee4fc999e3adba17c2e241d8c7a5e726b54fd0596430fea",
+    "kernel/drivers/core/vfs.c": "5191a1ce47846158749818601ab6971601c84ea77e8eb22a514c0c55753e82a8",
+    "ports/tinyx/scripts/build-stage2-kernel.py": "63f513f81b17049719c04b6d956a122511716f4a7074ae14ffd08f56eb0d596c",
+    "ports/wine/tests/mapping-capacity.c": "aed42f16b14988f497f81ea798529617314d8b45ad7a3b3c86222b32a0e6744a",
+    "build/kernel.bin": "8127914803078ba845545ba933ab72738cc4ec90fef85b4f3e9822844cc89555"
+  },
+  "build": "make -j4 all: passed",
+  "mapping_capacity_512m": "80 mappings; rename/unlink/truncate/COW/release/time refresh: status=0",
+  "limitations": [
+    "Single startup measurement for each variant; timings depend on host load.",
+    "Notepad measured; other Windows applications have not been timed.",
+    "check_high_kernel_layout.py and test_kernel_reserve.py report legacy BSS layout failures. The baseline kernel already places .bss at 0x00800000."
+  ],
+  "mapping_capacity_64m": {
+    "passed": false,
+    "mappings": 16,
+    "baseline_exit_observed": false,
+    "assertions_passed": true,
+    "note": "All assertions completed on both kernels, but the single-CPU runner did not observe process exit on either. Not a full gate pass."
+  }
+}

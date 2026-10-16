@@ -35,7 +35,12 @@ typedef void (*bk_thread_entry_t)(void *argument);
 #define NORETURN __attribute__((noreturn))
 #endif
 
-#define BK_APPLICATION_API_VERSION 31U
+#include "bleskernos_admin.h"
+#include "bleskernos_defrag.h"
+#include "bleskernos_font.h"
+#include "bleskernos_input.h"
+
+#define BK_APPLICATION_API_VERSION 40U
 #define BK_API_CAP_SYSTEM   0x00000001U
 #define BK_API_CAP_FILES    0x00000002U
 #define BK_API_CAP_GUI      0x00000004U
@@ -50,7 +55,8 @@ typedef void (*bk_thread_entry_t)(void *argument);
 #define BK_API_CAP_PRINT    0x00000800U
 #define BK_API_CAP_PERFORMANCE 0x00001000U
 #define BK_API_CAP_ALERTS   0x00002000U
-#define BK_API_CAP_ALL      0x00003FFFU
+#define BK_API_CAP_SDR      0x00004000U
+#define BK_API_CAP_ALL      0x00007FFFU
 #define BK_PATH_MAX                260U
 #define BK_NAME_MAX                256U
 #define BK_DIRECTORY_MAX           128U
@@ -148,12 +154,14 @@ typedef struct {
     size_t reserved_bytes;
 } bk_memory_info_t;
 
-#define BK_PERF_IO_TYPE_COUNT 5U
+#define BK_PERF_IO_TYPE_COUNT 6U
 #define BK_PERF_IRQ_COUNT 16U
 #define BK_PERF_BENCH_CPU        0x00000001U
 #define BK_PERF_BENCH_MEMORY     0x00000002U
 #define BK_PERF_BENCH_DRAW       0x00000004U
 #define BK_PERF_BENCH_VIDEO      0x00000008U
+#define BK_GFX_CAP_BITBLT_COPY_HW (1U << 8)
+#define BK_GFX_CAP_PRESENT_VRAM_BLIT (1U << 15)
 #define BK_PERF_BENCH_DISK       0x00000010U
 #define BK_PERF_BENCH_SCHEDULER  0x00000020U
 #define BK_PERF_BENCH_FILESYSTEM 0x00000040U
@@ -297,7 +305,8 @@ typedef enum {
     BK_BLOCK_ATA,
     BK_BLOCK_FLOPPY,
     BK_BLOCK_ATAPI,
-    BK_BLOCK_USB
+    BK_BLOCK_USB,
+    BK_BLOCK_SD
 } bk_block_type_t;
 
 typedef struct {
@@ -355,6 +364,9 @@ typedef struct {
     char name[32];
     char path[260];
     char description[96];
+    uint16_t version_major;
+    uint16_t version_minor;
+    bool active;
 } bk_driver_info_t;
 
 typedef struct {
@@ -416,6 +428,20 @@ typedef struct {
     uint32_t rx_dropped;
 } bk_net_info_t;
 
+typedef struct {
+    uint32_t struct_size;
+    char name[32];
+    char tuner[24];
+    uint16_t vendor_id;
+    uint16_t product_id;
+    uint32_t min_frequency_hz;
+    uint32_t max_frequency_hz;
+    uint32_t frequency_hz;
+    uint32_t sample_rate_hz;
+    int32_t gain_tenth_db;
+    bool streaming;
+} bk_sdr_info_t;
+
 /* Tipos opacos y geometría de la API GUI para aplicaciones Ring 3. */
 typedef struct bk_gui_desktop bk_gui_desktop_t;
 typedef struct bk_gui_window bk_gui_window_t;
@@ -442,7 +468,14 @@ typedef enum {
     BK_GUI_EVENT_MOUSE_DOWN,
     BK_GUI_EVENT_MOUSE_UP,
     BK_GUI_EVENT_MOUSE_WHEEL,
-    BK_GUI_EVENT_KEY
+    BK_GUI_EVENT_KEY,
+    BK_GUI_EVENT_KEY_UP,
+    BK_GUI_EVENT_FOCUS_GAIN,
+    BK_GUI_EVENT_FOCUS_LOST,
+    BK_GUI_EVENT_RESIZE,
+    BK_GUI_EVENT_CLOSE,
+    BK_GUI_EVENT_FILE_DROP,
+    BK_GUI_EVENT_FILES_CHANGED
 } bk_gui_event_type_t;
 typedef struct {
     bk_gui_event_type_t type;
@@ -452,7 +485,7 @@ typedef struct {
     int dy;
     uint8_t buttons;
     uint8_t button;
-    char key;
+    uint8_t key;
     bool shift;
     bool ctrl;
     bool alt;
@@ -494,6 +527,7 @@ void bk_sys_shutdown(void);
 void *bk_sys_alloc(size_t size);
 void bk_sys_free(void *pointer);
 bool bk_sys_memory_info(bk_memory_info_t *info);
+int32_t bk_console_read(char *buffer,uint32_t length);
 void bk_console_putchar(char character);
 void bk_console_write(const char *text);
 void bk_console_printf(const char *format, ...);
@@ -505,6 +539,11 @@ int bk_memory_compare(const void *left, const void *right, size_t size);
 
 /* Archivos y aplicaciones. */
 int bk_file_open(const char *path, uint32_t flags);
+int bk_file_read(int descriptor, void *buffer, uint32_t size);
+int bk_file_write(int descriptor, const void *buffer, uint32_t size);
+int32_t bk_file_seek(int descriptor, int32_t offset, uint32_t origin);
+int32_t bk_file_tell(int descriptor);
+int32_t bk_file_size(int descriptor);
 bool bk_file_close(int descriptor);
 bool bk_file_read_all(const char *path, void **buffer, uint32_t *size);
 bool bk_file_write_all(const char *path, const void *buffer, uint32_t size);
@@ -512,8 +551,21 @@ bool bk_file_stat(const char *path, bk_file_entry_t *entry);
 bool bk_file_list_dir(const char *path, bk_file_entry_t *entries,
                       uint32_t capacity, uint32_t *count);
 bool bk_file_chdir(const char *path);
+const char *bk_file_getcwd(void);
 bool bk_file_mkdir(const char *path);
 bool bk_file_remove(const char *path);
+int bk_file_transfer_check(const char *source,const char *directory);
+/* API 40: native command maintenance. */
+bool bk_file_get_mode(const char *path, uint16_t *mode);
+bool bk_file_set_mode(const char *path, uint16_t mode);
+bool bk_file_touch(const char *path, bool create);
+bool bk_file_space_path(const char *path, uint64_t *total, uint64_t *free_bytes);
+bool bk_file_sync(void);
+bool bk_device_attach_volume(const char *name);
+bool bk_device_unmount_volume(const char *name);
+/* index 1..4, type 0 deletes; returns 0, 1 (reboot to refresh), or negative error. */
+int32_t bk_device_partition_edit(const char *name, uint32_t index,
+    uint32_t first, uint32_t sectors, uint32_t type);
 bool bk_file_rename(const char *old_path, const char *new_path);
 typedef void (*bk_file_dialog_callback_t)(const char *path, void *context);
 /* Selector asincrono en modo lista. Muestra carpetas, archivos compatibles
@@ -525,6 +577,10 @@ bool bk_file_dialog_open(bk_gui_desktop_t *desktop, const char *title,
 bool bk_setup_extract_package(const char *path);
 bool bk_setup_get_progress(bkl_setup_progress_t *progress);
 bool bk_app_launch(const char *path, const char *argument);
+/* Ejecuta un BEX/ELF o PE y espera su terminacion. Devuelve el exit status,
+   o -1 si no pudo cargar/esperar el proceso. command_line debe incluir argv[0]
+   cuando path apunta a un ejecutable Win32. */
+int bk_app_run_sync(const char *path, const char *command_line);
 bool bk_proc_launch_arg_copy(char *buffer, uint32_t capacity);
 int bk_proc_spawn_thread(const char *name, bk_thread_entry_t entry,
                          void *argument);
@@ -572,6 +628,12 @@ int32_t bk_net_http_get(const char *url, void *data, uint32_t capacity,
 int32_t bk_net_http_exchange(const char *url, const void *request,
                              uint32_t request_length, void *data,
                              uint32_t capacity, uint32_t timeout_ms);
+/* Same exchange and errors, with UI owned by the caller (API 39). */
+int32_t bk_net_http_exchange_quiet(const char *url, const void *request,
+                                   uint32_t request_length, void *data,
+                                   uint32_t capacity, uint32_t timeout_ms);
+#include "bleskernos_socket_info.h"
+uint32_t bk_net_socket_snapshot(bk_socket_info_t *out,uint32_t capacity);
 int32_t bk_net_tls_last_error(void);
 
 /* Portapapeles de texto global compartido por aplicaciones nativas. */
@@ -611,9 +673,19 @@ bool bk_perf_snapshot(bk_perf_snapshot_t *snapshot, bool reset_interval);
 int bk_perf_benchmark(bk_perf_benchmark_t *result);
 
 void bk_proc_exit(void) NORETURN;
+void bk_proc_exit_status(int status) NORETURN;
 bool bk_time_datetime(bk_datetime_t *datetime);
 bool bk_sound_tone(uint32_t frequency_hz, uint32_t duration_ms);
 const char *bk_sound_pcm_name(void);
+bool bk_sound_pcm_available(void);
+bool bk_sound_pcm_busy(void);
+bool bk_sound_play_pcm_u8(const uint8_t *samples, uint32_t length,
+                          uint16_t sample_rate_hz, uint8_t volume);
+void bk_sound_stop(void);
+
+/* Preferencias de entrada portables. El rango de sensibilidad es 1..10. */
+void bk_input_mouse_set_sensitivity(uint8_t sensitivity);
+uint8_t bk_input_mouse_get_sensitivity(void);
 
 /* Hardware y volumenes: siempre copian DTO publicos. */
 uint32_t bk_device_block_count(void);
@@ -621,10 +693,21 @@ bool bk_device_block_info(uint32_t index, bk_block_info_t *info);
 uint32_t bk_device_partition_count(void);
 bool bk_device_partition_info(uint32_t index, bk_partition_info_t *info);
 bool bk_device_pci_info(uint32_t index, bk_pci_info_t *info);
+typedef struct {
+    uint32_t id,parent_id;uint16_t vendor_id,product_id;
+    uint8_t address,speed,device_class,device_subclass,interfaces,port;
+    bool connected;
+} bk_usb_info_t;
+uint32_t bk_device_usb_count(void);
+bool bk_device_usb_info(uint32_t index,bk_usb_info_t *info);
 uint32_t bk_device_pci_count(void);
 uint32_t bk_device_driver_count(void);
 bool bk_device_driver_info(uint32_t index, bk_driver_info_t *info);
 bool bk_device_volume_info(bk_volume_info_t *info);
+bool bk_device_defrag_begin(bool optimize);
+bool bk_device_defrag_step(void);
+bool bk_device_defrag_status(bk_defrag_info_t *info);
+bool bk_device_defrag_cancel(void);
 bool bk_device_check_volume(bk_volume_check_report_t *report);
 bool bk_device_repair_volume(bk_volume_repair_report_t *repair,
                              bk_volume_check_report_t *after);
@@ -635,13 +718,35 @@ bool bk_device_format_fat(const char *device_name, const char *volume_label);
 uint32_t bk_print_lpt_count(void);
 bool bk_print_lpt_info(uint32_t index, bk_print_lpt_info_t *info);
 bool bk_print_port_info(uint32_t index, bk_print_port_info_t *info);
+/* IEEE1284 identity; bounded UTF-8/ASCII output, no language guessing. */
+bool bk_print_device_id(uint32_t index, char *buffer, uint32_t capacity);
 int32_t bk_print_lpt_write(uint32_t index, const void *data, uint32_t length,
                            uint32_t idle_timeout_ms);
 void bk_print_spooler_set_ready(bool ready);
 bool bk_print_spooler_is_ready(void);
 
+/* Software-defined radio receiver API. I/Q is unsigned 8-bit I,Q. */
+uint32_t bk_sdr_count(void);
+bool bk_sdr_info(uint32_t index, bk_sdr_info_t *info);
+int32_t bk_sdr_open(uint32_t index);
+void bk_sdr_close(int32_t handle);
+bool bk_sdr_set_frequency(int32_t handle, uint32_t frequency_hz);
+bool bk_sdr_set_sample_rate(int32_t handle, uint32_t sample_rate_hz);
+bool bk_sdr_set_gain(int32_t handle, int32_t gain_tenth_db);
+int32_t bk_sdr_read(int32_t handle, void *buffer, uint32_t capacity,
+                    uint32_t timeout_ms);
+
 /* Ventanas y dibujo: todos los objetos permanecen opacos para la app. */
 bk_gui_desktop_t *bk_gui_desktop(void);
+bool bk_gui_file_drag_start(bk_gui_window_t *window,const char *path);
+/* Copies the alpha silhouette before returning; pixels remain owned by caller. */
+bool bk_gui_file_drag_start_icon(bk_gui_window_t *window,const char *path,
+                                  const uint32_t *pixels,unsigned width,unsigned height);
+void bk_gui_file_drag_cancel(bk_gui_window_t *window);
+/* path must have room for 260 bytes. */
+bool bk_gui_file_drop_take(bk_gui_window_t *window,const bk_gui_event_t *event,char *path);
+uint32_t bk_gui_files_sequence(void);
+void bk_gui_files_changed(void);
 bk_gui_window_t *bk_gui_create_window(bk_gui_desktop_t *desktop, int x, int y,
                                       int w, int h, const char *title);
 /* Aviso modal global del sistema. El texto se copia antes de regresar, por lo
@@ -655,6 +760,16 @@ void bk_gui_set_window_content(bk_gui_window_t *window, bk_gui_paint_t paint,
 void bk_gui_set_window_event_handler(bk_gui_window_t *window,
                                      bk_gui_event_handler_t handler,
                                      void *context);
+/* Opt-in para KEY_UP, foco, resize y solicitud de cierre. Una ventana que no
+   lo habilita conserva exactamente la semantica historica de la ABI 0.8. */
+void bk_gui_window_set_extended_events(bk_gui_window_t *window, bool enabled);
+/* Opt-in fast path for opaque/full-frame games and video clients. */
+void bk_gui_window_set_streaming(bk_gui_window_t *window, bool enabled);
+/* Use GUI drawing helpers; direct pixel indexing requires the full surface. */
+void bk_gui_window_set_compact_content(bk_gui_window_t *window, bool enabled);
+bool bk_gui_window_present_xrgb(bk_gui_window_t *window,
+                                const uint32_t *pixels,
+                                uint16_t width, uint16_t height);
 void bk_gui_set_window_min_size(bk_gui_window_t *window, int min_w, int min_h);
 void bk_gui_close_window(bk_gui_window_t *window);
 int bk_gui_add_menu(bk_gui_window_t *window, const char *label);
@@ -683,6 +798,11 @@ bool bk_gui_window_begin_immediate_paint(bk_gui_window_t *window,
                                          bk_gui_surface_t **surface);
 void bk_gui_window_end_immediate_paint(bk_gui_window_t *window,
                                        bk_gui_surface_t *surface);
+/* Runtime window mode changes for accelerated clients.  set_bounds keeps
+ * the same window/context and only changes compositor geometry. */
+bool bk_gui_window_set_bounds(bk_gui_window_t *window, bk_gui_rect_t bounds);
+void bk_gui_window_set_borderless(bk_gui_window_t *window, bool borderless,
+                                  uint8_t drag_height);
 bool bk_gui_window_bounds(const bk_gui_window_t *window, bk_gui_rect_t *bounds);
 bool bk_gui_window_content_rect(const bk_gui_window_t *window,
                                 bk_gui_rect_t *rect);
@@ -699,6 +819,31 @@ void bk_gui_surface_draw_polyline(bk_gui_surface_t *surface,
 void bk_gui_surface_draw_text(bk_gui_surface_t *surface, int x, int y,
                               const char *text, uint32_t foreground,
                               uint32_t background, bool fill_background);
+/* Real fonts in /SYSTEM/FONTS. Text is UTF-8; length is bytes, at most 4096.
+ * size is the TrueType em size in pixels (8..72), y is the top of the line.
+ * IDs are stable during a boot; query names instead of hard-coding IDs.
+ * Invalid/missing fonts return false/0; fonts are cached on demand.
+ */
+uint32_t bk_font_count(void);
+bool bk_font_info(uint32_t id, bk_font_info_t *info);
+uint16_t bk_font_line_height(uint32_t id, uint16_t size);
+uint16_t bk_font_text_width(uint32_t id, uint16_t size,
+                            const char *text, uint32_t length);
+/* Returns one 1/64-pixel advance per UTF-8 character; zero on failure.
+ * Caller supplies at least capacity uint32_t slots, at most 4096. */
+uint32_t bk_font_text_advances(uint32_t id, uint16_t size,
+                              const char *text, uint32_t length,
+                              uint32_t *advances, uint32_t capacity);
+
+bool bk_font_draw_text(bk_gui_surface_t *surface, uint32_t id, uint16_t size,
+                       int x, int y, const char *text, uint32_t length,
+                       uint32_t foreground, bk_gui_rect_t clip);
+/* Optional synthetic styles and coverage blending; existing API stays crisp. */
+bool bk_font_draw_text_styled(bk_gui_surface_t *surface, uint32_t id, uint16_t size,
+                       int x, int y, const char *text, uint32_t length,
+                       uint32_t foreground, bk_gui_rect_t clip, uint32_t style,
+                       int letter_spacing, int word_spacing);
+
 uint16_t bk_gui_text_width_px(const char *text, uint32_t length,
                               uint16_t pixel_height, bool monospace, bool bold);
 void bk_gui_surface_draw_text_px(bk_gui_surface_t *surface, int x, int y,
@@ -722,7 +867,56 @@ void bk_gui_image_free(bk_gui_image_t *image);
 bool bk_gui_cursor_set_resource(const char *resource_name,
                                 int hotspot_x, int hotspot_y);
 void bk_gui_cursor_reset(void);
-/* 0=flecha, 1=espera, 2=horizontal, 3=vertical, 4/5=diagonales. */
+/* Global stock cursor roles (Retrosmart); custom images still use bk_gui_cursor_set_resource.
+ * WAIT and PROGRESS animate at their source timing. Existing IDs stay stable. */
+#define BK_GUI_CURSOR_ARROW 0U
+#define BK_GUI_CURSOR_WAIT 1U
+#define BK_GUI_CURSOR_SIZE_WE 2U
+#define BK_GUI_CURSOR_SIZE_NS 3U
+#define BK_GUI_CURSOR_SIZE_NWSE 4U
+#define BK_GUI_CURSOR_SIZE_NESW 5U
+#define BK_GUI_CURSOR_PROGRESS 6U
+#define BK_GUI_CURSOR_TEXT 7U
+#define BK_GUI_CURSOR_POINTER 8U
+#define BK_GUI_CURSOR_HELP 9U
+#define BK_GUI_CURSOR_MOVE 10U
+#define BK_GUI_CURSOR_NOT_ALLOWED 11U
+#define BK_GUI_CURSOR_CROSSHAIR 12U
+#define BK_GUI_CURSOR_ALIAS 13U
+#define BK_GUI_CURSOR_ALL_SCROLL 14U
+#define BK_GUI_CURSOR_BOTTOM_LEFT_CORNER 15U
+#define BK_GUI_CURSOR_BOTTOM_RIGHT_CORNER 16U
+#define BK_GUI_CURSOR_BOTTOM_SIDE 17U
+#define BK_GUI_CURSOR_CELL 18U
+#define BK_GUI_CURSOR_CENTER_PTR 19U
+#define BK_GUI_CURSOR_CLOSEDHAND 20U
+#define BK_GUI_CURSOR_COL_RESIZE 21U
+#define BK_GUI_CURSOR_COLOR_PICKER 22U
+#define BK_GUI_CURSOR_CONTEXT_MENU 23U
+#define BK_GUI_CURSOR_COPY 24U
+#define BK_GUI_CURSOR_DND_MOVE 25U
+#define BK_GUI_CURSOR_DND_NO_DROP 26U
+#define BK_GUI_CURSOR_DOWN_ARROW 27U
+#define BK_GUI_CURSOR_DRAFT 28U
+#define BK_GUI_CURSOR_LEFT_ARROW 29U
+#define BK_GUI_CURSOR_LEFT_SIDE 30U
+#define BK_GUI_CURSOR_NO_DROP 31U
+#define BK_GUI_CURSOR_OPENHAND 32U
+#define BK_GUI_CURSOR_PENCIL 33U
+#define BK_GUI_CURSOR_PIRATE 34U
+#define BK_GUI_CURSOR_RIGHT_ARROW 35U
+#define BK_GUI_CURSOR_RIGHT_PTR 36U
+#define BK_GUI_CURSOR_RIGHT_SIDE 37U
+#define BK_GUI_CURSOR_ROW_RESIZE 38U
+#define BK_GUI_CURSOR_TOP_LEFT_CORNER 39U
+#define BK_GUI_CURSOR_TOP_RIGHT_CORNER 40U
+#define BK_GUI_CURSOR_TOP_SIDE 41U
+#define BK_GUI_CURSOR_UP_ARROW 42U
+#define BK_GUI_CURSOR_VERTICAL_TEXT 43U
+#define BK_GUI_CURSOR_WAYLAND_CURSOR 44U
+#define BK_GUI_CURSOR_X_CURSOR 45U
+#define BK_GUI_CURSOR_ZOOM_IN 46U
+#define BK_GUI_CURSOR_ZOOM_OUT 47U
 void bk_gui_cursor_set_style(uint8_t style);
 /*
  * Recursos compartidos de /SYSTEM/GRAPHICS.PAK.
@@ -737,6 +931,12 @@ void bk_gui_surface_draw_image(bk_gui_surface_t *surface,
                                bk_gui_rect_t destination,
                                bk_gui_rect_t clip,
                                const bk_gui_image_t *image);
+/* Opaque XRGB framebuffer blit/scaler: no per-pixel alpha work. */
+void bk_gui_surface_draw_xrgb(bk_gui_surface_t *surface,
+                              bk_gui_rect_t destination,
+                              bk_gui_rect_t clip,
+                              const uint32_t *pixels,
+                              uint16_t width, uint16_t height);
 /* Barras de progreso nativas. INSTALLER usa bloques 3D; CLASSIC es una
  * barra continua con brillo animado. animation_phase puede ser 0 para una
  * barra estatica o incrementarse en cada repintado. */
@@ -748,6 +948,20 @@ void bk_gui_surface_draw_progress(bk_gui_surface_t *surface,
                                   uint32_t style,
                                   uint32_t animation_phase);
 uint16_t bk_gui_text_width(const char *text);
+/* Draw inactive tabs first, then the page, then its active tab. */
+void bk_gui_surface_draw_tab(bk_gui_surface_t *surface, bk_gui_rect_t tab,
+    const char *label, bool selected, bk_gui_rect_t page);
+/* Sliders notify on release; applications own persistence and radio groups. */
+bk_gui_widget_t *bk_gui_create_slider(bk_gui_desktop_t *desktop, bk_gui_window_t *window,
+    bk_gui_rect_t bounds, int32_t minimum, int32_t maximum, int32_t step,
+    int32_t value, bk_gui_widget_callback_t callback);
+bk_gui_widget_t *bk_gui_create_choice(bk_gui_desktop_t *desktop, bk_gui_window_t *window,
+    bk_gui_rect_t bounds, const char *text, bool radio, bk_gui_widget_callback_t callback);
+int32_t bk_gui_slider_get_value(const bk_gui_widget_t *widget);
+void bk_gui_slider_set_value(bk_gui_widget_t *widget, int32_t value);
+void bk_gui_choice_set_checked(bk_gui_widget_t *widget, bool checked);
+bool bk_gui_choice_is_checked(const bk_gui_widget_t *widget);
+
 bk_gui_widget_t *bk_gui_create_button(bk_gui_desktop_t *desktop,
                                       bk_gui_window_t *window,
                                       bk_gui_rect_t bounds,

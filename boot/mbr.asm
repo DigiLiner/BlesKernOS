@@ -62,13 +62,30 @@ relocated:
     mov eax, [R(part_lba)]
     mov [R(dap_lba_lo)], eax
     mov dword [R(dap_lba_hi)], 0
+    mov byte [R(read_retries)], 3
 
+.retry_read:
     mov ah, 0x42
     mov dl, [R(boot_drive)]
     mov si, R(dap)
     int 0x13
-    jc .read_error
+    pushf
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    popf
+    jnc .read_ok
+    dec byte [R(read_retries)]
+    jz .read_error
+    xor ax, ax
+    mov dl, [R(boot_drive)]
+    int 0x13
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    jmp .retry_read
 
+.read_ok:
     mov dl, [R(boot_drive)]
     jmp 0x0000:0x7C00
 
@@ -97,6 +114,7 @@ print_string:
 
 boot_drive db 0
 part_lba dd 0
+read_retries db 0
 
 dap:
 dap_size db 0x10

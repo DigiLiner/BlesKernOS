@@ -1,11 +1,11 @@
-#include "../stdlib.h"
-#include "../string.h"
-#include "../errno.h"
-#include "../limits.h"
+#include "include/stdlib.h"
+#include "include/string.h"
+#include "include/errno.h"
+#include "include/limits.h"
 #include "../include/memory.h"
 #include "../include/task.h"
 #include "../include/vfs.h"
-#include "../stdio.h"
+#include "include/stdio.h"
 
 int errno = 0;
 

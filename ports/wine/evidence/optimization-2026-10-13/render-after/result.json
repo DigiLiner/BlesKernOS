@@ -1,0 +1,21 @@
+{
+  "result": "PASS",
+  "phases": [
+    {
+      "alpha": 0,
+      "frames": 80,
+      "host_s": 1.0896588350005914,
+      "compositions_per_s": 73.41747474562217,
+      "guest_us": 1050000,
+      "hash": "b4a29ac2"
+    },
+    {
+      "alpha": 1,
+      "frames": 80,
+      "host_s": 1.201597061008215,
+      "compositions_per_s": 66.5780589816648,
+      "guest_us": 1166667,
+      "hash": "e1e9a4b3"
+    }
+  ]
+}

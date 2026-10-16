@@ -1,0 +1,2 @@
+PASS production DHCP retransmits lost DISCOVER/REQUEST, inherits OFFER DNS/routes, rejects malformed/foreign/late replies and serializes callers
+PASS production RTL8139 RxNoWrap boundary copy, ring wrap, incomplete/stuck DMA, TX padding and correct/adaptive FIFO threshold bits

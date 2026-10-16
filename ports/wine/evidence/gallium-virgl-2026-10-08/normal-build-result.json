@@ -1,0 +1,33 @@
+{
+  "window_backend": "SDL/OpenGL",
+  "device": "virtio-vga-gl",
+  "host_egl_errors": false,
+  "observed": "FIFA introduction visible in captured framebuffer",
+  "user_feedback": "User reported that it worked; no complete match certification",
+  "tests": {
+    "atapi_ready": "PASS",
+    "audio_bridge": "PASS",
+    "virgl_transport": "PASS"
+  },
+  "production_launcher": {
+    "path": "build/wine/wine-launch",
+    "sha256": "b3278902873ecec1a1c5b5350a6ad4a301add75f963c206aacffbfb2f421f6a9"
+  },
+  "normal_build": "PASS: full rebuild from a fresh Mesa cache",
+  "bfs4": "PASS: 5457 entries, 74164 free blocks, clean",
+  "packaged_libraries_sha256": {
+    "libGL.so.1": "15a16ed061e51a7af0d365a51f06ec3294b3a063365494f7ab68b41efba22164",
+    "libbkmesa.so.1": "48aabe63747444cec56e2f82cbef9eb68fdf3caadb8f572b510177796292a664",
+    "libbkvirgl.so.8": "029ad4b1970a6d3945bb6bb8afe2a579cd567c1230e88f77435d2be5aba07c9d",
+    "libstdc++.so.6": "f1de9bbfb3c06941568fa4180b8ca89016f025d3b01de77743a7db7a7f6ea46b",
+    "libgcc_s.so.1": "9ada4f163dcfd839c26b78806d2b25a6b6322706af217228e423ff475e387777",
+    "libexpat.so.1": "0586c80dc630b58c80699bedd0350020dd8112777581cec81beb2bcca2e44bbc",
+    "libz.so.1": "216f8fe722d4e7abad36875c3a9d9063112a21ca5620dfe352e081203962a563"
+  },
+  "packaged_licenses": "PASS: all nine files match source",
+  "incremental_build": "PASS: make -q wine-gallium reports up to date",
+  "offline_update": "PASS: final updater and launcher; all 63 installed application files preserved",
+  "distribution_theme": "PASS: current v5 theme, OSS, icon paths and modeset seeded from launcher source",
+  "boot_ahci": "PASS: fresh distribution, SDL/OpenGL, VirGL, CD mounted, Wine READY in 19646 ms, desktop released",
+  "boot_ide": "PASS: fresh distribution, SDL/OpenGL, VirGL, CD mounted, Wine READY in 19750 ms, desktop released"
+}

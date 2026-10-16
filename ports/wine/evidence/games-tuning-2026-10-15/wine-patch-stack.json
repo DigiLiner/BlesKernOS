@@ -1,0 +1,20 @@
+{
+  "result": "PASS",
+  "archive_sha256": "f09e8153aa46a581d2b56a5b1363b04832070b9409d9244a68cf482b243ff14a",
+  "module_sources": {
+    "dlls/winex11.drv/init.c": "734ee58cc24e15ba87b87edd8079ef6b2d5822c7b9d6d48b44adc1fcc0a368c9",
+    "dlls/winex11.drv/opengl.c": "20934a6a4c0a2944d23f052fbacc13d6c31291166eb326bd57d6e75523f750e8",
+    "dlls/winex11.drv/x11drv.h": "0df6bb96e5ee35534f9702ae3880cce1b0ce6566dc942547cb47e3b8246c769b"
+  },
+  "patches": {
+    "ports/wine/patches/0001-wineboot-allow-30-minutes.patch": "b5209758076ce4fa35868e86ddfba44b8ce6ff3154ecb5f9206a2f32484b8590",
+    "ports/wine/patches/0002-ntdll-recognize-fat-case-insensitivity.patch": "d98a7813e2b3d7123cb966e029373d23c4f44a1dca42c2ae8927bc7fc2a82a97",
+    "ports/wine/patches/0003-ntdll-bleskernos-force-utf8-paths.patch": "c4b8cae0ded39ca87f4810ad3d70d3774b49752642766857c40a1d8c2e497201",
+    "ports/wine/patches/0004-winex11-local-glx-backend.patch": "7af396c527f89f8b45ef73e315fccdfc5b04752c18ab206dbb3073e0392cbf47",
+    "ports/wine/patches/0005-winex11-no-xinput2-clip-loop.patch": "7d302867ad58c33042147af91f4049949138664ac61d516248da066fec63b356",
+    "ports/wine/patches/0006-mountmgr-identify-optical-directory-maps.patch": "78518f4f963593585a2bb0156614ef5e34d79ba3cbf8841d9d8d8b87ac7dfa13",
+    "ports/wine/patches/0007-winex11-local-front-pixmap.patch": "97d42dbc86f788c599076ce31c43037a6b85eecbbc5122b6d04d1a81432ce7e0",
+    "ports/wine/patches/0009-winex11-explicit-offscreen-present.patch": "46d1c408929c1c2158a7b3a1ca6e36c33fc324084803a41bcab51e497a047202",
+    "ports/wine/patches/0008-i386-pic-memory.patch": "8e7cf9099c8760597d595d2ff938bea9390b9b5726887cb0f29f64ca65d60dac"
+  }
+}

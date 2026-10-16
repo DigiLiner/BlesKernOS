@@ -1,0 +1,15 @@
+/tmp/bk-block-vnwp6vp7/test.c: In function ‘block_register_ex’:
+/tmp/bk-block-vnwp6vp7/test.c:74:17: error: implicit declaration of function ‘vfs_volume_busy’ [-Werror=implicit-function-declaration]
+   74 |     bool busy = vfs_volume_busy(name);
+      |                 ^~~~~~~~~~~~~~~
+/tmp/bk-block-vnwp6vp7/test.c: In function ‘block_unregister’:
+/tmp/bk-block-vnwp6vp7/test.c:113:18: error: implicit declaration of function ‘vfs_forget_volume’ [-Werror=implicit-function-declaration]
+  113 |     if (removed) vfs_forget_volume(name);
+      |                  ^~~~~~~~~~~~~~~~~
+cc1: all warnings being treated as errors
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/test_block_writes.py", line 49, in <module>
+    subprocess.run(['gcc','-m32','-O2','-Wall','-Werror','-I'+str(root),str(d/'test.c'),'-o',str(d/'test')],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['gcc', '-m32', '-O2', '-Wall', '-Werror', '-I/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9', '/tmp/bk-block-vnwp6vp7/test.c', '-o', '/tmp/bk-block-vnwp6vp7/test']' returned non-zero exit status 1.

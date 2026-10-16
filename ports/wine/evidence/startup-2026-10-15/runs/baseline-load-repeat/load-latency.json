@@ -1,0 +1,407 @@
+[
+  {
+    "host_s": 203694.768152687,
+    "key_to_native_pixel_ms": 341.23622300103307,
+    "changed": true
+  },
+  {
+    "host_s": 203695.41917417,
+    "key_to_native_pixel_ms": 2000.3832450020127,
+    "changed": false
+  },
+  {
+    "host_s": 203697.736351215,
+    "key_to_native_pixel_ms": 114.95197401382029,
+    "changed": true
+  },
+  {
+    "host_s": 203698.161603102,
+    "key_to_native_pixel_ms": 164.37098701135255,
+    "changed": true
+  },
+  {
+    "host_s": 203698.643859418,
+    "key_to_native_pixel_ms": 133.5889070178382,
+    "changed": true
+  },
+  {
+    "host_s": 203699.085427807,
+    "key_to_native_pixel_ms": 238.4880160097964,
+    "changed": true
+  },
+  {
+    "host_s": 203699.634803882,
+    "key_to_native_pixel_ms": 166.73765899031423,
+    "changed": true
+  },
+  {
+    "host_s": 203700.112042612,
+    "key_to_native_pixel_ms": 109.01304901926778,
+    "changed": true
+  },
+  {
+    "host_s": 203700.541474657,
+    "key_to_native_pixel_ms": 149.74402301595546,
+    "changed": true
+  },
+  {
+    "host_s": 203701.018593778,
+    "key_to_native_pixel_ms": 237.0206780033186,
+    "changed": true
+  },
+  {
+    "host_s": 203701.848050661,
+    "key_to_native_pixel_ms": 483.30242998781614,
+    "changed": true
+  },
+  {
+    "host_s": 203702.638588296,
+    "key_to_native_pixel_ms": 81.92625801893882,
+    "changed": true
+  },
+  {
+    "host_s": 203703.039336597,
+    "key_to_native_pixel_ms": 2000.9302030084655,
+    "changed": false
+  },
+  {
+    "host_s": 203705.350875751,
+    "key_to_native_pixel_ms": 138.20434000808746,
+    "changed": true
+  },
+  {
+    "host_s": 203705.801954129,
+    "key_to_native_pixel_ms": 112.72267799358815,
+    "changed": true
+  },
+  {
+    "host_s": 203706.229208694,
+    "key_to_native_pixel_ms": 552.7035819832236,
+    "changed": true
+  },
+  {
+    "host_s": 203707.09644063,
+    "key_to_native_pixel_ms": 601.3065199949779,
+    "changed": true
+  },
+  {
+    "host_s": 203708.012426804,
+    "key_to_native_pixel_ms": 135.90880000265315,
+    "changed": true
+  },
+  {
+    "host_s": 203708.460306269,
+    "key_to_native_pixel_ms": 75.07457298925146,
+    "changed": true
+  },
+  {
+    "host_s": 203708.84259913,
+    "key_to_native_pixel_ms": 50.95922798500396,
+    "changed": true
+  },
+  {
+    "host_s": 203709.199688975,
+    "key_to_native_pixel_ms": 65.64434900064953,
+    "changed": true
+  },
+  {
+    "host_s": 203709.573112867,
+    "key_to_native_pixel_ms": 68.6513610125985,
+    "changed": true
+  },
+  {
+    "host_s": 203709.946709972,
+    "key_to_native_pixel_ms": 63.275159016484395,
+    "changed": true
+  },
+  {
+    "host_s": 203710.317554246,
+    "key_to_native_pixel_ms": 74.8453400155995,
+    "changed": true
+  },
+  {
+    "host_s": 203710.703794881,
+    "key_to_native_pixel_ms": 84.95426599984057,
+    "changed": true
+  },
+  {
+    "host_s": 203711.098237553,
+    "key_to_native_pixel_ms": 146.49213600205258,
+    "changed": true
+  },
+  {
+    "host_s": 203711.550188165,
+    "key_to_native_pixel_ms": 92.60630299104378,
+    "changed": true
+  },
+  {
+    "host_s": 203711.947898193,
+    "key_to_native_pixel_ms": 80.19063700339757,
+    "changed": true
+  },
+  {
+    "host_s": 203712.339674728,
+    "key_to_native_pixel_ms": 68.89651800156571,
+    "changed": true
+  },
+  {
+    "host_s": 203712.713496289,
+    "key_to_native_pixel_ms": 99.189367989311,
+    "changed": true
+  },
+  {
+    "host_s": 203713.140500545,
+    "key_to_native_pixel_ms": 73.41458500013687,
+    "changed": true
+  },
+  {
+    "host_s": 203713.522388982,
+    "key_to_native_pixel_ms": 66.50027699652128,
+    "changed": true
+  },
+  {
+    "host_s": 203713.89520816,
+    "key_to_native_pixel_ms": 113.8359870237764,
+    "changed": true
+  },
+  {
+    "host_s": 203714.319695616,
+    "key_to_native_pixel_ms": 67.02061899704859,
+    "changed": true
+  },
+  {
+    "host_s": 203714.691158786,
+    "key_to_native_pixel_ms": 81.02682800381444,
+    "changed": true
+  },
+  {
+    "host_s": 203715.085972477,
+    "key_to_native_pixel_ms": 79.21910597360693,
+    "changed": true
+  },
+  {
+    "host_s": 203715.473333552,
+    "key_to_native_pixel_ms": 2007.1788669738453,
+    "changed": false
+  },
+  {
+    "host_s": 203717.78762976,
+    "key_to_native_pixel_ms": 63.44477800303139,
+    "changed": true
+  },
+  {
+    "host_s": 203718.175480256,
+    "key_to_native_pixel_ms": 151.71583098708652,
+    "changed": true
+  },
+  {
+    "host_s": 203718.633616861,
+    "key_to_native_pixel_ms": 66.74603998544626,
+    "changed": true
+  },
+  {
+    "host_s": 203719.00680802,
+    "key_to_native_pixel_ms": 151.17092299624346,
+    "changed": true
+  },
+  {
+    "host_s": 203719.467841861,
+    "key_to_native_pixel_ms": 49.5085239817854,
+    "changed": true
+  },
+  {
+    "host_s": 203719.821188391,
+    "key_to_native_pixel_ms": 90.4268579906784,
+    "changed": true
+  },
+  {
+    "host_s": 203720.223680878,
+    "key_to_native_pixel_ms": 94.62649599299766,
+    "changed": true
+  },
+  {
+    "host_s": 203720.622460163,
+    "key_to_native_pixel_ms": 70.33310999395326,
+    "changed": true
+  },
+  {
+    "host_s": 203721.004286516,
+    "key_to_native_pixel_ms": 74.70039901090786,
+    "changed": true
+  },
+  {
+    "host_s": 203721.383364472,
+    "key_to_native_pixel_ms": 61.14076398080215,
+    "changed": true
+  },
+  {
+    "host_s": 203721.751983954,
+    "key_to_native_pixel_ms": 68.64607200259343,
+    "changed": true
+  },
+  {
+    "host_s": 203722.129168049,
+    "key_to_native_pixel_ms": 59.70983600127511,
+    "changed": true
+  },
+  {
+    "host_s": 203722.49734802,
+    "key_to_native_pixel_ms": 2003.364614007296,
+    "changed": false
+  },
+  {
+    "host_s": 203724.808121979,
+    "key_to_native_pixel_ms": 61.654858000110835,
+    "changed": true
+  },
+  {
+    "host_s": 203725.178975828,
+    "key_to_native_pixel_ms": 61.15663901437074,
+    "changed": true
+  },
+  {
+    "host_s": 203725.54787939,
+    "key_to_native_pixel_ms": 66.8904579943046,
+    "changed": true
+  },
+  {
+    "host_s": 203725.922099266,
+    "key_to_native_pixel_ms": 69.1282810003031,
+    "changed": true
+  },
+  {
+    "host_s": 203726.300075534,
+    "key_to_native_pixel_ms": 127.75030799093656,
+    "changed": true
+  },
+  {
+    "host_s": 203726.738449059,
+    "key_to_native_pixel_ms": 2012.1293459960725,
+    "changed": false
+  },
+  {
+    "host_s": 203729.06023442,
+    "key_to_native_pixel_ms": 2003.9067800098564,
+    "changed": false
+  },
+  {
+    "host_s": 203731.372427246,
+    "key_to_native_pixel_ms": 90.48334998078644,
+    "changed": true
+  },
+  {
+    "host_s": 203731.772192156,
+    "key_to_native_pixel_ms": 95.76082701096311,
+    "changed": true
+  },
+  {
+    "host_s": 203732.173998479,
+    "key_to_native_pixel_ms": 82.41274999454618,
+    "changed": true
+  },
+  {
+    "host_s": 203732.565965814,
+    "key_to_native_pixel_ms": 66.79067501681857,
+    "changed": true
+  },
+  {
+    "host_s": 203732.943949513,
+    "key_to_native_pixel_ms": 59.84780701692216,
+    "changed": true
+  },
+  {
+    "host_s": 203733.310822628,
+    "key_to_native_pixel_ms": 56.04913900606334,
+    "changed": true
+  },
+  {
+    "host_s": 203733.672822085,
+    "key_to_native_pixel_ms": 72.84962898120284,
+    "changed": true
+  },
+  {
+    "host_s": 203734.053461204,
+    "key_to_native_pixel_ms": 75.20212102099322,
+    "changed": true
+  },
+  {
+    "host_s": 203734.438562878,
+    "key_to_native_pixel_ms": 108.04371698759496,
+    "changed": true
+  },
+  {
+    "host_s": 203734.866663709,
+    "key_to_native_pixel_ms": 73.14594701165333,
+    "changed": true
+  },
+  {
+    "host_s": 203735.249880097,
+    "key_to_native_pixel_ms": 69.86840601894073,
+    "changed": true
+  },
+  {
+    "host_s": 203735.624975865,
+    "key_to_native_pixel_ms": 71.52329798555002,
+    "changed": true
+  },
+  {
+    "host_s": 203736.003800721,
+    "key_to_native_pixel_ms": 63.46203200519085,
+    "changed": true
+  },
+  {
+    "host_s": 203736.376502276,
+    "key_to_native_pixel_ms": 57.72309401072562,
+    "changed": true
+  },
+  {
+    "host_s": 203736.746183088,
+    "key_to_native_pixel_ms": 252.11708102142438,
+    "changed": true
+  },
+  {
+    "host_s": 203737.305112209,
+    "key_to_native_pixel_ms": 165.61816801549867,
+    "changed": true
+  },
+  {
+    "host_s": 203737.781312113,
+    "key_to_native_pixel_ms": 82.62034901417792,
+    "changed": true
+  },
+  {
+    "host_s": 203738.189849941,
+    "key_to_native_pixel_ms": 91.83555099298246,
+    "changed": true
+  },
+  {
+    "host_s": 203738.596937946,
+    "key_to_native_pixel_ms": 90.42991502792574,
+    "changed": true
+  },
+  {
+    "host_s": 203738.997293395,
+    "key_to_native_pixel_ms": 59.962874016491696,
+    "changed": true
+  },
+  {
+    "host_s": 203739.366082652,
+    "key_to_native_pixel_ms": 67.69403399084695,
+    "changed": true
+  },
+  {
+    "host_s": 203739.745464194,
+    "key_to_native_pixel_ms": 87.23203800036572,
+    "changed": true
+  },
+  {
+    "host_s": 203740.142384841,
+    "key_to_native_pixel_ms": 62.86890999763273,
+    "changed": true
+  },
+  {
+    "host_s": 203740.511091762,
+    "key_to_native_pixel_ms": 65.22623999626376,
+    "changed": true
+  }
+]

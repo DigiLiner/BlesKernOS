@@ -1,0 +1,33 @@
+--- a/kernel/linux/i386_futex.inc
++++ b/kernel/linux/i386_futex.inc
+@@ -101,6 +101,8 @@
+ 
+ int32_t task_linux_futex_wake(uint32_t address,uint32_t count,uint32_t mask,
+                              bool private_key) {
++    int wake_slots[TASK_MAX];
++    uint32_t wake_count=0,running_mask=0;
+     uint32_t key,process,woken=0;
+     if(!syscall_linux_futex_key(address,private_key,&key,&process))return -BK_EFAULT;
+     uint32_t flags=kspin_lock_irqsave(&g_task_table_lock);
+@@ -109,7 +111,21 @@
+         if (t->state!=TASK_SLEEPING || !s || s->futex_key!=key ||
+             s->futex_process!=process || !(s->futex_mask&mask)) continue;
+         linux_wake_locked(t,0);woken++;
++        /* A retired stack can run immediately, as with event-backed IPC.
++         * A waiter still leaving WAIT keeps its stack until the scheduler
++         * completes the handoff; never enqueue that stack from here. */
++        if(t->running_cpu==-1) {
++            t->state=TASK_READY;
++            if(t->queued_cpu<0)wake_slots[wake_count++]=i;
++        } else if(t->running_cpu>=0 && t->running_cpu<32) {
++            running_mask|=1U<<(uint32_t)t->running_cpu;
++        }
+     }
+     kspin_unlock_irqrestore(&g_task_table_lock,flags);
++    if(smp_scheduler_started()) {
++        for(uint32_t i=0;i<wake_count;i++)
++            (void)scheduler_smp_enqueue(wake_slots[i],-1,true);
++        smp_reschedule_mask(running_mask);
++    }
+     return (int32_t)woken;
+ }

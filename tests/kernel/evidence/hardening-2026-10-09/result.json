@@ -1,0 +1,47 @@
+{
+  "environment": "QEMU TCG, VGA std, snapshot disk",
+  "kernel_sha256": "f1de93a58958d87558ab6ee0f4656f0bfbca17167e809abdf0adb01d8d46fd15",
+  "image": "build/kernel-hardening-test.img",
+  "boots": [
+    {
+      "ram_mib": 64,
+      "cpus": 1,
+      "log": "final-64m-1cpu.log",
+      "ring3_ok": true,
+      "vision_ready": true,
+      "panic": false,
+      "observations": [
+        "[RING3:RAM] total=65023 KiB used=43451 KiB free=21571 KiB reserved=36479 KiB",
+        "[RING3] proxy API y retorno a user-space: OK",
+        "[BKBOOT] DESKTOP RELEASED"
+      ]
+    },
+    {
+      "ram_mib": 256,
+      "cpus": 2,
+      "log": "final-256m-2cpu.log",
+      "ring3_ok": true,
+      "vision_ready": true,
+      "panic": false,
+      "observations": [
+        "[RING3:RAM] total=261631 KiB used=82393 KiB free=179237 KiB reserved=36479 KiB",
+        "[RING3] proxy API y retorno a user-space: OK",
+        "[SMP] 2/2 CPU(s) online; timer LAPIC=624819 cuentas/tick"
+      ]
+    },
+    {
+      "ram_mib": 1024,
+      "cpus": 4,
+      "log": "final-1024m-4cpu.log",
+      "ring3_ok": true,
+      "vision_ready": true,
+      "panic": false,
+      "observations": [
+        "[RING3:RAM] total=1048063 KiB used=148057 KiB free=900005 KiB reserved=102015 KiB",
+        "[RING3] proxy API y retorno a user-space: OK",
+        "[SMP] 4/4 CPU(s) online; timer LAPIC=625276 cuentas/tick"
+      ]
+    }
+  ],
+  "scope": "Boot, Vision readiness and Ring 3 API boundaries; no full Wine or hardware compatibility validation"
+}

@@ -1,0 +1,260 @@
+{
+  "date": "2026-10-11",
+  "kernel_sha256": "417807bf9e3fa9aa469b4623b0687849e6a0917e57b58ba2446d14bd7270f850",
+  "stage2_sha256": "0e835286635dae1be0078aef83f6c22030ac272f8c90e73987a72a5dd51ceee2",
+  "guest_tests": [
+    {
+      "evidence": "tests/kernel/evidence/phase12-release-apps/32m-std-smoke/result.json",
+      "result": {
+        "ram_mib": 32,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 10049,
+            "free_kib": 18494,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 10049,
+            "heap_free_kib": 16446,
+            "vm_free_kib": 2048
+          },
+          "IDLE": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 14382,
+            "free_kib": 14161,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 14382,
+            "heap_free_kib": 12113,
+            "vm_free_kib": 2048
+          }
+        },
+        "depths": [
+          8,
+          16,
+          24,
+          32
+        ]
+      },
+      "milestones": [
+        "[RAMTEST:MEM] stage=idle used_kib=14382 free_kib=14161 heap_free_kib=12113 vm_free_kib=2048",
+        "[RAMTEST:MEM] stage=three-apps used_kib=17468 free_kib=11075 heap_free_kib=9027 vm_free_kib=2048"
+      ]
+    },
+    {
+      "evidence": "tests/kernel/evidence/phase12-release-smp/32m-std-smoke-swap-on/result.json",
+      "result": {
+        "ram_mib": 32,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 8946,
+            "free_kib": 19597,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 8942,
+            "heap_free_kib": 17553,
+            "vm_free_kib": 2044
+          },
+          "IDLE": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 13322,
+            "free_kib": 15221,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 13318,
+            "heap_free_kib": 13177,
+            "vm_free_kib": 2044
+          }
+        },
+        "depths": []
+      },
+      "milestones": [
+        "[SWAPTEST] child=0 resident=0 swapped=0 slots_used=0 out=14817 in=11203 faults=13732 errors=0"
+      ]
+    },
+    {
+      "evidence": "tests/kernel/evidence/phase12-release-off/32m-std-smoke-swap-off/result.json",
+      "result": {
+        "ram_mib": 32,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 10049,
+            "free_kib": 1849
+          },
+          "IDLE": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 14380,
+            "free_kib": 14163,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 14380,
+            "heap_free_kib": 12115,
+            "vm_free_kib": 2048
+          }
+        },
+        "depths": []
+      },
+      "milestones": [
+        "[SWAPTEST] child=11 resident=0 swapped=0 slots_used=0 out=0 in=0 faults=498 errors=0"
+      ]
+    },
+    {
+      "evidence": "tests/kernel/evidence/phase12-release-16/16m-std-smoke-swap-on/result.json",
+      "result": {
+        "ram_mib": 16,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 15871,
+            "managed_kib": 12160,
+            "used_kib": 8271,
+            "free_kib": 3888,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 8267,
+            "heap_free_kib": 2868,
+            "vm_free_kib": 1020
+          },
+          "IDLE": {
+            "installed_kib": 15871,
+            "managed_kib": 12160,
+            "used_kib": 10352,
+            "free_kib": 1807,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 10348,
+            "heap_free_kib": 787,
+            "vm_free_kib": 1020
+          }
+        },
+        "depths": []
+      },
+      "milestones": [
+        "[SWAPTEST] child=0 resident=0 swapped=0 slots_used=0 out=15687 in=11817 faults=14090 errors=0"
+      ]
+    },
+    {
+      "evidence": "tests/kernel/evidence/phase12-release-24/24m-std-smoke-swap-on/result.json",
+      "result": {
+        "ram_mib": 24,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 24063,
+            "managed_kib": 20352
+          },
+          "IDLE": {
+            "installed_kib": 24063,
+            "managed_kib": 20352,
+            "used_kib": 11871,
+            "free_kib": 8480,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 11867,
+            "heap_free_kib": 7460,
+            "vm_free_kib": 1020
+          }
+        },
+        "depths": []
+      },
+      "milestones": [
+        "[SWAPTEST] child=0 resident=0 swapped=0 slots_used=0 out=15687 in=11817 faults=14090 errors=0"
+      ]
+    },
+    {
+      "evidence": "tests/kernel/evidence/phase12-release-quake/32m-std-smoke-quake/result.json",
+      "result": {
+        "ram_mib": 32,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 8946,
+            "free_kib": 19597
+          },
+          "IDLE": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 13277,
+            "free_kib": 15266,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 13273,
+            "heap_free_kib": 13222,
+            "vm_free_kib": 2044
+          }
+        },
+        "depths": []
+      },
+      "milestones": [
+        "[QUAKETEST:MEM] heap_used_kib=24143 heap_free_kib=2352 vm_free_kib=2044 swap_enabled=1 swap_used=0"
+      ]
+    },
+    {
+      "evidence": "tests/kernel/evidence/phase12-release-runtime/512m-std-smoke-runtime/result.json",
+      "result": {
+        "ram_mib": 512,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 523775,
+            "managed_kib": 491392,
+            "used_kib": 52942,
+            "free_kib": 43
+          },
+          "IDLE": {
+            "installed_kib": 523775,
+            "managed_kib": 491392,
+            "used_kib": 57318,
+            "free_kib": 434073,
+            "unmanaged_kib": 32383,
+            "heap_used_kib": 57058,
+            "heap_free_kib": 188637,
+            "vm_free_kib": 245436
+          }
+        },
+        "depths": []
+      },
+      "milestones": [
+        "[RUNTIMETEST] DONE result=PASS"
+      ]
+    }
+  ],
+  "host_tests_passed": [
+    "test_heap_realloc.py",
+    "test_stdio_stream.py",
+    "test_shell_overlays.py",
+    "test_memory_accounting.py",
+    "test_kernel_reserve.py",
+    "test_paging_map.py",
+    "test_paging_tlb.py",
+    "test_swap_pager.py",
+    "test_native_api_abi.py",
+    "test_upcall_cleanup.py",
+    "test_vision_lifecycle.py"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "image": "build/bleskernos-wine-games32.img",
+  "image_bytes": 805306368,
+  "image_sha256": "15d4e579ef4be7afaac825846110b8d1dee2dc5efc6a98025cdca07e3a3c8cf0",
+  "base": "build/bleskernos-travelmate250.img",
+  "base_sha256": "fafbb5ff591762e1f0395dd34894955dec33f7865c93c46ab3fd6036b51aef1d",
+  "kernel_sha256": "35eb85ede891df3d0075f6088ff743bfdbf30d9eaf69a2944fb3b00d18281d9d",
+  "payload_sha256": {
+    "/WINEGATE/lib/libGL.so.1": "81daf97ff08c4a88090bdecbbb8845ab31c969ec6e00c4bc8f5b8d3f61c31779",
+    "/WINEGATE/lib/libbkvirgl.so.8": "d88df12b59f0c037a4304cca176e921e4e86c4720a0e79343d130287d62fe787",
+    "/WINEGATE/lib/libstdc++.so.6": "f1de9bbfb3c06941568fa4180b8ca89016f025d3b01de77743a7db7a7f6ea46b",
+    "/WINEGATE/lib/libgcc_s.so.1": "9ada4f163dcfd839c26b78806d2b25a6b6322706af217228e423ff475e387777",
+    "/WINEGATE/lib/libexpat.so.1": "0586c80dc630b58c80699bedd0350020dd8112777581cec81beb2bcca2e44bbc",
+    "/WINEGATE/lib/libz.so.1": "216f8fe722d4e7abad36875c3a9d9063112a21ca5620dfe352e081203962a563"
+  },
+  "architecture": "i386, PE32",
+  "test_fixtures_in_production_image": false
+}

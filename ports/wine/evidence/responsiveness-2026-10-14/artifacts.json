@@ -1,0 +1,14 @@
+{
+  "sha256": {
+    "build/bleskernos-wine-startup.img": "58bffb0c9f51f0a2272ff608449750319f0c18df0e3e8e1bfcce90f778595e62",
+    "build/bleskernos-wine-performance.img": "a9ae2b555eb8eb4bff76fc0f652fcfc22eb8f183b21a2bfba1dc4ac5062bdca2",
+    "build/kernel.bin": "494ca74a89ee31c13edbb147d7f3e66bd141dc7bb041c073ccc93e88690863ee",
+    "build/kernel.elf": "34abb1232ec7bafbf98eed58fe73b0d11369bfd31d1f71d21d03f87020f8cd29",
+    "build/stage2.bin": "a6fd777a48459bb33798e315898bed11e8aa83fdb6a80420dd5999d31dfc44f2"
+  },
+  "filesystem_identical": true,
+  "mbr_identical": true,
+  "changes": "kernel and stage2 boot area only",
+  "kernel_bytes": 837676,
+  "stage2_bytes": 4096
+}

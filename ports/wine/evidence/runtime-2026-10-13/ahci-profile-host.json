@@ -1,0 +1,3259 @@
+{
+  "command": [
+    "qemu-system-i386",
+    "-accel",
+    "kvm",
+    "-cpu",
+    "pentium3",
+    "-smp",
+    "2",
+    "-m",
+    "1536",
+    "-drive",
+    "file=/tmp/blesk-wine-diagnosis-20261013/run2/test.img,format=raw,if=none,id=osdisk",
+    "-device",
+    "ich9-ahci,id=ahci",
+    "-device",
+    "ide-hd,drive=osdisk,bus=ahci.0",
+    "-vga",
+    "vmware",
+    "-display",
+    "none",
+    "-serial",
+    "file:/tmp/blesk-wine-diagnosis-20261013/run2/serial.log",
+    "-qmp",
+    "unix:/tmp/blesk-wine-diagnosis-20261013/run2/qmp.sock,server=on,wait=off",
+    "-no-reboot",
+    "-no-shutdown"
+  ],
+  "events": [
+    {
+      "host_s": 0.45124283301993273,
+      "line": "[PAGING] activo: kernel supervisor, pagina cero"
+    },
+    {
+      "host_s": 0.4615093930042349,
+      "line": "guard, CR0.WP"
+    },
+    {
+      "host_s": 0.4615093930042349,
+      "line": "[MM] E820: entradas=7 util=1572347 KiB top=1572732 KiB"
+    },
+    {
+      "host_s": 0.47172491101082414,
+      "line": "  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000"
+    },
+    {
+      "host_s": 0.47172491101082414,
+      "line": "  [MM] RAM usable: 1536 MB"
+    },
+    {
+      "host_s": 0.47172491101082414,
+      "line": "  [MM] Heap dinamico: 0x2000000 - 0x1ffdf000 (491388 KB)"
+    },
+    {
+      "host_s": 0.48191152900108136,
+      "line": ""
+    },
+    {
+      "host_s": 0.48191152900108136,
+      "line": "  [MM] VM frames: 0x1ffdf000 - 0x5ffdf000 (1048576 KiB, 262144 paginas)"
+    },
+    {
+      "host_s": 0.48191152900108136,
+      "line": "  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)"
+    },
+    {
+      "host_s": 0.48191152900108136,
+      "line": "  [MM] Vista PE fi"
+    },
+    {
+      "host_s": 0.4924495820014272,
+      "line": "ja: 0x400000 - 0x2000000"
+    },
+    {
+      "host_s": 0.4924495820014272,
+      "line": "[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2000000-0x1ffdf000"
+    },
+    {
+      "host_s": 0.4924495820014272,
+      "line": "[COMPAT] perfil=normal RAM_top=1572732 KiB heap=4"
+    },
+    {
+      "host_s": 0.5026643040182535,
+      "line": "91388 KiB tareas=128 CPU=fam6/mod7 GUI=30FPS TIMER=100Hz"
+    },
+    {
+      "host_s": 0.5026643040182535,
+      "line": "[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0"
+    },
+    {
+      "host_s": 0.5026643040182535,
+      "line": "[GFX:TRACE] VESA bootinfo presente"
+    },
+    {
+      "host_s": 0.840532014000928,
+      "line": "pero no hay driver registrado"
+    },
+    {
+      "host_s": 0.840532014000928,
+      "line": "[GFX:EARLY] BIOS LFB 800x600x32 pitch=3200 fb=0xfd000000"
+    },
+    {
+      "host_s": 0.840532014000928,
+      "line": "[BKBOOT t=0] STARTING KERNEL"
+    },
+    {
+      "host_s": 0.840532014000928,
+      "line": "[BKBOOT t=0] MEMORY MANAGER"
+    },
+    {
+      "host_s": 0.840532014000928,
+      "line": "[TASK] FPU context=FXSAVE SSE=1"
+    },
+    {
+      "host_s": 0.840532014000928,
+      "line": "[BKBOOT t=0] TASK SYSTEM"
+    },
+    {
+      "host_s": 0.840532014000928,
+      "line": "[BKBOOT t=0] INTERRUPTS READY"
+    },
+    {
+      "host_s": 0.840532014000928,
+      "line": "[BKBOOT t=0] INPUT DEVICES"
+    },
+    {
+      "host_s": 0.840532014000928,
+      "line": "  [PCI] 7 dispositivos detectados"
+    },
+    {
+      "host_s": 0.840532014000928,
+      "line": "  [LPT] LPT1 base=0x0378 status=0xD9 li"
+    },
+    {
+      "host_s": 0.8518938840134069,
+      "line": "sto"
+    },
+    {
+      "host_s": 2.571893854008522,
+      "line": "[ATA:PROBE] io=0x1f0 slave=0 ausente (status=0x0)"
+    },
+    {
+      "host_s": 2.571893854008522,
+      "line": "[ATA:PROBE] io=0x1f0 slave=1 ausente (status=0x0)"
+    },
+    {
+      "host_s": 2.571893854008522,
+      "line": "[ATA:PROBE] io=0x170 slave=0 ausente (status=0x0)"
+    },
+    {
+      "host_s": 2.571893854008522,
+      "line": "[ATA:PROBE] io=0x170 slave=1 ausente (status=0x0)"
+    },
+    {
+      "host_s": 4.946886578021804,
+      "line": "  [ATA] canales IDE normalizados despues del probe"
+    },
+    {
+      "host_s": 4.946886578021804,
+      "line": "[AHCI] PCI 0x0:0x4.0x0 ABAR=0xfebb0000 ports=0x3f"
+    },
+    {
+      "host_s": 4.946886578021804,
+      "line": "[AHCI] ahci0: port=0 sectors=1572864 DMA ready"
+    },
+    {
+      "host_s": 4.946886578021804,
+      "line": "[BKBOOT t=420] STORAGE DRIVERS"
+    },
+    {
+      "host_s": 4.946886578021804,
+      "line": "[BKBOOT t=420] MOUNTING FILESYSTEM"
+    },
+    {
+      "host_s": 4.946886578021804,
+      "line": "[BKBOOT t=422] F8: RECOVERY MODE (2 SEC)"
+    },
+    {
+      "host_s": 4.946886578021804,
+      "line": "[BOOT] Pulse F8 para entrar a recovery sin Vision ni servicios"
+    },
+    {
+      "host_s": 7.250896987010492,
+      "line": "[VFS] entrando a vfs_mount_default"
+    },
+    {
+      "host_s": 10.254836303007323,
+      "line": "[VFS] block_count=1"
+    },
+    {
+      "host_s": 10.254836303007323,
+      "line": "[FAT] entrando a fat_mount_default"
+    },
+    {
+      "host_s": 10.254836303007323,
+      "line": "[FAT] dispositivos registrados: 1"
+    },
+    {
+      "host_s": 10.254836303007323,
+      "line": "[FAT] dev[0]=ahci0 tipo=6 sectores=1572864"
+    },
+    {
+      "host_s": 10.254836303007323,
+      "line": "Intentando montar ahci0..."
+    },
+    {
+      "host_s": 10.254836303007323,
+      "line": "fat_set_active(ahci0)"
+    },
+    {
+      "host_s": 10.254836303007323,
+      "line": "No es particion, buscando ahci0"
+    },
+    {
+      "host_s": 10.933041462005349,
+      "line": "Dispositivo encontrado"
+    },
+    {
+      "host_s": 11.627061378007056,
+      "line": "[BFS4:CACHE] slots=2048 bytes=8429568"
+    },
+    {
+      "host_s": 11.627061378007056,
+      "line": "fat_try_mount_device OK"
+    },
+    {
+      "host_s": 11.627061378007056,
+      "line": "fat_set_active OK"
+    },
+    {
+      "host_s": 11.627061378007056,
+      "line": "Montado ahci0 OK"
+    },
+    {
+      "host_s": 11.627061378007056,
+      "line": "[VFS] /TEMP listo"
+    },
+    {
+      "host_s": 13.328136854019249,
+      "line": "[RING3] no se pudo cargar autoprueba: no se pudo leer el programa"
+    },
+    {
+      "host_s": 13.876712839002721,
+      "line": "[DVR] Buscando modul"
+    },
+    {
+      "host_s": 13.889320792019134,
+      "line": "os en /SYSTEM/DRIVERS"
+    },
+    {
+      "host_s": 13.956540650018724,
+      "line": "[PERF:ELF] entry="
+    },
+    {
+      "host_s": 14.739531002007425,
+      "line": "bleskernos_driver_query address=0x2cce0bc image=0x2ccd8a0"
+    },
+    {
+      "host_s": 14.739531002007425,
+      "line": "[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 14.739531002007425,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2cd1fb5 image=0x2cd1000"
+    },
+    {
+      "host_s": 14.739531002007425,
+      "line": "[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 14.924893151008291,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2cdc5c6 image=0x2cd7060"
+    },
+    {
+      "host_s": 14.947997388022486,
+      "line": "[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2"
+    },
+    {
+      "host_s": 14.988802273001056,
+      "line": "[ATIR128:TRACE] PCI scan count=7 target=1002:4C46"
+    },
+    {
+      "host_s": 15.01988758702646,
+      "line": "[ATIR128:TRACE] PCI target no utilizable"
+    },
+    {
+      "host_s": 15.050412518001394,
+      "line": "[ATIR128.DVR]"
+    },
+    {
+      "host_s": 15.061885918024927,
+      "line": "dispositivo ATI 1002:4C46 no detectado"
+    },
+    {
+      "host_s": 15.092438827006845,
+      "line": "[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 15.123073014023248,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query ad"
+    },
+    {
+      "host_s": 15.133279765024781,
+      "line": "dress=0x2cd6d2d image=0x2cd3ac0"
+    },
+    {
+      "host_s": 15.164044361008564,
+      "line": "[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp"
+    },
+    {
+      "host_s": 15.19522400002461,
+      "line": "[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)"
+    },
+    {
+      "host_s": 15.235904473025585,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2cccc2a image=0x2ccc930"
+    },
+    {
+      "host_s": 15.50637443701271,
+      "line": "[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)"
+    },
+    {
+      "host_s": 15.50637443701271,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2cd0a30 image=0x2ccfac0"
+    },
+    {
+      "host_s": 15.50637443701271,
+      "line": "[INTELGMA.DVR] Intel GMA 915/945/965 no detectada"
+    },
+    {
+      "host_s": 15.50637443701271,
+      "line": "[DVR] /SY"
+    },
+    {
+      "host_s": 15.516740860999562,
+      "line": "STEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 15.54834828901221,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2ccfe89 image=0x2ccf2"
+    },
+    {
+      "host_s": 15.558557557000313,
+      "line": "00"
+    },
+    {
+      "host_s": 15.589185986027587,
+      "line": "[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)"
+    },
+    {
+      "host_s": 15.621231032011565,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2ce1bee"
+    },
+    {
+      "host_s": 15.63142837601481,
+      "line": " image=0x2ce0640"
+    },
+    {
+      "host_s": 15.661969010019675,
+      "line": "[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 15.69251083600102,
+      "line": "[PERF:ELF] entry=bleskern"
+    },
+    {
+      "host_s": 15.702724312024657,
+      "line": "os_driver_query address=0x2ce5fca image=0x2ce2f00"
+    },
+    {
+      "host_s": 15.733933730021818,
+      "line": "  [NET] Ethernet/ARP/IPv4/ICMP/U"
+    },
+    {
+      "host_s": 15.74464718301897,
+      "line": "DP/DHCP/DNS/TCP/HTTP instalado"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2ccc4d9 image=0x2ccbee0"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "  [MOUSE] PS/2 id=0 packet=3"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2cce809 image=0x2cce1e0"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2d10b1e image=0x2d10000"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "  [SND] PC speaker activo, SB16 no detectada"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2d82e3e image=0x2d81d00"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2d45258 image=0x2d433e0"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[DVR] /SYSTEM/DRIVERS/USBCLASS.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2cd0aab image=0x2cd0080"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2d4ac8f image=0x2d433e0"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2cfbff7 image=0x2cf9640"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[GFX:TRACE] REGISTER request ops=0x2cfc0e0 abi=2 size=100 name_ptr=0x2cfc086 priority=200 caps=0x4ff"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[GFX:TRACE] REGISTER SELECT name=vmware_svga priority=200 previous=(ninguno) previous_priority=0"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[DVR] vmware_svga: cargado (/SYSTEM/DRIVERS/VMWARESVGA.DVR)"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[PERF:ELF] entry=bleskernos_driver_query address=0x2cdfc85 image=0x2cdbc40"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[SVGA3D.DVR] extension 3D registrada; activacion por capacidades"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[DVR] 10 modulo(s) cargado(s)"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[GFX:TRACE] INIT boot_magic=0x31495547 registered=vmware_svga ops=0x2cfc0e0"
+    },
+    {
+      "host_s": 17.336961614026222,
+      "line": "[GFX:TRACE] ACTIVATE call name=vmware_svga preferred=800x600"
+    },
+    {
+      "host_s": 18.142889611015562,
+      "line": "[SVGA:MODE] begin 800x600 active=0 generation=1"
+    },
+    {
+      "host_s": 18.142889611015562,
+      "line": "[SVGA:MODE] OK 800x600x32 pitch=3200 fb=0xfd000000 generation=2"
+    },
+    {
+      "host_s": 18.142889611015562,
+      "line": "[SVGA.DVR] SVGA3D preflight guest=0x20001 rb=0x0 memregs=0 reserved=4 modern=0"
+    },
+    {
+      "host_s": 18.142889611015562,
+      "line": "[SVGA.DVR] VMware SVGA-II ID=0x90000002 IO=0xc070 FB=0xfd000000 FIFO=0xfe000000"
+    },
+    {
+      "host_s": 18.142889611015562,
+      "line": "[SVGA.DVR] 800x600x32 pitch=3200 caps=0x3 fifo=0x0 GMR=fallback"
+    },
+    {
+      "host_s": 18.142889611015562,
+      "line": "[GFX:TRACE] ACTIVATE OK name=vmware_svga mode=800x600x32 pitch=3200 fb=0xfd00000"
+    },
+    {
+      "host_s": 19.197046381013934,
+      "line": "0"
+    },
+    {
+      "host_s": 19.197046381013934,
+      "line": "[GFXRES] boot icons 9/9 precargados"
+    },
+    {
+      "host_s": 19.197046381013934,
+      "line": "[BKBOOT t=1779] LOADING PRINT SERVICE"
+    },
+    {
+      "host_s": 19.197046381013934,
+      "line": "[PERF:ELF] entry=bleskernos_program_main address=0x2d4c00c image=0x2d48c60"
+    },
+    {
+      "host_s": 19.197046381013934,
+      "line": "[PRINT] spooler iniciado en segundo plano, pid=3"
+    },
+    {
+      "host_s": 19.197046381013934,
+      "line": "[BKBOOT t=1791] STARTING VISION"
+    },
+    {
+      "host_s": 20.761921795026865,
+      "line": ".[PRINT] PrintSpoo[BKBOOT t=2002] VISION: LOADING ELF"
+    },
+    {
+      "host_s": 20.761921795026865,
+      "line": "l Ring 3 listo"
+    },
+    {
+      "host_s": 21.050014182023006,
+      "line": "[PERF:ELF] entry=bleskernos_program_main address=0x2f174e5 image=0x2f050e0"
+    },
+    {
+      "host_s": 21.0613922830089,
+      "line": ""
+    },
+    {
+      "host_s": 21.308071667008335,
+      "line": "[VISION] servicio lanzado pid=4"
+    },
+    {
+      "host_s": 22.35060586000327,
+      "line": "[BKBOOT t=2076] VISION: ENTER RING3"
+    },
+    {
+      "host_s": 22.35060586000327,
+      "line": "[VISION] ownership grafico adquirido pid=4"
+    },
+    {
+      "host_s": 22.35060586000327,
+      "line": "[BKBOOT t=2082] VISION: GRAPHICS ENGINE"
+    },
+    {
+      "host_s": 22.35060586000327,
+      "line": "[BKBOOT t=2086] PREPARING DESKTOP"
+    },
+    {
+      "host_s": 22.797254438017262,
+      "line": "[BKBOOT t=2212] VISION: ENGINE READY"
+    },
+    {
+      "host_s": 22.797254438017262,
+      "line": "[BKBOOT t=2216] VISION: DESKTOP"
+    },
+    {
+      "host_s": 22.797254438017262,
+      "line": "[BKBOOT t=2218] LOADING DESKTOP ICONS"
+    },
+    {
+      "host_s": 22.797254438017262,
+      "line": "[BKBOOT t=2219] ICONPAK preload begin"
+    },
+    {
+      "host_s": 22.797254438017262,
+      "line": "[BKBOOT t=2219] LOADING ICON CACHE"
+    },
+    {
+      "host_s": 22.807541876012692,
+      "line": "[BKBOOT t=2222] ICONPAK preload end"
+    },
+    {
+      "host_s": 22.807541876012692,
+      "line": "[WALLPAPER] BMP1 OK: /SYSTEM/WALLP"
+    },
+    {
+      "host_s": 22.8179120470013,
+      "line": "APERS/CLASSIC.BMP 50x50 -> 50x50 modo=2"
+    },
+    {
+      "host_s": 22.883037480001803,
+      "line": "[BKBOOT t=2228] DESKMANAGER read desktop config"
+    },
+    {
+      "host_s": 22.883037480001803,
+      "line": "[BKBOOT t=2228] DESKMANAGER desktop config loaded"
+    },
+    {
+      "host_s": 22.883037480001803,
+      "line": "[BKBOOT t=2228] VISION: DESKBAR"
+    },
+    {
+      "host_s": 22.883037480001803,
+      "line": "[DESKBAR] alloc state bytes=17116"
+    },
+    {
+      "host_s": 25.79418699501548,
+      "line": "[DESKBAR] reset state"
+    },
+    {
+      "host_s": 25.79418699501548,
+      "line": "[DESKBAR] load clock preferences"
+    },
+    {
+      "host_s": 26.664308191015152,
+      "line": "[VISION:WAIT] pid=4 elapsed=5 ready=0"
+    },
+    {
+      "host_s": 26.72774291501264,
+      "line": "[DESKBAR] load React95 launcher icons"
+    },
+    {
+      "host_s": 26.779890351026552,
+      "line": "[DESKBAR] launcher Files / WindowsExplorer OK"
+    },
+    {
+      "host_s": 26.810400912014302,
+      "line": "[DESKBAR] launcher Editor / Notepad OK"
+    },
+    {
+      "host_s": 26.961566536017926,
+      "line": "[DESKBAR] launcher Web / Globe OK"
+    },
+    {
+      "host_s": 26.961566536017926,
+      "line": "[DESKBAR] launcher Paint / Mspaint OK"
+    },
+    {
+      "host_s": 26.992100986011792,
+      "line": "[DESKBAR] launcher Calc / Calculator OK"
+    },
+    {
+      "host_s": 27.02298442402389,
+      "line": "[DESKBAR] launcher Shell / MsDos OK"
+    },
+    {
+      "host_s": 27.056569024018245,
+      "line": "[DESKBAR] launcher Mi"
+    },
+    {
+      "host_s": 27.06676542101195,
+      "line": "dAmp / MediaAudio OK"
+    },
+    {
+      "host_s": 27.108687927015126,
+      "line": "[DESKBAR] launcher Image / Camera OK"
+    },
+    {
+      "host_s": 27.140919277007924,
+      "line": "[DESKBAR] launcher Processes /"
+    },
+    {
+      "host_s": 27.151188333024038,
+      "line": "Taskman100 OK"
+    },
+    {
+      "host_s": 27.26479603702319,
+      "line": "[DESKBAR] launcher Config / Settings OK"
+    },
+    {
+      "host_s": 28.063777810020838,
+      "line": "[DESKBAR] icon 1/8 InfoBubble begin"
+    },
+    {
+      "host_s": 28.063777810020838,
+      "line": "[DESKBAR] icon 1 InfoBubble OK"
+    },
+    {
+      "host_s": 28.063777810020838,
+      "line": "[DESKBAR] icon 2/8 Runonce106 begin"
+    },
+    {
+      "host_s": 28.403883961000247,
+      "line": "[DESKBAR] icon 2 Runonce106 OK"
+    },
+    {
+      "host_s": 28.403883961000247,
+      "line": "[DESKBAR] icon 3/8 Computer begin"
+    },
+    {
+      "host_s": 28.403883961000247,
+      "line": "[DESKBAR] icon 3 Computer OK"
+    },
+    {
+      "host_s": 28.403883961000247,
+      "line": "[DESKBAR] icon 4/8 FolderExe begin"
+    },
+    {
+      "host_s": 28.43440567702055,
+      "line": "[DESKBAR] icon 4 FolderExe OK"
+    },
+    {
+      "host_s": 28.464889484021114,
+      "line": "[DESKBAR] ico"
+    },
+    {
+      "host_s": 28.47508140001446,
+      "line": "n 5/8 FileText begin"
+    },
+    {
+      "host_s": 28.507090401020832,
+      "line": "[DESKBAR] icon 5"
+    },
+    {
+      "host_s": 28.517284507019212,
+      "line": " FileText OK"
+    },
+    {
+      "host_s": 28.549042689002817,
+      "line": "[DESKBAR] icon 6/8 Folder begin"
+    },
+    {
+      "host_s": 28.829516986006638,
+      "line": "[DESKBAR] icon 6 Folder OK"
+    },
+    {
+      "host_s": 28.829516986006638,
+      "line": "[DESKBAR] icon 7/8 Settings begin"
+    },
+    {
+      "host_s": 28.829516986006638,
+      "line": "[DESKBAR] icon 7 Settings OK"
+    },
+    {
+      "host_s": 28.829516986006638,
+      "line": "[DESKBAR] icon 8/8 PowerOff begin"
+    },
+    {
+      "host_s": 28.829516986006638,
+      "line": "[DESKBAR] icon 8 PowerOff OK"
+    },
+    {
+      "host_s": 28.829516986006638,
+      "line": "[DESKBAR] icon Folder begin"
+    },
+    {
+      "host_s": 28.839729132014327,
+      "line": "[DESKBAR] icon F"
+    },
+    {
+      "host_s": 28.849894802027848,
+      "line": "older OK"
+    },
+    {
+      "host_s": 28.90205388100003,
+      "line": "["
+    },
+    {
+      "host_s": 28.912254119000863,
+      "line": "DESKBAR] icon Appwiz1500 begin"
+    },
+    {
+      "host_s": 28.952888076019008,
+      "line": "[DESKBAR] icon Appwiz1500 OK"
+    },
+    {
+      "host_s": 28.984822331025498,
+      "line": "[DESKBAR] icon"
+    },
+    {
+      "host_s": 28.984822331025498,
+      "line": "F"
+    },
+    {
+      "host_s": 28.995386199007044,
+      "line": "ileText begin"
+    },
+    {
+      "host_s": 29.028081755008316,
+      "line": "[DESKBAR] icon F"
+    },
+    {
+      "host_s": 29.038282746012555,
+      "line": "ileText OK"
+    },
+    {
+      "host_s": 29.068798860011157,
+      "line": "[DESKB"
+    },
+    {
+      "host_s": 29.079014657007065,
+      "line": "AR] embedded in Vision desktop layer"
+    },
+    {
+      "host_s": 29.360895547026303,
+      "line": ""
+    },
+    {
+      "host_s": 29.360895547026303,
+      "line": "[BKBOOT t=2858] VISION: SCREENSAVER"
+    },
+    {
+      "host_s": 29.99888485102565,
+      "line": "[BKBOOT t=2913] VISION: START SHELL"
+    },
+    {
+      "host_s": 29.99888485102565,
+      "line": "[BKBOOT t=2922] VISION: READY"
+    },
+    {
+      "host_s": 29.99888485102565,
+      "line": "[VISION] READY: motor, [BKBOOT t=2925] kernel_main: Vision READY"
+    },
+    {
+      "host_s": 29.99888485102565,
+      "line": "[RAM:DESKTOP] installed_kib=1572347 managed_kib=1441660 uescritorio y compositor bajo Vision"
+    },
+    {
+      "host_s": 30.009098104026634,
+      "line": "sed_kib=18097 free_kib=1423562 unmanaged_kib=130686 heap_used_k"
+    },
+    {
+      "host_s": 30.01932007400319,
+      "line": "ib=18029 heap_fre"
+    },
+    {
+      "host_s": 30.073601486015832,
+      "line": "e_kib=440590 vm_free_kib=982972"
+    },
+    {
+      "host_s": 30.276128686004085,
+      "line": "[SMP] escritorio listo; iniciando procesadores secundarios"
+    },
+    {
+      "host_s": 30.28671691400814,
+      "line": "[VISION:SAVER] Ring 3 worker started"
+    },
+    {
+      "host_s": 30.454276283009676,
+      "line": "[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000"
+    },
+    {
+      "host_s": 30.48523004402523,
+      "line": "[SMP] iniciando CPU1 APIC=1..."
+    },
+    {
+      "host_s": 30.549187495023943,
+      "line": "[SM"
+    },
+    {
+      "host_s": 30.562883550010156,
+      "line": "P] CPU1 online"
+    },
+    {
+      "host_s": 31.03983776300447,
+      "line": "[SMP] 2/2 CPU(s) online; timer LAPIC=587077 cuentas/tick"
+    },
+    {
+      "host_s": 31.03983776300447,
+      "line": "[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (123 slots libres)"
+    },
+    {
+      "host_s": 31.03983776300447,
+      "line": "[SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI"
+    },
+    {
+      "host_s": 31.03983776300447,
+      "line": "[BKBOOT] VISION ONLINE pid=4"
+    },
+    {
+      "host_s": 31.051886532019125,
+      "line": "[WINE:BOOT] deferred until Windows program launch"
+    },
+    {
+      "host_s": 31.082453887007432,
+      "line": "[BKBOOT t=3050] DISABLE SPLASH / ENTER GUI"
+    },
+    {
+      "host_s": 31.082453887007432,
+      "line": "[BKBOOT] DESKTOP RELEASED"
+    },
+    {
+      "host_s": 31.388379172014538,
+      "line": "[BKBOOT] QUEUE STARTUP SOUND"
+    },
+    {
+      "host_s": 31.388379172014538,
+      "line": "[VISION:ENGINE] compositor y ventanas CPL=3"
+    },
+    {
+      "host_s": 34.239283599017654,
+      "line": "[GATE:STAGE2] START /WINEGATE/bin/wine-launch.ELF"
+    },
+    {
+      "host_s": 34.32086174900178,
+      "line": "[WINE:DESKTOP] rootless st"
+    },
+    {
+      "host_s": 34.332380464009475,
+      "line": "art /SYSTEM/WINE/windows/system32/notepad.exe"
+    },
+    {
+      "host_s": 34.86574801200186,
+      "line": "_XSERVTransTransNoListen: unable to find transport: tcp"
+    },
+    {
+      "host_s": 35.00742931300192,
+      "line": "[WINE:DESKTOP] TinyX rootless ready on"
+    },
+    {
+      "host_s": 35.01988127300865,
+      "line": " :18 pid=9"
+    },
+    {
+      "host_s": 35.13687856600154,
+      "line": "[WINE:"
+    },
+    {
+      "host_s": 35.477238502004184,
+      "line": "TIME] x-ready ms=700"
+    },
+    {
+      "host_s": 36.0952944450255,
+      "line": "[WI"
+    },
+    {
+      "host_s": 36.10552101000212,
+      "line": "NE:STAGE] PREFIX exclusive lock acquired"
+    },
+    {
+      "host_s": 36.12579893201473,
+      "line": "[WI"
+    },
+    {
+      "host_s": 36.135939187020995,
+      "line": "NE:STAGE] PREFIX ready marker=1"
+    },
+    {
+      "host_s": 36.27343759601354,
+      "line": "[WINE:STAGE] THEME ready marker=1"
+    },
+    {
+      "host_s": 36.27343759601354,
+      "line": "[WINE:TIME] prefix-ready ms=1860 delta_ms=1160"
+    },
+    {
+      "host_s": 36.2853381880268,
+      "line": "[[WINE:TIME] theme-ready ms=1900 delta_ms=40"
+    },
+    {
+      "host_s": 36.31587404201855,
+      "line": "[WRIANME::ISDTLAEG]E ]i nTsAtRaGlElTe db_ekgiibn= 1p5a7t"
+    },
+    {
+      "host_s": 36.31587404201855,
+      "line": "h"
+    },
+    {
+      "host_s": 36.32686033201753,
+      "line": "=2/3S4Y7S TmEaMn/aWgIeN"
+    },
+    {
+      "host_s": 36.34705641801702,
+      "line": "dE_/kwiibn=d1o4w4s1/6s6y0st eums3e2d/_nkoitbe=p3a1d1.5e5x fer ekei_nkd=exei"
+    },
+    {
+      "host_s": 36.3773340510088,
+      "line": "b[=W1I4N1E0:5T0I4M Eu]n mtaanraggeetd-be_gkiinb =ms1=310968806"
+    },
+    {
+      "host_s": 36.40762663501664,
+      "line": " heap_used_kib=25347 heap_free_kib=433272 vm_free_kib=977232"
+    },
+    {
+      "host_s": 36.42785610401188,
+      "line": "[WINE:STAGE] TARGET spawned p"
+    },
+    {
+      "host_s": 36.43797401402844,
+      "line": "id=11"
+    },
+    {
+      "host_s": 36.45815921900794,
+      "line": "[WINE:TIME] target-spawned ms=2090 delta_ms=110"
+    },
+    {
+      "host_s": 36.61655265302397,
+      "line": "[VFS:CWD] resolve FAIL full=/tmp/.wine-0/server-0-1c inner=/tmp/.wine-0/server-0-1c device=ahci0"
+    },
+    {
+      "host_s": 41.36617461001151,
+      "line": "[PERF] 40s cpu=83% tsc=1094MHz gfx=vmware_svga 800x600x32 caps=0xd3"
+    },
+    {
+      "host_s": 41.36617461001151,
+      "line": "[PERF:GUI] loop=352 ev=0 mouse=0 frame=13 fps=0 full=6 cursor=0 hwcur=0 gpu=0 dirty=46%"
+    },
+    {
+      "host_s": 41.36617461001151,
+      "line": "[PERF:TIME] frame avg=7584"
+    },
+    {
+      "host_s": 41.376372269005515,
+      "line": "5us max=827616us share=2% compose=2% present=0% gpu=0%"
+    },
+    {
+      "host_s": 41.40736204001587,
+      "line": ""
+    },
+    {
+      "host_s": 41.4382856360171,
+      "line": "[PERF:SCHED] tick=5066 switch=531849 qfast=0 blocked=1388 sched=3% x87=0% avg=0u"
+    },
+    {
+      "host_s": 41.46900188000291,
+      "line": "s max=12864us"
+    },
+    {
+      "host_s": 41.501256773015484,
+      "line": "[PERF:3D] draw calls=0"
+    },
+    {
+      "host_s": 41.511485426017316,
+      "line": " avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 41.53183319501113,
+      "line": "[PERF:3D] upload calls=0 avg"
+    },
+    {
+      "host_s": 41.54203290402074,
+      "line": "_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 41.56248745502671,
+      "line": "[PERF:3D] readback calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 41.59300154601806,
+      "line": "[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 41.62389756902121,
+      "line": "[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 41.654360726010054,
+      "line": "[PERF:3D] publish calls=0 avg_us=0 max_us"
+    },
+    {
+      "host_s": 41.66455405802117,
+      "line": "=0 share=0%"
+    },
+    {
+      "host_s": 41.68495789699955,
+      "line": "[PERF:PC] tid=1 pc=0x11a700 hits=825 t"
+    },
+    {
+      "host_s": 41.8291065840167,
+      "line": "icks=5066 collisions=855"
+    },
+    {
+      "host_s": 41.8291065840167,
+      "line": "[PERF:PC] tid=1 pc=0x181880 hits=373 ticks=5066 collisions=855"
+    },
+    {
+      "host_s": 41.8291065840167,
+      "line": "[PERF:PC] tid=1 pc=0x125200 hits=322 ticks=5066 collisions=855"
+    },
+    {
+      "host_s": 41.8291065840167,
+      "line": "[PERF:PC] tid=4 pc=0x125200 hits=314 ticks=5066 collisions=855"
+    },
+    {
+      "host_s": 41.85960016102763,
+      "line": "[PERF:PC] tid=16 pc=0x183300 hits=180 ticks=5066 collisions=855"
+    },
+    {
+      "host_s": 41.890052653005114,
+      "line": "[PERF:PC] tid=16 pc=0x183280 hits=171 ticks=5066 collisions=855"
+    },
+    {
+      "host_s": 41.95155516601517,
+      "line": "[PERF:PC] tid=1 pc=0x183300 hits=160 ticks=5066 collisions=855"
+    },
+    {
+      "host_s": 41.95155516601517,
+      "line": "[PERF:PC] tid=4 pc=0x11a700 hits=102 ticks=5066 collisions=855"
+    },
+    {
+      "host_s": 41.98283567102044,
+      "line": "[PERF:IO] ahci R=2584/30478sec avg=1651us max=661176us err=0 W=1228/5969sec avg="
+    },
+    {
+      "host_s": 42.01388088101521,
+      "line": "11282us max=691355us err=0"
+    },
+    {
+      "host_s": 42.04514176401426,
+      "line": "[PERF:IRQ] 0=4065 1=1 3=0 4=0 6=0 12=1 14=3 15=0"
+    },
+    {
+      "host_s": 42.09762999101076,
+      "line": "[PERF:MEM] used=30390K free=428229K blocks=426 tasks=11"
+    },
+    {
+      "host_s": 42.141934175015194,
+      "line": "[PERF:TASK] pid=1 kernel-core S cpu=39% ticks=2008 mem=64K"
+    },
+    {
+      "host_s": 42.152899503009394,
+      "line": "[PERF:HINT] E/S lenta o espera del controlador: max=691355us"
+    },
+    {
+      "host_s": 42.190742566017434,
+      "line": "[TASK:DUMP2] begin reason=wine-runtime-measurement tick=4160 cpus=2"
+    },
+    {
+      "host_s": 42.38867458500317,
+      "line": "[TASK:DUMP2] cpu=0 current_slot=6 deferred=5 rq_count=2 rq=1,3"
+    },
+    {
+      "host_s": 42.38867458500317,
+      "line": "[TASK:DUMP2] cpu=1 current_slot=12 deferred=-1 rq_count=3 rq=9,10,7"
+    },
+    {
+      "host_s": 42.38867458500317,
+      "line": "[[PTAAGSIKN:GD]U MaPv2i]s os:l osth=o1o tpdiodw=n2  TpLrBo ci=n2c opmppilde=t1o  ngaemne==1s4y7s5t8 epmi-da=dmin"
+    },
+    {
+      "host_s": 42.39897788700182,
+      "line": "s0t amtaes=kR=E0AxDY(11"
+    },
+    {
+      "host_s": 42.39897788700182,
+      "line": ") run=-1"
+    },
+    {
+      "host_s": 42.41917709901463,
+      "line": "queue=0 affinity=0 mask=0x1 ticks=652 wake=4159 delta=-1 exit=0 thread=0 linux=0"
+    },
+    {
+      "host_s": 42.45322482101619,
+      "line": " lender=0 eip=0x12543"
+    },
+    {
+      "host_s": 42.464149128005374,
+      "line": "9 esp=0x2cc1cca ea"
+    },
+    {
+      "host_s": 42.47436033000122,
+      "line": "x=0x4 ctx=0x2cc1c68 stack=0x2cb2000 size="
+    },
+    {
+      "host_s": 42.543598641001154,
+      "line": "0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 42.62861863800208,
+      "line": "[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run="
+    },
+    {
+      "host_s": 42.678293983015465,
+      "line": "-1"
+    },
+    {
+      "host_s": 42.68896657502046,
+      "line": " queue=-1 affinity=0 mask=0x1 ticks=198 wake=4172 delta=12 exit="
+    },
+    {
+      "host_s": 42.71089013500023,
+      "line": "0 thread=0 lin"
+    },
+    {
+      "host_s": 43.37588759002392,
+      "line": "ux=0 lender=0 eip=0x125439 esp=0x2d5dad6 eax=0x4 ctx=0x2d5da74 stack=0x2d4e000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 43.37588759002392,
+      "line": "[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=VISION.BEX state=READY(1) run=-1 queue=0 affinity=0 mask=0x1 ticks=742 wake=4141 delta=-19 exit=0 thread=0 linux=0 lender=0 eip=0x12525b esp=0x2ed7996 eax=0x0 ctx=0x2ed7934 stack=0x2ec8000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 43.977193439000985,
+      "line": "[TASK:DUMP2] slot=4 pid=5 proc=4 ppid=4 name=screensaverd state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=9 wake=4196 delta=36 exit=0 thread=1 linux=0 lender=0 eip=0x125439 esp=0x3188ad6 eax=0x4 ctx=0x3188a74 stack=0x3179000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 43.977193439000985,
+      "line": "[TASK:DUMP2] slot=5 pid=6 proc=6 ppid=1 name=stage2-gate state=SLEEPING(3) run=-2 queue=-1 affinity=0 mask=0x1 ticks=5 wake=4161 delta=1 exit=0 thread=0 linux=0"
+    },
+    {
+      "host_s": 44.501921512011904,
+      "line": " lender=0 eip=0x125439 esp=0x31b9f6a eax=0x4 ctx=0x31b9f08 stack=0x31aa000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 44.501921512011904,
+      "line": "[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-perf state=RUNNING(2) run=0"
+    },
+    {
+      "host_s": 44.76402347601834,
+      "line": "queue=-1 affinit"
+    },
+    {
+      "host_s": 44.774207467009546,
+      "line": "y=0 mask=0x1 ticks=40 wake=4063 delta=-97 exit=0 thread=0 linux="
+    },
+    {
+      "host_s": 44.80473613401409,
+      "line": "0 lender=0 eip=0x11a70f esp=0x200440 eax=0x202 ctx=0x31ca2c8 stack=0x31bd000 siz"
+    },
+    {
+      "host_s": 44.83534626002074,
+      "line": "e=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 44.86589802100207,
+      "line": "[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=6 name=wine-launch.ELF state=READY(1)"
+    },
+    {
+      "host_s": 44.876113570004236,
+      "line": "run="
+    },
+    {
+      "host_s": 44.89649942502729,
+      "line": "-1 queue=1 affinity=-1 mask=0x3 ticks=161 wake=4151 delta=-9 exit=0 threa"
+    },
+    {
+      "host_s": 44.89649942502729,
+      "line": "d"
+    },
+    {
+      "host_s": 44.90688292402774,
+      "line": "=0 lin"
+    },
+    {
+      "host_s": 44.92725790600525,
+      "line": "ux=1 lender=0 eip=0x3652bb2 esp=0x368a6fc eax=0x0 ctx=0x3624fb4 stack=0x3605000"
+    },
+    {
+      "host_s": 44.96800378500484,
+      "line": "size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8"
+    },
+    {
+      "host_s": 44.99855498300167,
+      "line": "[TASK:DUMP2] slot=8 pid=11 proc=11 ppid=8 name=wine-preloader state=SLEEPING(3)"
+    },
+    {
+      "host_s": 45.24919755602605,
+      "line": "run=-1 queue=-1 affinity=-1 mask=0x3 ticks=28 wake=4249 delta=89 exit=0 thread=0 linux=1 lender=0 eip=0x12525b esp=0x36b17fe eax=0x0 ctx=0x36b179c stack=0x3692000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8"
+    },
+    {
+      "host_s": 45.24919755602605,
+      "line": "[TASK:DUMP2] slot=9 pid=9 proc=9 ppid=8 name=XFBDEV state=READY(1) run=-1 queue="
+    },
+    {
+      "host_s": 45.279731263028225,
+      "line": "1 affinity=-1 mask=0x3 ticks=31 wake=4149 delta=-11 exit=0 thread=0 linux=1 lend"
+    },
+    {
+      "host_s": 45.31040541100083,
+      "line": "er=0 eip=0x12525b esp=0x373a89e eax=0x0 ctx=0x373a83c stack=0x372b000 size=0x100"
+    },
+    {
+      "host_s": 45.34286651300499,
+      "line": "00 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768"
+    },
+    {
+      "host_s": 45.36322885501431,
+      "line": "["
+    },
+    {
+      "host_s": 45.3744767930184,
+      "line": "TASK:DUMP2] slot=10 pid=16 proc=16 ppid=14 name=wineserver state=READY(1) run=-"
+    },
+    {
+      "host_s": 45.40503229800379,
+      "line": "1 queue=1 affinity=-1 mask=0x3 ticks=411 wake=4150 delta=-10 exit=0 thread=0 lin"
+    },
+    {
+      "host_s": 45.43555039700004,
+      "line": "ux=1 lender=0 eip=0x12525b esp=0x3705a4e eax=0x0 ctx=0x37059ec stack=0x36"
+    },
+    {
+      "host_s": 45.44574697400094,
+      "line": "e7000 s"
+    },
+    {
+      "host_s": 45.46613246900961,
+      "line": "ize=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0"
+    },
+    {
+      "host_s": 45.476335844025016,
+      "line": " clear_tid=0x604011a8"
+    },
+    {
+      "host_s": 45.49670821300242,
+      "line": "[TASK:DUMP2] slot=11 pid=19"
+    },
+    {
+      "host_s": 45.50788429600652,
+      "line": "proc=19 ppid=18 name=wine-preloader state=S"
+    },
+    {
+      "host_s": 45.51807733302121,
+      "line": "TARTING(4"
+    },
+    {
+      "host_s": 45.776883279002504,
+      "line": ") run=-1 queue=-1 affinity=-1 mask=0x3 ticks=0 wake=0 delta=-4160 exit=0 thread=0 linux=1 lender=0 eip=0x7d400000 esp=0x3e69b70 eax=0x0 ctx=0x3e46fb4 stack=0x3e27000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 45.787406620016554,
+      "line": "[TASK:DUMP2] slot=12 pid=18 proc=18 ppid=17 name=wine-preloader state=RUNN"
+    },
+    {
+      "host_s": 45.79761001400766,
+      "line": "ING(2)"
+    },
+    {
+      "host_s": 45.8191111300257,
+      "line": " run=1 queue=-1 affinity=-1 mask=0x3 ticks=8 wake=0 delta=-4160 ex"
+    },
+    {
+      "host_s": 45.82974892301718,
+      "line": "it=0 thread=0"
+    },
+    {
+      "host_s": 45.850127217010595,
+      "line": "linux=1 lender=0 eip=0"
+    },
+    {
+      "host_s": 45.86033348500496,
+      "line": "x60021bb2 esp=0x36d4294 eax=0x3d ctx=0x3e8cfb4 stack=0x3e6"
+    },
+    {
+      "host_s": 45.89091440101038,
+      "line": "d000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8"
+    },
+    {
+      "host_s": 45.92221526202047,
+      "line": "[TASK:DUMP2] end"
+    },
+    {
+      "host_s": 56.31488229200477,
+      "line": "[PERF] 14s cpu=66% tsc=1094MHz gfx=vmware_svga 800x600x32 caps=0xd3"
+    },
+    {
+      "host_s": 56.31488229200477,
+      "line": "[PERF:GUI] loop=429 ev=0 mouse=0 frame=9 fps=0 full=1 cursor=0 hwcur=0 gpu=0 dirty=11%"
+    },
+    {
+      "host_s": 56.31488229200477,
+      "line": "[PERF:TIME] frame avg=215419us max=1834202us share=13% compose=12% present=0% gpu=0%"
+    },
+    {
+      "host_s": 56.31488229200477,
+      "line": "[PERF:SCHED] tick=2495 switch=550979 qfast=0 blocked=1585 sched=10% x87=0% avg=0"
+    },
+    {
+      "host_s": 56.32511708501261,
+      "line": "us max=15031us"
+    },
+    {
+      "host_s": 56.34549061500002,
+      "line": "[PERF:3D]"
+    },
+    {
+      "host_s": 56.35568546500872,
+      "line": " draw calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 56.37605644701398,
+      "line": "[PERF:3D] upload calls=0 avg_us=0 max_us="
+    },
+    {
+      "host_s": 56.38624465101748,
+      "line": "0 share=0%"
+    },
+    {
+      "host_s": 56.441885422013,
+      "line": "[PERF:3D] readback calls=0 avg_us="
+    },
+    {
+      "host_s": 56.452096302004065,
+      "line": "0"
+    },
+    {
+      "host_s": 56.46231482902658,
+      "line": " max_us=0 share=0%"
+    },
+    {
+      "host_s": 56.78615387901664,
+      "line": "[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 56.78615387901664,
+      "line": "[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 56.78615387901664,
+      "line": "[PERF:3D] publish calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 56.80654579002294,
+      "line": "[PERF:PC] tid=4 pc=0x125200 hits=537 ticks=2495 collisions=160"
+    },
+    {
+      "host_s": 56.83705290700891,
+      "line": "[PERF:PC] tid=18 pc=0x11b700 hits=160 ticks=2495 collisions=160"
+    },
+    {
+      "host_s": 56.901125158008654,
+      "line": "[PERF:PC] tid=18 pc=0x183280 hits=132 ticks=2495 collisions=160"
+    },
+    {
+      "host_s": 57.458037499018246,
+      "line": "[PERF:PC] tid=18 pc=0x183300 hits=98 ticks=2495 collisions=160"
+    },
+    {
+      "host_s": 57.458037499018246,
+      "line": "[PERF:PC] tid=3 pc=0x125200 hits=77 ticks=2495 collisions=160"
+    },
+    {
+      "host_s": 57.458037499018246,
+      "line": "[PERF:PC] tid=2 pc=0x183280 hits=61 ticks=2495 collisions=160"
+    },
+    {
+      "host_s": 58.33503157101222,
+      "line": "[PERF:PC] tid=2 pc=0x183300 hits=46 ticks=2495 collisions=160"
+    },
+    {
+      "host_s": 58.33503157101222,
+      "line": "[PERF:PC] tid=18 pc=0x125200 hits=38 ticks=2495 collisions=160"
+    },
+    {
+      "host_s": 58.33503157101222,
+      "line": "[PERF:IO] ahci R=1070/8404sec avg=4216us max=1084586us err=0 W=54/220sec avg=19148us max=206780us err=0"
+    },
+    {
+      "host_s": 58.33503157101222,
+      "line": "[PERF:IRQ] 0=1380 1=0 3=0 4=0 6=0 12=0 14=0 15=0"
+    },
+    {
+      "host_s": 58.33503157101222,
+      "line": "[PERF:MEM] used=31395K free=427224K blocks=472 tasks=12"
+    },
+    {
+      "host_s": 58.33503157101222,
+      "line": "[PERF:TASK] pid=4 VISION.BEX S cpu=27% ticks=692 mem=128K"
+    },
+    {
+      "host_s": 58.33503157101222,
+      "line": "[PERF:TASK] pid=2 system-admin S cpu=4% ticks=111 mem=64K"
+    },
+    {
+      "host_s": 58.33503157101222,
+      "line": "[PERF:TASK] pid=3 PRINTSPL.BEX S cpu=3% ticks=92 mem=128K"
+    },
+    {
+      "host_s": 58.33503157101222,
+      "line": "[PERF:HINT] E/S lenta o espera del controlador: max=1084586us"
+    },
+    {
+      "host_s": 58.33503157101222,
+      "line": "[TASK:DUMP2] begin reason=wine-runtime-measurement tick=5761 cpus=2"
+    },
+    {
+      "host_s": 58.33503157101222,
+      "line": "[TASK:DUMP2] cpu=0 current_slot=6 deferred=5 rq_count=4 rq=2,4,1,3"
+    },
+    {
+      "host_s": 58.33503157101222,
+      "line": "[TASK:DUMP2] cpu=1 current_slot=7 deferred=-1 rq_count=2 rq=10,11"
+    },
+    {
+      "host_s": 58.33503157101222,
+      "line": "[TASK:DUMP2] slot=1 pid=2 proc=2 ppid=1 name=system-admin state=READY(1) run=-1"
+    },
+    {
+      "host_s": 58.868003287003376,
+      "line": "queue=0 affinity=0 mask=0x1 ticks=801 wake=5544 delta=-217 exit=0 thread=0 linux=0 lender=0 eip=0x18330b esp=0x8 eax=0x1 ctx=0x2cc1578 stack=0x2cb2000 size=0x10"
+    },
+    {
+      "host_s": 59.35005538602127,
+      "line": "000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 59.35005538602127,
+      "line": "[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=PRINTSPL.BEX state=READY(1) run=-1 queue=0 affinity=0 mask=0x1 ticks=363 wake=5630 delta=-131 exit=0 thread=0 linux=0 lender=0 eip=0x12525b esp=0x2d5daae eax=0x0"
+    },
+    {
+      "host_s": 59.35005538602127,
+      "line": "c"
+    },
+    {
+      "host_s": 59.36418409700855,
+      "line": "tx=0x2d5da4c stack=0x2d4e000 siz"
+    },
+    {
+      "host_s": 59.6519325330155,
+      "line": "e=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 59.6519325330155,
+      "line": "[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=VISION.BEX state=READY(1) run=-1 qu"
+    },
+    {
+      "host_s": 59.663029110000934,
+      "line": "eue=0 affinity=0 mask=0x1 ticks=1426 wake=5554 delta=-207 exit=0 thread=0 linux="
+    },
+    {
+      "host_s": 59.704269806010416,
+      "line": "0 lender=0 eip=0x12525b esp=0x2ed7aae ea"
+    },
+    {
+      "host_s": 59.715511862013955,
+      "line": "x=0x0 ctx=0x2ed7a4c stack=0x2ec8000 size"
+    },
+    {
+      "host_s": 59.74674889902235,
+      "line": "=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 c"
+    },
+    {
+      "host_s": 59.756955046002986,
+      "line": "lear_tid=0x0"
+    },
+    {
+      "host_s": 59.78963454600307,
+      "line": "[TASK:DUMP2] slot=4 pid=5 proc=4 ppid=4 na"
+    },
+    {
+      "host_s": 59.80001214201911,
+      "line": "me=screensaverd state=READY(1) run=-1"
+    },
+    {
+      "host_s": 59.83144196702051,
+      "line": "queue=0 affin"
+    },
+    {
+      "host_s": 59.841709501022706,
+      "line": "ity=0 mask=0x1 ticks=79 wake=5603 delta=-158 exit=0 thread=1 linux="
+    },
+    {
+      "host_s": 59.88340111001162,
+      "line": "0 lender=0 eip=0x12525b esp=0x3188aae eax=0x0 ctx=0x3188a4c stack=0x3179000 size"
+    },
+    {
+      "host_s": 60.346834786003456,
+      "line": "=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 61.59633476001909,
+      "line": "[TASK:DUMP2] slot=5 pid=6 proc=6 ppid=1 name=stage2-gate state=SLEEPING(3) run=-2 queue=-1 affinity=0 mask=0x1 ticks=8 wake=5762 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x31b9f6a eax=0x4 ctx=0x31b9f08 stack=0x31aa000 size="
+    },
+    {
+      "host_s": 61.617142376024276,
+      "line": "0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0"
+    },
+    {
+      "host_s": 61.62735340101062,
+      "line": "x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 62.076885187008884,
+      "line": "[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-perf state=RUNNING(2) run=0 queue=-1 affinity=0 mask=0x1 ticks=84 wake=5539 delta=-222 exit=0 thread=0 linux=0 lender=0 eip=0x11a70f esp=0x200440 eax=0x202 ctx=0x31ca2c8 stack=0x31bd000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 62.076885187008884,
+      "line": "[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=6 name=wine-launch.ELF state=READY(1) run="
+    },
+    {
+      "host_s": 62.09766454802593,
+      "line": "-2 queue=-1 a"
+    },
+    {
+      "host_s": 62.13811498202267,
+      "line": "ffinity=-1 mask=0x3 ticks=210 wake=5557 delta=-204 exit=0 thread=0"
+    },
+    {
+      "host_s": 62.148865653027315,
+      "line": "linux=1 lender=0 eip=0x12525b esp=0x36249de eax=0x0 ctx=0x362497c stack=0x360500"
+    },
+    {
+      "host_s": 62.39788886602037,
+      "line": "0 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8"
+    },
+    {
+      "host_s": 62.39788886602037,
+      "line": "[TASK:DUMP2] slot=8 pid=11 proc=11 ppid=8 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=29 wake=5842 delta=81 exit=0 thread=0 linux=1 lender=0 eip=0x12525b esp=0x36b17fe eax=0x0 ctx=0x36b179c stack=0x36920"
+    },
+    {
+      "host_s": 62.42919967402122,
+      "line": "00 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 cle"
+    },
+    {
+      "host_s": 62.439487685012864,
+      "line": "ar_tid=0x6043d0e8"
+    },
+    {
+      "host_s": 62.47088315401925,
+      "line": "[TASK:DUMP2] slot=9 pid=9 proc=9 ppid=8 name=XFBDEV state=RUNNING(2) run=1 queue"
+    },
+    {
+      "host_s": 62.532918832002906,
+      "line": "=-1 affinity=-1 mask=0x3 ticks=103 wake=5557 delta=-204"
+    },
+    {
+      "host_s": 62.55564552001306,
+      "line": "exit=0 thread=0 linux=1"
+    },
+    {
+      "host_s": 62.715265421022195,
+      "line": "lender=0 eip=0x12525b esp=0x373a82e eax=0x0 ctx=0x373a7cc stack=0x372b000 size=0"
+    },
+    {
+      "host_s": 63.544904746027896,
+      "line": "x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768"
+    },
+    {
+      "host_s": 63.544904746027896,
+      "line": "[TASK:DUMP2] slot=10 pid=16 proc=16 ppid=14 name=wineserver state=RUNNING(2) run=1 queue=-1 affinity=-1 mask=0x3 ticks=517 wake=5557 delta=-204 exit=0 thread=0 linux=1 lender=0 eip=0x12525b esp=0x37059de eax=0x0 ctx=0x370597c stack=0x36e7000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x604011a8"
+    },
+    {
+      "host_s": 63.544904746027896,
+      "line": "[TASK:DUMP2] slot=11 pid=18 proc=18 ppid=17 name=wine-preloader state=READY(1) run=-1 queue=1 affinity=-1 mask=0x2 ticks=543 wake=5654 delta=-107 exit=0 thread=0 linux=1 lender=0 eip=0x12525b esp=0x3e45d7e eax=0x0 ctx=0x3e45d1c stack=0x3e27000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8"
+    },
+    {
+      "host_s": 63.544904746027896,
+      "line": "[TASK:DUMP2] slot=12 pid=19 proc=19 ppid=0 name=wine-preloader state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=92 wake=0 delta=-5761 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x36d4294 eax=0x3d ctx=0x3e8cfb4 stack=0x3e6d000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 63.544904746027896,
+      "line": "[TASK:DUMP2] end"
+    },
+    {
+      "host_s": 63.544904746027896,
+      "line": "[AHCI] ahci0 port=0 cmd=0xea lba=0 is=0x1 tfd=0x50 ci=0x0"
+    },
+    {
+      "host_s": 63.544904746027896,
+      "line": "[LINUX:FAULT] pid=18 sig=11 eip=0x606bb6e0 addr=0x606bb6e0 eax=0xb ebx=0x60bc5120 ecx=0x7ffcfd0c edx=0x7ffcfc8c esi=0x0 edi=0x108 gs=0x3b tls=0x7ffc2000"
+    },
+    {
+      "host_s": 63.544904746027896,
+      "line": "[LINUX:EXIT] pid=18 proc=18 ppid=17 name=wine-preloader status=11 thread=0"
+    },
+    {
+      "host_s": 67.01580490500783,
+      "line": "[LINUX:OPEN] create-fail pid=16 fs=64 free_kib=20006"
+    },
+    {
+      "host_s": 67.02688392202253,
+      "line": "4 flags=0x80c1 path=/WINEGAT"
+    },
+    {
+      "host_s": 67.04721412801882,
+      "line": "E/prefix/reg100000.tmp vfs=FAT could not creat"
+    },
+    {
+      "host_s": 67.05741598401801,
+      "line": "e/truncate file"
+    },
+    {
+      "host_s": 67.23813379101921,
+      "line": "[LINUX:OPEN] create-fail pid=16 fs=64 free_kib=200064 flags=0x80c1 path=/WINEGATE/prefix/reg100000.tmp vfs=FAT could not create/truncate file"
+    },
+    {
+      "host_s": 67.24906244501472,
+      "line": "[LINUX:OPEN] create-fail pid=16 fs=64 free_kib=200064 flags=0x80c1 path=/WINEGAT"
+    },
+    {
+      "host_s": 67.27944244802347,
+      "line": "E/prefix/reg100000.tmp vfs=FAT could not create/truncate file"
+    },
+    {
+      "host_s": 73.32545893601491,
+      "line": "[PERF] 17s cpu=35% tsc=1094MHz gfx=vmware_svga 800x600"
+    },
+    {
+      "host_s": 73.33570446100202,
+      "line": "x32 caps=0xd3"
+    },
+    {
+      "host_s": 73.35603955600527,
+      "line": "[PERF:GUI] loop=946 ev=0 mouse=0 frame=10 fps=0 full=0 cursor=0"
+    },
+    {
+      "host_s": 73.36624567001127,
+      "line": " hwcur=0 gpu=0 di"
+    },
+    {
+      "host_s": 73.38653794600395,
+      "line": "rty=0%"
+    },
+    {
+      "host_s": 73.41708192502847,
+      "line": "[PERF:TIME] frame avg=10213us max=23052us share=0% compose=0% present=0% gpu=0%"
+    },
+    {
+      "host_s": 73.43803079900681,
+      "line": "[PERF"
+    },
+    {
+      "host_s": 73.44820468002581,
+      "line": ":SCHED] tick=2890 switch=517029 qfast=0 blocked=1006 sched=16% x87=2% avg=0"
+    },
+    {
+      "host_s": 73.46867682400625,
+      "line": "us max=81766us"
+    },
+    {
+      "host_s": 73.49922857101774,
+      "line": "[PERF:3D] draw calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 73.60102270601783,
+      "line": "[PERF:3D] upload calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 73.60102270601783,
+      "line": "[PERF:3D] readback calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 73.60102270601783,
+      "line": "[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 73.62190259902854,
+      "line": "[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 73.84689208600321,
+      "line": "[PERF:3D] publish calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 73.84689208600321,
+      "line": "[PERF:PC] tid=3 pc=0x125200 hits=511 ticks=2890 collisions=25"
+    },
+    {
+      "host_s": 73.84689208600321,
+      "line": "[PERF:PC] tid=9 pc=0x125200 hits=83 ticks=2890 collisions=25"
+    },
+    {
+      "host_s": 73.84689208600321,
+      "line": "[PERF:PC] tid=8 pc=0x125200 hits=63 ticks=2890 collisions=25"
+    },
+    {
+      "host_s": 73.87855800200487,
+      "line": "[PERF:PC] tid=16 pc=0x125200 hits=60 ticks=2890 collisions=25"
+    },
+    {
+      "host_s": 73.9090414950042,
+      "line": "[PERF:PC] tid=18 pc=0x125200 hits=59 ticks=2890 collisions=25"
+    },
+    {
+      "host_s": 73.94045085302787,
+      "line": "[PERF:PC] tid=16 pc="
+    },
+    {
+      "host_s": 73.9518882400007,
+      "line": "0x13ba00 hits=32 ticks=2890 collisions=25"
+    },
+    {
+      "host_s": 73.98515823102207,
+      "line": "[PERF:PC] tid=9 pc=0x8053780 hits=23 ticks=2890 collisions=25"
+    },
+    {
+      "host_s": 74.04279625302297,
+      "line": "[PERF:PC] tid=4 pc=0x125200 hits=15 ticks=2890 collisions=25"
+    },
+    {
+      "host_s": 74.04279625302297,
+      "line": "[PERF:IO] ahci R"
+    },
+    {
+      "host_s": 74.05301664202125,
+      "line": "=3/17sec avg=0us max=1us err=3 W=1/8sec avg=0us max=0us err=1"
+    },
+    {
+      "host_s": 74.17655361702782,
+      "line": "[PERF:IRQ] 0=1514 1=0 3=0 4=0 6=0 12=0 14=0 15=0"
+    },
+    {
+      "host_s": 74.17655361702782,
+      "line": "[PERF:MEM] used=31395K free=427224K blocks=472 tasks=11"
+    },
+    {
+      "host_s": 74.17655361702782,
+      "line": "[PERF:TASK] pid=3 PRINTSPL.BEX S cpu=20% ticks=584 mem=128K"
+    },
+    {
+      "host_s": 74.85375424200902,
+      "line": "[PERF:TASK] pid=16 wineserver r cpu=5% ticks=165 mem=256K"
+    },
+    {
+      "host_s": 74.85375424200902,
+      "line": "[PERF:TASK] pid=9 XFBDEV r cpu=5% ticks=160 mem=128K"
+    },
+    {
+      "host_s": 74.85375424200902,
+      "line": "[PERF:HINT] sin cuello dominante; compare TASK, IRQ e IO"
+    },
+    {
+      "host_s": 74.85375424200902,
+      "line": "[TASK:DUMP2] begin reason=wine-runtime-measurement tick=7372 cpus=2"
+    },
+    {
+      "host_s": 74.85375424200902,
+      "line": "[TASK:DUMP2] cpu=0 current_slot=6 deferred=5 rq_count=0 rq="
+    },
+    {
+      "host_s": 74.85375424200902,
+      "line": "[TASK:DUMP2] cpu=1 current_slot=9 deferred=-1 rq_count=2 rq=10,7"
+    },
+    {
+      "host_s": 74.85375424200902,
+      "line": "[TASK:DUMP2] slot=1 pid=2 proc=2 ppid=1 name=system-admin state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=804 wake=7391 delta=19 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2cc1cca eax=0x4 ctx=0x2cc1c68 stack=0x2cb2000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 74.85375424200902,
+      "line": "[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=875 wake=7495 delta=123 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2d5dad6 eax=0x4 ctx=0x2d5da74 stack=0x2d4e000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 74.85375424200902,
+      "line": "[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=VISION.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=1493 wake=7373 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2ed7ad6 eax=0x4 ctx=0x2ed7a74 stack=0x2ec8000 siz"
+    },
+    {
+      "host_s": 75.0943518220156,
+      "line": "e=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 75.0943518220156,
+      "line": "[TASK:DUMP2] slot=4 pid=5 proc=4 ppid=4 name=screensaverd state=SLEEPING(3) run="
+    },
+    {
+      "host_s": 75.1147289010114,
+      "line": "-1 queue=-1 affinity=0 mask=0x1 ticks=83 wake=7397 delta"
+    },
+    {
+      "host_s": 75.12490242900094,
+      "line": "=25 exit=0 thread=1 linu"
+    },
+    {
+      "host_s": 75.14527079602703,
+      "line": "x=0 lender=0 eip=0x125439 esp=0x3188ad6 eax=0x4 ctx=0x3188a74 stack=0x317"
+    },
+    {
+      "host_s": 75.1560031530098,
+      "line": "9000 si"
+    },
+    {
+      "host_s": 75.17657803202746,
+      "line": "ze=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 75.20704627301893,
+      "line": "[TASK:DUMP2] slot=5 pid=6 proc=6 ppid=1 name=stage2-gate state=SLEEPING(3) run=-"
+    },
+    {
+      "host_s": 75.23746542001027,
+      "line": "2 queue=-1 affinity=0 mask=0x1 ticks=10 wake=7373 delta=1 exit=0 thread=0 linux="
+    },
+    {
+      "host_s": 75.26819712301949,
+      "line": "0 lender=0 eip=0x125439 esp=0x31b9f6a eax=0x4 ctx=0x31b9f08 stack=0x31aa000 size"
+    },
+    {
+      "host_s": 75.29872544502723,
+      "line": "=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 75.32922174100531,
+      "line": "[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-perf state=RUNNING(2) run=0"
+    },
+    {
+      "host_s": 75.36041729600402,
+      "line": "queue=-1 affinity=0 mask=0x1 ticks=125 wake=7275 delta=-97 exit=0 thread=0 linux"
+    },
+    {
+      "host_s": 75.68101549200946,
+      "line": "=0 lender=0 eip=0x11a70f esp=0x200440 eax=0x202 ctx=0x31ca2c8 stack=0x31bd000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 75.68101549200946,
+      "line": "[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=6 name=wine-launch.ELF state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=327 wake=7371 delta=-1 exit=0 thread=0 linux=1 lender=0 eip=0x3652bb2 esp=0x368a6fc eax=0x0 ctx=0x3624fb4 stack=0x3605000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8"
+    },
+    {
+      "host_s": 75.71157942002174,
+      "line": "[TASK:DUMP2] slot=8 pid=11 proc=11 ppid=8 name=wine-preloader state=SLEEPING(3)"
+    },
+    {
+      "host_s": 75.74322176500573,
+      "line": "run=-1 queue=-1 affinity=-1 mask=0x3 ticks=29 wake=7384 delta=12 exit=0 thread=0"
+    },
+    {
+      "host_s": 75.7742140040209,
+      "line": " linux=1 lender=0 eip=0x12525b esp=0x36b17fe eax=0x0 ctx=0x36b179c stack=0x36920"
+    },
+    {
+      "host_s": 75.80478733600467,
+      "line": "00 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear"
+    },
+    {
+      "host_s": 75.81589164302568,
+      "line": "_tid=0x6043d0e8"
+    },
+    {
+      "host_s": 75.8464612160169,
+      "line": "[TASK:DUMP2] slot=9 pid=9 proc=9 ppid=8 name=XFBDEV state=SLEEPING(3) run=1 queu"
+    },
+    {
+      "host_s": 76.16845484400983,
+      "line": "e=-1 affinity=-1 mask=0x3 ticks=239 wake=7373 delta=1 exit=0 thread=0 linux=1 lender=0 eip=0x12525b esp=0x373a89e eax=0x0 ctx=0x373a83c stack=0x372b000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768"
+    },
+    {
+      "host_s": 76.16845484400983,
+      "line": "[TASK:DUMP2] slot=10 pid=16 proc=16 ppid=14"
+    },
+    {
+      "host_s": 76.17988640500698,
+      "line": "name=wineserver state=RUNNING(2) run"
+    },
+    {
+      "host_s": 76.2003847710148,
+      "line": "=1 queue=-"
+    },
+    {
+      "host_s": 76.2105785360036,
+      "line": "1 affinity=-1 mask=0x3 ticks=653 wake=7370 delta=-2 exit=0 thread=0 li"
+    },
+    {
+      "host_s": 76.2420579890022,
+      "line": "nux=1 lender=0 eip=0x12525b esp=0x3705a4e eax=0x0 ctx="
+    },
+    {
+      "host_s": 76.25225828302791,
+      "line": "0x37059ec stack=0x36e7000"
+    },
+    {
+      "host_s": 76.27388214800158,
+      "line": "size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60"
+    },
+    {
+      "host_s": 76.28407507902011,
+      "line": "4011a8"
+    },
+    {
+      "host_s": 76.30443326401291,
+      "line": "[TASK:DUMP2] slot=11 pid=18 proc=18 ppid=17 name=wine-preloader state=ZO"
+    },
+    {
+      "host_s": 76.31469808300608,
+      "line": "MBIE(5)"
+    },
+    {
+      "host_s": 76.34766541200224,
+      "line": "run=-1 queue=-1 affinity=-1 mask=0x2 ticks=636 wake=5654 delta=-1718 exit=1 thre"
+    },
+    {
+      "host_s": 76.60168297900236,
+      "line": "ad=0 linux=1 lender=0 eip=0x606bb6e0 esp=0x7ffcfc7c eax=0xb ctx=0x3e46fb4 stack=0x3e27000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 76.60168297900236,
+      "line": "[TASK:DUMP2] slot=12 pid=19 proc=19 ppid=0 name=wine-preloader state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=92 wake=0 delta=-7372 exit=0 thread=1"
+    },
+    {
+      "host_s": 76.63247329200385,
+      "line": "linux=1 lender=0 eip=0x60021bb2 esp=0x36d4294 eax=0x3d ctx=0x3e8cfb4 stack=0x3e6"
+    },
+    {
+      "host_s": 76.66488284201478,
+      "line": "d000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 76.69540008000331,
+      "line": "[TASK:DUMP2] end"
+    },
+    {
+      "host_s": 86.98165264300769,
+      "line": "[PERF] 13s cpu=24% tsc=1098MHz gfx=vmware_svga 800x600x32 caps=0xd3"
+    },
+    {
+      "host_s": 87.0249927250261,
+      "line": "[PERF:GUI] loop=839 ev=0 mouse=0 frame=10 fps=0 full=0 curs"
+    },
+    {
+      "host_s": 87.04538209500606,
+      "line": "or=0 hwcur=0 gpu=0 di"
+    },
+    {
+      "host_s": 87.0760080780019,
+      "line": "rty=0%"
+    },
+    {
+      "host_s": 87.10654633800732,
+      "line": "[PERF:TIME] frame avg=20400us max=51005us share=1% compose=0% present=0% gpu=0%"
+    },
+    {
+      "host_s": 87.13734168102383,
+      "line": "[PERF:SCHED] tick=2433 switch=58222 qfast=0 blocked=541 sched=1% x87=0% avg=0us"
+    },
+    {
+      "host_s": 87.17144865301088,
+      "line": "max=42447us"
+    },
+    {
+      "host_s": 87.60814313401352,
+      "line": "[PERF:3D] draw calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 87.60814313401352,
+      "line": "[PERF:3D] upload calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 87.60814313401352,
+      "line": "[PERF:3D] readback calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 87.60814313401352,
+      "line": "[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 87.60814313401352,
+      "line": "[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 87.61836069100536,
+      "line": "[PERF:3D] publish calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 87.64881568102282,
+      "line": "[PERF:PC] tid=4 pc=0x125400 hits=299 ticks=2433 collisions=27"
+    },
+    {
+      "host_s": 87.67918541800464,
+      "line": "[PERF:PC] tid=4 pc=0x2ccc200 hits=54 ticks=2433 collisions=27"
+    },
+    {
+      "host_s": 87.80494902702048,
+      "line": "[PERF:PC] tid=9 pc=0x125200 hits=43 ticks=2433 collisions=27"
+    },
+    {
+      "host_s": 87.80494902702048,
+      "line": "[PERF:PC] tid=8 pc=0x3652b80 hits=27 ticks=2433 collisions=27"
+    },
+    {
+      "host_s": 87.80494902702048,
+      "line": "[PERF:PC] tid=16 pc=0x13ba00 hits=26 ticks=2433 collisions=27"
+    },
+    {
+      "host_s": 87.84630738501437,
+      "line": "[PERF:PC] tid=9 pc=0x8053780 hits=23 ticks"
+    },
+    {
+      "host_s": 87.8569220820209,
+      "line": "=2433 collisions=27"
+    },
+    {
+      "host_s": 87.88802357701934,
+      "line": "[PERF:PC] tid"
+    },
+    {
+      "host_s": 87.89827210502699,
+      "line": "=1 pc=0x125400 hits=18 ticks=2433 collisions=27"
+    },
+    {
+      "host_s": 87.9201749820204,
+      "line": "[PERF:"
+    },
+    {
+      "host_s": 87.93042618400068,
+      "line": "PC] tid=4 pc=0x128b00 hits=17 ticks=2433 collisions=27"
+    },
+    {
+      "host_s": 87.96100201102672,
+      "line": "[PERF:IRQ] 0=1263 1=0 3=0 4=0 6=0 12=0 14=0 15=0"
+    },
+    {
+      "host_s": 87.9919726710068,
+      "line": "[PERF:MEM] used=31395K free=427224K blocks=472 tasks=11"
+    },
+    {
+      "host_s": 88.02249211500748,
+      "line": "[PERF:TASK] pid=4 VISION.BEX S cpu=17%"
+    },
+    {
+      "host_s": 88.03320157900453,
+      "line": " ticks=417 mem=128K"
+    },
+    {
+      "host_s": 88.05360951501643,
+      "line": "[PERF:TASK] pid=9 XFBDEV r cpu=3% ticks=85 m"
+    },
+    {
+      "host_s": 88.06393984900205,
+      "line": "em=128K"
+    },
+    {
+      "host_s": 88.08497847800027,
+      "line": "[PERF:TASK] pid=8 wine-launch.ELF S cpu=2% ti"
+    },
+    {
+      "host_s": 88.09523605302093,
+      "line": "cks=55 mem=256K"
+    },
+    {
+      "host_s": 88.11563816602575,
+      "line": "[PERF:HINT] sin cuello dominante; compare TASK, IRQ e IO"
+    },
+    {
+      "host_s": 88.1470774540212,
+      "line": "[TASK:DUMP2] begin reason=wine-runtime-measurement tick=8757 cpus=2"
+    },
+    {
+      "host_s": 88.17765959200915,
+      "line": "[TASK:DUMP2] cpu=0 current_slot=6 deferred=5 rq_count=1 rq=3"
+    },
+    {
+      "host_s": 89.22532848801347,
+      "line": "[TASK:DUMP2] cpu=1 current_slot=9 deferred=-1 rq_count=2 rq=10,7"
+    },
+    {
+      "host_s": 89.22532848801347,
+      "line": "[TASK:DUMP2] slot=1 pid=2 proc=2 ppid=1 name=system-admin state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=808 wake=8773 delta=16 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2cc1cca eax=0x4 ctx=0x2cc1c68 stack=0x2cb2000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 89.22532848801347,
+      "line": "[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=877 wake=8840 delta=83 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2d5dad6 eax=0x4 ctx=0x2d5da74 stack=0x2d4e000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 89.22532848801347,
+      "line": "[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=VISION.BEX state=READY(1) run=-1 queue=0 affinity=0 mask=0x1 ticks=1939 wake=8742 delta=-15 exit=0 thread=0 linux=0 lender=0 eip=0x12525b esp=0x2ed7afe eax=0x0 ctx=0x2ed7a9c stack=0x2ec8000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 89.22532848801347,
+      "line": "[TASK:DUMP2] slot=4 pid=5 proc=4 ppid=4 name=screensaverd state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=83 wake=8804 delta=47 exit=0 thread=1 linux=0 lender=0 eip=0x125439 esp=0x3188ad6 eax=0x4 ctx=0x3188a74 stack=0x3179000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 89.22532848801347,
+      "line": "[TASK:DUMP2] slot=5 pid=6 proc=6 ppid=1 name=stage2-gate state=SLEEPING(3) run=-2 queue=-1 affinity=0 mask=0x1 ticks=12 wake=8758 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x31b9f6a eax=0x4 ctx=0x31b9f08 stack=0x31aa000 size"
+    },
+    {
+      "host_s": 89.98399112001061,
+      "line": "=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 89.98399112001061,
+      "line": "[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-perf state=RUNNING(2) run=0 queue=-1 affinity=0 mask=0x1 ticks=168 wake=8616 delta=-141 exit=0 thread=0 linux=0 lender=0 eip=0x11a70f esp=0x200440 eax=0x202 ctx=0x31ca2c8 stack=0x31bd000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 89.98399112001061,
+      "line": "[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=6 name=wine-launch.ELF state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=383 wake=8756 delta=-1 exit=0 thread=0 linux=1 lender=0 eip=0x3652bb2 esp=0x368a6fc eax=0x0 ctx=0x3624fb4 stack=0x3605000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8"
+    },
+    {
+      "host_s": 89.98399112001061,
+      "line": "[TASK:DUMP2] slot=8 pid=11 proc=11 ppid=8 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=33 wake=8848 delta=91 exit=0 thread=0 linux=1 lender=0 eip=0x12525b esp=0x36b17fe eax=0x0 ctx=0x36b179c stack=0x3692000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8"
+    },
+    {
+      "host_s": 90.86170880700229,
+      "line": "[TASK:DUMP2] slot=9 pid=9 proc=9 ppid=8 name=XFBDEV state=RUNNING(2) run=1 queue=-1 affinity=-1 mask=0x3 ticks=325 wake=8755 delta=-2 exit=0 thread=0 linux=1 lender=0 eip=0x9 esp=0x0 eax=0x10 ctx=0x373a83c stack=0x372b000 size=0x10000 cs=0x373a888 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768"
+    },
+    {
+      "host_s": 90.86170880700229,
+      "line": "[TASK:DUMP2] slot=10 pid=16 proc=16 ppid=14 name=wineserver state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=692 wake=8755 delta=-2 exit=0 thread=0 linux=1 lender=0 eip=0x12525b esp=0x3705a4e eax=0x0 ctx=0x37059ec stack=0x36e7000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x604011a8"
+    },
+    {
+      "host_s": 90.86170880700229,
+      "line": "[TASK:DUMP2] slot=11 pid=18 proc=18 ppid=17 name=wine-preloader state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=636 wake=5654 delta=-3103 exit=1 thread=0 linux=1 lender=0 eip=0x606bb6e0 esp=0x7ffcfc7c eax=0xb ctx=0x3e46fb4 stack=0x3e27000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 90.86170880700229,
+      "line": "[TASK:DUMP2] slot=12 pid=19 proc=19 ppid=0 name=wine-preloader state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=92 wake=0 delta=-8757 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x36d4294 eax=0x3d ctx=0x3e8cfb4 stack=0x3e6d000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 90.86170880700229,
+      "line": "[TASK:DUMP2] end"
+    },
+    {
+      "host_s": 97.05934619801701,
+      "line": "[LINUX:OPEN] create-fail pid=16 fs=64 free_kib=200064 flags=0x80c1 path=/WINEGAT"
+    },
+    {
+      "host_s": 97.08994306801469,
+      "line": "E/prefix/reg100000.tmp vfs=FAT could not create/t"
+    },
+    {
+      "host_s": 97.10088254400762,
+      "line": "runcate file"
+    },
+    {
+      "host_s": 97.14603943101247,
+      "line": "[LINUX:OPEN] create-"
+    },
+    {
+      "host_s": 97.15623432202847,
+      "line": "fail pid=16 fs=64 free_kib=200064 flags=0x80c1 path=/WINEGAT"
+    },
+    {
+      "host_s": 97.22814548402675,
+      "line": "E/pr"
+    },
+    {
+      "host_s": 97.23861422101618,
+      "line": "efix/reg100000.tmp vfs=FAT could not create/truncate file"
+    },
+    {
+      "host_s": 97.85103453500778,
+      "line": "[LINUX:OPEN] create-fail pid=16 fs=64 free_kib=200064 flags=0x80c1 path=/WINEGATE/prefix/reg100000.tmp vfs=FAT could not create/truncate file"
+    },
+    {
+      "host_s": 100.75643297302304,
+      "line": "[PERF] 13s cpu=21% tsc=1090MHz gfx=vmware_svga 800x600x32 caps=0xd"
+    },
+    {
+      "host_s": 100.76739417700446,
+      "line": "3"
+    },
+    {
+      "host_s": 100.84689542200067,
+      "line": "[PERF:GUI] loop=880 ev=0"
+    },
+    {
+      "host_s": 100.85710565702175,
+      "line": " mouse=0 frame=11 fps=0 full=0 cursor=0 hwcur=0 gpu=0 di"
+    },
+    {
+      "host_s": 100.88788284501061,
+      "line": "rty=0%"
+    },
+    {
+      "host_s": 100.91905607600347,
+      "line": "[PERF:TIME] frame avg=12117us max=19800us share=0% compos"
+    },
+    {
+      "host_s": 100.92924533202313,
+      "line": "e=0% present=0% gpu=0%"
+    },
+    {
+      "host_s": 100.95980521501042,
+      "line": "[PERF:SCHED] tick=2472 switch=22719 qfast=0 blocked=493 sched=1% x87=0% avg=0us"
+    },
+    {
+      "host_s": 101.4064973530185,
+      "line": "max=2030us"
+    },
+    {
+      "host_s": 101.4064973530185,
+      "line": "[PERF:3D] draw calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 101.4064973530185,
+      "line": "[PERF:3D] upload calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 101.4064973530185,
+      "line": "[PERF:3D] readback calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 101.4064973530185,
+      "line": "[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 101.4064973530185,
+      "line": "[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 101.4064973530185,
+      "line": "[PERF:3D] publish calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 101.4064973530185,
+      "line": "[PERF:PC] tid=4 pc=0x125200 hits=299 ticks=2472 collisions=27"
+    },
+    {
+      "host_s": 101.4064973530185,
+      "line": "[PERF:PC] tid=9 pc=0x125200 hits=28 ticks=2472 collisions=27"
+    },
+    {
+      "host_s": 101.41695876902668,
+      "line": "[PERF:PC] tid=16 pc=0x"
+    },
+    {
+      "host_s": 101.42753679101588,
+      "line": "13ba00 hits=26 ticks=2472 collisions=27"
+    },
+    {
+      "host_s": 101.45889017000445,
+      "line": "[PERF:PC] tid=9 pc=0x8053780 hits=18 ticks=2472 collisions=27"
+    },
+    {
+      "host_s": 101.76175871802843,
+      "line": "[PERF:PC] tid=16 pc=0x11a700 hits=13 ticks=2472 collisions=27"
+    },
+    {
+      "host_s": 101.76175871802843,
+      "line": "[PERF:PC] tid=8 pc=0x3652b80 hits=13 ticks=2472 collisions=27"
+    },
+    {
+      "host_s": 101.76175871802843,
+      "line": "[PERF:PC] tid=1 pc=0x125400 hits=11 ticks=2472 collisions=27"
+    },
+    {
+      "host_s": 101.76175871802843,
+      "line": "[PERF:PC] tid=4 pc=0x2ccc200 hits=9 ticks="
+    },
+    {
+      "host_s": 101.77388413602603,
+      "line": "2472 collisions=27"
+    },
+    {
+      "host_s": 101.79425329802325,
+      "line": "[PERF:"
+    },
+    {
+      "host_s": 101.8044480640092,
+      "line": "IRQ] 0=1261 1=0 3=0 4=0 6=0 12=0 14=0 15=0"
+    },
+    {
+      "host_s": 101.86403582902858,
+      "line": "[PERF:MEM] used=31395K"
+    },
+    {
+      "host_s": 101.87465756500023,
+      "line": " free=427224K blocks=472 tasks=11"
+    },
+    {
+      "host_s": 101.90519847001997,
+      "line": "[PERF:TASK] pid=4 VISION.BEX S cpu=16% ticks=419 mem=128K"
+    },
+    {
+      "host_s": 101.94668432502658,
+      "line": "[PERF:TASK] pid=9 XFBDEV r cpu=2% ticks=58 mem=128K"
+    },
+    {
+      "host_s": 101.9772159900167,
+      "line": "[PERF"
+    },
+    {
+      "host_s": 101.98789897601819,
+      "line": ":TASK] pid=16 wineserver r cpu=2% ticks=56 mem=256K"
+    },
+    {
+      "host_s": 102.25322191402665,
+      "line": "[PERF:HINT] sin cuello dominante; compare TASK, IRQ e IO"
+    },
+    {
+      "host_s": 102.25322191402665,
+      "line": "[TASK:DUMP2] begin reason=wine-runtime-measurement tick=10157 cpus=2"
+    },
+    {
+      "host_s": 102.25322191402665,
+      "line": "[TASK:DUMP2] cpu=0 current_slot=6 deferred=5 rq_count=0 rq="
+    },
+    {
+      "host_s": 102.27412102901144,
+      "line": "[TASK:DUMP2] cpu=1 current_slot=-1 deferred=9 rq_count=1 rq=10"
+    },
+    {
+      "host_s": 102.30464721700992,
+      "line": "[TASK:DUMP2] slot=1 pid=2 proc="
+    },
+    {
+      "host_s": 102.31487941401429,
+      "line": "2 ppid=1 name=system-admin state=SLEEPING(3) run="
+    },
+    {
+      "host_s": 102.34706984300283,
+      "line": "-1 queue=-1 affinity=0 mask=0x1 ticks=811 wake=10175 delta=18 exit=0 thread=0 li"
+    },
+    {
+      "host_s": 102.40089483500924,
+      "line": "nux=0 lender=0 eip=0x125439"
+    },
+    {
+      "host_s": 102.41115658901981,
+      "line": " esp=0x2cc1cca eax=0x4 ctx=0x2cc1c68 stack=0x2cb2000"
+    },
+    {
+      "host_s": 102.47478567200596,
+      "line": "size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 103.23321813801886,
+      "line": "[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=877 wake=10218 delta=61 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2d5dad6 eax=0x4 ctx=0x2d5da74 stack=0x2d4e000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 103.23321813801886,
+      "line": "[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=VISION.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=2369 wake=10158 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2ed7ad6 eax=0x4 ctx=0x2ed7a74 stack=0x2ec8000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 103.23321813801886,
+      "line": "[TASK:DUMP2] slot=4 pid=5 proc=4 ppid=4 name=screensaverd state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=84 wake=10175 delta=18 exit=0 thread=1 linux=0 lender=0 eip=0x125439 esp=0x3188ad6 eax=0x4 ctx=0x3188a74 stack=0x3179000 s"
+    },
+    {
+      "host_s": 103.36618468901725,
+      "line": "ize=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 103.36618468901725,
+      "line": "[TASK:DUMP2] slot=5 pid=6 proc=6 ppid=1 name=stage2-gate state=SLEEPING(3) run=-2 queue=-1 affinity=0 mask=0x1 ticks=14 wake=10158 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x31b9f6a eax="
+    },
+    {
+      "host_s": 103.37651133700274,
+      "line": "0x4 ctx=0x31b9f08 stack=0x31aa000 siz"
+    },
+    {
+      "host_s": 103.40708529800759,
+      "line": "e=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 104.00580548500875,
+      "line": "[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-perf state=RUNNING(2) run=0 queue=-1 affinity=0 mask=0x1 ticks=213 wake=10018 delta=-139 exit=0 thread=0 linux=0 lender=0 eip=0x11a70f esp=0x200440 eax=0x202 ctx=0x31ca2c8 stack=0x31bd000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 104.00580548500875,
+      "line": "[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=6 name=wine-launch.ELF state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=425 wake=10158 delta=1 exit=0 thread=0 linux=1 lender=0 eip=0x3652bb2 esp=0x368a6fc eax=0x0 ctx=0x3624fb4 stack=0x3605000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8"
+    },
+    {
+      "host_s": 104.00580548500875,
+      "line": "[TASK:DUMP2] slot=8 pid=11 proc=11 ppid=8 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=34 wake=10226 delta=69 exit=0 thread=0 linux=1 lender=0 eip=0x12525b esp=0x36b17fe eax=0x0 ctx=0x36b179c stack=0x3692000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8"
+    },
+    {
+      "host_s": 104.00580548500875,
+      "line": "[TASK:DUMP2] slot=9 pid=9 proc=9 ppid=8 name=XFBDEV state=SLEEPING(3) run=-2 queue=-1 affinity=-1 mask=0x3 ticks=384 wake=10157 delta=0 exit=0 thread=0 linux=1"
+    },
+    {
+      "host_s": 104.47089653002331,
+      "line": "lender=0 eip=0x12525b esp=0x373a89e eax=0x0 ctx=0x373a83c stack=0x372b000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768"
+    },
+    {
+      "host_s": 104.47089653002331,
+      "line": "[TASK:DUMP2] slot=10 pid=16 proc=16 ppid=14 name=wineserver state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=751 wake=10157 delta=0 exit=0 thread=0 linu"
+    },
+    {
+      "host_s": 104.48111663400778,
+      "line": "x=1 lender=0 eip=0x12525b esp=0x3705a4e eax=0x0 ctx=0x37059ec stack=0x36e7000 si"
+    },
+    {
+      "host_s": 104.59026290700422,
+      "line": "ze=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x604011a8"
+    },
+    {
+      "host_s": 104.59026290700422,
+      "line": "[TASK:DUMP2] slot=11 pid=18 proc=18 ppid=17 name=wine-preloader state=ZOMBIE(5)"
+    },
+    {
+      "host_s": 105.13039741502143,
+      "line": "run=-1 queue=-1 affinity=-1 mask=0x2 ticks=636 wake=5654 delta=-4503 exit=1 thread=0 linux=1 lender=0 eip=0x606bb6e0 esp=0x7ffcfc7c eax=0xb ctx=0x3e46fb4 stack=0x3e27000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 105.13039741502143,
+      "line": "[TASK:DUMP2] slot=12 pid=19 proc=19 ppid=0 name=wine-preloader state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=92 wake=0 delta=-10157 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x36d4294 eax=0x3d ctx=0x3e8cfb4 stack=0x3e6d000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 105.13039741502143,
+      "line": "[TASK:DUMP2] end"
+    },
+    {
+      "host_s": 114.93022313702386,
+      "line": "[PERF] 14s cpu=29% tsc=1094MHz gfx=vmware_svga 800x600x32 caps=0xd3"
+    },
+    {
+      "host_s": 114.9818857210048,
+      "line": "[PERF:GUI] loop=810 ev=0 mouse=0 frame=11 fps=0 full=0 cursor=0 hwcur=0 gpu=0"
+    },
+    {
+      "host_s": 114.99222346802708,
+      "line": "di"
+    },
+    {
+      "host_s": 115.03406087702024,
+      "line": "rty=0%"
+    },
+    {
+      "host_s": 115.39297567002359,
+      "line": "[PERF:TIME] frame avg=43860us max=158008us share=3% compose=2% present=0% gpu=0%"
+    },
+    {
+      "host_s": 115.39297567002359,
+      "line": "[PERF:SCHED] tick=2447 switch=66637 qfast=0 blocked=613 sched=1% x87=0% avg=0us max=12118us"
+    },
+    {
+      "host_s": 115.39297567002359,
+      "line": "[PERF:3D] draw calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 115.39297567002359,
+      "line": "[PERF:3D] upload calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 115.39297567002359,
+      "line": "[PERF:3D] readback calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 115.39297567002359,
+      "line": "[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 115.39297567002359,
+      "line": "[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 115.39297567002359,
+      "line": "[PERF:3D] publish calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:PC] tid=4 pc=0x125400 hits=314 ticks=2447 collisions=42"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:PC] tid=4 pc=0x2ccc200 hits=78 ticks=2447 collisions=42"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:PC] tid=9 pc=0x125200 hits=66 ticks=2447 collisions=42"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:PC] tid=8 pc=0x3652b80 hits=36 ticks=2447 collisions=42"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:PC] tid=16 pc=0x13ba00 hits=33 ticks=2447 collisions=42"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:PC] tid=9 pc=0x8053780 hits=32 ticks=2447 collisions=42"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:PC] tid=1 pc=0x125400 hits=30 ticks=2447 collisions=42"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:PC] tid=16 pc=0x125200 hits=16 ticks=2447 collisions=42"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:IRQ] 0=1277 1=0 3=0 4=0 6=0 12=0 14=0 15=0"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:MEM] used=31395K free=427224K blocks=472 tasks=11"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:TASK] pid=4 VISION.BEX S cpu=19% ticks=485 mem=128K"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:TASK] pid=9 XFBDEV r cpu=4% ticks=118 mem=128K"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:TASK] pid=8 wine-launch.ELF R cpu=3% ticks=86 mem=256K"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[PERF:HINT] sin cuello dominante; compare TASK, IRQ e IO"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[TASK:DUMP2] begin reason=wine-runtime-measurement tick=11552 cpus=2"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[TASK:DUMP2] cpu=0 current_slot=6 deferred=5 rq_count=0 rq="
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[TASK:DUMP2] cpu=1 current_slot=-1 deferred=9 rq_count=2 rq=10,7"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[TASK:DUMP2] slot=1 pid=2 proc=2 ppid=1 name=system-admin state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=812 wake=11553 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2cc1cca eax=0x4 ctx=0x2cc1c68 stack=0x2cb2000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=880 wake=11649 delta=97 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2d5dad6 eax=0x4 ctx=0x2d5da74 stack=0x2d4e000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=VISION.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=2834 wake=11553 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2ed7ad6 eax=0x4 ctx=0x2ed7a74 stack=0x2ec8000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[TASK:DUMP2] slot=4 pid=5 proc=4 ppid=4 name=screensaverd state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=84 wake=11602 delta=50 exit=0 thread=1 linux=0 lender=0 eip=0x125439 esp=0x3188ad6 eax=0x4 ctx=0x3188a74 stack=0x3179000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[TASK:DUMP2] slot=5 pid=6 proc=6 ppid=1 name=stage2-gate state=SLEEPING(3) run=-2 queue=-1 affinity=0 mask=0x1 ticks=22 wake=11553 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x31b9f6a eax=0x4 ctx=0x31b9f08 stack=0x31aa000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-perf state=RUNNING(2) run=0 queue=-1 affinity=0 mask=0x1 ticks=256 wake=11434 delta=-118 exit=0 thread=0 linux=0 lender=0 eip=0x11a70f esp=0x200440 eax=0x202 ctx=0x31ca2c8 stack=0x31bd000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 117.25490162201459,
+      "line": "[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=6 name=wine-launch.ELF state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=509 wake=11551 delta=-1 exit=0 thread=0 linux=1 lender=0 eip=0x3652bb2 esp=0x368a6fc eax=0x0 ct"
+    },
+    {
+      "host_s": 117.41337295301491,
+      "line": "x=0x3624fb4 stack=0x3605000"
+    },
+    {
+      "host_s": 117.4235783170152,
+      "line": " size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8"
+    },
+    {
+      "host_s": 117.46621766302269,
+      "line": "[TASK:DUMP2] slot=8 p"
+    },
+    {
+      "host_s": 117.47641691102763,
+      "line": "id=11 proc=11 ppid=8 name=wine-preloader state=SLEEPING(3)"
+    },
+    {
+      "host_s": 117.50802440702682,
+      "line": "run=-1 queue=-1 affinity=-1 mask=0x3 ticks=36 wake=11649 delta=97 exit=0 thread="
+    },
+    {
+      "host_s": 117.53862269301317,
+      "line": "0 linux=1 lender=0 eip=0x12525b esp=0x36b17fe eax=0x0 ctx=0x36b179c stack=0x3692"
+    },
+    {
+      "host_s": 117.56920850102324,
+      "line": "000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8"
+    },
+    {
+      "host_s": 117.60042395800701,
+      "line": "[TASK:DUMP2] slot=9 pid=9 proc=9 ppid=8 name=XFBDEV state=SLEEPING(3) run="
+    },
+    {
+      "host_s": 117.61072185900412,
+      "line": "-2 que"
+    },
+    {
+      "host_s": 117.63110785200843,
+      "line": "ue=-1"
+    },
+    {
+      "host_s": 117.64222641100059,
+      "line": " affinity=-1 mask=0x3 ticks=506 wake=11551 delta=-1 exit=0 thread=0 linux=1"
+    },
+    {
+      "host_s": 117.6728264290141,
+      "line": " lender=0 eip=0x12525b esp=0x373a89e eax=0x0 ctx=0x373a83c stack=0x372b000 size="
+    },
+    {
+      "host_s": 117.7035107370175,
+      "line": "0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x609"
+    },
+    {
+      "host_s": 117.71467825002037,
+      "line": "32768"
+    },
+    {
+      "host_s": 117.73505364501034,
+      "line": "[TASK:DUMP2] slot=10 pid=16 proc=16"
+    },
+    {
+      "host_s": 117.7452822830237,
+      "line": " ppid=14 name=wineserver state=READY(1) run=-"
+    },
+    {
+      "host_s": 118.02174750601989,
+      "line": "1 queue=1 affinity=-1 mask=0x3 ticks=809 wake=11550 delta=-2 exit=0 thread=0 linux=1 lender=0 eip=0x12525b esp=0x3705a4e eax=0x0 ctx=0x37059ec stack=0x36e7000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x604011a8"
+    },
+    {
+      "host_s": 118.02174750601989,
+      "line": "[TASK:DUMP2] slot=11 pid=18 proc=18 ppid=17 name=wine-preloader state=ZOMBIE(5)"
+    },
+    {
+      "host_s": 118.05267389700748,
+      "line": "run=-1 queue=-1 affinity=-1 mask=0x2 ticks=636 wake=5654 del"
+    },
+    {
+      "host_s": 118.06289124401519,
+      "line": "ta=-5898 exit=1 thre"
+    },
+    {
+      "host_s": 118.09438105800655,
+      "line": "ad=0 linux=1 lender=0 eip=0x606bb6e0 esp=0x7ffcfc7c eax=0xb ctx=0x3e46fb4 stack="
+    },
+    {
+      "host_s": 118.12495121601387,
+      "line": "0x3e27000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 118.13514844200108,
+      "line": ""
+    },
+    {
+      "host_s": 118.15607935600565,
+      "line": "[TASK:DUMP"
+    },
+    {
+      "host_s": 118.16628054200555,
+      "line": "2] slot=12 pid=19 proc=19 ppid=0 name=wine-preloader state=ZOMBIE(5) r"
+    },
+    {
+      "host_s": 118.19805202700081,
+      "line": "un=-1 queue=-1 affinity=-1 mask=0x3 ticks=92 wake=0 delta=-11552 exit=0 thread=1"
+    },
+    {
+      "host_s": 118.22858898100094,
+      "line": " linux=1 lender=0 eip=0x60021bb2 esp=0x36"
+    },
+    {
+      "host_s": 118.2388976610091,
+      "line": "d4294 eax=0x3d ctx=0x3e8cfb4 stack=0x3e"
+    },
+    {
+      "host_s": 118.50548044400057,
+      "line": "6d000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 118.50548044400057,
+      "line": "[TASK:DUMP2] end"
+    },
+    {
+      "host_s": 127.01220259000547,
+      "line": "[LINUX:OPEN] create-fail pid=16 fs=64 free_kib"
+    },
+    {
+      "host_s": 127.02489431900904,
+      "line": "=200064 flags=0x80c1 path=/WINEGAT"
+    },
+    {
+      "host_s": 127.14383431500755,
+      "line": "E/prefix/r"
+    },
+    {
+      "host_s": 127.1541831420036,
+      "line": "eg100000.tmp vfs=FAT could not create/trunca"
+    },
+    {
+      "host_s": 127.16455023302115,
+      "line": "te file"
+    },
+    {
+      "host_s": 127.94013118001749,
+      "line": "[LINUX:OPEN] create-fail pid=16 fs=64 free_kib=200064 flags=0x80c1 path=/WINEGATE/prefix/reg100000.tmp vfs=FAT could not create/truncate file"
+    },
+    {
+      "host_s": 127.94013118001749,
+      "line": "[LINUX:OPEN] create-fail pid=16 fs=64 free_kib=200064 flags=0x80c1 path=/WINEGATE/prefix/reg100000.tmp vfs=FAT could not create/truncate file"
+    },
+    {
+      "host_s": 128.3928396560077,
+      "line": "[PERF] 13s cpu=36% tsc=1093MHz gfx=vmware_svga 800x600x32 caps=0xd3"
+    },
+    {
+      "host_s": 128.4336823100166,
+      "line": "[PERF:GUI] loop=653 ev=0 mouse=0 frame=10 fps=0 full=0 cursor=0 hwcur=0 gpu=0 di"
+    },
+    {
+      "host_s": 129.14769061401603,
+      "line": "rty=0%"
+    },
+    {
+      "host_s": 129.14769061401603,
+      "line": "[PERF:TIME] frame avg=23040us max=108614us share=1% compose=0% present=0% gpu=0%"
+    },
+    {
+      "host_s": 129.14769061401603,
+      "line": "[PERF:SCHED] tick=2290 switch=176954 qfast=0 blocked=745 sched=5% x87=1% avg=0us max=98168us"
+    },
+    {
+      "host_s": 129.14769061401603,
+      "line": "[PERF:3D] draw calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 129.67788987400127,
+      "line": "[PERF:3D] upload calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 129.67788987400127,
+      "line": "[PERF:3D] readback calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 129.67788987400127,
+      "line": "[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 129.67788987400127,
+      "line": "[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 129.67788987400127,
+      "line": "[PERF:3D] publish calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 129.67788987400127,
+      "line": "[PERF:PC] tid=4 pc=0x125400 hits=260 ticks=2290 collisions=79"
+    },
+    {
+      "host_s": 129.67788987400127,
+      "line": "[PERF:PC] tid=4 pc=0x2ccc200 hits=114 ticks=2290 collisions=79"
+    },
+    {
+      "host_s": 129.67788987400127,
+      "line": "[PERF:PC] tid=9 pc=0x125200 hits=65 ticks=2290 collisions=79"
+    },
+    {
+      "host_s": 129.67788987400127,
+      "line": "[PERF:PC] tid=4 pc=0x125200 hits=60 ticks=2290 collisions=79"
+    },
+    {
+      "host_s": 130.539277873002,
+      "line": "[PERF:PC] tid=9 pc=0x8053780 hits=35 ticks=2290 collisions=79"
+    },
+    {
+      "host_s": 130.539277873002,
+      "line": "[PERF:PC] tid=1 pc=0x125400 hits=33 ticks=2290 collisions=79"
+    },
+    {
+      "host_s": 130.539277873002,
+      "line": "[PERF:PC] tid=16 pc=0x13ba00 hits=29 ticks=2290 collisions=79"
+    },
+    {
+      "host_s": 130.539277873002,
+      "line": "[PERF:PC] tid=8 pc=0x3652b80 hits=28 ticks=2290 collisions=79"
+    },
+    {
+      "host_s": 130.539277873002,
+      "line": "[PERF:IRQ] 0=1230 1=0 3=0 4=0 6=0 12=0 14=0 15=0"
+    },
+    {
+      "host_s": 130.539277873002,
+      "line": "[PERF:MEM] used=31395K free=427224K blocks=472 tasks=11"
+    },
+    {
+      "host_s": 130.539277873002,
+      "line": "[PERF:TASK] pid=4 VISION.BEX S cpu=24% ticks=559 mem=128K"
+    },
+    {
+      "host_s": 130.539277873002,
+      "line": "[PERF:TASK] pid=9 XFBDEV r cpu=5% ticks=132 mem=128K"
+    },
+    {
+      "host_s": 130.539277873002,
+      "line": "[PERF:TASK] pid=8 wine-launch.ELF R cpu=3% ticks=85 mem=256K"
+    },
+    {
+      "host_s": 131.57488799802377,
+      "line": "[PERF:HINT] sin cuello dominante; compare TASK, IRQ e IO"
+    },
+    {
+      "host_s": 131.57488799802377,
+      "line": "[TASK:DUMP2] begin reason=wine-runtime-measurement tick=13009 cpus=2"
+    },
+    {
+      "host_s": 131.57488799802377,
+      "line": "[TASK:DUMP2] cpu=0 current_slot=6 deferred=5 rq_count=1 rq=4"
+    },
+    {
+      "host_s": 131.57488799802377,
+      "line": "[TASK:DUMP2] cpu=1 current_slot=-1 deferred=10 rq_count=2 rq=9,7"
+    },
+    {
+      "host_s": 131.57488799802377,
+      "line": "[TASK:DUMP2] slot=1 pid=2 proc=2 ppid=1 name=system-admin state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=819 wake=13011 delta=2 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2cc1cca eax=0x4 ctx=0x2cc1c68 stack=0x2cb2000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 131.57488799802377,
+      "line": "[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=881 wake=13200 delta=191 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2d5dad6 eax=0x4 ctx=0x2d5da74 stack=0x2d4e000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 131.57488799802377,
+      "line": "[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=VISION.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=3482 wake=13010 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2ed"
+    },
+    {
+      "host_s": 131.87788849702338,
+      "line": "7ad6 eax=0x4 ctx=0x2ed7a74 stack=0x2ec8000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 131.9288147110201,
+      "line": "[TASK:DUMP2] slot=4 pid=5 proc=4 ppid=4 name=screensaverd state="
+    },
+    {
+      "host_s": 131.9408920140122,
+      "line": "READY(1) run=-1"
+    },
+    {
+      "host_s": 132.00227434001863,
+      "line": "queue=0 affinity=0 mask=0x1 ticks=98"
+    },
+    {
+      "host_s": 132.01247848302592,
+      "line": " wake=13007 delta=-2 exit=0 thread=1 linux=0"
+    },
+    {
+      "host_s": 132.35597874000086,
+      "line": " lender=0 eip=0x125439 esp=0x3188ad6 eax=0x4 ctx=0x3188a74 stack=0x3179000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 133.54388225800358,
+      "line": "[TASK:DU"
+    },
+    {
+      "host_s": 133.55636124202283,
+      "line": "MP2] slot=5 pid=6 proc=6 ppid=1 name=stage2-gate state=SLEEP"
+    },
+    {
+      "host_s": 133.56656957700034,
+      "line": "ING(3) run=-"
+    },
+    {
+      "host_s": 133.88683033300913,
+      "line": "2 queue=-1 affinity=0 mask=0x1 ticks=33 wake=13010 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x31b9f6a eax=0x4 ctx=0x31b9f08 stack=0x31aa000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear"
+    },
+    {
+      "host_s": 134.03123519400833,
+      "line": "_tid=0x0"
+    },
+    {
+      "host_s": 134.5098960150208,
+      "line": "[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2-perf state=RUNNING(2) run=0 queue=-1 affinity=0 mask=0x1 ticks=302 wake=12782 delta=-227 exit=0 thread=0 linux=0 lender=0 eip=0x11a70f esp=0x200440 eax=0x202 ctx=0x31ca2c8 stack=0x31bd000"
+    },
+    {
+      "host_s": 135.10089855501428,
+      "line": "size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 135.10089855501428,
+      "line": "[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=6 name=wine-launch.ELF state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=594 wake=13005 delta=-4 exit=0 thread=0 linux=1 lender=0 eip=0x3652bb2 esp=0x368a6fc eax=0x0 ctx=0x3624fb4 stack=0x3605000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8"
+    },
+    {
+      "host_s": 135.10089855501428,
+      "line": "[TASK:DUMP2] slot=8 pid=11 proc=11 ppid=8 name=wine-preloader state=SLEEPING(3) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=45 wake=13057 delta=48 exit=0 thread=0 linux=1 lender=0 eip=0x12525b esp=0x36b17fe eax=0x0 ctx=0x36b179c stack=0x3692"
+    },
+    {
+      "host_s": 135.56856399800745,
+      "line": "000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8"
+    },
+    {
+      "host_s": 135.56856399800745,
+      "line": "[TASK:DUMP2] slot=9 pid=9 proc=9 ppid=8 name=XFBDEV state=READY(1) run=-1 queue=1 affinity=-1 mask=0x3 ticks=646 wake=13004 delta=-5 exit=0 thread=0 linux=1 lender=0 eip=0x12525b esp=0x373a89e eax=0x0 ctx=0x373a83c stack=0x372b000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x60932768"
+    },
+    {
+      "host_s": 135.56856399800745,
+      "line": "[TASK:DUMP2] slot=10 pid=16 proc=16 ppid=14 name=wineserver state=SLEEPING(3) run=-2 queue=-1 affinity=-1 mask=0x3 ticks=881 wake=13004 delta=-5 exit=0 thread=0 linux=1 lender=0 eip=0x12525b esp=0x3705a4e eax=0x0 ctx=0x37059ec stack=0x36e70"
+    },
+    {
+      "host_s": 135.59834739001235,
+      "line": "00 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0"
+    },
+    {
+      "host_s": 135.61508903402137,
+      "line": " clear_tid=0x604011a8"
+    },
+    {
+      "host_s": 135.98868476302596,
+      "line": "[TASK:DUMP2] slot=11 pid=18 proc=18 ppid=17 name=wine-preloader state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x2 ticks=636 wake=5654 delta=-7355 exit=1 thread=0 linux=1 lender=0 eip=0x606bb6e0 esp=0x7ffcfc7c eax=0xb ctx=0x3e46fb4 stack=0x3e27000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 135.98868476302596,
+      "line": "[TASK:DUMP2] slot=12 pid=19 proc=19 ppid=0 name=wine-preloader state=ZOMBIE(5) run=-1 queue=-1 affinity=-1 mask=0x3 ticks=92 wake=0 delta=-13009 exit=0 thread=1 linux=1 lender=0 eip=0x60021bb2 esp=0x36d4294 eax=0x3d ctx=0x3e8cfb4 stack=0x3e6d000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 135.98868476302596,
+      "line": "[TASK:DUMP2] end"
+    },
+    {
+      "host_s": 135.98868476302596,
+      "line": "[WATCHDOG] CPU1 sin progreso durante 5 s heartbeat=944 detectado_por=CPU0"
+    },
+    {
+      "host_s": 145.98420848502428,
+      "line": "[PERF] 17s cpu=23% tsc=1094MHz gfx=vmware_svga 800x600x32 caps=0xd3"
+    },
+    {
+      "host_s": 146.04627787900972,
+      "line": "[PE"
+    },
+    {
+      "host_s": 146.05673976501566,
+      "line": "RF:GUI] loop=94"
+    },
+    {
+      "host_s": 146.06694474600954,
+      "line": "2 ev=0 mouse=0 frame=11 fps=0 full=0 cursor=0 hwcur=0 gpu"
+    },
+    {
+      "host_s": 146.07714889201452,
+      "line": "=0 di"
+    },
+    {
+      "host_s": 146.1585341860191,
+      "line": "rty=0%"
+    },
+    {
+      "host_s": 146.88122658600332,
+      "line": "[PERF:TIME] frame avg=10217us max=23936us share=0% compose=0% present=0% gpu=0%"
+    },
+    {
+      "host_s": 146.88122658600332,
+      "line": "[PERF:SCHED] tick=3067 switch=24036 qfast=0 blocked=676 sched=0% x87=0% avg=0us max=7191us"
+    },
+    {
+      "host_s": 146.88122658600332,
+      "line": "[PERF:3D] draw calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 146.88122658600332,
+      "line": "[PERF:3D] upload calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 147.19887966601527,
+      "line": "[PERF:3D] readback calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 147.19887966601527,
+      "line": "[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 147.19887966601527,
+      "line": "[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 147.33571512901108,
+      "line": "[PERF:3D] publish calls="
+    },
+    {
+      "host_s": 147.34593439500895,
+      "line": "0 avg_us=0 max_us=0 share=0%"
+    },
+    {
+      "host_s": 147.59165942200343,
+      "line": "[PERF:PC] tid=5 pc=0x125400 hits=528 ticks=3067 collisions=28"
+    },
+    {
+      "host_s": 147.59165942200343,
+      "line": "[PERF:PC] tid=16 pc=0x13ba00 hits=27 ticks=3067 collisions=28"
+    },
+    {
+      "host_s": 147.61232186001143,
+      "line": "[PERF:PC] tid=8 pc=0x3652b80 hits=18 ticks=3067 collisions=28"
+    },
+    {
+      "host_s": 147.6427962440066,
+      "line": "[PERF:PC] tid=9 pc=0x8053780 hits=17 ticks=3067 c"
+    },
+    {
+      "host_s": 147.6427962440066,
+      "line": "o"
+    },
+    {
+      "host_s": 147.6531621250033,
+      "line": "llisions=28"
+    },
+    {
+      "host_s": 147.67396786401514,
+      "line": "[PERF:PC] tid=4 p"
+    },
+    {
+      "host_s": 147.68424087102176,
+      "line": "c=0x2ccc200 hits=12 ticks=3067 collisions=28"
+    },
+    {
+      "host_s": 147.7301260100212,
+      "line": "[PERF:PC] tid=1 pc=0x125400 hits=12 ticks=3067 collisions=28"
+    },
+    {
+      "host_s": 147.78288503401564,
+      "line": "[PERF:PC] tid=4 pc=0x11bc00 hits=6 ticks=3067 collisions=28"
+    },
+    {
+      "host_s": 147.81358481702046,
+      "line": "[PERF:PC] tid=8 pc=0x125200 hits=6 ticks=3067 collisions=28"
+    },
+    {
+      "host_s": 147.8466025570233,
+      "line": "[PERF:IRQ] 0=1532 1=0 3=0 4=0 6=0 12=0 14=0 15=0"
+    },
+    {
+      "host_s": 147.87718642500113,
+      "line": "[PERF:MEM] used=31395K free=427224K blocks=472 tasks=11"
+    },
+    {
+      "host_s": 148.03836579801282,
+      "line": "[PERF:TASK] pid=5 screensaverd S cpu=17% ticks=538 mem=128K"
+    },
+    {
+      "host_s": 148.03836579801282,
+      "line": "[PERF:TASK] pid=4 VISION.BEX S cpu=5% ticks=179 mem=128K"
+    },
+    {
+      "host_s": 148.03836579801282,
+      "line": "[PERF:TASK] pid=9 XFBDEV r cpu=2% ticks=63 mem=128K"
+    },
+    {
+      "host_s": 148.07913601401378,
+      "line": "[PERF:HINT] sin cuello dominante; compare TASK, IRQ e IO"
+    },
+    {
+      "host_s": 148.10006865201285,
+      "line": "[TASK:DUMP2"
+    },
+    {
+      "host_s": 148.11025855701882,
+      "line": "] begin reason=wine-runtime-measurement tick=14751 cpus=2"
+    },
+    {
+      "host_s": 148.1319266600185,
+      "line": "[TASK:DUMP2"
+    },
+    {
+      "host_s": 148.1421329700097,
+      "line": "] cpu=0 current_slot=6 deferred=5 rq_count=0 rq="
+    },
+    {
+      "host_s": 148.22121923102532,
+      "line": "[TASK:DUMP2]"
+    },
+    {
+      "host_s": 148.2314341230085,
+      "line": "cpu=1 current_slot=-1 deferred=-1 rq_count=2 r"
+    },
+    {
+      "host_s": 148.2418827120273,
+      "line": "q=9,10"
+    },
+    {
+      "host_s": 148.2724282000272,
+      "line": "[TASK:DUMP2] slot=1 pid=2 proc=2 ppid=1 name=system-admin state=SLEEPING(3) run="
+    },
+    {
+      "host_s": 148.30389530901448,
+      "line": "-1 queue=-1 affinity=0 mask=0x1 ticks=824 wake=14776 delta=25 exit=0 thread=0 li"
+    },
+    {
+      "host_s": 148.3448868090054,
+      "line": "nux=0 lender=0 eip=0x125439 esp=0x2cc1cca eax=0x4 ctx=0x2cc1c68 stack=0x2cb2000"
+    },
+    {
+      "host_s": 148.38740666001104,
+      "line": "size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 149.00288207802805,
+      "line": "[TASK:DUMP2] slot=2 pid=3 proc=3 ppid=1 name=PRINTSPL.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=885 wake=14945 delta=194 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2d5dad6 eax=0x4 ctx=0x2d5da74 stack=0x2d4e000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 149.00288207802805,
+      "line": "[TASK:DUMP2] slot=3 pid=4 proc=4 ppid=1 name=VISION.BEX state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=3645 wake=14752 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x2ed7ad6 eax=0x4 ctx=0x2ed7a74 stack=0x2ec8000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 149.00288207802805,
+      "line": "[TASK:DUMP2] slot=4 pid=5 proc=4 ppid=4"
+    },
+    {
+      "host_s": 149.41988587600645,
+      "line": " name=screensaverd state=SLEEPING(3) run=-1 queue=-1 affinity=0 mask=0x1 ticks=627 wake=14777 delta=26 exit=0 thread=1 linux=0 lender=0 eip=0x125439 esp=0x3188ad6 eax=0x4 ctx=0x3188a74 stack=0x3179000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 149.41988587600645,
+      "line": "[TASK:DUMP2] slot=5 pid=6 proc=6 ppid=1 name=stage2-gate state=SLEEPING(3) run=-2 queue=-1 affinity=0 mask=0x1 ticks=39 wake=14752 delta=1 exit=0 thread=0 linux=0 lender=0 eip=0x125439 esp=0x31b9f6a eax=0x4 ctx=0x31b9f08 stack=0x31aa000 size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 149.4418891230016,
+      "line": "[TASK:DUMP2] slot=6 pid=7 proc=7 ppid=1 name=stage2"
+    },
+    {
+      "host_s": 149.45208399000694,
+      "line": "-perf state=RUNNING(2) run=0"
+    },
+    {
+      "host_s": 149.4723886810243,
+      "line": "queue=-1 affinity=0 mask=0x1 ticks=349 wake="
+    },
+    {
+      "host_s": 149.4825036500115,
+      "line": "14540 delta=-211 exit=0 thread=0 lin"
+    },
+    {
+      "host_s": 149.50278745102696,
+      "line": "ux=0 lender=0 eip=0x11a70f esp=0x200440 eax=0x202 ctx=0x31ca2c8 stac"
+    },
+    {
+      "host_s": 149.51294803700875,
+      "line": "k=0x31bd000"
+    },
+    {
+      "host_s": 149.66514435000136,
+      "line": "size=0x10000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x0"
+    },
+    {
+      "host_s": 149.66514435000136,
+      "line": "[TASK:DUMP2] slot=7 pid=8 proc=8 ppid=6 name=wine-launch.ELF state=SLEEPING(3) r"
+    },
+    {
+      "host_s": 149.68557861700538,
+      "line": "un=-1 queue=-1 affinity=-1 mask=0x3 ticks=644 wake=14752 delta=1 exit=0 thread=0"
+    },
+    {
+      "host_s": 149.71719145702082,
+      "line": " linux=1 lender=0 eip=0x3652bb2 esp=0x368a6fc eax=0x0 ctx=0x3624fb4 stack=0x3605"
+    },
+    {
+      "host_s": 149.7583120650088,
+      "line": "000 size=0x20000 cs=0x1b futex=0x0 fproc=0 fmask=0x0 clear_tid=0x607fabe8"
+    },
+    {
+      "host_s": 149.78894128202228,
+      "line": "[TASK:DUMP2] slot=8 pid=11 proc=11 ppid=8 name=wine-preloader state=SLEEPIN"
+    },
+    {
+      "host_s": 149.7991366450151,
+      "line": "G(3)"
+    },
+    {
+      "host_s": 149.82076815800974,
+      "line": "run=-1 queue"
+    },
+    {
+      "host_s": 149.83117054900504,
+      "line": "=-1 affinity=-1 mask=0x3 ticks=45 wake=14836 delta=85 exit=0 thread="
+    },
+    {
+      "host_s": 149.87398469401523,
+      "line": "0 linux=1 lender=0 eip=0x12525b esp=0x36b17fe eax=0x0 ctx=0x36b179c stack=0x3692"
+    },
+    {
+      "host_s": 149.92574369200156,
+      "line": "000 size=0x20000 cs=0x8 futex=0x0 fproc=0 fmask=0x0 clear_tid=0x6043d0e8"
+    },
+    {
+      "host_s": 149.96788555200328,
+      "line": "[TASK:DUMP2] slot=9 pid=9 proc=9 ppid=8 name=XFBDEV state=READY(1) run=-1 queue="
+    },
+    {
+      "host_s": 149.99846433501807,
+      "line": "1 affinity=-1 m"
+    }
+  ]
+}

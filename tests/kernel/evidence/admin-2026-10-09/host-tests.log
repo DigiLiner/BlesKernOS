@@ -1,0 +1,45 @@
+test_admin
+PASS bounded events, user snapshots, paths, dependency cycles, tombstones, forward dependencies, disk rollback, readiness ownership and critical controls
+test_gui_content
+PASS compact client allocation, nonzero origins, RGB332/full-color capture, slot exclusion and retained-buffer reuse
+test_process_priority
+PASS process-wide priority, atomic system protection, bounded levels, quantum weighting and stop/priority inheritance for new threads
+test_memory_accounting
+PASS heap metadata, free VM pool, frame allocation/free, reserved bits and saturation
+test_paging_map
+PASS OOM preserves existing PTEs; overflow/alignment rejected; remaps publish TLB changes
+test_paging_tlb
+PASS borrowed spaces receive shootdowns; stale CR3 reloads; concurrent edits remain unacknowledged
+test_native_api_abi
+PASS actual i386 API wrapper: cdecl, hidden struct return pointer and bounded ret N
+test_kernel_reserve
+{
+  "beyond_old_limit": {
+    "passed": true,
+    "expected_success": true,
+    "stderr": ""
+  },
+  "file_overflow": {
+    "passed": true,
+    "expected_success": false,
+    "stderr": "ld: kernel .text/.rodata/.data supera la reserva de 1280 KiB\n"
+  },
+  "bss_within_reserve": {
+    "passed": true,
+    "expected_success": true,
+    "stderr": ""
+  },
+  "bss_overflow": {
+    "passed": true,
+    "expected_success": false,
+    "stderr": "ld: kernel .bss supera la reserva anterior al heap\n"
+  },
+  "stage2_2560": {
+    "passed": true,
+    "stderr": ""
+  },
+  "stage2_2561": {
+    "passed": true,
+    "stderr": "boot/stage2.asm:28: error: kernel supera la reserva de 1280 KiB\n"
+  }
+}

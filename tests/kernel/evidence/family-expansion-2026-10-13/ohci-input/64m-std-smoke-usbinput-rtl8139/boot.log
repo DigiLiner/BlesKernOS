@@ -1,0 +1,16 @@
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=6 util=65019 KiB top=65404 KiB
+  [MM] RAM usable: 65019 KB
+  [MM] Heap dinamico: 0x400000 - 0x30e8000 (45984 KB)
+  [MM] VM frames: 0x30e8000 - 0x3fdf000 (15324 KiB, 3831 paginas)
+  [MM] Vista PE fija desactivada: heap reducido ocupa 0x400000-0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x400000-0x30e8000
+[COMPAT] perfil=normal RAM_top=65404 KiB heap=45984 KiB tareas=32 CPU=fam6/mod6 GUI=30FPS TIMER=100Hz
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:EARLY] BIOS LFB 800x600x32 pitch=3200 fb=0xfd000000
+[BKBOOT t=0] STARTING KERNEL
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=1] INTERRUPTS READY

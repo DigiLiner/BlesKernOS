@@ -1,0 +1,531 @@
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA FAIL
+[BKBOOT t=0] STARTING KERNEL
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=1572347 KiB top=1572732 KiB
+  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000
+  [MM] RAM usable: 1536 MB
+  [MM] Heap dinamico: 0x2400000 - 0x1ffdf000 (487292 KB)
+  [MM] VM frames: 0x1ffdf000 - 0x5ffdf000 (1048576 KiB, 262144 paginas)
+  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)
+  [MM] Vista PE fija: 0x400000 - 0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2400000-0x1ffdf000
+[COMPAT] perfil=normal RAM_top=1572732 KiB heap=487292 KiB tareas=128 CPU=fam6/mod122 GUI=60FPS TIMER=300Hz
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 7 dispositivos detectados
+  [LPT] LPT1 base=0x0378 status=0xD9 listo
+  [ATAPI] cd0: 201652 bloques de 2048 bytes
+  [ATA] canales IDE normalizados despues del probe
+[AHCI] PCI 0x0:0x3.0x0 ABAR=0xfebf0000 ports=0x3f
+[AHCI] ahci0: port=0 sectors=1572864 DMA ready
+[BKBOOT t=33] STORAGE DRIVERS
+[BKBOOT t=34] MOUNTING FILESYSTEM
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=2
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 2
+[FAT] dev[0]=cd0 tipo=3 sectores=201652
+[FAT] dev[1]=ahci0 tipo=6 sectores=1572864
+Intentando montar ahci0...
+fat_set_active(ahci0)
+No es particion, buscando ahci0
+Dispositivo encontrado
+fat_try_mount_device OK
+fat_set_active OK
+Montado ahci0 OK
+[VFS] /TEMP listo
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[DVR] ac97: cargado (/SYSTEM/DRIVERS/AC97.DVR)
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=7 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+  [USBCLASS] HID boot/report, hubs USB 1.1 y printers cargados
+[DVR] usbclass: cargado (/SYSTEM/DRIVERS/USBCLASS.DVR)
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado
+[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo
+[GFX:TRACE] REGISTER request ops=0x31c7a20 abi=2 size=100 name_ptr=0x31c79c6 priority=200 caps=0x4ff
+[GFX:TRACE] REGISTER SELECT name=vmware_svga priority=200 previous=(ninguno) previous_priority=0
+[DVR] vmware_svga: cargado (/SYSTEM/DRIVERS/VMWARESVGA.DVR)
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 12 modulo(s) cargado(s)
+[VFS] CD-ROM ISO9660 montado en /CDROM
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=vmware_svga ops=0x31c7a20
+[GFX:TRACE] ACTIVATE call name=vmware_svga preferred=800x600
+[SVGA:MODE] begin 800x600 active=0 generation=1
+[SVGA:MODE] OK 800x600x32 pitch=3200 fb=0xfd000000 generation=2
+[SVGA.DVR] SVGA3D preflight guest=0x20001 rb=0x0 memregs=0 reserved=4 modern=0
+[SVGA.DVR] VMware SVGA-II ID=0x90000002 IO=0xc530 FB=0xfd000000 FIFO=0xfe000000
+[SVGA.DVR] 800x600x32 pitch=3200 caps=0x3 fifo=0x0 GMR=fallback
+[GFX:TRACE] ACTIVATE OK name=vmware_svga mode=800x600x32 pitch=3200 fb=0xfd000000
+[GFXRES] boot icons 9/9 precargados
+[BKBOOT t=576] LOADING PRINT SERVICE
+[PRINT] spooler iniciado en segundo plano, pid=4
+[BKBOOT t=1044] STAR[PRINT] PrintSpool Ring 3 listo
+TING VISION
+[VISION] servicio lanzado pid=5
+[VISION] ownership grafico adquirido pid=5
+[BKBOOT t=1089] PREPARING DESKTOP
+[BKBOOT t=1090] LOADING DESKTOP ICONS
+[BKBOOT t=1091] ICONPAK preload begin
+[BKBOOT t=1092] LOADING ICON CACHE
+[BKBOOT t=1094] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=1103] DESKMANAGER read desktop config
+[BKBOOT t=1103] DESKMANAGER desktop config loaded
+[DESKBAR] alloc state bytes=17108
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load BlesKernOS Start icon
+[DESKBAR:STARTICON] stat /ICONS/BLESKERNOS.BMP type=1 size=16522
+[DESKBAR:STARTICON] read OK /ICONS/BLESKERNOS.BMP bytes=16522
+[DESKBAR:STARTICON] hdr sig=BM off=138 dib=124 64x64 bpp=32 comp=3
+[DESKBAR:STARTICON] decode OK /ICONS/BLESKERNOS.BMP -> 64x64
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[TASK] entrada Ring 3 no accesible: 0x1681d9 (screensaverd)
+[THREAD] no se pudo crear worker proceso=5 entry=0x1681d9 nombre=screensaverd
+[VISION] READY: motor, escritor[BKBOOT t=1473] kernel_main: Vision READY
+[SMP] escritorio listo; iniciando procesadores secundarios
+[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000
+[SMP] iniciando CPU1 APIC=1...
+[SMP] CPU1 online
+[SMP] 2/2 CPU(s) online; timer LAPIC=207539 cuentas/tick
+[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (123 slots libres)
+[io y compositor bajo Vision
+SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI
+[BKBOOT] VISION ONLINE pid=5
+[BKBOOT t=1589] CARGANDO WINE
+[WINE:BOOT] waiting pid=6
+_XSERVTransTransNoListen: unable to find transport: tcp
+[LOCK] inversion CPU1 tid=6: vfs despues de legacy (se ocultan repeticiones)
+warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+002c:err:winediag:getaddrinfo Failed to resolve your host name IP
+warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+.warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+0044:warn:module:load_dll Failed to load module L"winemac.drv"; status=c0000135
+warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+0044:err:vulkan:vulkan_init_once Wine was built without Vulkan support.
+0044:warn:module:LdrGetProcedureAddress "DllCanUnloadNow" (ordinal 0) not found in L"C:\\windows\\system32\\ole32.dll"
+0044:trace:seh:dispatch_exception code=6ba (RPC_S_SERVER_UNAVAILABLE) flags=0 addr=60908934
+0044:trace:seh:dispatch_exception eip=60908934 esp=7f20e214 ebp=7f20e278 eflags=00000246
+0044:trace:seh:dispatch_exception eax=7f20e220 ebx=000006ba ecx=00000000 edx=00000000
+0044:trace:seh:dispatch_exception esi=00000064 edi=7f2367b8 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0044:trace:seh:call_seh_handlers calling handler at 6101A550 code=6ba flags=0
+0044:trace:seh:call_seh_handlers handler at 6101A550 returned 1
+0044:trace:seh:call_seh_handlers calling handler at 626D3E90 code=6ba flags=0
+0044:trace:seh:__regs_RtlUnwind code=6ba flags=2
+0044:trace:seh:__regs_RtlUnwind eip=626d3e26 esp=7f20d650 ebp=7f20d658 eflags=00000206
+0044:trace:seh:__regs_RtlUnwind eax=00000000 ebx=00000000 ecx=626d3e60 edx=7f20f0a8
+0044:trace:seh:__regs_RtlUnwind esi=7f20d808 edi=7f20f0a8 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0044:trace:seh:__regs_RtlUnwind calling handler at 607ECB40 code=6ba flags=2
+0044:trace:seh:__regs_RtlUnwind handler at 607ECB40 returned 1
+0044:trace:seh:__regs_RtlUnwind calling handler at 6101A550 code=6ba flags=2
+0044:trace:seh:__regs_RtlUnwind handler at 6101A550 returned 1
+warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+.warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+00a0:warn:module:LdrGetProcedureAddress "SvchostPushServiceGlobals" (ordinal 0) not found in L"C:\\windows\\system32\\wevtsvc.dll"
+00b0:err:nsi:poll_events netlink socket creation failed, errno 97.
+0060:trace:seh:handle_syscall_fault code=c0000005 flags=0 addr=0x61208f17 ip=61208f17
+0060:trace:seh:handle_syscall_fault  info[0]=00000000
+0060:trace:seh:handle_syscall_fault  info[1]=00000000
+0060:trace:seh:handle_syscall_fault  eax=00000000 ebx=6120fff4 ecx=7fa8fb40 edx=00000000 esi=7fa8f070 edi=7fb8fa1c
+0060:trace:seh:handle_syscall_fault  ebp=6120fff4 esp=7fa8ef60 cs=001b ds=0023 es=0023 fs=0033 gs=003b flags=00010202
+0060:trace:seh:handle_syscall_fault returning to user mode ip=611fac32 ret=c0000005
+warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+00c0:err:ntoskrnl:ZwLoadDriver failed to create driver L"\\Registry\\Machine\\System\\CurrentControlSet\\Services\\winebth": c00000e5
+warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+.002c:trace:seh:handle_syscall_fault code=c0000005 flags=0 addr=0x7a622 ip=0007a622
+002c:trace:seh:handle_syscall_fault  info[0]=00000001
+002c:trace:seh:handle_syscall_fault  info[1]=00000000
+002c:trace:seh:handle_syscall_fault  eax=00000000 ebx=62167ee8 ecx=60052cc0 edx=00000001 esi=62167ee4 edi=60052cc0
+002c:trace:seh:handle_syscall_fault  ebp=7f10f858 esp=7f10f83c cs=001b ds=0023 es=0023 fs=0033 gs=003b flags=00010246
+002c:trace:seh:handle_syscall_fault returning to user mode ip=607e4b5c ret=c0000005
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23b840 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23A010 ebx=61ba3538 esi=7f23b840 edi=7f23b848 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F2DC ebx=7f20f31c esi=00000000 edi=000002f4 ebp=7f20f628 esp=7f20f2bc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F840 ebx=00000000 esi=00000000 edi=7f23f7bc ebp=7f20f718 esp=7f20f65c eip=61bd1983 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23A010 ebx=00000000 esi=7f23f368 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23A010 ebx=7f23f358 esi=00000000 edi=00000400 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23A010 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23b840 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=7f23b840 edi=7f23b848 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=00000000 esi=7f23f368 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=7f23f358 esi=00000000 edi=00000080 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23b840 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=7f23b840 edi=7f23b848 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=00000000 esi=7f23f368 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=7f23f358 esi=00000000 edi=000000c0 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23b840 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=7f23b840 edi=7f23b848 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=00000000 esi=7f23f770 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=7f23f760 esi=00000000 edi=00000040 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23fea0 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=7f23fea0 edi=7f23fea8 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F2DC ebx=7f20f31c esi=00000000 edi=000002f4 ebp=7f20f628 esp=7f20f2bc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F7B0 ebx=00000000 esi=00000000 edi=7f23a254 ebp=7f20f718 esp=7f20f65c eip=61bd1983 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=00000000 esi=7f23f368 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=7f23f358 esi=00000000 edi=00000400 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+.0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23fea0 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=7f23fea0 edi=7f23fea8 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=00000000 esi=7f23f368 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=7f23f358 esi=00000000 edi=00000080 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23fea0 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=7f23fea0 edi=7f23fea8 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=00000000 esi=7f23f368 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=7f23f358 esi=00000000 edi=000000c0 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23fea0 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=7f23fea0 edi=7f23fea8 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=00000000 esi=7f23f770 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=7f23f760 esi=00000000 edi=00000040 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F239F48 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23a0c0 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=61ba3538 esi=7f23a0c0 edi=7f23a0c8 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F2DC ebx=7f20f31c esi=00000000 edi=000002f4 ebp=7f20f628 esp=7f20f2bc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23FA20 ebx=00000000 esi=00000000 edi=7f23f99c ebp=7f20f718 esp=7f20f65c eip=61bd1983 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=00000000 esi=7f23f548 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=7f23f538 esi=00000000 edi=00000400 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23a0c0 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=61ba3538 esi=7f23a0c0 edi=7f23a0c8 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=00000000 esi=7f23f548 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=7f23f538 esi=00000000 edi=00000080 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23a0c0 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=61ba3538 esi=7f23a0c0 edi=7f23a0c8 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=00000000 esi=7f23f548 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=7f23f538 esi=00000000 edi=000000c0 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23a0c0 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=61ba3538 esi=7f23a0c0 edi=7f23a0c8 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=00000000 esi=7fa78090 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=7fa78080 esi=00000000 edi=00000040 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F238 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23a228 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=61ba3538 esi=7f23a228 edi=7f23a230 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F2DC ebx=7f20f31c esi=00000000 edi=000002f4 ebp=7f20f628 esp=7f20f2bc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7FA7A088 ebx=00000000 esi=00000000 edi=7f23fb5c ebp=7f20f718 esp=7f20f65c eip=61bd1983 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=00000000 esi=7f23f708 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=7f23f6f8 esi=00000000 edi=00000400 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23a228 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=61ba3538 esi=7f23a228 edi=7f23a230 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=00000000 esi=7f23f708 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=7f23f6f8 esi=00000000 edi=00000080 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23a228 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=61ba3538 esi=7f23a228 edi=7f23a230 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=00000000 esi=7f23f708 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=7f23f6f8 esi=00000000 edi=000000c0 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F20F41C ebx=7f20f45c esi=7f23a228 edi=000002f4 ebp=7f20f768 esp=7f20f3fc eip=61c5de0d frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=61ba3538 esi=7f23a228 edi=7f23a230 ebp=7f20f808 esp=7f20f7cc eip=61bd1326 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=00000000 esi=7fa7a098 edi=7f23edc8 ebp=7f20f718 esp=7f20f29c eip=61bd1434 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=7fa7a088 esi=00000000 edi=00000040 ebp=7f20f718 esp=7f20f6ec eip=61bd0eb8 frame=7f20ff8c
+0034:trace:seh:__regs__setjmp buf=7F23F2D8 ebx=61ba3538 esi=00000000 edi=00000000 ebp=7f20f808 esp=7f20f7cc eip=61bd0f9a frame=7f20ff8c
+.[LINUX:EXIT] pid=88 proc=88 ppid=87 name=wine-preloader status=256 thread=0
+[WINE:BOOT] READY elapsed_ms=11660
+[BKBOOT t=5107] DISABLE SPLASH / ENTER GUI
+[BKBOOT] DESKTOP RELEASED
+[BKBOOT] QUEUE STARTUP SOUND
+[[LINUX:EXIT] pid=91 proc=91 ppid=89 name=wine-preloader status=256 thread=0
+LOCK] inversion CPU0 tid=5: gui despues de legacy (se ocultan repeticiones)
+[LOCK] inversion CPU0 tid=5: gfx despues de legacy (se ocultan repeticiones)
+[LOCK] inversion CPU0 tid=5: wine despues de legacy (se ocultan repeticiones)
+_XSERVTransTransNoListen: unable to find transport: tcp
+warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+0128:warn:module:alloc_module disabling no-exec because of L"fifa2000.exe"
+warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+0130:warn:module:load_dll Failed to load module L"winemac.drv"; status=c0000135
+0130:warn:module:LdrGetProcedureAddress "DllCanUnloadNow" (ordinal 0) not found in L"C:\\windows\\system32\\ole32.dll"
+0128:warn:module:find_builtin_dll cannot find builtin library for L"\\??\\C:\\PROGRAM FILES\\EA SPORTS\\FIFA 2000\\drvmgt.dll"
+0128:warn:module:alloc_module disabling no-exec because of L"drvmgt.dll"
+0128:warn:module:LdrGetProcedureAddress "IsTNT" (ordinal 0) not found in L"C:\\windows\\system32\\kernel32.dll"
+warn:module:set_max_limit Failed to raise limit 7
+warn:module:set_max_limit Failed to raise limit 9
+warn:module:set_max_limit Failed to raise limit 13
+015c:warn:module:find_builtin_dll cannot find builtin library for L"\\??\\C:\\windows\\system32\\drivers\\SECDRV.SYS"
+015c:warn:module:alloc_module disabling no-exec because of L"SECDRV.SYS"
+015c:err:ntoskrnl:ZwLoadDriver failed to create driver L"\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Secdrv": c0000001
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=0042B941
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=FFFFFFFF
+0128:trace:seh:dispatch_exception eip=0042b941 esp=7f20db34 ebp=7f20db58 eflags=00010202
+0128:trace:seh:dispatch_exception eax=7f20ff30 ebx=00000001 ecx=7f20db5c edx=00000000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20d614 ebp=7f20d624 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20db48 ecx=7f20d788 edx=c0000005
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f018 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=0042B941
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=FFFFFFFF
+0128:trace:seh:dispatch_exception eip=0042b941 esp=7f20db34 ebp=7f20db58 eflags=00010202
+0128:trace:seh:dispatch_exception eax=7f20ff30 ebx=00000001 ecx=7f20db5c edx=00000000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20d614 ebp=7f20d624 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20db48 ecx=7f20d788 edx=c0000005
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f018 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=0042B941
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=FFFFFFFF
+0128:trace:seh:dispatch_exception eip=0042b941 esp=7f20db34 ebp=7f20db58 eflags=00010202
+0128:trace:seh:dispatch_exception eax=7f20ff30 ebx=00000001 ecx=7f20db5c edx=00000000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20d614 ebp=7f20d624 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20db48 ecx=7f20d788 edx=c0000005
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f018 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=0042B941
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=FFFFFFFF
+0128:trace:seh:dispatch_exception eip=0042b941 esp=7f20db34 ebp=7f20db58 eflags=00010202
+0128:trace:seh:dispatch_exception eax=7f20ff30 ebx=00000001 ecx=7f20db5c edx=00000000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20d614 ebp=7f20d624 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20db48 ecx=7f20d788 edx=c0000005
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f018 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=0042B941
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=FFFFFFFF
+0128:trace:seh:dispatch_exception eip=0042b941 esp=7f20db34 ebp=7f20db58 eflags=00010202
+0128:trace:seh:dispatch_exception eax=7f20ff30 ebx=00000001 ecx=7f20db5c edx=00000000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20d614 ebp=7f20d624 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20db48 ecx=7f20d788 edx=c0000005
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f018 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=0042B941
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=FFFFFFFF
+0128:trace:seh:dispatch_exception eip=0042b941 esp=7f20db34 ebp=7f20db58 eflags=00010202
+0128:trace:seh:dispatch_exception eax=7f20ff30 ebx=00000001 ecx=7f20db5c edx=00000000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20d614 ebp=7f20d624 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20db48 ecx=7f20d788 edx=c0000005
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f018 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=0042B941
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=FFFFFFFF
+0128:trace:seh:dispatch_exception eip=0042b941 esp=7f20db34 ebp=7f20db58 eflags=00010202
+0128:trace:seh:dispatch_exception eax=7f20ff30 ebx=00000001 ecx=7f20db5c edx=00000000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20d614 ebp=7f20d624 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20db48 ecx=7f20d788 edx=c0000005
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f018 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=0042B941
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=FFFFFFFF
+0128:trace:seh:dispatch_exception eip=0042b941 esp=7f20db34 ebp=7f20db58 eflags=00010202
+0128:trace:seh:dispatch_exception eax=7f20ff30 ebx=00000001 ecx=7f20db5c edx=00000000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20d614 ebp=7f20d624 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20db48 ecx=7f20d788 edx=c0000005
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f018 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=0042B941
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=FFFFFFFF
+0128:trace:seh:dispatch_exception eip=0042b941 esp=7f20db34 ebp=7f20db58 eflags=00010202
+0128:trace:seh:dispatch_exception eax=7f20ff30 ebx=00000001 ecx=7f20db5c edx=00000000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20d614 ebp=7f20d624 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20db48 ecx=7f20d788 edx=c0000005
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f018 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=0042B941
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=FFFFFFFF
+0128:trace:seh:dispatch_exception eip=0042b941 esp=7f20db34 ebp=7f20db58 eflags=00010202
+0128:trace:seh:dispatch_exception eax=7f20ff30 ebx=00000001 ecx=7f20db5c edx=00000000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20d614 ebp=7f20d624 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20db48 ecx=7f20d788 edx=c0000005
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f018 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=0042B941
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=FFFFFFFF
+0128:trace:seh:dispatch_exception eip=0042b941 esp=7f20db34 ebp=7f20db58 eflags=00010202
+0128:trace:seh:dispatch_exception eax=7f20ff30 ebx=00000001 ecx=7f20db5c edx=00000000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20d614 ebp=7f20d624 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20db48 ecx=7f20d788 edx=c0000005
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f018 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=0042B941
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=FFFFFFFF
+0128:trace:seh:dispatch_exception eip=0042b941 esp=7f20db34 ebp=7f20db58 eflags=00010202
+0128:trace:seh:dispatch_exception eax=7f20ff30 ebx=00000001 ecx=7f20db5c edx=00000000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20d614 ebp=7f20d624 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20db48 ecx=7f20d788 edx=c0000005
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f018 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=0042B941
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=FFFFFFFF
+0128:trace:seh:dispatch_exception eip=0042b941 esp=7f20db34 ebp=7f20db58 eflags=00010202
+0128:trace:seh:dispatch_exception eax=7f20ff30 ebx=00000001 ecx=7f20db5c edx=00000000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20d614 ebp=7f20d624 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20db48 ecx=7f20d788 edx=c0000005
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f018 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+0128:trace:seh:dispatch_exception code=c0000005 (EXCEPTION_ACCESS_VIOLATION) flags=0 addr=24B7A58A
+0128:trace:seh:dispatch_exception  info[0]=00000000
+0128:trace:seh:dispatch_exception  info[1]=24B7A58A
+0128:trace:seh:dispatch_exception eip=24b7a58a esp=7f20fdd0 ebp=7f20feb4 eflags=00010216
+0128:trace:seh:dispatch_exception eax=7f20fdd4 ebx=00000001 ecx=00000067 edx=00400000
+0128:trace:seh:dispatch_exception esi=6085e3e0 edi=00400000 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:call_seh_handlers calling handler at 0041B300 code=c0000005 flags=0
+wine: Unhandled page fault on read access to 24B7A58A at address 24B7A58A (thread 0128), starting debugger...
+0128:trace:seh:start_debugger Starting debugger L"winedbg --auto 292 144"
+0128:trace:seh:NtGetContextThread 0xfffffffe: eax=0000005b ebx=00000002 ecx=7f20d788 edx=c0000005 esi=00000002 edi=7f20f4c0
+0128:trace:seh:NtGetContextThread 0xfffffffe: ebp=7f20f5d8 esp=7f20f47c eip=607b6e6c cs=001b ss=0023 flags=00000246
+0128:trace:seh:NtGetContextThread 0xfffffffe: ds=0023 es=0023 fs=0033 gs=003b
+0128:trace:seh:__regs_RtlUnwind code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind eip=0041b220 esp=7f20f8d4 ebp=7f20f8e4 eflags=00000202
+0128:trace:seh:__regs_RtlUnwind eax=00000000 ebx=7f20ff30 ecx=c0000005 edx=7f240100
+0128:trace:seh:__regs_RtlUnwind esi=00000000 edi=0042f028 cs=001b ds=0023 es=0023 fs=0033 gs=003b ss=0023
+0128:trace:seh:__regs_RtlUnwind calling handler at 607B7B40 code=c0000027 flags=2
+0128:trace:seh:__regs_RtlUnwind handler at 607B7B40 returned 1
+[LINUX:EXIT] pid=98 proc=98 ppid=90 name=wine-preloader status=1280 thread=0
+[WINE] application failed raw=1280

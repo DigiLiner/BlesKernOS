@@ -7,6 +7,8 @@
 #include "../../include/pit.h"
 #include "../../include/memory.h"
 #include "../../include/vga.h"
+#include "../../include/vfs.h"
+#include "hp_firmware.h"
 
 #define USBCLASS_MAX_HID       16U
 #define USBCLASS_MAX_HUB        8U
@@ -107,6 +109,7 @@ typedef struct {
 
 typedef struct {
     bool active;
+    bool initialized;
     usb_device_t *device;
     usb_interface_t *interface;
     usb_endpoint_t *status_endpoint;
@@ -126,6 +129,9 @@ typedef struct {
     uint8_t protocol;
     uint8_t status;
     char device_id[192];
+    bool firmware_pending;
+    bool firmware_failed;
+    volatile uint32_t io_lock;
 } printer_context_t;
 
 typedef struct {
@@ -410,7 +416,8 @@ static bool hid_attach(usb_device_t *device, usb_interface_t *interface) {
     bool boot_keyboard;
     bool boot_mouse;
     bool report_ready = false;
-    if (!device || !interface || interface->class_code != USB_CLASS_HID)
+    if (!device || !interface || interface->class_code != USB_CLASS_HID ||
+        device->speed == USB_SPEED_HIGH)
         return false;
     context = hid_allocate();
     if (!context) return false;
@@ -681,40 +688,88 @@ static void hub_process_port(hub_context_t *hub, uint8_t port) {
     hub_clear_changes(hub, port, change);
 }
 
-static bool hub_attach(usb_device_t *device, usb_interface_t *interface) {
-    hub_context_t *hub;
-    uint8_t descriptor[64];
-    uint16_t delay;
-    if (!device || !interface || interface->class_code != USB_CLASS_HUB)
-        return false;
-    hub = hub_allocate();
-    if (!hub) return false;
-    kmemset(hub, 0, sizeof(*hub));
-    kmemset(descriptor, 0, sizeof(descriptor));
+/*
+ * Hub descriptors are variable-length and are normally shorter than 64 bytes.
+ * Asking UHCI for 64 bytes in one control transfer forces the generic control
+ * path to deal with a short DATA packet. VMware's virtual USB hub exposes that
+ * exact case during boot; if the STATUS stage is not reached, driver loading
+ * stalls before graphics initialization. Read the fixed 7-byte header first
+ * and then request exactly bLength bytes, so neither transfer ends short.
+ */
+static bool hub_read_descriptor(usb_device_t *device, uint8_t *descriptor,
+                                uint32_t capacity) {
+    uint8_t header[7];
+    uint8_t length;
+
+    if (!device || !descriptor || capacity < sizeof(header)) return false;
+    kmemset(header, 0, sizeof(header));
     if (!usb_control_transfer(device, USB_RT_IN_CLASS_DEVICE,
          USB_REQ_GET_DESCRIPTOR, HUB_DESC_TYPE << 8, 0,
-         descriptor, sizeof(descriptor))) return false;
-    if (descriptor[0] < 7U || descriptor[1] != HUB_DESC_TYPE ||
-        !descriptor[2] || descriptor[2] > 31U) return false;
-    hub->device = device;
-    hub->interface = interface;
+         header, sizeof(header))) return false;
+    if (header[0] < sizeof(header) || header[1] != HUB_DESC_TYPE) return false;
+
+    length = header[0];
+    if (length > capacity) return false;
+    kmemset(descriptor, 0, capacity);
+    if (length == sizeof(header)) {
+        kmemcpy(descriptor, header, sizeof(header));
+        return true;
+    }
+    if (!usb_control_transfer(device, USB_RT_IN_CLASS_DEVICE,
+         USB_REQ_GET_DESCRIPTOR, HUB_DESC_TYPE << 8, 0,
+         descriptor, length)) return false;
+    return descriptor[0] == length && descriptor[1] == HUB_DESC_TYPE;
+}
+
+static bool hub_initialize(hub_context_t *hub) {
+    uint8_t descriptor[64];
+    uint16_t delay;
+
+    if (!hub || !hub->active || !hub->device || !hub->device->connected)
+        return false;
+    if (!hub_read_descriptor(hub->device, descriptor, sizeof(descriptor)))
+        return false;
+    if (!descriptor[2] || descriptor[2] > 31U) return false;
+
     hub->ports = descriptor[2];
     hub->characteristics = read16le(descriptor + 3U);
     hub->power_good_ms = (uint16_t)descriptor[5] * 2U;
-    hub->status_endpoint = usb_interface_endpoint(interface,
-        USB_EP_INTERRUPT, true, 0);
     for (uint8_t port = 1U; port <= hub->ports; port++)
         (void)hub_set_port_feature(hub, port, HUB_PORT_POWER);
     delay = hub->power_good_ms;
     if (delay < 20U) delay = 20U;
     sleep_ms(delay);
-    hub->active = true;
     for (uint8_t port = 1U; port <= hub->ports; port++)
         hub_process_port(hub, port);
+    hub->initialized = true;
+    hub->failures = 0U;
     hub->last_full_poll = pit_get_ticks();
-    kprintf("  [USBCLASS] hub dev=%u ports=%u power-good=%ums ep=%x\n",
-            device->id, hub->ports, hub->power_good_ms,
+    kprintf("  [USBCLASS] hub dev=%u ports=%u power-good=%ums ep=%x listo\n",
+            hub->device->id, hub->ports, hub->power_good_ms,
             hub->status_endpoint ? hub->status_endpoint->address : 0U);
+    return true;
+}
+
+static bool hub_attach(usb_device_t *device, usb_interface_t *interface) {
+    hub_context_t *hub;
+    if (!device || !interface || interface->class_code != USB_CLASS_HUB ||
+        device->speed == USB_SPEED_HIGH || device->host_ops)
+        return false;
+    hub = hub_allocate();
+    if (!hub) return false;
+    kmemset(hub, 0, sizeof(*hub));
+    hub->device = device;
+    hub->interface = interface;
+    hub->status_endpoint = usb_interface_endpoint(interface,
+        USB_EP_INTERRUPT, true, 0);
+    hub->active = true;
+    hub->initialized = false;
+    hub->last_full_poll = pit_get_ticks();
+    /* Do not issue hub control requests from usb_class_register(). That call
+       runs synchronously inside driver loading, before the graphics driver and
+       bootsplash are started. The poll task initializes the hub shortly after
+       boot instead, so a broken/slow virtual hub can never black-screen boot. */
+    kprintf("  [USBCLASS] hub dev=%u diferido hasta post-boot\n", device->id);
     return true;
 }
 
@@ -723,6 +778,21 @@ static void hub_poll(hub_context_t *hub) {
     uint32_t actual = 0;
     bool full_poll;
     if (!hub || !hub->active || !hub->device->connected) return;
+
+    if (!hub->initialized) {
+        /* Give driver loading/graphics a head start. Even if VMware's virtual
+           hub misbehaves, only usbclass-poll is delayed, never kernel_main. */
+        if (elapsed_ms(hub->last_full_poll) < 750U) return;
+        if (!hub_initialize(hub)) {
+            hub->failures++;
+            hub->last_full_poll = pit_get_ticks();
+            if (hub->failures <= 3U || (hub->failures % 10U) == 0U)
+                kprintf("  [USBCLASS] hub dev=%u init fallo #%u; reintento diferido\n",
+                        hub->device->id, hub->failures);
+        }
+        return;
+    }
+
     full_poll = elapsed_ms(hub->last_full_poll) >= 500U;
     if (hub->status_endpoint) {
         uint32_t bytes = ((uint32_t)hub->ports + 1U + 7U) / 8U;
@@ -751,7 +821,7 @@ static void hub_poll(hub_context_t *hub) {
 
 static printer_context_t *printer_allocate(void) {
     for (uint32_t i = 0; i < USBCLASS_MAX_PRINTER; i++)
-        if (!g_printer[i].active) return &g_printer[i];
+        if (!g_printer[i].active && !g_printer[i].io_lock) return &g_printer[i];
     return NULL;
 }
 
@@ -765,23 +835,89 @@ static bool printer_get_status(printer_context_t *printer) {
     return true;
 }
 
-static void printer_get_device_id(printer_context_t *printer) {
+static bool printer_get_device_id(printer_context_t *printer) {
     uint8_t buffer[192];
     uint16_t declared;
     uint16_t index;
-    if (!printer) return;
+    if (!printer) return false;
     kmemset(buffer, 0, sizeof(buffer));
     index = (uint16_t)(((uint16_t)printer->interface->number << 8) |
                        printer->interface->alternate);
     if (!usb_control_transfer(printer->device, USB_RT_IN_CLASS_INTERFACE,
-        PRINTER_REQ_GET_DEVICE_ID, 0, index, buffer, sizeof(buffer))) return;
+        PRINTER_REQ_GET_DEVICE_ID, 0, index, buffer, sizeof(buffer))) return false;
     declared = ((uint16_t)buffer[0] << 8) | buffer[1];
-    if (declared < 2U) return;
+    if (declared < 2U) return false;
     declared -= 2U;
+    if (declared > sizeof(buffer) - 2U) declared = sizeof(buffer) - 2U;
     if (declared >= sizeof(printer->device_id))
         declared = sizeof(printer->device_id) - 1U;
     kmemcpy(printer->device_id, buffer + 2U, declared);
     printer->device_id[declared] = '\0';
+    return declared != 0U;
+}
+
+/* Missing files may be supplied later; a failed/partial download needs reconnect.
+ * Never replay bytes after an ambiguous bulk result. */
+static bool printer_prepare_firmware_inner(printer_context_t *printer) {
+    const char *path;
+    void *raw = NULL;
+    uint32_t size = 0;
+    if (!printer->firmware_pending) return true;
+    if (printer->firmware_failed || !printer->active || !printer->device->connected) return false;
+    if (!printer_get_device_id(printer)) return false;
+    if (hp_firmware_ready_id(printer->device_id)) {
+        printer->firmware_pending = false;
+        return true;
+    }
+    path = hp_firmware_path(printer->device->vendor_id, printer->device->product_id);
+    if (!path || !vfs_read_all(path, &raw, &size)) {
+        kprintf("[USBCLASS] HP firmware missing: %s\n", path ? path : "unknown");
+        return false;
+    }
+    if (!hp_firmware_valid(raw, size)) {
+        kprintf("[USBCLASS] invalid HP download container: %s\n", path);
+        kfree(raw);
+        printer->firmware_failed = true;
+        return false;
+    }
+    bool transferred = true;
+    for (uint32_t offset = 0; offset < size; ) {
+        uint32_t actual = 0, chunk = size - offset;
+        if (chunk > 4096U) chunk = 4096U;
+        if (!printer->active || !printer->device->connected ||
+            !usb_endpoint_transfer(printer->device, printer->bulk_out,
+                (uint8_t *)raw + offset, chunk, &actual, 5000U) || actual != chunk) {
+            transferred = false;
+            break;
+        }
+        offset += chunk;
+    }
+    kfree(raw);
+    if (!transferred) {
+        printer->firmware_failed = true;
+        kprintf("[USBCLASS] HP firmware transfer failed; reconnect printer\n");
+        return false;
+    }
+    /* USB reconnection may replace this context while the firmware starts. */
+    for (unsigned attempt = 0; attempt < 20U && printer->active && printer->device->connected; attempt++) {
+        task_sleep((pit_get_frequency_hz() + 9U) / 10U);
+        printer_get_device_id(printer);
+        if (hp_firmware_ready_id(printer->device_id)) {
+            printer->firmware_pending = false;
+            kprintf("[USBCLASS] HP firmware ready: %s\n", path);
+            return true;
+        }
+    }
+    printer->firmware_failed = true;
+    kprintf("[USBCLASS] HP firmware sent but readiness unconfirmed; reconnect\n");
+    return false;
+}
+
+static bool printer_prepare_firmware(printer_context_t *printer) {
+    if (!printer || !__sync_bool_compare_and_swap(&printer->io_lock, 0U, 1U)) return false;
+    bool ready = printer_prepare_firmware_inner(printer);
+    __sync_lock_release(&printer->io_lock);
+    return ready;
 }
 
 static bool printer_attach(usb_device_t *device,
@@ -822,6 +958,8 @@ static bool printer_attach(usb_device_t *device,
     printer->status = 0x18U; /* benign default: selected and no error */
     printer->active = true;
     printer_get_device_id(printer);
+    printer->firmware_pending = hp_firmware_path(device->vendor_id, device->product_id) &&
+        !hp_firmware_ready_id(printer->device_id);
     (void)printer_get_status(printer);
     kprintf("  [USBCLASS] printer dev=%u protocol=%u out=%x in=%x id=%s\n",
             device->id, printer->protocol, printer->bulk_out->address,
@@ -848,6 +986,7 @@ static printer_context_t *printer_provider_at(uint32_t index) {
 static bool printer_provider_info(uint32_t index, lpt_port_info_t *info) {
     printer_context_t *printer = printer_provider_at(index);
     if (!printer || !info) return false;
+    if (printer->firmware_pending) (void)printer_prepare_firmware(printer);
     (void)printer_get_status(printer);
     kmemset(info, 0, sizeof(*info));
     info->name[0] = 'U'; info->name[1] = 'S'; info->name[2] = 'B';
@@ -856,13 +995,29 @@ static bool printer_provider_info(uint32_t index, lpt_port_info_t *info) {
     info->name[7] = '\0';
     info->raw_status = printer->status;
     info->present = true;
-    info->busy = false;
+    info->busy = printer->firmware_pending;
     info->selected = (printer->status & (1U << 4)) != 0U;
     info->paper_out = (printer->status & (1U << 5)) != 0U;
-    info->error = (printer->status & (1U << 3)) == 0U;
+    info->error = printer->firmware_pending || (printer->status & (1U << 3)) == 0U;
     info->acknowledged = true;
     info->virtual_port = true;
     return true;
+}
+
+static bool printer_provider_device_id(uint32_t index, char *buffer, uint32_t capacity) {
+    printer_context_t *printer = printer_provider_at(index);
+    if (!printer || !buffer || capacity < 2U ||
+        !__sync_bool_compare_and_swap(&printer->io_lock, 0U, 1U)) return false;
+    bool ok = printer_get_device_id(printer);
+    if (ok) {
+        uint32_t n = 0;
+        while (printer->device_id[n] && n + 1U < capacity) {
+            buffer[n] = printer->device_id[n]; n++;
+        }
+        buffer[n] = '\0';
+    }
+    __sync_lock_release(&printer->io_lock);
+    return ok;
 }
 
 static int32_t printer_provider_write(uint32_t index, const void *data,
@@ -873,21 +1028,35 @@ static int32_t printer_provider_write(uint32_t index, const void *data,
     uint32_t timeout = idle_timeout_ms ? idle_timeout_ms : 5000U;
     if (!printer || (!data && length)) return -2;
     if (!length) return 0;
+    if (!printer_prepare_firmware(printer)) return -4;
     if (!printer_get_status(printer)) return -4;
     if (!(printer->status & (1U << 4)) || (printer->status & (1U << 5)) ||
         !(printer->status & (1U << 3))) return -4;
-    if (usb_endpoint_transfer(printer->device, printer->bulk_out,
-                              (void *)data, length, &actual, timeout) &&
-        actual == length) return (int32_t)length;
+    if (!__sync_bool_compare_and_swap(&printer->io_lock, 0U, 1U)) return -4;
+    bool complete = true;
+    for (uint32_t offset = 0; offset < length;) {
+        uint32_t chunk = length - offset;
+        if (chunk > 4096U) chunk = 4096U;
+        actual = 0;
+        if (!printer->active || !printer->device->connected ||
+            !usb_endpoint_transfer(printer->device, printer->bulk_out,
+                (uint8_t *)data + offset, chunk, &actual, timeout) || actual != chunk) {
+            complete = false;
+            break;
+        }
+        offset += chunk;
+    }
+    if (complete) {
+        __sync_lock_release(&printer->io_lock);
+        return (int32_t)length;
+    }
+    /* A partial transfer must not replay the entire document. */
     (void)usb_clear_endpoint_halt(printer->device, printer->bulk_out);
-    actual = 0;
-    if (usb_endpoint_transfer(printer->device, printer->bulk_out,
-                              (void *)data, length, &actual, timeout) &&
-        actual == length) return (int32_t)length;
     (void)usb_control_transfer(printer->device, USB_RT_OUT_CLASS_INTERFACE,
         PRINTER_REQ_SOFT_RESET, 0, printer->interface->number, NULL, 0);
     printer->bulk_out->toggle = 0;
     if (printer->bulk_in) printer->bulk_in->toggle = 0;
+    __sync_lock_release(&printer->io_lock);
     return -5;
 }
 
@@ -958,6 +1127,7 @@ static bool usbclass_init(void) {
     kmemset(g_hub, 0, sizeof(g_hub));
     kmemset(g_printer, 0, sizeof(g_printer));
     if (!lpt_register_virtual_provider(&printer_provider)) return false;
+    (void)lpt_register_identity_provider(&printer_provider, printer_provider_device_id);
     if (!usb_class_register(&class_driver)) {
         (void)lpt_unregister_virtual_provider(&printer_provider);
         return false;
@@ -986,8 +1156,9 @@ const bk_driver_module_t *bleskernos_driver_query(void) {
     static const bk_driver_module_t module = {
         BK_DRIVER_ABI_VERSION,
         sizeof(bk_driver_module_t),
+        1U, 0U,
         "usbclass",
-        "USB HID boot/report, hubs y printer class sobre UHCI",
+        "USB HID UHCI/OHCI; bulk printers UHCI/OHCI/EHCI; hubs UHCI",
         usbclass_init,
         usbclass_shutdown
     };

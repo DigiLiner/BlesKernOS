@@ -1,5 +1,5 @@
 /*
- * BlesPipes - TinyGL 3D Pipes screensaver for BlesKernOS
+ * BlesPipes - Mesa 3.5 3D Pipes screensaver for BlesKernOS
  *
  * Inspired by the classic 90s "3D Pipes" screensaver style.
  * It is implemented as a GUI program overlay, like SSLOGO.
@@ -8,8 +8,11 @@
 #include "kernel/include/api.h"
 #include <math.h>
 #include <stdint.h>
-#include <TGL/gl.h>
-#include "zbuffer.h"
+#include "ss_mesa.h"
+#include "ss_scale.h"
+#include "ss_timing.h"
+
+#define SS_INPUT_GRACE_MS 500U
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -24,7 +27,6 @@ static uint16_t g_pipes_render_h = SS_PIPES_H;
 #define SS_PIPES_RADIUS 0.18f
 #define SS_PIPES_GRID_LIMIT 5
 #define SS_PIPES_SIDES 12
-#define SS_PIPES_FRAME_TICKS 10U
 #define SS_PIPES_RENDER_MAX_W 400U
 #define SS_PIPES_RENDER_MAX_H 300U
 
@@ -39,16 +41,17 @@ typedef struct {
 typedef struct {
     gui_desktop_t *desktop;
     gui_program_t *program;
-    ZBuffer *framebuffer;
-    PIXEL *pixels;
+    ss_mesa_surface_t mesa;
+    uint32_t *pixels;
     uint16_t render_w;
     uint16_t render_h;
     bool active;
     bool gl_ready;
-    uint32_t last_tick;
-    uint32_t last_grow_tick;
+    uint32_t last_frame_ms;
+    uint32_t last_grow_ms;
     uint32_t seed;
     uint32_t frames;
+    uint32_t input_armed_ms;
     int cursor_x;
     int cursor_y;
     int cursor_z;
@@ -62,6 +65,7 @@ typedef struct {
 } ss_pipes_state_t;
 
 static ss_pipes_state_t *g_ss_pipes;
+static GLfloat g_pipe_ring[SS_PIPES_SIDES + 1][2];
 
 static const int8_t g_dirs[6][3] = {
     { 1,  0,  0},
@@ -95,12 +99,6 @@ static bool ss_pipes_input_event(const gui_event_t *event) {
             event->type == GUI_EVENT_KEY);
 }
 
-static uint32_t ss_pipes_pixel_to_rgb(PIXEL pixel) {
-    return ((uint32_t)GET_RED(pixel) << 16) |
-           ((uint32_t)GET_GREEN(pixel) << 8) |
-           ((uint32_t)GET_BLUE(pixel));
-}
-
 static void ss_pipes_configure_resolution(ss_pipes_state_t *st,
                                           const gui_desktop_t *desktop) {
     uint32_t w = SS_PIPES_W;
@@ -117,7 +115,7 @@ static void ss_pipes_configure_resolution(ss_pipes_state_t *st,
     }
 
     /*
-     * TinyGL/ZBuffer usa dimensiones enteras chicas en este OS.
+     * Mesa/OSMesa usa dimensiones enteras chicas en este OS.
      * Si en el futuro pasas de 65535 px no seria realista para este backend.
      */
     if (w > 65535U) w = 65535U;
@@ -142,8 +140,6 @@ static void ss_pipes_configure_resolution(ss_pipes_state_t *st,
 
 static void ss_pipes_material(uint8_t color) {
     GLfloat diffuse[4];
-    GLfloat specular[4] = {0.90f, 0.90f, 0.90f, 1.0f};
-    GLfloat shininess = 18.0f;
     const GLfloat *src = g_colors[color % (sizeof(g_colors) / sizeof(g_colors[0]))];
 
     diffuse[0] = src[0];
@@ -151,9 +147,6 @@ static void ss_pipes_material(uint8_t color) {
     diffuse[2] = src[2];
     diffuse[3] = 1.0f;
 
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
-    glMaterialfv(GL_FRONT, GL_SHININESS, &shininess);
     glColor3fv(diffuse);
 }
 
@@ -196,9 +189,8 @@ static void ss_pipes_draw_cylinder(int axis, GLfloat x, GLfloat y, GLfloat z,
                                    GLfloat length, GLfloat radius) {
     glBegin(GL_QUAD_STRIP);
     for (int i = 0; i <= SS_PIPES_SIDES; i++) {
-        GLfloat a = (GLfloat)i * (GLfloat)(2.0 * M_PI) / (GLfloat)SS_PIPES_SIDES;
-        GLfloat c = cos(a);
-        GLfloat s = sin(a);
+        GLfloat c = g_pipe_ring[i][0];
+        GLfloat s = g_pipe_ring[i][1];
 
         if (axis == 0) {
             glNormal3f(0.0f, c, s);
@@ -321,40 +313,29 @@ static void ss_pipes_grow(ss_pipes_state_t *st) {
 
 static bool ss_pipes_init_gl(ss_pipes_state_t *st) {
     GLfloat h;
+    GLfloat specular[4] = {0.90f, 0.90f, 0.90f, 1.0f};
+    GLfloat shininess = 18.0f;
     GLfloat light_pos[4] = {3.0f, 4.0f, 8.0f, 0.0f};
     GLfloat white[4] = {0.85f, 0.85f, 0.85f, 1.0f};
     GLfloat ambient[4] = {0.16f, 0.16f, 0.20f, 1.0f};
-
-    uint32_t pixel_count;
 
     if (!st->render_w || !st->render_h) {
         st->render_w = SS_PIPES_W;
         st->render_h = SS_PIPES_H;
     }
 
-    pixel_count = (uint32_t)st->render_w * (uint32_t)st->render_h;
-
-    st->pixels = (PIXEL *)bk_sys_alloc_zero(pixel_count * sizeof(PIXEL));
-    if (!st->pixels) return false;
-
-    st->framebuffer = ZB_open(st->render_w, st->render_h,
-#if TGL_FEATURE_RENDER_BITS == 32
-                              ZB_MODE_RGBA,
-#else
-                              ZB_MODE_5R6G5B,
-#endif
-                              0);
-    if (!st->framebuffer) return false;
-
-    glInit(st->framebuffer);
+    if (!ss_mesa_surface_create(&st->mesa, st->render_w, st->render_h, true))
+        return false;
+    st->pixels = st->mesa.pixels;
     st->gl_ready = true;
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glViewport(0, 0, st->render_w, st->render_h);
     glShadeModel(GL_SMOOTH);
-
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
+    glColorMaterial(GL_FRONT, GL_DIFFUSE);
+    glEnable(GL_COLOR_MATERIAL);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glDisable(GL_BLEND);
@@ -363,12 +344,19 @@ static bool ss_pipes_init_gl(ss_pipes_state_t *st) {
     glLightfv(GL_LIGHT0, GL_DIFFUSE, white);
     glLightfv(GL_LIGHT0, GL_SPECULAR, white);
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-    glSetEnableSpecular(GL_TRUE);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, &shininess);
 
     h = (GLfloat)st->render_h / (GLfloat)st->render_w;
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glFrustum(-1.0, 1.0, -h, h, 4.0, 80.0);
+
+    for (int i = 0; i <= SS_PIPES_SIDES; i++) {
+        GLfloat angle = (GLfloat)i * (GLfloat)(2.0 * M_PI) / SS_PIPES_SIDES;
+        g_pipe_ring[i][0] = cos(angle);
+        g_pipe_ring[i][1] = sin(angle);
+    }
 
     st->cursor_x = 0;
     st->cursor_y = 0;
@@ -378,21 +366,19 @@ static bool ss_pipes_init_gl(ss_pipes_state_t *st) {
     st->rot_x = 25.0f;
     st->rot_y = 0.0f;
     st->rot_z = 0.0f;
-
-    for (uint32_t i = 0; i < 18; i++)
-        ss_pipes_grow(st);
-
+    for (uint32_t i = 0; i < 18; i++) ss_pipes_grow(st);
     return true;
 }
 
 static void ss_pipes_render_frame(ss_pipes_state_t *st) {
     uint32_t now;
 
-    if (!st || !st->gl_ready || !st->framebuffer || !st->pixels) return;
+    if (!st || !st->gl_ready || !st->mesa.ready || !st->pixels) return;
+    if (!ss_mesa_surface_make_current(&st->mesa)) return;
 
-    now = bk_sys_ticks();
-    if ((uint32_t)(now - st->last_grow_tick) >= 10U) {
-        st->last_grow_tick = now;
+    now = bk_sys_uptime_ms();
+    if ((uint32_t)(now - st->last_grow_ms) >= SS_FRAME_MS) {
+        st->last_grow_ms = now;
         ss_pipes_grow(st);
     }
 
@@ -413,8 +399,8 @@ static void ss_pipes_render_frame(ss_pipes_state_t *st) {
     for (uint32_t i = 0; i < st->segment_count; i++)
         ss_pipes_draw_segment(&st->segments[i]);
 
-    ZB_copyFrameBuffer(st->framebuffer, st->pixels,
-                       st->render_w * sizeof(PIXEL));
+    if (!ss_mesa_surface_present(&st->mesa)) return;
+    st->pixels = st->mesa.pixels;
     st->frames++;
 }
 
@@ -427,15 +413,7 @@ static void ss_pipes_blit(gui_surface_t *surface, ss_pipes_state_t *st) {
     rw = st->render_w ? st->render_w : SS_PIPES_W;
     rh = st->render_h ? st->render_h : SS_PIPES_H;
 
-    for (uint32_t y = 0; y < surface->height; y++) {
-        uint32_t source_y = y * rh / surface->height;
-        uint32_t *destination = surface->pixels + y * surface->pitch;
-        const PIXEL *source = st->pixels + source_y * rw;
-        for (uint32_t x = 0; x < surface->width; x++) {
-            uint32_t source_x = x * rw / surface->width;
-            destination[x] = ss_pipes_pixel_to_rgb(source[source_x]);
-        }
-    }
+    ss_scale_rgb(surface, st->pixels, rw, rh);
 }
 
 static void ss_pipes_paint(gui_program_t *program, gui_desktop_t *desktop,
@@ -445,9 +423,8 @@ static void ss_pipes_paint(gui_program_t *program, gui_desktop_t *desktop,
 
     if (!st || !desktop || !surface || !st->active) return;
 
-    now = bk_sys_ticks();
-    if ((uint32_t)(now - st->last_tick) >= SS_PIPES_FRAME_TICKS) {
-        st->last_tick = now;
+    now = bk_sys_uptime_ms();
+    if (ss_frame_due(now, &st->last_frame_ms)) {
         ss_pipes_render_frame(st);
     }
 
@@ -469,12 +446,8 @@ static void ss_pipes_cleanup(gui_desktop_t *desktop, ss_pipes_state_t *st) {
         bk_gui_desktop_unregister_program(desktop, program);
     }
 
-    if (st->gl_ready) {
-        if (st->framebuffer) ZB_close(st->framebuffer);
-        glClose();
-    }
-
-    if (st->pixels) bk_sys_free(st->pixels);
+    if (st->gl_ready) ss_mesa_surface_destroy(&st->mesa);
+    st->pixels = NULL;
 
     bk_sys_free(st);
     bk_gui_gfx_invalidate_front();
@@ -486,6 +459,9 @@ static bool ss_pipes_event(gui_program_t *program, gui_desktop_t *desktop,
     ss_pipes_state_t *st = program ? (ss_pipes_state_t *)program->state : NULL;
 
     if (!st || !event) return false;
+    if (ss_pipes_input_event(event) &&
+        (int32_t)(bk_sys_uptime_ms() - st->input_armed_ms) < 0)
+        return true;
     if (ss_pipes_input_event(event)) {
         ss_pipes_cleanup(desktop, st);
         return true;
@@ -497,6 +473,8 @@ bool ss_pipes_is_active(void);
 bool ss_pipes_handle_global_event(gui_desktop_t *desktop,
                                   const gui_event_t *event) {
     if (!ss_pipes_is_active() || !ss_pipes_input_event(event)) return false;
+    if ((int32_t)(bk_sys_uptime_ms() - g_ss_pipes->input_armed_ms) < 0)
+        return true;
     ss_pipes_cleanup(desktop, g_ss_pipes);
     return true;
 }
@@ -515,9 +493,10 @@ void ss_pipes_open_from_desktop(gui_desktop_t *desktop) {
 
     st->desktop = desktop;
     st->active = true;
-    st->seed = bk_sys_ticks() ^ 0x51F1E50U;
-    st->last_tick = bk_sys_ticks();
-    st->last_grow_tick = st->last_tick;
+    st->seed = bk_sys_uptime_ms() ^ 0x51F1E50U;
+    st->last_frame_ms = bk_sys_uptime_ms();
+    st->last_grow_ms = st->last_frame_ms;
+    st->input_armed_ms = bk_sys_uptime_ms() + SS_INPUT_GRACE_MS;
     ss_pipes_configure_resolution(st, desktop);
 
     st->program = bk_gui_desktop_register_program(desktop, "ss_pipes", st,
@@ -532,7 +511,7 @@ void ss_pipes_open_from_desktop(gui_desktop_t *desktop) {
     g_ss_pipes = st;
 
     if (!ss_pipes_init_gl(st)) {
-        bk_gui_request_paint();
+        ss_pipes_cleanup(desktop, st);
         return;
     }
 
@@ -542,22 +521,21 @@ void ss_pipes_open_from_desktop(gui_desktop_t *desktop) {
 }
 
 void ss_pipes_main(gui_desktop_t *desktop) {
-    gui_desktop_t *target = desktop ? desktop : bk_gui_get_desktop();
+    gui_desktop_t *target = desktop ? desktop : bk_gui_desktop();
     uint32_t last_request;
 
     if (!target || ss_pipes_is_active()) return;
     ss_pipes_open_from_desktop(target);
     if (!ss_pipes_is_active()) return;
 
-    last_request = bk_sys_ticks();
+    last_request = bk_sys_uptime_ms();
     while (ss_pipes_is_active() && !bk_proc_exit_requested()) {
-        uint32_t now = bk_sys_ticks();
-        if ((uint32_t)(now - last_request) >= SS_PIPES_FRAME_TICKS) {
-            last_request = now;
+        uint32_t now = bk_sys_uptime_ms();
+        if (ss_frame_due(now, &last_request)) {
             bk_gui_desktop_invalidate_all(target);
             bk_gui_request_paint();
         }
-        bk_sys_sleep_ticks(2);
+        bk_sys_sleep_ms(5U);
     }
 
     if (bk_proc_exit_requested() && ss_pipes_is_active())

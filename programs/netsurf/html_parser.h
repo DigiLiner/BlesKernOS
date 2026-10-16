@@ -135,6 +135,7 @@ typedef struct {
     bool truncated;
     struct nsbk_layout *layout;
     int32_t viewport_width;
+    int32_t viewport_height;
     bool styled_layout;
     const nsbk_resource_environment_t *resources;
 } nsbk_html_result_t;

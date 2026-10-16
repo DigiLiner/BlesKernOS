@@ -1,0 +1,18 @@
+make: 'build/stage2.bin' is up to date.
+[GCC]  Moviendo Deskbar a Vision...
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel/libc/include -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -DBLES_VISION_SERVICE=1 -c system/desktop/deskbar.c -o build/system/services/vision_deskbar.o
+system/desktop/deskbar.c:1324:13: warning: ‘deskbar_draw_windows’ defined but not used [-Wunused-function]
+ 1324 | static void deskbar_draw_windows(gui_desktop_t *desktop, gui_surface_t *surface, const deskbar_state_t *state) {
+      |             ^~~~~~~~~~~~~~~~~~~~
+system/desktop/deskbar.c:793:13: warning: ‘deskbar_cde_draw_calendar’ defined but not used [-Wunused-function]
+  793 | static void deskbar_cde_draw_calendar(gui_surface_t *surface,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~
+system/desktop/deskbar.c:747:13: warning: ‘deskbar_cde_draw_clock’ defined but not used [-Wunused-function]
+  747 | static void deskbar_cde_draw_clock(gui_surface_t *surface,
+      |             ^~~~~~~~~~~~~~~~~~~~~~
+system/desktop/deskbar.c:358:13: warning: ‘deskbar_build_clock_text’ defined but not used [-Wunused-function]
+  358 | static void deskbar_build_clock_text(const deskbar_state_t *state,
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~
+[LD]   Asociando VISION.BEX (servicio + escritorio + Deskbar)...
+ld -m elf_i386 -r build/system/services/vision_main.o build/system/services/vision_deskmanager.o build/system/services/vision_deskbar.o -o build/system/services/vision.o
+[OK]   Vision service object: build/system/services/vision.o

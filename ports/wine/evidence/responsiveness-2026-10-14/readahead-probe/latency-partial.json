@@ -1,0 +1,37 @@
+[
+  {
+    "key_to_glyph_ms": 119.05368798761629,
+    "injection_ms": 1.3365980121307075,
+    "native_route_ms": 24.30836801067926,
+    "tinyx_consume_ms": 24.30836801067926,
+    "stream_publish_ms": 111.47302298923023
+  },
+  {
+    "key_to_glyph_ms": 130.52221399266273,
+    "injection_ms": 1.8029450147878379,
+    "native_route_ms": 34.314145013922825,
+    "tinyx_consume_ms": 34.314145013922825,
+    "stream_publish_ms": 122.5732059974689
+  },
+  {
+    "key_to_glyph_ms": 93.51804602192715,
+    "injection_ms": 2.131476008798927,
+    "native_route_ms": 31.507810024777427,
+    "tinyx_consume_ms": 31.507810024777427,
+    "stream_publish_ms": 84.01338802650571
+  },
+  {
+    "key_to_glyph_ms": 95.58126301271841,
+    "injection_ms": 1.4673169935122132,
+    "native_route_ms": 35.01164601766504,
+    "tinyx_consume_ms": 35.01164601766504,
+    "stream_publish_ms": 84.12502199644223
+  },
+  {
+    "key_to_glyph_ms": 122.71968901040964,
+    "injection_ms": 1.5723599935881793,
+    "native_route_ms": 34.49849699973129,
+    "tinyx_consume_ms": 34.49849699973129,
+    "stream_publish_ms": 114.67367800651118
+  }
+]

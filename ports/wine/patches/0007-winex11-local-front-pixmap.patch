@@ -1,0 +1,87 @@
+--- a/dlls/winex11.drv/init.c
++++ b/dlls/winex11.drv/init.c
+@@ -274,6 +274,8 @@
+     Window window;
+     RECT rect;
+ 
++    Pixmap local_front;
++    unsigned local_width, local_height;
+     HDC hdc_src;
+     HDC hdc_dst;
+ };
+@@ -294,6 +296,7 @@
+     if (surface->window) destroy_client_window( hwnd, surface->window );
+     if (surface->hdc_dst) NtGdiDeleteObjectApp( surface->hdc_dst );
+     if (surface->hdc_src) NtGdiDeleteObjectApp( surface->hdc_src );
++    if (surface->local_front) XFreePixmap( gdi_display, surface->local_front );
+ }
+ 
+ static void x11drv_client_surface_detach( struct client_surface *client )
+@@ -430,6 +433,27 @@
+     client_surface_update_offscreen( hwnd, surface );
+ 
+     if (!hdc) return;
++#ifdef SONAME_LIBGL
++    if (surface->hdc_src)
++    {
++        unsigned width = surface->rect.right, height = surface->rect.bottom;
++        Drawable source = surface->window;
++        if (surface->local_front && (width != surface->local_width || height != surface->local_height))
++        {
++            XFreePixmap( gdi_display, surface->local_front );
++            surface->local_front = None;
++        }
++        if (!surface->local_front && width && height)
++        {
++            surface->local_front = XCreatePixmap( gdi_display, surface->window, width, height, default_visual.depth );
++            surface->local_width = width;
++            surface->local_height = height;
++        }
++        if (surface->local_front && x11drv_copy_gl_front( surface->window, surface->local_front ))
++            source = surface->local_front;
++        set_dc_drawable( surface->hdc_src, source, &surface->rect, IncludeInferiors );
++    }
++#endif
+     window = X11DRV_get_whole_window( toplevel );
+ 
+     if (NtUserGetPresentRect( toplevel, &rect_dst, -1 /* raw dpi */ ))
+--- a/dlls/winex11.drv/opengl.c
++++ b/dlls/winex11.drv/opengl.c
+@@ -318,6 +318,7 @@
+ static const GLubyte *(*pglGetString)(GLenum name);
+ 
+ static void *opengl_handle;
++static Bool (*p_bles_glx_copy_front)(Display *, GLXDrawable, Pixmap);
+ static const struct opengl_funcs *funcs;
+ static struct opengl_driver_funcs x11drv_driver_funcs;
+ static const struct opengl_drawable_funcs x11drv_surface_funcs;
+@@ -585,6 +586,7 @@
+     /* No need to load any other libraries as according to the ABI, libGL should be self-sufficient
+        and include all dependencies */
+     opengl_handle = dlopen( SONAME_LIBGL, RTLD_NOW | RTLD_GLOBAL );
++    if (opengl_handle) p_bles_glx_copy_front = dlsym( opengl_handle, "bles_glx_copy_front" );
+     if (opengl_handle == NULL)
+     {
+         ERR( "Failed to load libGL: %s\n", dlerror() );
+@@ -1206,6 +1208,11 @@
+     else ret = pglXMakeContextCurrent( gdi_display, draw->drawable, read->drawable, context );
+     if (ret) NtCurrentTeb()->glReserved2 = context;
+     return ret;
++}
++
++BOOL x11drv_copy_gl_front( Drawable source, Pixmap target )
++{
++    return p_bles_glx_copy_front && p_bles_glx_copy_front( gdi_display, source, target );
+ }
+ 
+ static void x11drv_surface_flush( struct opengl_drawable *base, UINT flags )
+--- a/dlls/winex11.drv/x11drv.h
++++ b/dlls/winex11.drv/x11drv.h
+@@ -290,6 +290,7 @@
+ extern BOOL shape_layered_windows;
+ extern const struct gdi_dc_funcs *X11DRV_XRender_Init(void);
+ 
++extern BOOL x11drv_copy_gl_front( Drawable source, Pixmap target );
+ extern BOOL visual_from_pixel_format( int format, XVisualInfo *visual );
+ 
+ extern UINT X11DRV_OpenGLInit( UINT, const struct opengl_funcs *, const struct opengl_driver_funcs ** );

@@ -1,0 +1,4 @@
+#ifndef BLESKERNOS_SDL_REDIRECT_H
+#define BLESKERNOS_SDL_REDIRECT_H
+#include <SDL2/SDL.h>
+#endif

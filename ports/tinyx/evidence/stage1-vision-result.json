@@ -1,0 +1,48 @@
+{
+  "stage": "Etapa 1 - Esenciales Win32",
+  "date": "2026-10-01",
+  "platform": {
+    "qemu": "KVM",
+    "cpu": "pentium3",
+    "vcpus": 2,
+    "ram_mib": 1536,
+    "disk": "AHCI FAT32",
+    "display": "TinyX 760x536 bajo Vision",
+    "wine": "11.0",
+    "tasks_max": 128
+  },
+  "kernel_test_sha256": "7386f4ca184d5f8f07ce6d4d3ae7accf44ea6e0dc00db1bab8e536358b6d2fa9",
+  "checks": {
+    "abi": 0,
+    "case01": 0,
+    "notepad": {
+      "mapped": true,
+      "seconds_after_map": 180,
+      "exit_code": 0,
+      "keyboard": "blesk / wine / swxa",
+      "clipboard": "Ctrl+A, Ctrl+C, Ctrl+V duplicaron texto",
+      "save_dialog": "Ctrl+S mostro Guardar como"
+    },
+    "regedit": {
+      "mapped": true,
+      "seconds_after_map": 60,
+      "exit_code": 0
+    },
+    "winemine": {
+      "mapped": true,
+      "seconds_after_map": 60,
+      "exit_code": 0,
+      "mouse_click": "revelo casillas en la primera corrida"
+    },
+    "kernel_panics": 0
+  },
+  "full_serial_log": "/home/lucas/tinyx-stage1-vision-final/serial.log",
+  "directed_file_save": {
+    "image": "/home/lucas/tinyx-stage1-vision-files/test.img",
+    "fat_path": "/STAGE1.TXT",
+    "content": "stage1",
+    "bytes": 6,
+    "sha256": "ef24c98b6f6843d9d586189733598c533de9fa109464aa1d7045c667a4621b0f",
+    "evidence": "stage1-vision-saved-file.txt"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "before": "[BENCHTEST] yields=243/s sched=2 timer=0 late_avg=29604 late_max=29985 disk=60 peers=29",
+  "after": "[BENCHTEST] yields=5318/s sched=53 timer=98 late_avg=173 late_max=1387 disk=100 peers=35",
+  "physical_ati_validation": "pending"
+}

@@ -56,6 +56,11 @@ typedef struct gfx3d_driver_ops {
     bool (*depth_download)(gfx3d_surface_handle_t target,
                            uint16_t *depth, uint32_t destination_pitch,
                            const gfx_rect_t *rect);
+    /* Optional v3 tail, gated by descriptor_size and TEXTURE_MIPMAPS. */
+    bool (*surface_upload_mip)(gfx3d_surface_handle_t handle, uint32_t level,
+                              const uint32_t *pixels, uint32_t source_pitch);
+    /* Optional tail for a Gallium winsys, checked through descriptor_size. */
+    bool (*virgl)(bles_virgl_t *request, void *data);
 } gfx3d_driver_ops_t;
 
 bool gfx3d_register_driver(const gfx3d_driver_ops_t *ops);

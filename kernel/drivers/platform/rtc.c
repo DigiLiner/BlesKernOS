@@ -132,6 +132,7 @@ const bk_driver_module_t *bleskernos_driver_query(void) {
     static const bk_driver_module_t module = {
         BK_DRIVER_ABI_VERSION,
         sizeof(bk_driver_module_t),
+        1U, 0U,
         "cmos-rtc",
         "Reloj de tiempo real CMOS",
         rtc_driver_init,

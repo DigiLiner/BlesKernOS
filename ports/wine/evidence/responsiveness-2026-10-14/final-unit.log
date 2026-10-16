@@ -1,0 +1,3 @@
+PASS actual SMP handoff: stacks stay owned until retirement; completed wakes publish immediately; future/wrapped deadlines and futex expiry preserved; no duplicate wake or queued zombie
+PASS FUTEX_WAKE: retired stacks ready immediately; live/handoff stacks retained; masks, scope, limits, UP and repeat wake verified
+PASS signal frame work permits blocking outside spinlock; masked signals, failed delivery, zombie/kernel returns and final scheduler handoff keep IRQs disabled

@@ -1,0 +1,1285 @@
+--- a/Makefile
++++ b/Makefile
+@@ -143,6 +143,7 @@
+ 	kernel/sched/kernel_domains.c \
+ 	kernel/sched/perfmon.c \
+ 	kernel/api/syscall.c \
++	kernel/api/native_memory.c \
+ 	kernel/api/api.c \
+ 	kernel/api/vision_ipc.c \
+ 	kernel/api/vision_resources.c \
+--- /dev/null
++++ b/kernel/api/native_memory.c
+@@ -0,0 +1,196 @@
++#include "../include/native_memory.h"
++#include "../include/memory.h"
++#include "../include/paging.h"
++#include "../include/pager.h"
++#include "../include/task.h"
++#include "../include/usercopy.h"
++#include "../include/api.h"
++#include "../include/syscall.h"
++#include "../libc/include/string.h"
++#include "../libc/include/stdlib.h"
++#include "../libc/include/errno.h"
++
++extern size_t bk_string_length(const char *text);
++extern int bk_string_compare(const char *left,const char *right);
++extern char *bk_string_copy_n(char *destination,const char *source,size_t capacity);
++extern char *bk_string_concat(char *destination,const char *source);
++extern int bk_memory_compare(const void *left,const void *right,size_t size);
++
++#define TARGET(fn) (target==(uint32_t)(uintptr_t)&fn)
++
++static bool native_buffer_pin(uint32_t pid,uint32_t address,uint32_t length,bool write,void **token) {
++    *token=NULL;
++    if(!length)return true;
++    if(!address || length>0xffffffffU-address)return false;
++    if(!pager_pin(pid,address,length,write))return false;
++    bool ok=user_access_ok((void *)(uintptr_t)address,length,write);
++    /* Private mappings may intentionally shadow legacy heap virtual addresses.
++     * Inspect each identity fragment without mistaking private backing for a
++     * legacy allocation. Page tables and effective permissions were checked. */
++    for(uint32_t off=0;ok && off<length;) {
++        uint32_t n=4096U-((address+off)&4095U);
++        if(n>length-off)n=length-off;
++        if(!(paging_pager_entry(pid,address+off)&0x400U)) {
++            void *fragment=NULL;
++            ok=mm_user_heap_pin(address+off,n,pid,&fragment);
++            if(fragment) {
++                if(*token){
++                    if(*token!=fragment)ok=false;
++                    mm_unpin_address_allocation(fragment);
++                } else *token=fragment;
++            }
++        }
++        off+=n;
++    }
++    if(!ok){
++        pager_unpin(pid,address,length);
++        if(*token)mm_unpin_address_allocation(*token);
++        *token=NULL;
++    }
++    return ok;
++}
++
++static void native_buffer_unpin(uint32_t pid,uint32_t address,uint32_t length,void *token) {
++    if(length)pager_unpin(pid,address,length);
++    if(token)mm_unpin_address_allocation(token);
++}
++/* Bound scanning to mapped payloads and a finite amount of kernel work. The
++ * caller pins the measured range again before a bounded operation, so racing
++ * edits to a terminator cannot extend a write beyond the verified destination. */
++static bool native_string_extent(uint32_t pid,uint32_t address,uint32_t limit,
++                                 bool bounded,uint32_t *size) {
++    *size=0;
++    if(!limit)return true;
++    if(!address)return false;
++    uint32_t maximum=limit<1048576U?limit:1048576U;
++    for(uint32_t off=0;off<maximum;) {
++        if(off>0xffffffffU-address)return false;
++        uint32_t at=address+off,chunk=4096U-(at&4095U);
++        if(chunk>maximum-off)chunk=maximum-off;
++        if(!(paging_pager_entry(pid,at)&0x400U)) {
++            uint32_t available=mm_user_heap_available(at,pid);
++            if(chunk>available)chunk=available;
++        }
++        void *token=NULL;
++        if(!chunk || !native_buffer_pin(pid,at,chunk,false,&token))return false;
++        const uint8_t *text=(const uint8_t *)(uintptr_t)at;
++        uint32_t n=0;while(n<chunk && text[n])n++;
++        native_buffer_unpin(pid,at,chunk,token);
++        if(n<chunk){*size=off+n;return true;}
++        off+=chunk;
++    }
++    *size=maximum;return bounded && maximum==limit;
++}
++static bool native_string_dispatch(uint32_t target,const uint32_t *a,uint64_t *result) {
++    bool length=TARGET(kstrlen)||TARGET(strlen)||TARGET(bk_string_length);
++    bool compare=TARGET(kstrcmp)||TARGET(strcmp)||TARGET(bk_string_compare);
++    bool limited_compare=TARGET(kstrncmp)||TARGET(strncmp);
++    bool copy=TARGET(kstrcpy)||TARGET(strcpy);
++    bool limited_copy=TARGET(kstrncpy)||TARGET(strncpy)||TARGET(bk_string_copy_n);
++    bool append=TARGET(kstrcat)||TARGET(strcat)||TARGET(bk_string_concat);
++    if(!length && !compare && !limited_compare && !copy && !limited_copy && !append)return false;
++    *result=0;
++    uint32_t pid=task_current_process_id(),left=0,right=0,limit=1048576U;
++    uint32_t first_bytes=0,second_bytes=0;
++    bool first=false,second=false,ok=false;
++    void *first_token=NULL,*second_token=NULL;
++    if(!paging_process_pin(pid)){errno=BK_EFAULT;return true;}
++    if(limited_copy || limited_compare)limit=a[2];
++    if(length) {
++        if(!a[0] && TARGET(bk_string_length))ok=true;
++        else ok=native_string_extent(pid,a[0],limit,false,&left);
++        if(ok)*result=left;
++        goto done;
++    }
++    bool public_string=TARGET(bk_string_compare)||TARGET(bk_string_copy_n)||TARGET(bk_string_concat);
++    if(a[1] || !public_string)
++        if(!native_string_extent(pid,a[1],limit,limited_copy||limited_compare,&right))goto done;
++    second_bytes=right;
++    /* Only the measured bytes are used: the terminator is never trusted by
++     * an unbounded strcpy/strcmp after a concurrent user modification. */
++    if(second_bytes){second=native_buffer_pin(pid,a[1],second_bytes,false,&second_token);if(!second)goto done;}
++    if(compare || limited_compare || append) {
++        if(a[0] || !TARGET(bk_string_compare))
++            if(!native_string_extent(pid,a[0],limit,limited_compare,&left))goto done;
++    }
++    if(compare || limited_compare) {
++        first_bytes=left;
++        if(first_bytes){first=native_buffer_pin(pid,a[0],first_bytes,false,&first_token);if(!first)goto done;}
++        uint32_t common=left<right?left:right;
++        int order=common?kmemcmp((void *)(uintptr_t)a[0],(void *)(uintptr_t)a[1],common):0;
++        if(!order && left!=right) {
++            if(left>right)order=((const uint8_t *)(uintptr_t)a[0])[right];
++            else order=-((const uint8_t *)(uintptr_t)a[1])[left];
++        }
++        *result=(uint32_t)order;ok=true;goto done;
++    }
++    if(limited_copy)first_bytes=limit;
++    else {
++        if(right==0xffffffffU || left>0xffffffffU-right-1U)goto done;
++        first_bytes=left+right+1U;
++    }
++    if(first_bytes){first=native_buffer_pin(pid,a[0],first_bytes,true,&first_token);if(!first)goto done;}
++    uint8_t *dst=(uint8_t *)(uintptr_t)a[0];
++    uint32_t count=right;
++    if(limited_copy && count>limit)count=limit;
++    if(count)memmove(dst+left,(const void *)(uintptr_t)a[1],count);
++    if(limited_copy){if(limit>count)kmemset(dst+count,0,limit-count);}
++    else dst[left+right]=0;
++    *result=a[0];ok=true;
++done:
++    if(second)native_buffer_unpin(pid,a[1],second_bytes,second_token);
++    if(first)native_buffer_unpin(pid,a[0],first_bytes,first_token);
++    if(!ok)errno=BK_EFAULT;
++    paging_process_unpin(pid);return true;
++}
++
++bool native_memory_dispatch(uint32_t target,const uint32_t *a,uint64_t *result) {
++    bool copy=TARGET(kmemcpy)||TARGET(memcpy)||TARGET(memmove);
++    bool clear=TARGET(kmemset)||TARGET(memset);
++    bool compare=TARGET(kmemcmp)||TARGET(memcmp)||TARGET(bk_memory_compare);
++    bool release=TARGET(kfree)||TARGET(free)||TARGET(bk_sys_free);
++    bool resize=TARGET(krealloc)||TARGET(realloc)||TARGET(bk_sys_realloc);
++    bool info=TARGET(mm_get_system_info)||TARGET(bk_sys_memory_info);
++    bool metadata=TARGET(mm_set_allocation_owner)||TARGET(mm_set_allocation_subsystem);
++    if(!copy && !clear && !compare && !release && !resize && !metadata && !info)
++        return native_string_dispatch(target,a,result);
++    *result=0;
++    uint32_t pid=task_current_process_id();
++    if(metadata){
++        if(pid==gui_vision_owner_pid() && pid) {
++            if(TARGET(mm_set_allocation_owner) && a[1]==0U)
++                *result=mm_user_publish((void *)(uintptr_t)a[0],pid);
++            else if(TARGET(mm_set_allocation_subsystem) && a[1]<MM_SUBSYSTEM_COUNT)
++                *result=mm_user_subsystem((void *)(uintptr_t)a[0],(uint8_t)a[1],pid);
++        }
++        if(!*result)errno=EACCES;
++        return true;
++    }
++    if(release){if(!mm_user_free((void *)(uintptr_t)a[0],pid))errno=EACCES;return true;}
++    if(resize){*result=(uint32_t)(uintptr_t)mm_user_realloc((void *)(uintptr_t)a[0],a[1],pid);return true;}
++    if(info){
++        void *token=NULL;
++        if(!paging_process_pin(pid)){errno=BK_EFAULT;return true;}
++        if(native_buffer_pin(pid,a[0],sizeof(system_memory_info_t),true,&token)){
++            system_memory_info_t snapshot;mm_get_system_info(&snapshot);
++            kmemcpy((void *)(uintptr_t)a[0],&snapshot,sizeof(snapshot));
++            native_buffer_unpin(pid,a[0],sizeof(snapshot),token);
++            *result=TARGET(bk_sys_memory_info)?1U:0U;
++        } else errno=BK_EFAULT;
++        paging_process_unpin(pid);return true;
++    }
++    uint32_t length=a[2];bool first=false,second=false;
++    void *first_token=NULL,*second_token=NULL;
++    if(!paging_process_pin(pid)){errno=BK_EFAULT;return true;}
++    first=native_buffer_pin(pid,a[0],length,!compare,&first_token);
++    if(first && !clear)second=native_buffer_pin(pid,a[1],length,false,&second_token);
++    if(first && (clear || second)) {
++        void *dst=(void *)(uintptr_t)a[0];const void *src=(void *)(uintptr_t)a[1];
++        if(clear)*result=(uint32_t)(uintptr_t)kmemset(dst,(int)a[1],length);
++        else if(compare)*result=(uint32_t)kmemcmp(dst,src,length);
++        else *result=(uint32_t)(uintptr_t)memmove(dst,src,length);
++    } else errno=BK_EFAULT;
++    if(second)native_buffer_unpin(pid,a[1],length,second_token);
++    if(first)native_buffer_unpin(pid,a[0],length,first_token);
++    paging_process_unpin(pid);return true;
++}
+--- /dev/null
++++ b/kernel/include/native_memory.h
+@@ -0,0 +1,6 @@
++#ifndef NATIVE_MEMORY_H
++#define NATIVE_MEMORY_H
++#include "types.h"
++/* Return true for a handled primitive, including rejection. */
++bool native_memory_dispatch(uint32_t target,const uint32_t *arguments,uint64_t *result);
++#endif
+--- a/kernel/include/memory.h
++++ b/kernel/include/memory.h
+@@ -93,6 +93,15 @@
+ bool mm_pin_address_allocation(void *ptr);
+ void mm_unpin_address_allocation(void *ptr);
+ void kfree(void *ptr);
++/* Native API entry points: ownership check and mutation share the heap lock. */
++uint32_t mm_user_heap_available(uint32_t address,uint32_t process_id);
++bool mm_user_heap_payload(uint32_t address,uint32_t length,uint32_t process_id);
++bool mm_user_heap_pin(uint32_t address,uint32_t length,uint32_t process_id,void **token);
++/* Called only through the trusted service boundary; records live in BSS. */
++bool mm_user_publish(void *ptr,uint32_t process_id);
++bool mm_user_subsystem(void *ptr,uint8_t subsystem,uint32_t process_id);
++bool mm_user_free(void *ptr,uint32_t process_id);
++void *mm_user_realloc(void *ptr,size_t size,uint32_t process_id);
+ void *krealloc(void *ptr, size_t new_size);
+ size_t mm_allocation_size(const void *ptr);
+ void mm_get_info(heap_info_t *info);
+--- a/kernel/include/paging.h
++++ b/kernel/include/paging.h
+@@ -38,6 +38,12 @@
+  * private to the process and may point at different physical backing. */
+ bool paging_process_create(uint32_t process_id);
+ void paging_process_destroy(uint32_t process_id);
++/* Hold a live address space across user copies. Retirement fails while a CPU,
++ * borrower or copy still references it; once retired no new access is allowed. */
++bool paging_process_pin(uint32_t process_id);
++void paging_process_unpin(uint32_t process_id);
++bool paging_process_has_borrowers(uint32_t process_id);
++bool paging_process_retire(uint32_t process_id);
+ bool paging_process_map(uint32_t process_id, uint32_t virtual_address,
+                         uint32_t physical_address, uint32_t length,
+                         bool user, bool writable);
+--- a/kernel/mm/memory.c
++++ b/kernel/mm/memory.c
+@@ -783,9 +783,9 @@
+ }
+ 
+ char *kstrncpy(char *dst, const char *src, size_t n) {
+-    char *d = dst;
+-    while (n && (*d++ = *src++)) n--;
+-    while (n--) *d++ = '\0';
++    size_t i=0;
++    while(i<n && src[i]){dst[i]=src[i];i++;}
++    while(i<n)dst[i++]='\0';
+     return dst;
+ }
+ 
+@@ -1027,6 +1027,43 @@
+  * addresses until the last descendant stops mapping them. */
+ static struct { void *ptr; uint32_t refs; bool pending; } address_pins[128];
+ 
++/* Supervisor capability records for allocations explicitly published by the
++ * trusted GUI service. A shared owner=0 header alone never grants free/realloc
++ * authority. Records disappear before an address can be reused. */
++#define MM_USER_PUBLICATIONS 512U
++static struct {void *pointer;uint32_t publisher;} user_publications[MM_USER_PUBLICATIONS];
++static bool mm_user_manages_locked(heap_block_t *block,void *ptr,uint32_t pid) {
++    if(!block || block->free || !pid)return false;
++    if(block->owner_process_id==pid)return true;
++    if(block->owner_process_id)return false;
++    for(unsigned i=0;i<MM_USER_PUBLICATIONS;i++)
++        if(user_publications[i].pointer==ptr && user_publications[i].publisher==pid)return true;
++    return false;
++}
++static void mm_user_forget_locked(void *ptr) {
++    for(unsigned i=0;i<MM_USER_PUBLICATIONS;i++)
++        if(user_publications[i].pointer==ptr){user_publications[i].pointer=NULL;user_publications[i].publisher=0;break;}
++}
++bool mm_user_publish(void *ptr,uint32_t pid) {
++    uint32_t flags=mm_lock();heap_block_t *block=mm_find_block_locked(ptr);
++    bool ok=false;
++    if(mm_user_manages_locked(block,ptr,pid)) {
++        for(unsigned i=0;i<MM_USER_PUBLICATIONS;i++)
++            if(user_publications[i].pointer==ptr && user_publications[i].publisher==pid){ok=true;break;}
++        if(!ok && block->owner_process_id==pid)for(unsigned i=0;i<MM_USER_PUBLICATIONS;i++)
++            if(!user_publications[i].pointer){user_publications[i].pointer=ptr;user_publications[i].publisher=pid;ok=true;break;}
++        if(ok)block->owner_process_id=0;
++    }
++    mm_unlock(flags);return ok;
++}
++bool mm_user_subsystem(void *ptr,uint8_t subsystem,uint32_t pid) {
++    if(subsystem>=MM_SUBSYSTEM_COUNT)return false;
++    uint32_t flags=mm_lock();heap_block_t *block=mm_find_block_locked(ptr);
++    bool ok=mm_user_manages_locked(block,ptr,pid);
++    if(ok)block->subsystem=subsystem;
++    mm_unlock(flags);return ok;
++}
++
+ bool mm_pin_address_allocation(void *ptr) {
+     uint32_t flags=mm_lock();
+     heap_block_t *blk=mm_find_block_locked(ptr);
+@@ -1035,7 +1072,7 @@
+         if(address_pins[i].ptr==ptr) {slot=i;break;}
+         if(!address_pins[i].ptr && slot<0) slot=i;
+     }
+-    bool ok=blk && !blk->free && slot>=0;
++    bool ok=blk && !blk->free && slot>=0 && address_pins[slot].refs!=U32_MAX_VALUE;
+     if(ok) {address_pins[slot].ptr=ptr;address_pins[slot].refs++;}
+     mm_unlock(flags);return ok;
+ }
+@@ -1083,6 +1120,7 @@
+     if(mm_defer_pinned_free(ptr)) {
+         blk->owner_process_id=0U;mm_unlock(flags);return;
+     }
++    mm_user_forget_locked(ptr);
+     blk->free = true;
+     blk->owner_process_id = 0U;
+ 
+@@ -1100,6 +1138,91 @@
+         if (prev->next) prev->next->prev = prev;
+     }
+     mm_unlock(flags);
++}
++
++/* Legacy shared payloads remain accessible, but allocator headers, free
++ * storage and another process's private allocations are never API buffers.
++ * Explicit private VM mappings are checked separately by the API wrapper. */
++uint32_t mm_user_heap_available(uint32_t address,uint32_t pid) {
++    if(address<heap_start_address || address>=heap_end_address)return 4096U;
++    uint32_t flags=mm_lock(),available=0;
++    for(heap_block_t *block=heap_head;block && mm_block_valid_locked(block);block=block->next) {
++        uint32_t start=(uint32_t)(uintptr_t)(block+1);
++        if(!block->free && block!=heap_exec_reservation && address>=start &&
++           address-start<block->size && (!block->owner_process_id || block->owner_process_id==pid)) {
++            available=block->size-(address-start);break;
++        }
++    }
++    mm_unlock(flags);return available;
++}
++
++bool mm_user_heap_payload(uint32_t address,uint32_t length,uint32_t pid) {
++    if(!length)return true;
++    if(length>U32_MAX_VALUE-address)return false;
++    uint32_t end=address+length;
++    if(address>=heap_end_address || end<=heap_start_address)return true;
++    uint32_t flags=mm_lock();bool ok=false;
++    for(heap_block_t *block=heap_head;block && mm_block_valid_locked(block);block=block->next) {
++        uint32_t start=(uint32_t)(uintptr_t)(block+1);
++        if(!block->free && block!=heap_exec_reservation && address>=start &&
++           end<=start+block->size &&
++           (!block->owner_process_id || block->owner_process_id==pid)){ok=true;break;}
++    }
++    mm_unlock(flags);return ok;
++}
++
++bool mm_user_heap_pin(uint32_t address,uint32_t length,uint32_t pid,void **token) {
++    *token=NULL;
++    if(!length)return true;
++    if(length>U32_MAX_VALUE-address)return false;
++    uint32_t end=address+length;
++    if(address>=heap_end_address || end<=heap_start_address)return true;
++    uint32_t flags=mm_lock();bool ok=false;
++    for(heap_block_t *block=heap_head;block && mm_block_valid_locked(block);block=block->next) {
++        uint32_t start=(uint32_t)(uintptr_t)(block+1);
++        if(!block->free && block!=heap_exec_reservation && address>=start &&
++           end<=start+block->size && (!block->owner_process_id || block->owner_process_id==pid)) {
++            ok=mm_pin_address_allocation(block+1);
++            if(ok)*token=block+1;
++            break;
++        }
++    }
++    mm_unlock(flags);return ok;
++}
++
++bool mm_user_free(void *ptr,uint32_t pid) {
++    if(!ptr)return true;
++    if(!pid)return false;
++    uint32_t flags=mm_lock();heap_block_t *block=mm_find_block_locked(ptr);
++    bool ok=mm_user_manages_locked(block,ptr,pid);
++    if(ok)kfree(ptr);
++    mm_unlock(flags);return ok;
++}
++void *mm_user_realloc(void *ptr,size_t size,uint32_t pid) {
++    if(!pid || size>U32_MAX_VALUE-3U)return NULL;
++    if(!ptr)return kmalloc(size);
++    uint32_t flags=mm_lock();heap_block_t *block=mm_find_block_locked(ptr);
++    if(!mm_user_manages_locked(block,ptr,pid)){mm_unlock(flags);return NULL;}
++    if(!size){kfree(ptr);mm_unlock(flags);return NULL;}
++    size=ALIGN4(size);
++    size_t old_size=block->size;uint8_t subsystem=block->subsystem;
++    bool published=block->owner_process_id==0;
++    /* These paths cannot allocate or reclaim while the outer heap lock is held. */
++    if(size<=old_size || (block->next && mm_block_valid_locked(block->next) &&
++       block->next->free && block->next->size+sizeof(heap_block_t)>=size-old_size)) {
++        void *result=krealloc(ptr,size);mm_unlock(flags);return result;
++    }
++    if(!mm_pin_address_allocation(ptr)){mm_unlock(flags);return NULL;}
++    mm_unlock(flags);
++    void *result=kmalloc(size);
++    if(result && published && !mm_user_publish(result,pid)){kfree(result);result=NULL;}
++    if(result){
++        (void)mm_set_allocation_subsystem(result,subsystem);
++        kmemcpy(result,ptr,old_size);
++        /* Mark the old allocation pending while its pin still prevents reuse. */
++        kfree(ptr);
++    }
++    mm_unpin_address_allocation(ptr);return result;
+ }
+ 
+ size_t mm_allocation_size(const void *ptr) {
+@@ -1229,6 +1352,7 @@
+     flags = mm_lock();
+     blk = mm_find_block_locked(ptr);
+     if (blk && !blk->free) {
++        if(process_id)mm_user_forget_locked(ptr);
+         blk->owner_process_id = process_id;
+         result = true;
+     }
+@@ -1309,6 +1433,7 @@
+         if (blk->free || blk->owner_process_id != process_id) continue;
+         if(mm_defer_pinned_free((void *)(blk+1))) {blk->owner_process_id=0U;continue;}
+         released += blk->size;
++        mm_user_forget_locked((void *)(blk+1));
+         blk->free = true;
+         blk->owner_process_id = 0U;
+     }
+--- a/kernel/mm/paging.c
++++ b/kernel/mm/paging.c
+@@ -41,6 +41,8 @@
+ typedef struct {
+     uint32_t process_id;
+     uint32_t borrowed_from;
++    uint32_t users;
++    bool retiring;
+     uint32_t *directory;
+     uint32_t *table[PAGING_PRIVATE_TABLE_MAX];
+     uint16_t pde_index[PAGING_PRIVATE_TABLE_MAX];
+@@ -124,9 +126,53 @@
+ 
+ static paging_process_space_t *paging_find_space(uint32_t process_id) {
+     paging_process_space_t *s=paging_find_raw_space(process_id);
+-    for(unsigned n=0;s && s->borrowed_from && n<PAGING_PROCESS_MAX;n++)
++    for(unsigned n=0;s && !s->retiring && s->borrowed_from && n<PAGING_PROCESS_MAX;n++)
+         s=paging_find_raw_space(s->borrowed_from);
+-    return s;
++    return s && !s->retiring && !s->borrowed_from ? s : NULL;
++}
++
++/* All references and retirement decisions are serialized with CR3 switching.
++ * A retiring space cannot be acquired again, including through a borrower. */
++bool paging_process_pin(uint32_t pid) {
++    uint32_t flags=kspin_lock_irqsave(&g_paging_lock);
++    paging_process_space_t *space=paging_find_space(pid);
++    /* Native flat tasks still use the permanent kernel directory. Their task
++     * lifetime keeps it alive; only private directories need a reference. */
++    bool ok=pid && (!paging_find_raw_space(pid) || (space && space->users!=0xffffffffU));
++    if(ok && space)space->users++;
++    kspin_unlock_irqrestore(&g_paging_lock,flags);return ok;
++}
++void paging_process_unpin(uint32_t pid) {
++    uint32_t flags=kspin_lock_irqsave(&g_paging_lock);
++    paging_process_space_t *space=paging_find_space(pid);
++    if(space && space->users)space->users--;
++    kspin_unlock_irqrestore(&g_paging_lock,flags);
++}
++static bool paging_has_borrowers_locked(uint32_t pid) {
++    for(unsigned i=0;i<PAGING_PROCESS_MAX;i++)
++        if(g_process_spaces[i].process_id && g_process_spaces[i].borrowed_from==pid)
++            return true;
++    return false;
++}
++bool paging_process_has_borrowers(uint32_t pid) {
++    uint32_t flags=kspin_lock_irqsave(&g_paging_lock);
++    bool result=paging_has_borrowers_locked(pid);
++    kspin_unlock_irqrestore(&g_paging_lock,flags);return result;
++}
++static bool paging_can_retire_locked(paging_process_space_t *space) {
++    if(space->users || paging_has_borrowers_locked(space->process_id))return false;
++    for(unsigned cpu=0;cpu<SMP_MAX_CPUS;cpu++)
++        if(g_active_process[cpu]==space->process_id ||
++           (space->directory && paging_find_space(g_active_process[cpu])==space))
++            return false;
++    return true;
++}
++bool paging_process_retire(uint32_t pid) {
++    uint32_t flags=kspin_lock_irqsave(&g_paging_lock);
++    paging_process_space_t *space=paging_find_raw_space(pid);
++    bool ok=!space || paging_can_retire_locked(space);
++    if(ok && space)space->retiring=true;
++    kspin_unlock_irqrestore(&g_paging_lock,flags);return ok;
+ }
+ 
+ /* Count explicit process PTEs, never the inherited identity map. RSS is
+@@ -165,7 +211,7 @@
+     paging_process_space_t *src=paging_find_space(parent),*dst=paging_find_raw_space(child);
+     if(src && !dst) for(unsigned i=0;i<PAGING_PROCESS_MAX;i++)
+         if(!g_process_spaces[i].process_id) {dst=&g_process_spaces[i];break;}
+-    bool ok=src && dst && !dst->directory && !dst->borrowed_from;
++    bool ok=src && dst && !dst->retiring && !dst->directory && !dst->borrowed_from;
+     if(ok) {dst->process_id=child;dst->borrowed_from=src->process_id;}
+     kspin_unlock_irqrestore(&g_paging_lock,flags);
+     return ok;
+@@ -754,9 +800,10 @@
+     uint32_t flags;
+     if(!paging_enabled || !process_id) return false;
+     flags=kspin_lock_irqsave(&g_paging_lock);
+-    if(paging_find_space(process_id)) {
++    if(paging_find_raw_space(process_id)) {
++        bool usable=paging_find_space(process_id)!=NULL;
+         kspin_unlock_irqrestore(&g_paging_lock,flags);
+-        return true;
++        return usable;
+     }
+     for(uint32_t i=0U;i<PAGING_PROCESS_MAX;i++)
+         if(!g_process_spaces[i].process_id) { space=&g_process_spaces[i]; break; }
+@@ -1232,6 +1279,11 @@
+     paging_process_space_t *a=paging_find_raw_space(first),*b=paging_find_raw_space(second);
+     if(a)a->process_id=second;
+     if(b)b->process_id=first;
++    /* A borrowed address space follows its object when exec exchanges IDs. */
++    for(unsigned i=0;i<PAGING_PROCESS_MAX;i++) {
++        if(g_process_spaces[i].borrowed_from==first)g_process_spaces[i].borrowed_from=second;
++        else if(g_process_spaces[i].borrowed_from==second)g_process_spaces[i].borrowed_from=first;
++    }
+     for(uint32_t i=0;i<SMP_MAX_CPUS;i++) {
+         if(g_active_process[i]==first) g_active_process[i]=second;
+         else if(g_active_process[i]==second) g_active_process[i]=first;
+@@ -1252,7 +1304,7 @@
+     if(!process_id) return;
+     flags=kspin_lock_irqsave(&g_paging_lock);
+     space=paging_find_raw_space(process_id);
+-    if(space) {
++    if(space && paging_can_retire_locked(space)) {
+         directory=space->directory;
+         count=space->table_count;
+         for(uint32_t i=0U;i<count;i++) tables[i]=space->table[i];
+--- a/kernel/mm/pager.c
++++ b/kernel/mm/pager.c
+@@ -96,10 +96,39 @@
+     region_misses[r->pid&63U].valid=false;
+     for(uint32_t i=0;i<64U;i++)if(region_cache[i]==r)region_cache[i]=NULL;
+ }
++static bool reclaim(uint32_t *frame);
++/* Resident metadata competes with pageable data. Reclaim before consuming the
++ * last page-table reserve: a large region record must not make fork fail when
++ * its next operation needs private page tables under the paging spinlock. */
++static bool pager_metadata_alloc(uint32_t pages,uint32_t *physical) {
++    if(physical)*physical=0;
++    if(!physical || !pages || pages>mm_vm_frame_total_pages())return false;
++    kmutex_lock(&lock);
++    for(uint32_t i=0;i<mm_vm_frame_total_pages() &&
++        mm_vm_frame_free_pages()<pages+16U;i++) {
++        uint32_t victim=0;
++        if(!reclaim(&victim))break;
++        mm_vm_frame_free(victim,1);
++    }
++    bool ok=mm_vm_frame_alloc(pages,physical);
++    for(uint32_t i=0;!ok && i<mm_vm_frame_total_pages();i++) {
++        uint32_t victim=0;if(!reclaim(&victim))break;
++        mm_vm_frame_free(victim,1);ok=mm_vm_frame_alloc(pages,physical);
++    }
++    kmutex_unlock(&lock);return ok;
++}
++
++/* Pager metadata must never live in the legacy PAGE_USER heap. Small file
++ * cache descriptors and region records use supervisor physical pages only;
++ * pressure may evict user data, but cannot weaken metadata permissions. */
+ static void *resident_alloc(uint32_t size) {
+-    void *p=kzalloc(size);
+-    if(p){(void)mm_set_allocation_owner(p,0U);(void)mm_set_allocation_subsystem(p,MM_SUBSYSTEM_VM);}
+-    return p;
++    if(!size || size>0xffffffffU-4095U)return NULL;
++    uint32_t physical=0,pages=(size+4095U)/4096U;
++    if(!pager_metadata_alloc(pages,&physical))return NULL;
++    return (void *)(uintptr_t)physical;
++}
++static void resident_free(void *ptr,uint32_t size) {
++    if(ptr)mm_vm_frame_free((uint32_t)(uintptr_t)ptr,(size+4095U)/4096U);
+ }
+ static uint32_t *file_frame_slot(file_source_t *s,uint32_t offset,bool create) {
+     uint32_t index=offset/(64U*4096U);
+@@ -119,10 +148,10 @@
+     while(s->chunks) {
+         file_chunk_t *c=s->chunks;s->chunks=c->next;
+         for(uint32_t i=0;i<64;i++)if(c->frames[i]){mm_vm_frame_free(c->frames[i],1);file_cache_released++;}
+-        kfree(c);
++        resident_free(c,sizeof(*c));
+     }
+     if(s->shared)(void)vfs_shared_release(s->shared);
+-    vfs_page_reference_release(s->reference);kfree(s);
++    vfs_page_reference_release(s->reference);resident_free(s,sizeof(*s));
+ }
+ /* Inspect under the pager lock, then acquire VFS before rechecking/loading.
+  * No file reference survives this lookup without its region owning it. */
+@@ -271,22 +300,17 @@
+     fault_count++;if(c)c->faults++;return true;
+ }
+ static pager_region_t *region_allocate(uint32_t count) {
++    if(!count || count>(0xffffffffU-sizeof(pager_region_t)-4095U)/sizeof(pager_page_t))return NULL;
+     uint32_t bytes=sizeof(pager_region_t)+count*sizeof(pager_page_t);
+-    pager_region_t *r=kzalloc(bytes);
+-    if(r) {
+-        /* Metadata outlives the thread that creates a child's mappings. */
+-        (void)mm_set_allocation_owner(r,0U);
+-        (void)mm_set_allocation_subsystem(r,MM_SUBSYSTEM_VM);
+-        return r;
+-    }
+     uint32_t physical=0,pages=(bytes+4095U)/4096U;
+-    if(!pager_frame_alloc(pages,&physical))return NULL;
+-    r=(pager_region_t *)(uintptr_t)physical;r->metadata_pages=pages;return r;
++    if(!pager_metadata_alloc(pages,&physical))return NULL;
++    pager_region_t *r=(pager_region_t *)(uintptr_t)physical;
++    r->metadata_pages=pages;return r;
+ }
+ static void region_free(pager_region_t *r) {
+     file_drop(r->file);
+     if(r->metadata_pages)mm_vm_frame_free((uint32_t)(uintptr_t)r,r->metadata_pages);
+-    else kfree(r);
++
+ }
+ 
+ bool pager_map(uint32_t pid,uint32_t requested,uint32_t length,uint32_t prot,bool exact,
+@@ -327,7 +351,7 @@
+         (void)counter(pid,true);region_publish(r);
+         /* Existing source already holds its own reference. */
+         if(!created)vfs_page_reference_release(reference);
+-    } else if(created){file_sources=s->next;kfree(s);}
++    } else if(created){file_sources=s->next;resident_free(s,sizeof(*s));}
+     kmutex_unlock(&lock);
+     if(!ok)region_free(r);
+     return ok;
+@@ -378,7 +402,7 @@
+     while(s->chunks) {
+         file_chunk_t *c=s->chunks;s->chunks=c->next;
+         for(uint32_t n=0;n<64;n++)if(c->frames[n])mm_vm_frame_free(c->frames[n],1);
+-        kfree(c);
++        resident_free(c,sizeof(*c));
+     }
+     kmutex_unlock(&lock);return true;
+ }
+--- a/kernel/mm/usercopy.c
++++ b/kernel/mm/usercopy.c
+@@ -12,20 +12,26 @@
+     if (!destination || (!source && length)) return false;
+     if (!length) return true;
+     uint32_t pid=task_current_process_id();
+-    if(!pager_pin(pid,(uint32_t)(uintptr_t)source,length,false))return false;
++    if(!paging_process_pin(pid))return false;
++    if(!pager_pin(pid,(uint32_t)(uintptr_t)source,length,false)){
++        paging_process_unpin(pid);return false;
++    }
+     bool ok=user_access_ok(source,length,false);
+     if(ok)kmemcpy(destination,source,length);
+-    pager_unpin(pid,(uint32_t)(uintptr_t)source,length);return ok;
++    pager_unpin(pid,(uint32_t)(uintptr_t)source,length);paging_process_unpin(pid);return ok;
+ }
+ 
+ bool copy_to_user(void *destination, const void *source, uint32_t length) {
+     if ((!destination && length) || !source) return false;
+     if (!length) return true;
+     uint32_t pid=task_current_process_id();
+-    if(!pager_pin(pid,(uint32_t)(uintptr_t)destination,length,true))return false;
++    if(!paging_process_pin(pid))return false;
++    if(!pager_pin(pid,(uint32_t)(uintptr_t)destination,length,true)){
++        paging_process_unpin(pid);return false;
++    }
+     bool ok=user_access_ok(destination,length,true);
+     if(ok)kmemcpy(destination,source,length);
+-    pager_unpin(pid,(uint32_t)(uintptr_t)destination,length);return ok;
++    pager_unpin(pid,(uint32_t)(uintptr_t)destination,length);paging_process_unpin(pid);return ok;
+ }
+ 
+ bool copy_string_from_user(char *destination, uint32_t capacity,
+--- a/kernel/sched/task.c
++++ b/kernel/sched/task.c
+@@ -206,6 +206,7 @@
+     if (!task || !regs || !task->user || task->linux_abi ||
+         (regs->cs & 3U) != 3U)
+         return;
++    regs->eflags &= ~0x3000U; /* never restore user IOPL */
+     regs->ds = GDT_USER_DATA;
+     regs->es = GDT_USER_DATA;
+     regs->gs = task->linux_abi && task->user_fs_base
+@@ -712,6 +713,16 @@
+     size_t released;
+ 
+     if (!task || task->resources_released) return;
++    /* Keep the lender's heap, images and stacks until every borrowed CR3 is
++     * detached. Check before releasing ANY process-owned storage. */
++    if(paging_process_has_borrowers(task->process_id))return;
++    bool last=true;
++    uint32_t release_flags=kspin_lock_irqsave(&g_task_table_lock);
++    for(int i=0;i<TASK_MAX;i++)
++        if(&tasks[i]!=task && tasks[i].process_id==task->process_id &&
++           tasks[i].state!=TASK_UNUSED && !tasks[i].resources_released){last=false;break;}
++    kspin_unlock_irqrestore(&g_task_table_lock,release_flags);
++    if(last && !paging_process_retire(task->process_id))return;
+     if(task->pid==gui_vision_owner_pid()){vision_ipc_server_offline(task->pid);vision_file_dialog_offline(task->pid);vision_resources_recover(gui_get_desktop());}
+     gui_vision_abort_frame(task->pid);
+     kernel_domains_abandon_owner(task->pid);
+@@ -810,7 +821,8 @@
+         for (int i = 1; i < TASK_MAX; i++) {
+             if (tasks[i].state != TASK_ZOMBIE || tasks[i].running_cpu != -1 ||
+                 tasks[i].queued_cpu != -1 || tasks[i].resources_released ||
+-                g_task_reap_claim[i]) continue;
++                g_task_reap_claim[i] ||
++                paging_process_has_borrowers(tasks[i].process_id)) continue;
+             g_task_reap_claim[i] = 1U;
+             index = i;
+             break;
+@@ -1267,8 +1279,9 @@
+             initial_user_stack[3] = 0U;
+             initial_user_stack[4] = 0U;
+             task->context->eip = (uint32_t)(uintptr_t)entry;
+-            task->context->eflags = is_thread && thread_joinable
+-                ? 0x202U : 0x3202U;
++            /* Ring 3 must not program ports or disable interrupts. Drivers
++             * execute their privileged operations through kernel entry points. */
++            task->context->eflags = 0x202U;
+             task->context->useresp = (uint32_t)(uintptr_t)initial_user_stack;
+         }
+         task->user = true;
+--- a/kernel/exec/elf_loader.c
++++ b/kernel/exec/elf_loader.c
+@@ -12,6 +12,7 @@
+ #include "../include/startup_sound.h"
+ #include "../include/bootsplash.h"
+ #include "../include/task.h"
++#include "../include/native_memory.h"
+ #include "../include/kernel_domains.h"
+ #include "../include/klock.h"
+ #include "../include/gdt.h"
+@@ -1728,7 +1729,11 @@
+             a=translated;
+         }
+         task_user_api_guard_enter(api_name, target, token);
+-        result = elf_api_call_raw(target, a, callee_cleanup);
++        /* Primitive wrappers validate pointed-to memory rather than treating a
++         * published function token as authority over arbitrary kernel storage. */
++        if(!native_memory_dispatch(target,a,&result))
++            result = elf_api_call_raw(target, a, callee_cleanup);
++        else if(callee_cleanup)*callee_cleanup=0U;
+         if (g_user_errno_slot) *g_user_errno_slot = (uint32_t)errno;
+         task_user_api_guard_leave();
+         kernel_domains_exit(domains);
+--- a/system/services/vision_memory.c
++++ b/system/services/vision_memory.c
+@@ -49,9 +49,9 @@
+ }
+ 
+ char *kstrncpy(char *dst, const char *src, size_t n) {
+-    char *d = dst;
+-    while (n && (*d++ = *src++)) n--;
+-    while (n--) *d++ = '\0';
++    size_t i=0;
++    while(i<n && src[i]){dst[i]=src[i];i++;}
++    while(i<n)dst[i++]='\0';
+     return dst;
+ }
+ 
+--- a/tests/kernel/audit_native_api_boundary.py
++++ b/tests/kernel/audit_native_api_boundary.py
+@@ -1,40 +1,78 @@
+ #!/usr/bin/env python3
+-"""Diagnostic reproduction, NOT a passing security regression.
++"""Regression: actual native dispatcher rejects kernel-memory primitives.
+ 
+-Run production dispatch/copy in a controlled i386 host harness. No guest or
+-real kernel memory is modified. A successful reproduction reports an unsafe
+-write to a mock kernel-owned object; it does not certify hardware exploitation.
++Runs production wrappers and ELF dispatch with low-address i386 host objects;
++this exercises the boundary, not a hardware exploitation claim.
+ """
+ from pathlib import Path
+-import subprocess
+-import tempfile
+-
+-root = Path(__file__).resolve().parents[2]
+-loader = (root / 'kernel/exec/elf_loader.c').read_text()
+-memory = (root / 'kernel/mm/memory.c').read_text()
+-dispatch = loader[loader.index('uint64_t elf_user_api_dispatch('):loader.index('const char *elf_last_user_api_name(')]
+-copy = memory[memory.index('void *kmemcpy('):memory.index('int kmemcmp(')]
+-code = r'''
++import re,subprocess,tempfile
++root=Path(__file__).resolve().parents[2]
++loader=(root/'kernel/exec/elf_loader.c').read_text()
++dispatch=loader[loader.index('uint64_t elf_user_api_dispatch('):loader.index('const char *elf_last_user_api_name(')]
++wrapper=re.sub(r'^#include[^\n]*\n','',(root/'kernel/api/native_memory.c').read_text(),flags=re.M)
++code=r'''
+ #include <stdint.h>
+ #include <stdbool.h>
+ #include <stddef.h>
+ #include <assert.h>
+ #include <stdio.h>
+-typedef struct heap_block {
+-    uint32_t magic;size_t size;bool free;uint32_t owner_process_id;
+-    struct heap_block *next,*prev;
+-} heap_block_t;
+-static heap_block_t *heap_head;
+-static bool mm_heap_root_write_overlap(void *p,size_t n){(void)p;(void)n;return false;}
+-static void mm_heap_root_write_report(const char *s,void *p,size_t n,uint32_t c){(void)s;(void)p;(void)n;(void)c;}
+-''' + copy + r'''
++#include <stdlib.h>
++#include <string.h>
++#include <errno.h>
++#define MM_SUBSYSTEM_COUNT 8
++#define BK_EFAULT 14
++#define kprintf(...) ((void)0)
++typedef struct {size_t total_bytes,used_bytes,free_bytes,reserved_bytes;} system_memory_info_t;
++static void mm_get_system_info(system_memory_info_t *p){*p=(system_memory_info_t){100,40,60,0};}
++static bool bk_sys_memory_info(system_memory_info_t *p){mm_get_system_info(p);return true;}
++static uint8_t user[8192] __attribute__((aligned(4096))),source[8192] __attribute__((aligned(4096)));
++static uint32_t kernel_owned=0xb1e50000;
++static unsigned pins,spaces,heap_pins,raw_calls,mutations,free_calls;
++static bool fail_second,deny_payload,readonly,retiring;
++static void *last_free;
++void *kmemcpy(void *d,const void *s,size_t n){mutations++;return memcpy(d,s,n);}
++void *kmemset(void *d,int c,size_t n){mutations++;return memset(d,c,n);}
++int kmemcmp(const void *a,const void *b,size_t n){return memcmp(a,b,n);}
++size_t kstrlen(const char *s){return strlen(s);}
++int kstrcmp(const char *a,const char *b){return strcmp(a,b);}
++int kstrncmp(const char *a,const char *b,size_t n){return strncmp(a,b,n);}
++char *kstrcpy(char *d,const char *s){return strcpy(d,s);}
++char *kstrncpy(char *d,const char *s,size_t n){return strncpy(d,s,n);}
++char *kstrcat(char *d,const char *s){return strcat(d,s);}
++size_t bk_string_length(const char *s){return strlen(s);}
++int bk_string_compare(const char *a,const char *b){return strcmp(a,b);}
++char *bk_string_copy_n(char *d,const char *s,size_t n){return strncpy(d,s,n);}
++char *bk_string_concat(char *d,const char *s){return strcat(d,s);}
++int bk_memory_compare(const void *a,const void *b,size_t n){return memcmp(a,b,n);}
++static uint32_t mm_user_heap_available(uint32_t a,uint32_t p){(void)p;uint32_t b=(uintptr_t)user,c=(uintptr_t)source;if(a>=b && a-b<sizeof(user))return sizeof(user)-(a-b);if(a>=c && a-c<sizeof(source))return sizeof(source)-(a-c);return 0;}
++void kfree(void *p){(void)p;assert(0);}
++void *krealloc(void *p,size_t n){(void)p;(void)n;assert(0);return NULL;}
++void bk_sys_free(void *p){(void)p;assert(0);}
++void *bk_sys_realloc(void *p,size_t n){(void)p;(void)n;assert(0);return NULL;}
++bool mm_set_allocation_owner(void *p,uint32_t id){(void)p;(void)id;assert(0);return false;}
++bool mm_set_allocation_subsystem(void *p,uint8_t s){(void)p;(void)s;assert(0);return false;}
++static bool trusted_service;
++static uint32_t gui_vision_owner_pid(void){return trusted_service?7:6;}
++static bool mm_user_publish(void *p,uint32_t pid){return p==user && pid==7;}
++static bool mm_user_subsystem(void *p,uint8_t s,uint32_t pid){return p==user && s<8 && pid==7;}
++static uint32_t task_current_process_id(void){return 7;}
++static bool inside(uint32_t a,uint32_t n,void *p,uint32_t len){uint32_t b=(uint32_t)(uintptr_t)p;return a>=b && n<=len && a-b<=len-n;}
++static bool user_access_ok(void *p,uint32_t n,bool w){uint32_t a=(uintptr_t)p;return inside(a,n,user,sizeof(user)) || (!w && inside(a,n,source,sizeof(source)));}
++static bool pager_pin(uint32_t p,uint32_t a,uint32_t n,bool w){assert(p==7);if(fail_second && pins)return false;if(readonly && w)return false;(void)a;(void)n;pins++;return true;}
++static void pager_unpin(uint32_t p,uint32_t a,uint32_t n){assert(p==7 && pins);(void)a;(void)n;pins--;}
++static bool paging_process_pin(uint32_t p){assert(p==7);if(retiring)return false;spaces++;return true;}
++static void paging_process_unpin(uint32_t p){assert(p==7 && spaces);spaces--;}
++static uint32_t paging_pager_entry(uint32_t p,uint32_t a){(void)p;(void)a;return 0;}
++static bool mm_user_heap_pin(uint32_t a,uint32_t n,uint32_t p,void **t){assert(p==7);*t=NULL;if(deny_payload)return false;if(inside(a,n,user,sizeof(user))){*t=user;heap_pins++;}return true;}
++static void mm_unpin_address_allocation(void *t){assert(t==user && heap_pins);heap_pins--;}
++static bool mm_user_free(void *p,uint32_t pid){assert(pid==7);if(p && p!=user)return false;free_calls++;last_free=p;return true;}
++static void *mm_user_realloc(void *p,size_t n,uint32_t pid){assert(pid==7);return p==user && n<sizeof(user)?user:NULL;}
++''' + wrapper + r'''
+ static unsigned g_user_thunk_count=1;
+ static uint32_t g_user_targets[1],g_user_api_domains[1];
+-static char g_user_api_labels[1][32]={{"kmemcpy"}};
++static char g_user_api_labels[1][32]={{"primitive"}};
+ static const char *g_last_user_api_name;
+ static uint32_t *g_user_errno_slot;
+-static int errno;
+-static unsigned raw_calls;
+ static bool elf_api_desktop_target(uint32_t p){(void)p;return false;}
+ static void *api_resolve_desktop(void *p){return p;}
+ typedef void gui_desktop_t;
+@@ -42,30 +80,53 @@
+ static void kernel_domains_exit(uint32_t p){(void)p;}
+ static void task_user_api_guard_enter(const char *n,uint32_t t,uint32_t k){(void)n;(void)t;(void)k;}
+ static void task_user_api_guard_leave(void){}
+-uint64_t elf_api_call_raw(uint32_t target,const uint32_t *a,uint32_t *cleanup) {
+-    assert(target==(uint32_t)(uintptr_t)kmemcpy);raw_calls++;*cleanup=0;
+-    return (uint32_t)(uintptr_t)kmemcpy((void *)(uintptr_t)a[0],(const void *)(uintptr_t)a[1],a[2]);
++uint64_t elf_api_call_raw(uint32_t t,const uint32_t *a,uint32_t *c){(void)t;(void)a;(void)c;raw_calls++;assert(0);return 0;}
++''' + dispatch + r'''
++static uint64_t invoke(void *fn,void *dst,const void *src,uint32_t len){
++ uint32_t a[16]={(uint32_t)(uintptr_t)dst,(uint32_t)(uintptr_t)src,len};
++ g_user_targets[0]=(uint32_t)(uintptr_t)fn;bool valid=false;uint32_t cleanup=99;
++ uint64_t r=elf_user_api_dispatch(0,a,&valid,&cleanup);
++ assert(valid && !cleanup && !raw_calls && !spaces && !pins && !heap_pins);return r;
+ }
+-''' + dispatch + r'''
+-int main(void) {
+-    /* This sentinel represents kernel storage. The dispatcher should reject
+-     * it as a user output, regardless of a valid published API token. */
+-    uint32_t kernel_owned=0xb1e50000U,user_value=0x10203040U;
+-    uint32_t arguments[16]={(uint32_t)(uintptr_t)&kernel_owned,(uint32_t)(uintptr_t)&user_value,4};
+-    bool valid=false;uint32_t cleanup=0;
+-    g_user_targets[0]=(uint32_t)(uintptr_t)kmemcpy;
+-    elf_user_api_dispatch(0,arguments,&valid,&cleanup);
+-    assert(valid && raw_calls==1 && kernel_owned==user_value);
+-    /* Token bounds are enforced, while pointed-to object ownership isn't. */
+-    raw_calls=0;valid=true;
+-    elf_user_api_dispatch(1,arguments,&valid,&cleanup);
+-    assert(!valid && !raw_calls);
+-    puts("{\"diagnostic\":\"native API boundary\",\"unsafe_write_observed\":true,\"token_bounds_checked\":true,\"environment\":\"controlled host mocks, not hardware exploit\"}");
++int main(void){
++ uint32_t value=0x10203040;memcpy(source,&value,4);
++ assert(!invoke(kmemcpy,&kernel_owned,source,4));assert(kernel_owned==0xb1e50000);
++ assert(!invoke(memcpy,&kernel_owned,source,4));assert(kernel_owned==0xb1e50000);
++ assert(!invoke(memset,&kernel_owned,(void*)0,4));assert(kernel_owned==0xb1e50000);
++ assert(!invoke(kmemcpy,user,&kernel_owned,4));assert(!*(uint32_t*)user);
++ assert(!invoke(kmemcpy,(void*)0xfffffff0U,source,32));
++ assert(invoke(kmemcpy,user,source,4097)==(uintptr_t)user);assert(!memcmp(user,source,4097));
++ memset(user,0,32);memcpy(user,"overlapping",12);invoke(memmove,user+2,user,12);assert(!memcmp(user+2,"overlapping",12));
++ invoke(memset,user,(void*)0x42,32);for(unsigned i=0;i<32;i++)assert(user[i]==0x42);
++ deny_payload=true;assert(!invoke(kmemcpy,user,source,4));deny_payload=false;
++ readonly=true;assert(!invoke(kmemcpy,user,source,4));readonly=false;
++ fail_second=true;assert(!invoke(kmemcpy,user,source,4));fail_second=false;
++ retiring=true;assert(!invoke(kmemcpy,user,source,4));retiring=false;
++ invoke(kfree,&kernel_owned,NULL,0);assert(!free_calls);invoke(free,user,NULL,0);assert(free_calls==1 && last_free==user);
++ invoke(bk_sys_free,&kernel_owned,NULL,0);assert(free_calls==1);
++ assert(!invoke(krealloc,&kernel_owned,(void*)128,0));assert(invoke(realloc,user,(void*)128,0)==(uintptr_t)user);
++ invoke(mm_set_allocation_owner,user,(void*)99,0);assert(errno==EACCES);
++ invoke(mm_get_system_info,&kernel_owned,NULL,0);assert(kernel_owned==0xb1e50000);
++ assert(invoke(bk_sys_memory_info,user,NULL,0)==1 && ((system_memory_info_t*)user)->free_bytes==60);
++ memcpy(source,"hello",6);assert(!invoke(kstrcpy,&kernel_owned,source,0));
++ assert(kernel_owned==0xb1e50000);assert(!invoke(strcpy,user,&kernel_owned,0));
++ assert(invoke(strcpy,user,source,0)==(uintptr_t)user && !strcmp((char*)user,"hello"));
++ assert(invoke(strlen,user,NULL,0)==5);
++ assert(invoke(strcmp,user,source,0)==0);
++ assert(invoke(strncpy,user,source,3)==(uintptr_t)user && !memcmp(user,"hel",3));
++ memset(user,0,16);memcpy(user,"pre",4);assert(invoke(strcat,user,source,0)==(uintptr_t)user && !strcmp((char*)user,"prehello"));
++ assert(!invoke(kstrncpy,&kernel_owned,source,4) && kernel_owned==0xb1e50000);
++ memset(source,'x',sizeof(source));assert(!invoke(strcpy,user,source,0));
++ trusted_service=true;
++ assert(invoke(mm_set_allocation_owner,user,NULL,0)==1);
++ assert(!invoke(mm_set_allocation_owner,&kernel_owned,NULL,0));
++ assert(!invoke(mm_set_allocation_owner,user,(void*)99,0));
++ trusted_service=false;
++ bool valid=true;uint32_t a[16]={0},c=0;elf_user_api_dispatch(1,a,&valid,&c);assert(!valid && !raw_calls);
++ puts("PASS production native API blocks kernel read/write, bad ranges, readonly, payload rejection, pin failures, foreign frees, metadata mutation and invalid tokens");
+ }
+ '''
+-with tempfile.TemporaryDirectory(prefix='bk-api-audit-') as directory:
+-    c = Path(directory) / 'audit.c'
+-    binary = Path(directory) / 'audit'
+-    c.write_text(code)
+-    subprocess.run(['gcc', '-m32', '-O2', '-Wall', '-Werror', str(c), '-o', str(binary)], check=True)
+-    subprocess.run([str(binary)], check=True)
++with tempfile.TemporaryDirectory(prefix='bk-api-audit-') as d:
++ p=Path(d);(p/'test.c').write_text(code)
++ subprocess.run(['gcc','-m32','-O2','-fno-builtin','-fno-pie','-no-pie','-Wall','-Werror',str(p/'test.c'),'-o',str(p/'test')],check=True)
++ subprocess.run([str(p/'test')],check=True)
+--- /dev/null
++++ b/tests/kernel/test_address_space_lifetime.py
+@@ -0,0 +1,55 @@
++#!/usr/bin/env python3
++"""Exercise production borrowing, retirement, copy references and destruction."""
++from pathlib import Path
++import subprocess,tempfile
++root=Path(__file__).resolve().parents[2]
++s=(root/'kernel/mm/paging.c').read_text()
++lookup=s[s.index('static paging_process_space_t *paging_find_raw_space('):s.index('/* Count explicit process PTEs')]
++borrow=s[s.index('bool paging_process_borrow('):s.index('static bool paging_space_private_pde(')]
++swap=s[s.index('void paging_swap_process_ids('):s.index('uint32_t paging_current_process(')]
++destroy=s[s.index('void paging_process_destroy('):s.index('bool paging_is_enabled(')]
++code=r'''
++#include <stdint.h>
++#include <stdbool.h>
++#include <stddef.h>
++#include <assert.h>
++#include <string.h>
++#include <stdio.h>
++#define PAGING_PROCESS_MAX 8
++#define PAGING_PRIVATE_TABLE_MAX 2
++#define SMP_MAX_CPUS 2
++typedef struct {uint32_t process_id,borrowed_from,users;bool retiring;uint32_t *directory,*table[2];uint16_t pde_index[2],table_count;} paging_process_space_t;
++static paging_process_space_t g_process_spaces[8];
++static uint32_t g_active_process[2],directory[1024],table[1024];
++static int g_paging_lock;static unsigned depth,freed;
++#define kmemset memset
++static uint32_t kspin_lock_irqsave(int *p){(void)p;assert(!depth);depth++;return 0;}
++static void kspin_unlock_irqrestore(int *p,uint32_t f){(void)p;(void)f;assert(depth==1);depth--;}
++static void paging_free_private_page(uint32_t *p){if(p){assert(!depth);freed++;}}
++''' + lookup + borrow + swap + destroy + r'''
++static void seed(void){memset(g_process_spaces,0,sizeof(g_process_spaces));memset(g_active_process,0,sizeof(g_active_process));freed=0;g_process_spaces[0]=(paging_process_space_t){.process_id=1,.directory=directory,.table={table},.table_count=1};}
++int main(void){
++ seed();assert(paging_process_borrow(1,2));assert(paging_process_borrow(2,3));
++ assert(g_process_spaces[2].borrowed_from==1);assert(paging_process_has_borrowers(1));
++ assert(!paging_process_retire(1));paging_process_destroy(1);assert(!freed && paging_find_space(3)==&g_process_spaces[0]);
++ g_active_process[1]=2;assert(!paging_process_retire(2));paging_process_destroy(2);assert(paging_find_raw_space(2));
++ g_active_process[1]=0;assert(paging_process_retire(2));assert(!paging_process_pin(2));paging_process_destroy(2);assert(!paging_find_raw_space(2));
++ assert(!paging_process_retire(1));paging_process_destroy(3);assert(!paging_process_has_borrowers(1));
++ assert(paging_process_pin(1));assert(!paging_process_retire(1));paging_process_destroy(1);assert(!freed);
++ paging_process_unpin(1);g_active_process[1]=1;assert(!paging_process_retire(1));g_active_process[1]=0;
++ assert(paging_process_retire(1));assert(!paging_process_pin(1));assert(!paging_process_borrow(1,4));
++ paging_process_destroy(1);assert(freed==2 && !paging_find_raw_space(1));
++ seed();assert(paging_process_borrow(1,2));paging_swap_process_ids(1,4);
++ assert(paging_find_space(2)==&g_process_spaces[0] && g_process_spaces[0].process_id==4);
++ assert(paging_process_has_borrowers(4) && !paging_process_retire(4));paging_process_destroy(2);assert(paging_process_retire(4));paging_process_destroy(4);assert(freed==2);
++ seed();g_process_spaces[0].users=UINT32_MAX;assert(!paging_process_pin(1));assert(!paging_process_retire(1));
++ /* Corrupt cyclic borrow chains fail closed rather than returning a borrower. */
++ g_process_spaces[0].borrowed_from=2;g_process_spaces[1].process_id=2;g_process_spaces[1].borrowed_from=1;assert(!paging_find_space(1));
++ seed();assert(paging_process_pin(7));paging_process_unpin(7);assert(paging_process_retire(7));
++ puts("PASS borrowed CR3 lifetime, active CPU refusal, copy references, retirement, overflow and cycle rejection");
++}
++'''
++with tempfile.TemporaryDirectory(prefix='bk-lifetime-') as d:
++ p=Path(d);(p/'test.c').write_text(code)
++ subprocess.run(['gcc','-O2','-Wall','-Wextra','-Werror',str(p/'test.c'),'-o',str(p/'test')],check=True)
++ subprocess.run([str(p/'test')],check=True)
+--- /dev/null
++++ b/tests/kernel/test_usercopy_lifetime.py
+@@ -0,0 +1,40 @@
++#!/usr/bin/env python3
++"""Production user-copy paths release space and pager references on all exits."""
++from pathlib import Path
++import re,subprocess,tempfile
++root=Path(__file__).resolve().parents[2]
++body=re.sub(r'^#include[^\n]*\n','',(root/'kernel/mm/usercopy.c').read_text(),flags=re.M)
++code=r'''
++#include <stdint.h>
++#include <stdbool.h>
++#include <stddef.h>
++#include <assert.h>
++#include <string.h>
++#include <stdio.h>
++static unsigned spaces,pins;
++static bool retired,fail_pin,deny,write_seen;
++static uint32_t task_current_process_id(void){return 7;}
++static bool paging_process_pin(uint32_t p){assert(p==7);if(retired)return false;spaces++;return true;}
++static void paging_process_unpin(uint32_t p){assert(p==7 && spaces && !pins);spaces--;}
++static bool pager_pin(uint32_t p,uint32_t a,uint32_t n,bool w){assert(p==7 && spaces && n);(void)a;if(fail_pin)return false;pins++;write_seen=w;return true;}
++static void pager_unpin(uint32_t p,uint32_t a,uint32_t n){assert(p==7 && spaces && pins && n);(void)a;pins--;}
++static bool paging_user_range_ok(const void *p,uint32_t n,bool w){assert(spaces && pins);(void)p;(void)n;assert(w==write_seen);return !deny;}
++static void *kmemcpy(void *d,const void *s,size_t n){assert(spaces && pins);return memcpy(d,s,n);}
++''' + body + r'''
++int main(void){
++ char out[16]={0},in[16]="payload";
++ assert(copy_from_user(out,in,8) && !strcmp(out,in) && !spaces && !pins);
++ assert(copy_to_user(out,in,8) && !spaces && !pins);
++ deny=true;assert(!copy_from_user(out,in,8) && !spaces && !pins);deny=false;
++ fail_pin=true;assert(!copy_to_user(out,in,8) && !spaces && !pins);fail_pin=false;
++ retired=true;assert(!copy_from_user(out,in,8) && !spaces && !pins);retired=false;
++ assert(copy_from_user(out,NULL,0) && !spaces && !pins);
++ assert(!copy_to_user(NULL,in,8));assert(copy_string_from_user(out,sizeof(out),in));
++ assert(!copy_string_from_user(out,4,in) && out[3]==0 && !spaces && !pins);
++ puts("PASS production usercopy pins address-space lifetime; permission/OOM/retirement failures release all references");
++}
++'''
++with tempfile.TemporaryDirectory(prefix='bk-usercopy-') as d:
++ p=Path(d);(p/'test.c').write_text(code)
++ subprocess.run(['gcc','-O2','-Wall','-Wextra','-Werror',str(p/'test.c'),'-o',str(p/'test')],check=True)
++ subprocess.run([str(p/'test')],check=True)
+--- /dev/null
++++ b/tests/kernel/test_string_bounds.py
+@@ -0,0 +1,29 @@
++#!/usr/bin/env python3
++"""Production kstrncpy must not write past n after an early terminator."""
++from pathlib import Path
++import subprocess,tempfile
++root=Path(__file__).resolve().parents[2]
++s=(root/'kernel/mm/memory.c').read_text()
++body=s[s.index('char *kstrncpy('):s.index('char *kstrcat(')]
++code='#include <stddef.h>\n#include <assert.h>\n#include <string.h>\n#include <stdio.h>\n'+body+r'''
++int main(void){
++ char output[32];
++ for(size_t n=0;n<24;n++)for(size_t length=0;length<24;length++){
++  char input[25];memset(input,'A',length);input[length]=0;
++  memset(output,0x7e,sizeof(output));assert(kstrncpy(output+1,input,n)==output+1);
++  assert(output[0]==0x7e && output[n+1]==0x7e);
++  for(size_t i=0;i<n;i++)assert(output[i+1]==(i<length?'A':0));
++ }
++ assert(kstrncpy(NULL,NULL,0)==NULL);
++ puts("PASS production kstrncpy: early NUL, truncation, padding, zero length and destination redzones");
++}
++'''
++with tempfile.TemporaryDirectory(prefix='bk-string-bounds-') as d:
++ p=Path(d);(p/'test.c').write_text(code)
++ subprocess.run(['gcc','-O2','-Wall','-Wextra','-Werror',str(p/'test.c'),'-o',str(p/'test')],check=True)
++ subprocess.run([str(p/'test')],check=True)
++ service=(root/'system/services/vision_memory.c').read_text()
++ service_body=service[service.index('char *kstrncpy('):service.index('char *kstrcat(')]
++ (p/'service.c').write_text(code.replace(body,service_body))
++ subprocess.run(['gcc','-O2','-Wall','-Wextra','-Werror',str(p/'service.c'),'-o',str(p/'service')],check=True)
++ subprocess.run([str(p/'service')],check=True)
+--- /dev/null
++++ b/tests/userland/kernel_hardening_smoke.c
+@@ -0,0 +1,38 @@
++#include "../../kernel/include/api.h"
++#include "../../kernel/libc/include/string.h"
++#include "../../kernel/libc/include/stdlib.h"
++
++static bool failed;
++static void check(bool ok,const char *name) {
++    kprintf("[HARDENINGTEST] %s: %s\n",name,ok?"PASS":"FAIL");
++    if(!ok)failed=true;
++}
++void bleskernos_program_main(gui_desktop_t *desktop) {
++    (void)desktop;
++    uint32_t flags;
++    __asm__ volatile("pushfl; popl %0":"=r"(flags));
++    check(!(flags&0x3000U),"Ring 3 IOPL zero");
++    char *buffer=bk_sys_alloc(8);
++    check(buffer!=NULL,"user allocation");
++    if(buffer) {
++        kmemset(buffer,'Q',8);
++        check(kmemcpy((void *)0x00100000U,buffer,4)==NULL,"kernel text write refused");
++        check(kmemcpy(buffer,(void *)0x00100000U,4)==NULL,"kernel text read refused");
++        check(memset((void *)0x00300000U,0,4)==NULL,"kernel BSS write refused");
++        check(kmemcpy(buffer-1,buffer,1)==NULL,"heap header write refused");
++        check(memcpy(buffer,"hello",6)==buffer && !strcmp(buffer,"hello"),"valid copy and compare");
++        check(strcpy((char *)0x00100000U,"test")==NULL,"string kernel write refused");
++        check(strncpy(buffer,"hello",8192)==NULL && !strcmp(buffer,"hello"),"string output extent refused");
++        check(!mm_set_allocation_owner(buffer,0),"ownership change refused");
++        kfree((void *)0x00100000U);
++        check(buffer[0]=='h',"invalid free contained");
++        char *grown=bk_sys_realloc(buffer,128);
++        check(grown!=NULL && !strcmp(grown,"hello"),"owned realloc preserves data");
++        if(grown)buffer=grown;
++        bk_sys_free(buffer);
++    }
++    system_memory_info_t memory;
++    check(bk_sys_memory_info(&memory) && memory.used_bytes+memory.free_bytes+memory.reserved_bytes==memory.total_bytes,"memory accounting");
++    kprintf("[HARDENINGTEST] DONE result=%s\n",failed?"FAIL":"PASS");
++    while(!bk_proc_exit_requested())bk_sys_sleep_ms(100);
++}
+--- /dev/null
++++ b/docs/kernel-hardening-2026-10-13.md
+@@ -0,0 +1,156 @@
++# Refuerzo de memoria y API nativa — 2026-10-13
++
++Se refuerzan los helpers de memoria de Ring 3, la metadata del pager y la
++liberación de espacios prestados. La ABI y las aplicaciones existentes se
++mantienen. El heap plano heredado todavía necesita una migración para conseguir
++el aislamiento completo entre kernel y aplicaciones.
++
++## Ideas tomadas de Linux
++
++Se estudiaron las implementaciones y documentación, sin incorporar código:
++
++- [`include/linux/uaccess.h`](https://github.com/torvalds/linux/blob/master/include/linux/uaccess.h):
++  comprobar rangos y tamaños antes de copiar, distinguir copias de usuario de
++  primitivas internas y comprobar sus resultados.
++- [`kernel/fork.c`](https://github.com/torvalds/linux/blob/master/kernel/fork.c),
++  `mmput`, `__mmput` y `__mmdrop`: conservar referencias al espacio de memoria y
++  verificar que ninguna CPU lo use antes de liberar sus tablas.
++- [Documentación de refcount y orden de memoria](https://docs.kernel.org/core-api/refcount-vs-atomic.html):
++  sincronizar adquisición de referencias y destrucción. En BlesKernOS estas
++  operaciones usan su spinlock de paging y rechazan saturación; no se importó
++  `refcount_t` ni la estructura `mm_struct` de Linux.
++
++## Frontera de la API
++
++`kernel/api/native_memory.c` intercepta por dirección real de la función,
++independientemente del nombre del import:
++
++- `kmemcpy`, `memcpy`, `memmove`, `kmemset`, `memset`, `kmemcmp`, `memcmp` y
++  `bk_memory_compare`.
++- `kstrlen`/`strlen`, `kstrcmp`/`strcmp`, `kstrncmp`/`strncmp`,
++  `kstrcpy`/`strcpy`, `kstrncpy`/`strncpy`, `kstrcat`/`strcat` y sus equivalentes
++  `bk_string_*` expuestos por el SDK.
++- `kfree`/`free`/`bk_sys_free`, `krealloc`/`realloc`/`bk_sys_realloc`,
++  `mm_get_system_info`/`bk_sys_memory_info` y los mutadores de ownership/subsistema.
++
++Las operaciones comprueban overflow, permisos efectivos y residencia/pinning.
++Para alias del heap se comprueba que el rango esté dentro de payload ocupado:
++no se aceptan headers, bloques libres ni allocations privadas de otro proceso.
++Un buffer conserva un pin de heap además de los pins del pager. Los mappings
++privados no se confunden con el heap que ocupaba anteriormente su dirección
++virtual. Un fallo libera los pins adquiridos y devuelve un resultado nulo con
++`EFAULT`/`EACCES` cuando corresponde.
++
++Las strings se recorren por fragmentos de página y de allocation, con un límite
++de búsqueda de 1 MiB. La escritura utiliza la longitud verificada, y escribe el
++terminador explícitamente: una modificación concurrente del NUL no convierte
++la operación posterior en una copia ilimitada. Los comparadores tampoco pasan
++el rango medido a un comparador ilimitado. `strncpy` mantiene padding y semántica
++de copia de hasta N bytes.
++
++Se corrigió el mismo overflow de `kstrncpy` en el kernel y en el runtime local
++de Vision: con un NUL temprano la implementación anterior podía escribir un
++byte adicional después de N. La prueba usa redzones para todas las longitudes
++pequeñas, truncación y padding.
++
++La comprobación de free/realloc se realiza dentro del lock del heap. El realloc
++que debe moverse fija la allocation original mientras asigna y copia fuera del
++lock; no ejecuta reclamación bajo un spinlock externo. Los contadores de pins
++rechazan overflow.
++
++## Publicación de objetos GUI
++
++Vision compila parte del código GUI y utiliza el import histórico de ownership
++para publicar objetos recién creados. Bloquearlo indiscriminadamente rompía la
++creación de ventanas. Ahora sólo el proceso autenticado como servidor Vision
++puede publicar una allocation propia con owner=0; no puede tomar una allocation
++ajena ni elegir otro owner.
++
++El kernel conserva 512 registros de publicación en BSS supervisor. El publisher
++puede liberar o redimensionar sus objetos publicados; que un header tenga
++owner=0 no concede esa autoridad a cualquier aplicación. Los registros se
++eliminan antes de reutilizar una dirección. Su agotamiento falla sin modificar
++la allocation. El cambio de subsistema también requiere propiedad o una
++publicación registrada.
++
++## Metadata y lifetime de memoria
++
++Los registros de regiones, fuentes de archivo y chunks del cache del pager
++se asignan exclusivamente en frames supervisor. Se eliminó el fallback al heap
++accesible desde Ring 3. Bajo presión se recuperan páginas de datos antes de
++consumir la reserva de 16 frames usada para nuevas tablas de páginas. Esto evita
++que la nueva metadata residente haga fallar fork por falta de tablas cuando
++hay datos que pueden paginarse. La reserva es una política de reclamación, no
++una partición física dedicada.
++
++Cada copia de usuario conserva una referencia al espacio privado durante el
++pinning y la copia. Las tareas planas usan el directorio permanente del kernel,
++que no se destruye. La adquisición falla para un espacio en retiro.
++
++El reaper conserva todos los recursos de un prestamista mientras existan
++prestatarios. Antes de liberar el último thread, intenta retirar el espacio:
++no admite CPUs activas, referencias de copia ni prestatarios. Una vez retirado,
++no se permiten nuevas adquisiciones o préstamos. La destrucción repite las
++comprobaciones bajo el mismo lock que utiliza el cambio de CR3. El reaper puede
++seguir con otros zombies mientras espera. Las referencias prestadas siguen al
++objeto cuando exec intercambia identificadores de proceso.
++
++Las tareas nativas arrancan con IOPL=0, y la normalización de sus frames elimina
++los bits IOPL. El acceso a puertos y las operaciones privilegiadas quedan en los
++entry points del kernel.
++
++## Verificación
++
++Se compilaron kernel, Stage 2 y Vision. El kernel sigue dentro del límite de
++build. Las 23 pruebas host seleccionadas ejecutan código de producción con
++mocks; los resultados completos y los hashes están en
++`tests/kernel/evidence/hardening-2026-10-13/result.json` y `host-tests.json`.
++
++Pruebas nuevas o ampliadas:
++
++```sh
++python3 tests/kernel/audit_native_api_boundary.py
++python3 tests/kernel/test_address_space_lifetime.py
++python3 tests/kernel/test_usercopy_lifetime.py
++python3 tests/kernel/test_heap_realloc.py
++python3 tests/kernel/test_string_bounds.py
++python3 tests/kernel/test_swap_pager.py
++```
++
++El antiguo diagnóstico de escritura insegura ahora exige rechazo y comprueba
++que el objeto simulado del kernel permanezca intacto. También prueba accesos
++válidos, aliases, fallos de pinning, memoria readonly, metadata, free ajeno y
++publicaciones autenticadas. El test de lifetime verifica prestatarios, CPUs
++activas, referencias de copia, saturación, ciclos corruptos y cambios de IDs.
++
++Las ejecuciones QEMU usan copias aisladas de la imagen habitual:
++
++```sh
++python3 tests/kernel/run_ram_smoke.py --ram 64 --smp 2 --smoke \
++  --fixture hardening --out tests/kernel/evidence/hardening-2026-10-13/final-security
++python3 tests/kernel/run_ram_smoke.py --ram 32 --smp 2 --smoke \
++  --fixture ram --out tests/kernel/evidence/hardening-2026-10-13/final-desktop
++python3 tests/kernel/run_ram_smoke.py --ram 32 --smp 2 --smoke \
++  --fixture swap --swap-file --out tests/kernel/evidence/hardening-2026-10-13/final-swap
++```
++
++La prueba de hardening opera desde Ring 3 real: intenta leer/escribir texto del
++kernel, escribir BSS y headers del heap, copiar strings al kernel, cambiar owner
++sin autorización y liberar un puntero inválido. También verifica IOPL, realloc
++y la identidad `used + free + reserved == total`. La prueba de escritorio cubre
++ventanas, modos de color, aplicaciones y 256 ciclos de gráficos Linux; la de
++swap verifica integridad, fork, aislamiento y liberación bajo presión.
++
++## Límites que permanecen
++
++- El heap heredado sigue mapeado como usuario y muchos payloads compartidos
++  tienen owner=0. Esta etapa protege metadata del pager y operaciones concretas
++  de la API, pero no impide todos los stores directos de CPL3 al heap compartido.
++  Hay que migrar imágenes, stacks, TLS, allocations y vistas GUI a mappings
++  privados o compartidos explícitos para completar ese aislamiento.
++- Otras APIs todavía pasan punteros directos: GUI, archivos, formatos variádicos
++  y otros helpers necesitan validación de firma y objetos, o handles. No se
++  certifica toda la API por haber cerrado estas primitivas.
++- No se añadieron exception fixups generales como los de Linux. Tampoco se
++  certifican todas las carreras SMP, drivers físicos ni Wine completo con estas
++  pruebas de host y QEMU.

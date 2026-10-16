@@ -1,0 +1,28 @@
+{
+  "ram_mib": 64,
+  "backend": "std",
+  "desktop_started": true,
+  "completed": true,
+  "smoke_pass": null,
+  "memory": {
+    "DESKTOP": {
+      "total_kib": 65023,
+      "used_kib": 15499,
+      "free_kib": 49523,
+      "reserved_kib": 3711,
+      "heap_used_kib": 11788,
+      "heap_free_kib": 34195,
+      "vm_free_kib": 15328
+    },
+    "IDLE": {
+      "total_kib": 65023,
+      "used_kib": 19663,
+      "free_kib": 45359,
+      "reserved_kib": 3711,
+      "heap_used_kib": 15952,
+      "heap_free_kib": 30031,
+      "vm_free_kib": 15328
+    }
+  },
+  "depths": []
+}

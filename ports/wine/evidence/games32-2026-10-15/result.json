@@ -1,0 +1,14 @@
+{
+  "result": "PASS",
+  "checks": {
+    "glx-final": "PASS",
+    "directx-verified": "PASS",
+    "production-directx": "PASS",
+    "production-final": "PASS",
+    "notepad": "PASS"
+  },
+  "architecture": "i386",
+  "host_suites": 6,
+  "gpu": "VirGL, Intel UHD Graphics 600 host",
+  "limitations": "See README.md; no certification of complete games or native Intel/SVGA programmable graphics"
+}

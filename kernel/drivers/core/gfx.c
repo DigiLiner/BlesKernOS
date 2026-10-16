@@ -1,15 +1,33 @@
+#include "../../include/rgb565.h"
 #include "../../include/gfx.h"
 #include "../../include/gfx_driver.h"
+
+#ifdef BLES_ARCH_ARM32_RPI3
+/* Architecture hook used only for the native linear framebuffer path.
+ * The compositor normally reaches the driver through present_buffer(), while
+ * the early bootsplash writes through gfx_putpixel/fill_rect directly.  Both
+ * must encode colours identically. */
+extern uint32_t rpi3_gfx_encode_rgb(uint32_t rgb);
+extern uint32_t rpi3_gfx_decode_rgb(uint32_t native);
+#endif
 #include "../../include/gfx3d.h"
+#include "../../include/memory.h"
+#include "../../include/vga.h"
+#ifndef BLES_ARCH_ARM32_RPI3
 #include "../../include/gfx_vga.h"
 #include "../../include/vesa.h"
-#include "../../include/memory.h"
 #include "../../include/compat_mode.h"
-#include "../../include/vga.h"
+#endif
 
 static gfx_info_t g_gfx;
 static const gfx_driver_ops_t *g_registered_driver;
 static const gfx_driver_ops_t *g_active_driver;
+#ifndef BLES_ARCH_ARM32_RPI3
+/* Before modules load there is no VESA driver. Keep the firmware
+ * framebuffer visible on legacy Intel 852GME/Phoenix notebooks so that
+ * boot errors do not masquerade as a black screen after Stage 2. */
+static bool g_boot_raw_lfb;
+#endif
 static uint32_t g_last_fence;
 static uint32_t g_driver_generation = 1U;
 
@@ -34,6 +52,7 @@ static void gfx_advance_driver_generation(void) {
     if (!g_driver_generation) g_driver_generation = 1U;
 }
 
+#ifndef BLES_ARCH_ARM32_RPI3
 static uint16_t gfx_bootinfo_read16(uint32_t offset) {
     return mm_boot_vesa_read16(offset);
 }
@@ -41,6 +60,7 @@ static uint16_t gfx_bootinfo_read16(uint32_t offset) {
 static uint32_t gfx_bootinfo_read32(uint32_t offset) {
     return mm_boot_vesa_read32(offset);
 }
+#endif
 
 static uint32_t gfx_palette_rgb(uint8_t color) {
     static const uint32_t palette[16] = {
@@ -51,6 +71,69 @@ static uint32_t gfx_palette_rgb(uint8_t color) {
     };
     return palette[color & 0x0F];
 }
+
+#ifndef BLES_ARCH_ARM32_RPI3
+/* Minimal BIOS framebuffer used until the VESA.DVR / GPU driver registers.
+ * Accept only a plausible VESA LFB handed over by Stage 2. Never change video
+ * modes or probe hardware in early boot. This also covers QEMU 800x600x32,
+ * which otherwise stayed black until the driver directory was loaded. */
+static bool gfx_try_early_boot_lfb(void) {
+    uint32_t fb = gfx_bootinfo_read32(4U);
+    uint16_t width = gfx_bootinfo_read16(8U);
+    uint16_t height = gfx_bootinfo_read16(10U);
+    uint16_t pitch = gfx_bootinfo_read16(12U);
+    uint8_t bpp = mm_boot_vesa_read8(14U);
+    uint16_t mode = gfx_bootinfo_read16(15U);
+    uint32_t bytes_per_pixel = (uint32_t)bpp / 8U;
+    uint32_t bytes;
+
+    if (!mode || (bpp != 16U && bpp != 32U) ||
+        width < 640U || width > 1920U ||
+        height < 400U || height > 1200U ||
+        pitch < (uint32_t)width * bytes_per_pixel || pitch > 8192U ||
+        fb < 0x40000000U || fb >= 0xFE000000U)
+        return false;
+    bytes = (uint32_t)height * (uint32_t)pitch;
+    if (bytes > 16U * 1024U * 1024U || bytes > 0xFE000000U - fb)
+        return false;
+    g_gfx.mode = GFX_MODE_VESA_LFB;
+    g_gfx.framebuffer = fb;
+    g_gfx.width = width;
+    g_gfx.height = height;
+    g_gfx.pitch = pitch;
+    g_gfx.bpp = bpp;
+    g_boot_raw_lfb = true;
+    kprintf("[GFX:EARLY] BIOS LFB %ux%ux%u pitch=%u fb=%x\n",
+            (uint32_t)width, (uint32_t)height, (uint32_t)bpp,
+            (uint32_t)pitch, fb);
+    return true;
+}
+
+static void gfx_early_putpixel(int x, int y, uint32_t rgb) {
+    uint32_t addr = g_gfx.framebuffer + (uint32_t)y * g_gfx.pitch +
+                    (uint32_t)x * ((uint32_t)g_gfx.bpp / 8U);
+    if (g_gfx.bpp == 16U)
+        *(volatile uint16_t *)(uintptr_t)addr = bk_rgb565_encode(rgb);
+    else
+        *(volatile uint32_t *)(uintptr_t)addr = rgb & 0x00FFFFFFU;
+}
+
+static void gfx_early_fill(int x, int y, int w, int h, uint32_t rgb) {
+    for (int row = 0; row < h; ++row) {
+        uint32_t addr = g_gfx.framebuffer + (uint32_t)(y + row) * g_gfx.pitch +
+                        (uint32_t)x * ((uint32_t)g_gfx.bpp / 8U);
+        if (g_gfx.bpp == 16U) {
+            volatile uint16_t *dst = (volatile uint16_t *)(uintptr_t)addr;
+            uint16_t color = bk_rgb565_encode(rgb);
+            for (int col = 0; col < w; ++col) dst[col] = color;
+        } else {
+            volatile uint32_t *dst = (volatile uint32_t *)(uintptr_t)addr;
+            uint32_t color = rgb & 0x00FFFFFFU;
+            for (int col = 0; col < w; ++col) dst[col] = color;
+        }
+    }
+}
+#endif
 
 static uint8_t gfx_rgb_to_332(uint32_t rgb) {
     return (uint8_t)(((rgb >> 16) & 0xE0U) |
@@ -110,6 +193,8 @@ static const uint8_t *glyph_for(char c) {
         case ':': { static const uint8_t g[8] = {0,0x18,0x18,0,0,0x18,0x18,0}; return g; }
         case '/': { static const uint8_t g[8] = {0x06,0x0C,0x18,0x30,0x60,0,0,0}; return g; }
         case '-': { static const uint8_t g[8] = {0,0,0,0x7E,0,0,0,0}; return g; }
+        case '{': { static const uint8_t g[8] = {0x18,0x30,0x30,0x60,0x30,0x30,0x18,0}; return g; }
+        case '}': { static const uint8_t g[8] = {0x18,0x0C,0x0C,0x06,0x0C,0x0C,0x18,0}; return g; }
         default: { static const uint8_t g[8] = {0x7E,0x42,0x0C,0x18,0x18,0,0x18,0}; return g; }
     }
 }
@@ -121,6 +206,7 @@ static void gfx_clip_rect(int *x, int *y, int *w, int *h) {
     if (*y + *h > g_gfx.height) *h = g_gfx.height - *y;
 }
 
+#ifndef BLES_ARCH_ARM32_RPI3
 static void gfx_disable_active_driver(void) {
     bool had_driver = g_active_driver != NULL;
     gfx3d_reset();
@@ -131,6 +217,7 @@ static void gfx_disable_active_driver(void) {
     gfx_perf_reset();
     if (had_driver) gfx_advance_driver_generation();
 }
+#endif
 
 bool gfx_register_driver(const gfx_driver_ops_t *ops) {
     if (!ops) {
@@ -179,8 +266,34 @@ bool gfx_register_driver(const gfx_driver_ops_t *ops) {
 }
 
 void gfx_init(void) {
+#ifdef BLES_ARCH_ARM32_RPI3
+    g_gfx.mode = GFX_MODE_TEXT;
+    g_gfx.framebuffer = 0U;
+    g_gfx.width = 0U;
+    g_gfx.height = 0U;
+    g_gfx.pitch = 0U;
+    g_gfx.bpp = 0U;
+
+    kprintf("[GFX:TRACE] ARM platform init registered=%s ops=%x\n",
+            g_registered_driver ? g_registered_driver->name : "(ninguno)",
+            (uint32_t)(uintptr_t)g_registered_driver);
+    if (g_registered_driver &&
+        g_registered_driver->activate(&g_gfx, 1024U, 768U)) {
+        g_active_driver = g_registered_driver;
+        gfx_perf_reset();
+        gfx_advance_driver_generation();
+        kprintf("[GFX:TRACE] ARM ACTIVATE OK name=%s mode=%ux%ux%u pitch=%u fb=%x\n",
+                g_active_driver->name, (uint32_t)g_gfx.width,
+                (uint32_t)g_gfx.height, (uint32_t)g_gfx.bpp,
+                (uint32_t)g_gfx.pitch, g_gfx.framebuffer);
+    } else {
+        g_active_driver = NULL;
+        kprintf("[GFX:TRACE] ARM platform driver activation FAILED\n");
+    }
+#else
     uint32_t magic;
 
+    g_boot_raw_lfb = false;
     g_gfx.mode = GFX_MODE_TEXT;
     g_gfx.framebuffer = 0x000B8000;
     g_gfx.width = 80;
@@ -211,9 +324,6 @@ void gfx_init(void) {
     if (magic == VESA_BOOTINFO_MAGIC && g_registered_driver) {
         uint16_t preferred_width = gfx_bootinfo_read16(8);
         uint16_t preferred_height = gfx_bootinfo_read16(10);
-        /* Elegir el escritorio amplio antes de activar el controlador. De
-           este modo SVGA/VirtIO crean directamente el scanout definitivo y
-           la GUI nunca nace en 640x480 para cambiar en mitad del arranque. */
         if (compat_mode_prefer_800x600()) {
             preferred_width = 800U;
             preferred_height = 600U;
@@ -241,16 +351,26 @@ void gfx_init(void) {
     }
 
     g_active_driver = NULL;
-    if (vesa_init_from_bootinfo(&g_gfx))
+    if (vesa_init_from_bootinfo(&g_gfx)) {
         kprintf("[GFX:TRACE] FALLBACK VESA OK mode=%ux%ux%u pitch=%u fb=%x\n",
                 (uint32_t)g_gfx.width, (uint32_t)g_gfx.height,
                 (uint32_t)g_gfx.bpp, (uint32_t)g_gfx.pitch, g_gfx.framebuffer);
-    else
+    } else if (magic == VESA_BOOTINFO_MAGIC && gfx_try_early_boot_lfb()) {
+        /* Until VESA.DVR registers its renderer, raw writes keep the boot
+         * splash visible. The second gfx_init() hands back to VESA.DVR. */
+        return;
+    } else {
         kprintf("[GFX:TRACE] FALLBACK VESA FAIL\n");
+    }
+#endif
 }
 
 video_type_t gfx_detect_video_type(void) {
+#ifdef BLES_ARCH_ARM32_RPI3
+    return VIDEO_TYPE_COLOUR;
+#else
     return (video_type_t)(mm_boot_equipment_word() & 0x30U);
+#endif
 }
 
 const char *gfx_video_type_name(video_type_t type) {
@@ -276,73 +396,165 @@ uint32_t gfx_driver_capabilities(void) {
 uint32_t gfx_driver_generation(void) { return g_driver_generation; }
 
 bool gfx_set_text_mode(void) {
+#ifdef BLES_ARCH_ARM32_RPI3
+    return false;
+#else
     gfx_disable_active_driver();
     return gfx_vga_set_text_mode(&g_gfx);
+#endif
 }
 bool gfx_set_mode13h(void) {
+#ifdef BLES_ARCH_ARM32_RPI3
+    return false;
+#else
     gfx_disable_active_driver();
     return gfx_vga_set_mode13h(&g_gfx);
+#endif
 }
 bool gfx_set_mode12h(void) {
+#ifdef BLES_ARCH_ARM32_RPI3
+    return false;
+#else
     gfx_disable_active_driver();
     return gfx_vga_set_mode12h(&g_gfx);
+#endif
 }
 
 bool gfx_attach_vesa_lfb(uint32_t framebuffer, uint16_t width,
                          uint16_t height, uint16_t pitch, uint8_t bpp) {
+#ifdef BLES_ARCH_ARM32_RPI3
+    (void)framebuffer; (void)width; (void)height; (void)pitch; (void)bpp;
+    return false;
+#else
     gfx_disable_active_driver();
     return vesa_attach_lfb(&g_gfx, framebuffer, width, height, pitch, bpp);
+#endif
 }
-bool gfx_has_vesa_lfb(void) { return vesa_has_lfb(); }
+bool gfx_has_vesa_lfb(void) {
+#ifdef BLES_ARCH_ARM32_RPI3
+    return false;
+#else
+    return vesa_has_lfb();
+#endif
+}
 bool gfx_is_linear_framebuffer(void) {
     return g_gfx.mode == GFX_MODE_VESA_LFB || g_active_driver != NULL;
 }
 bool gfx_can_change_mode(void) {
-    /* BlesKernOS 0.8 keeps one display geometry for the lifetime of the GUI.
-       Replacing the scanout/backbuffer under live windows was the source of
-       disappearing Deskbar/windows and half-applied resolution changes. */
+    if (g_active_driver)
+        return g_active_driver->list_modes && g_active_driver->set_mode;
+#ifdef BLES_ARCH_ARM32_RPI3
     return false;
+#else
+    return g_gfx.mode == GFX_MODE_VESA_LFB && vesa_can_change_mode();
+#endif
 }
 
 bool gfx_list_display_modes(gfx_display_mode_t *modes, uint32_t max_modes,
                             uint32_t *count) {
+    if (!count) return false;
+    *count = 0U;
+    if (g_active_driver)
+        return g_active_driver->list_modes(modes, max_modes, count);
+#ifdef BLES_ARCH_ARM32_RPI3
     (void)modes;
     (void)max_modes;
-    if (count) *count = 0U;
     return false;
+#else
+    if (g_gfx.mode == GFX_MODE_VESA_LFB)
+        return vesa_list_modes(modes, max_modes, count, g_gfx.bpp);
+    return false;
+#endif
 }
+
 bool gfx_list_all_display_modes(gfx_display_mode_t *modes, uint32_t max_modes,
                                 uint32_t *count) {
+    if (!count) return false;
+    *count = 0U;
+    if (g_active_driver)
+        return g_active_driver->list_modes(modes, max_modes, count);
+#ifdef BLES_ARCH_ARM32_RPI3
     (void)modes;
     (void)max_modes;
-    if (count) *count = 0U;
     return false;
+#else
+    if (g_gfx.mode == GFX_MODE_VESA_LFB)
+        return vesa_list_all_modes(modes, max_modes, count);
+    return false;
+#endif
 }
+
 bool gfx_set_display_mode(uint16_t width, uint16_t height, uint8_t bpp) {
-    /* Public/runtime mode changes are intentionally disabled.  A request for
-       the already-active mode is a harmless no-op so old software that merely
-       reasserts the current mode keeps working. */
-    if (width == g_gfx.width && height == g_gfx.height &&
-        (!bpp || bpp == g_gfx.bpp))
+    gfx_info_t old_info;
+    bool ok = false;
+
+    if (!width || !height) return false;
+    if (!bpp) bpp = g_gfx.bpp;
+    if (width == g_gfx.width && height == g_gfx.height && bpp == g_gfx.bpp)
         return true;
-    kprintf("[GFX:MODE] cambio en caliente bloqueado: %ux%ux%u; activo=%ux%ux%u\n",
+    if (!gfx_can_change_mode()) return false;
+
+    old_info = g_gfx;
+    kprintf("[GFX:MODE] cambio solicitado: %ux%ux%u; activo=%ux%ux%u backend=%s\n",
             (uint32_t)width, (uint32_t)height, (uint32_t)bpp,
-            (uint32_t)g_gfx.width, (uint32_t)g_gfx.height,
-            (uint32_t)g_gfx.bpp);
-    return false;
+            (uint32_t)old_info.width, (uint32_t)old_info.height,
+            (uint32_t)old_info.bpp, gfx_driver_name());
+
+    /* Los recursos 3D, cursores y superficies del compositor pertenecen a la
+     * generacion del modo anterior. gui_change_resolution() ya apaga su
+     * compositor antes de entrar aqui; el core invalida ademas los recursos
+     * 3D y publica una nueva generacion tras un modeset exitoso. */
+    gfx3d_reset();
+    g_last_fence = 0U;
+    if (g_active_driver) {
+        ok = g_active_driver->set_mode(&g_gfx, width, height, bpp);
+    }
+#ifndef BLES_ARCH_ARM32_RPI3
+    else if (g_gfx.mode == GFX_MODE_VESA_LFB) {
+        ok = vesa_set_mode(&g_gfx, width, height, bpp);
+    }
+#endif
+
+    if (!ok) {
+        g_gfx = old_info;
+        kprintf("[GFX:MODE] FAIL backend=%s solicitud=%ux%ux%u\n",
+                gfx_driver_name(), (uint32_t)width, (uint32_t)height,
+                (uint32_t)bpp);
+        return false;
+    }
+
+    gfx_perf_reset();
+    gfx_advance_driver_generation();
+    kprintf("[GFX:MODE] OK backend=%s modo=%ux%ux%u pitch=%u gen=%u\n",
+            gfx_driver_name(), (uint32_t)g_gfx.width,
+            (uint32_t)g_gfx.height, (uint32_t)g_gfx.bpp,
+            (uint32_t)g_gfx.pitch, g_driver_generation);
+    return true;
 }
 
 bool gfx_enable_page_flip(void) {
+#ifdef BLES_ARCH_ARM32_RPI3
+    return false;
+#else
     return !g_active_driver && g_gfx.mode == GFX_MODE_VESA_LFB &&
            vesa_enable_page_flip(&g_gfx);
+#endif
 }
 uint32_t gfx_page_flip_draw_buffer(void) {
+#ifdef BLES_ARCH_ARM32_RPI3
+    return 0U;
+#else
     if (g_active_driver || g_gfx.mode != GFX_MODE_VESA_LFB) return 0U;
     return vesa_page_flip_draw_buffer(&g_gfx);
+#endif
 }
 bool gfx_page_flip_commit(void) {
+#ifdef BLES_ARCH_ARM32_RPI3
+    return false;
+#else
     return !g_active_driver && g_gfx.mode == GFX_MODE_VESA_LFB &&
            vesa_page_flip_commit(&g_gfx);
+#endif
 }
 
 bool gfx_present_buffer(const uint32_t *pixels, uint32_t source_pitch,
@@ -365,7 +577,7 @@ bool gfx_present_buffer(const uint32_t *pixels, uint32_t source_pitch,
                 if (rects[i].w > 0 && rects[i].h > 0)
                     g_gfx_perf.present_cpu_bytes +=
                         (uint32_t)rects[i].w * (uint32_t)rects[i].h *
-                        (g_gfx.bpp == 8U ? 1U : 4U);
+                        ((g_gfx.bpp + 7U) / 8U);
             }
         }
     } else {
@@ -460,7 +672,7 @@ static bool gfx_software_bitblt(int src_x, int src_y, int dst_x, int dst_y,
     int row_step;
 
     if (!gfx_clip_blit_args(&src_x, &src_y, &dst_x, &dst_y, &w, &h) ||
-        (g_gfx.bpp != 8U && g_gfx.bpp != 32U))
+        (g_gfx.bpp != 8U && g_gfx.bpp != 16U && g_gfx.bpp != 32U))
         return false;
 
     row_start = dst_y > src_y ? h - 1 : 0;
@@ -484,6 +696,13 @@ static bool gfx_software_bitblt(int src_x, int src_y, int dst_x, int dst_y,
                     dst[col] = (uint8_t)gfx_apply_rop(src[col], dst[col], rop,
                                                       0xFFU);
             }
+        } else if(g_gfx.bpp==16U) {
+            uint16_t *src=(uint16_t *)(uintptr_t)(g_gfx.framebuffer+(uint32_t)(src_y+row)*g_gfx.pitch)+src_x;
+            uint16_t *dst=(uint16_t *)(uintptr_t)(g_gfx.framebuffer+(uint32_t)(dst_y+row)*g_gfx.pitch)+dst_x;
+            if(rop==GFX_ROP_COPY)gfx_memmove_fast(dst,src,(size_t)w*2U);
+            else if(dst_x>src_x && dst_x<src_x+w) {
+                for(int col=w-1;col>=0;col--)dst[col]=(uint16_t)gfx_apply_rop(src[col],dst[col],rop,65535U);
+            } else for(int col=0;col<w;col++)dst[col]=(uint16_t)gfx_apply_rop(src[col],dst[col],rop,65535U);
         } else {
             uint32_t *src = (uint32_t *)(uintptr_t)
                 (g_gfx.framebuffer + (uint32_t)(src_y + row) * g_gfx.pitch) + src_x;
@@ -619,19 +838,35 @@ bool gfx_overlay_stop(void) {
 }
 
 void gfx_set_palette_color(uint8_t index, uint8_t r, uint8_t g, uint8_t b) {
+#ifdef BLES_ARCH_ARM32_RPI3
+    (void)index; (void)r; (void)g; (void)b;
+#else
     gfx_vga_set_palette_color(index, r, g, b);
+#endif
 }
-void gfx_set_default_palette(void) { gfx_vga_set_default_palette(); }
+void gfx_set_default_palette(void) {
+#ifndef BLES_ARCH_ARM32_RPI3
+    gfx_vga_set_default_palette();
+#endif
+}
 
 static void gfx_linear_putpixel_rgb(int x, int y, uint32_t rgb) {
     volatile uint32_t *pixel = (volatile uint32_t *)(uintptr_t)
         (g_gfx.framebuffer + (uint32_t)y * g_gfx.pitch + (uint32_t)x * 4U);
+#ifdef BLES_ARCH_ARM32_RPI3
+    *pixel = rpi3_gfx_encode_rgb(rgb & 0x00FFFFFFU);
+#else
     *pixel = rgb & 0x00FFFFFFU;
+#endif
 }
 static uint32_t gfx_linear_getpixel_rgb(int x, int y) {
     volatile uint32_t *pixel = (volatile uint32_t *)(uintptr_t)
         (g_gfx.framebuffer + (uint32_t)y * g_gfx.pitch + (uint32_t)x * 4U);
+#ifdef BLES_ARCH_ARM32_RPI3
+    return rpi3_gfx_decode_rgb(*pixel);
+#else
     return *pixel & 0x00FFFFFFU;
+#endif
 }
 
 void gfx_clear(uint8_t color) { gfx_clear_rgb(gfx_palette_rgb(color)); }
@@ -643,30 +878,58 @@ void gfx_putpixel(int x, int y, uint8_t color) {
 }
 void gfx_putpixel_rgb(int x, int y, uint32_t rgb) {
     if (x < 0 || y < 0 || x >= g_gfx.width || y >= g_gfx.height) return;
-    if (g_active_driver && (g_gfx.bpp == 8U || g_gfx.bpp == 32U)) {
-        (void)gfx_flush();
+    if (g_active_driver && (g_gfx.bpp == 8U || g_gfx.bpp == 16U || g_gfx.bpp == 32U)) {
+#ifndef BLES_ARCH_ARM32_RPI3
+        /* VirtIO GPU exposes a guest-RAM backed framebuffer.  Flushing before
+         * every single pixel turns early text/logo drawing into one virtqueue
+         * round-trip per pixel (TRANSFER_TO_HOST_2D + RESOURCE_FLUSH), which
+         * made the bootsplash look hung.  Queue its dirty pixels and flush once
+         * at the end of the logical draw batch instead.  Keep the conservative
+         * ordering for other drivers whose framebuffer may race HW commands. */
+        if (g_gfx.mode != GFX_MODE_VIRTIO_GPU)
+            (void)gfx_flush();
+#endif
         if (g_gfx.bpp == 32U) {
             gfx_linear_putpixel_rgb(x, y, rgb);
+        } else if(g_gfx.bpp==16U) {
+            volatile uint16_t *pixel=(volatile uint16_t *)(uintptr_t)
+                (g_gfx.framebuffer+(uint32_t)y*g_gfx.pitch+(uint32_t)x*2U);
+            *pixel=bk_rgb565_encode(rgb);
         } else {
             volatile uint8_t *pixel = (volatile uint8_t *)(uintptr_t)
                 (g_gfx.framebuffer + (uint32_t)y * g_gfx.pitch + (uint32_t)x);
             *pixel = gfx_rgb_to_332(rgb);
         }
+#ifndef BLES_ARCH_ARM32_RPI3
         (void)g_active_driver->update_rect(x, y, 1, 1);
+#endif
+#ifndef BLES_ARCH_ARM32_RPI3
     } else if (g_gfx.mode == GFX_MODE_VESA_LFB) {
-        vesa_putpixel_rgb(&g_gfx, x, y, rgb);
+        if (g_boot_raw_lfb) gfx_early_putpixel(x, y, rgb);
+        else vesa_putpixel_rgb(&g_gfx, x, y, rgb);
     } else {
         gfx_vga_putpixel(&g_gfx, x, y, gfx_vga_rgb_to_color(rgb));
+#endif
     }
 }
 uint32_t gfx_getpixel_rgb(int x, int y) {
     if (x < 0 || y < 0 || x >= g_gfx.width || y >= g_gfx.height) return 0;
+    if(g_active_driver && g_gfx.bpp==16U) {
+        (void)gfx_flush();
+        const volatile uint16_t *pixel=(const volatile uint16_t *)(uintptr_t)
+            (g_gfx.framebuffer+(uint32_t)y*g_gfx.pitch+(uint32_t)x*2U);
+        return bk_rgb565_decode(*pixel);
+    }
     if (g_active_driver && g_gfx.bpp == 32) {
         (void)gfx_flush();
         return gfx_linear_getpixel_rgb(x, y);
     }
+#ifdef BLES_ARCH_ARM32_RPI3
+    return 0U;
+#else
     if (g_gfx.mode != GFX_MODE_VESA_LFB) return 0;
     return vesa_getpixel_rgb(&g_gfx, x, y);
+#endif
 }
 void gfx_fill_rect(int x, int y, int w, int h, uint8_t color) {
     gfx_fill_rect_rgb(x, y, w, h, gfx_palette_rgb(color));
@@ -685,19 +948,34 @@ void gfx_fill_rect_rgb(int x, int y, int w, int h, uint32_t rgb) {
         if (fence) g_last_fence = fence;
         if (caps & GFX_CAP_FILL_HW) g_gfx_perf.hw_fill++;
         else g_gfx_perf.sw_fill++;
+#ifndef BLES_ARCH_ARM32_RPI3
     } else if (g_gfx.mode == GFX_MODE_VESA_LFB) {
         if (driver_attempted) g_gfx_perf.driver_failures++;
         g_gfx_perf.sw_fill++;
-        vesa_fill_rect_rgb(&g_gfx, x, y, w, h, rgb);
-    } else if (g_active_driver && (g_gfx.bpp == 8U || g_gfx.bpp == 32U)) {
+        if (g_boot_raw_lfb) gfx_early_fill(x, y, w, h, rgb);
+        else vesa_fill_rect_rgb(&g_gfx, x, y, w, h, rgb);
+#endif
+    } else if (g_active_driver && (g_gfx.bpp == 8U || g_gfx.bpp == 16U || g_gfx.bpp == 32U)) {
         if (driver_attempted) g_gfx_perf.driver_failures++;
         (void)gfx_flush();
         g_gfx_perf.sw_fill++;
         if (g_gfx.bpp == 32U) {
+#ifdef BLES_ARCH_ARM32_RPI3
+            uint32_t native_rgb = rpi3_gfx_encode_rgb(rgb & 0x00FFFFFFU);
+#else
+            uint32_t native_rgb = rgb & 0x00FFFFFFU;
+#endif
             for (int row = 0; row < h; row++) {
                 uint32_t *dst = (uint32_t *)(uintptr_t)
                     (g_gfx.framebuffer + (uint32_t)(y + row) * g_gfx.pitch) + x;
-                for (int col = 0; col < w; col++) dst[col] = rgb;
+                for (int col = 0; col < w; col++) dst[col] = native_rgb;
+            }
+        } else if(g_gfx.bpp==16U) {
+            uint16_t native=bk_rgb565_encode(rgb);
+            for(int row=0;row<h;row++) {
+                volatile uint16_t *dst=(volatile uint16_t *)(uintptr_t)
+                    (g_gfx.framebuffer+(uint32_t)(y+row)*g_gfx.pitch)+x;
+                for(int col=0;col<w;col++)dst[col]=native;
             }
         } else {
             uint8_t native = gfx_rgb_to_332(rgb);
@@ -708,8 +986,10 @@ void gfx_fill_rect_rgb(int x, int y, int w, int h, uint32_t rgb) {
             }
         }
         (void)g_active_driver->update_rect(x, y, w, h);
+#ifndef BLES_ARCH_ARM32_RPI3
     } else {
         gfx_vga_fill_rect(&g_gfx, x, y, w, h, gfx_vga_rgb_to_color(rgb));
+#endif
     }
 }
 

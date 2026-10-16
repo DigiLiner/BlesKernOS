@@ -1,0 +1,1 @@
+PASS caller-owned scrollbar helpers avoid GUI/GFX inversion; window mutations remain guarded

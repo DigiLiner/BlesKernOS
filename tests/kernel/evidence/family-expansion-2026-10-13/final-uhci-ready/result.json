@@ -1,0 +1,22 @@
+{
+  "controller": "uhci",
+  "desktop_wall_seconds": 148.89811925400863,
+  "reads": [
+    {
+      "pass": 0,
+      "bytes": 1048576,
+      "ticks": 137,
+      "hz": 100,
+      "valid": 1
+    },
+    {
+      "pass": 1,
+      "bytes": 1048576,
+      "ticks": 4,
+      "hz": 100,
+      "valid": 1
+    }
+  ],
+  "pass": true,
+  "root_usb": true
+}

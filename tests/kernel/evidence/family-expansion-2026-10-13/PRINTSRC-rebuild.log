@@ -1,0 +1,4 @@
+gcc -m32 -Os -ffreestanding -fno-builtin -nostdlib -nostdinc -fno-pic -fno-pie -fno-stack-protector -ffunction-sections -fdata-sections -Isdk/include -Dmemchr=bk_print_memchr -Dabort=bk_print_jbig_abort -c system/services/printspool.c -o printspool.o
+gcc -m32 -Os -ffreestanding -fno-builtin -nostdlib -nostdinc -fno-pic -fno-pie -fno-stack-protector -ffunction-sections -fdata-sections -Isdk/include -Dmemchr=bk_print_memchr -Dabort=bk_print_jbig_abort -c third_party/jbigkit/jbig.c -o jbig.o
+gcc -m32 -Os -ffreestanding -fno-builtin -nostdlib -nostdinc -fno-pic -fno-pie -fno-stack-protector -ffunction-sections -fdata-sections -Isdk/include -Dmemchr=bk_print_memchr -Dabort=bk_print_jbig_abort -c third_party/jbigkit/jbig_ar.c -o jbig_ar.o
+ld -m elf_i386 -r --gc-sections -u bleskernos_program_main printspool.o jbig.o jbig_ar.o -o PRINTSPL.BEX

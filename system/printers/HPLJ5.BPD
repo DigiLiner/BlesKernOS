@@ -1,0 +1,7 @@
+[Printer]
+Id=HPLJ5
+Name=HP LaserJet 5
+Language=PCL5
+Transport=LPT
+Port=LPT1
+DPI=600

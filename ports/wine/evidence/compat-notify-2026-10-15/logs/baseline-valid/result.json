@@ -1,0 +1,8 @@
+{
+  "result": "FAIL",
+  "expected_failure": true,
+  "observed_guest_failure": true,
+  "pe_sha256": "f3c218da6bde1791d80bd828aa4199446e541a6a4dd67d19dd6e5afd3fddfc83",
+  "native_test": false,
+  "source_kernel_sha256": "9f7be7cb4ba457b951f58df8eae5d6a2337ae252bfeef9effd83e9e9172e2b96"
+}

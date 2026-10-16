@@ -8,14 +8,20 @@ typedef unsigned int bk_u32;
 typedef signed int bk_i32;
 typedef unsigned int bk_size_t;
 
-#define BK_SYSCALL_ABI_VERSION 5U
+#if defined(BLES_ARCH_ARM32_RPI3)
+#define BK_SYSCALL_ABI_VERSION 6U
+#else
+#define BK_SYSCALL_ABI_VERSION 17U
+#endif
 #define BK_SOCKET_TCP 1U
 #define BK_O_RDONLY 0x0001U
 #define BK_O_WRONLY 0x0002U
 #define BK_O_RDWR   0x0003U
+#define BK_O_CREATE 0x0010U
+#define BK_O_TRUNC  0x0020U
 #define BK_PATH_MAX 260U
 #define BK_NAME_MAX 256U
-#define BK_DIRENT_MAX 64U
+#define BK_DIRENT_MAX 128U
 
 typedef enum {
     BK_NODE_NONE = 0,
@@ -35,6 +41,17 @@ bk_i32 bk_write(bk_i32 fd, const void *buffer, bk_u32 length);
 bk_i32 bk_read(bk_i32 fd, void *buffer, bk_u32 length);
 bk_i32 bk_open(const char *path, bk_u32 flags);
 bk_i32 bk_close(bk_i32 fd);
+bk_i32 bk_file_write(bk_i32 fd, const void *buffer, bk_u32 length);
+bk_i32 bk_lseek(bk_i32 fd, bk_i32 offset, bk_u32 origin);
+bk_i32 bk_tell(bk_i32 fd);
+bk_i32 bk_file_size(bk_i32 fd);
+bk_i32 bk_stat(const char *path, bk_dirent_t *entry);
+bk_i32 bk_fsync(bk_i32 fd);
+bk_i32 bk_ftruncate(bk_i32 fd, bk_u32 size);
+bk_i32 bk_dup(bk_i32 fd, bk_i32 requested_fd);
+bk_i32 bk_signal_register(void (*dispatcher)(bk_i32));
+bk_i32 bk_signal_send(bk_u32 pid, bk_i32 signal_number);
+bk_i32 bk_personality_linux_i386(void);
 bk_i32 bk_getcwd(char *buffer, bk_u32 capacity);
 bk_i32 bk_chdir(const char *path);
 bk_i32 bk_mkdir(const char *path);
@@ -48,6 +65,7 @@ bk_i32 bk_free(void *pointer);
 bk_i32 bk_getpid(void);
 bk_i32 bk_getppid(void);
 bk_u32 bk_uptime_ms(void);
+bk_u32 bk_ticks(void);
 void bk_yield(void);
 void bk_sleep(bk_u32 ticks);
 bk_i32 bk_spawn(const char *path, const char *argument);

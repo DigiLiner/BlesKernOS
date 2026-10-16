@@ -1,0 +1,443 @@
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=1572351 KiB top=1572736 KiB
+  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000
+  [MM] RAM usable: 1536 MB
+  [MM] Heap dinamico: 0x2000000 - 0x1ffe0000 (491392 KB)
+  [MM] VM frames: 0x1ffe0000 - 0x5ffe0000 (1048576 KiB, 262144 paginas)
+  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)
+  [MM] Vista PE fija: 0x400000 - 0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2000000-0x1ffe0000
+[COMPAT] perfil=normal RAM_top=1572736 KiB heap=491392 KiB tareas=128 CPU=fam6/mod122 GUI=60FPS TIMER=300Hz
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:EARLY] BIOS LFB 800x600x32 pitch=3200 fb=0xfd000000
+[BKBOOT t=0] STARTING KERNEL
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 5 dispositivos detectados
+  [LPT] no se detectaron puertos paralelos
+  [ATA] ata0: 1572864 sectores de 512 bytes
+  [ATA] ata0: read burst=16 sectores
+  [ATA] ata0: PIO read width=32 bits
+[ATA:PROBE] io=0x1f0 slave=1 ausente (status=0x0)
+[ATA:PROBE] io=0x170 slave=0 ausente (status=0x0)
+[ATA:PROBE] io=0x170 slave=1 ausente (status=0x0)
+  [ATA] canales IDE normalizados despues del probe
+  [ATA] ata0: QEMU PIIX DMA read/write enabled
+[BKBOOT t=354] STORAGE DRIVERS
+[BKBOOT t=354] MOUNTING FILESYSTEM
+[BKBOOT t=356] F8: RECOVERY MODE (2 SEC)
+[BOOT] Pulse F8 para entrar a recovery sin Vision ni servicios
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=1
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 1
+[FAT] dev[0]=ata0 tipo=1 sectores=1572864
+Intentando montar ata0...
+fat_set_active(ata0)
+No es particion, buscando ata0
+Dispositivo encontrado
+[BFS4:CACHE] slots=2048 bytes=8429568
+fat_try_mount_device OK
+fat_set_active OK
+Montado ata0 OK
+[VFS] /TEMP listo
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cce0bc image=0x2ccd8a0
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cd1fb5 image=0x2cd1000
+[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cdc5c6 image=0x2cd7060
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=5 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cd6d2d image=0x2cd3ac0
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cccc2a image=0x2ccc930
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cd0a30 image=0x2ccfac0
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2ccfe89 image=0x2ccf200
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2ce1bee image=0x2ce0640
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2ce5fca image=0x2ce2f00
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2ccc4d9 image=0x2ccbee0
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cce809 image=0x2cce1e0
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2d10b1e image=0x2d10000
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2d82e3e image=0x2d81d00
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2d45258 image=0x2d433e0
+[DVR] /SYSTEM/DRIVERS/USBCLASS.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cd0aab image=0x2cd0080
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2d4ac8f image=0x2d433e0
+[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado
+[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cfbff7 image=0x2cf9640
+[GFX:TRACE] REGISTER request ops=0x2cfc0e0 abi=2 size=100 name_ptr=0x2cfc086 priority=200 caps=0x4ff
+[GFX:TRACE] REGISTER SELECT name=vmware_svga priority=200 previous=(ninguno) previous_priority=0
+[DVR] vmware_svga: cargado (/SYSTEM/DRIVERS/VMWARESVGA.DVR)
+[PERF:ELF] entry=bleskernos_driver_query address=0x2cdfc85 image=0x2cdbc40
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 10 modulo(s) cargado(s)
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=vmware_svga ops=0x2cfc0e0
+[GFX:TRACE] ACTIVATE call name=vmware_svga preferred=800x600
+[SVGA:MODE] begin 800x600 active=0 generation=1
+[SVGA:MODE] OK 800x600x32 pitch=3200 fb=0xfd000000 generation=2
+[SVGA.DVR] SVGA3D preflight guest=0x20001 rb=0x0 memregs=0 reserved=4 modern=0
+[SVGA.DVR] VMware SVGA-II ID=0x90000002 IO=0xc010 FB=0xfd000000 FIFO=0xfe000000
+[SVGA.DVR] 800x600x32 pitch=3200 caps=0x3 fifo=0x0 GMR=fallback
+[GFX:TRACE] ACTIVATE OK name=vmware_svga mode=800x600x32 pitch=3200 fb=0xfd000000
+[GFXRES] boot icons 9/9 precargados
+[BKBOOT t=1693] LOADING PRINT SERVICE
+[PERF:ELF] entry=bleskernos_program_main address=0x2d4c00c image=0x2d48c60
+[[PRINT] PrintSpool Ring 3 listPRINT] spooler iniciado en segundo plano, pid=3
+[BKoBOOT t=1713] STARTING VISION
+[BKBOOT t=1714] VISION: LOADING ELF
+
+[PERF:ELF] entry=bleskernos_program_main address=0x2f1764c image=0x2f05200
+[VISION] servicio lanzado pid=4
+[BKBOOT t=1745] VISION: ENTER RING3
+[VISION] ownership grafico adquirido pid=4
+[BKBOOT t=1754] VISION: GRAPHICS ENGINE
+[BKBOOT t=1757] PREPARING DESKTOP
+[BKBOOT t=1759] VISION: ENGINE READY
+[BKBOOT t=1761] VISION: DESKTOP
+[BKBOOT t=1762] LOADING DESKTOP ICONS
+[BKBOOT t=1763] ICONPAK preload begin
+[BKBOOT t=1764] LOADING ICON CACHE
+[BKBOOT t=1766] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=1775] DESKMANAGER read desktop config
+[BKBOOT t=1776] DESKMANAGER desktop config loaded
+[BKBOOT t=1777] VISION: DESKBAR
+[DESKBAR] alloc state bytes=17116
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+.[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[BKBOOT t=2129] VISION: SCREENSAVER
+[BKBOOT t=2141] VISION: START SHELL
+[BKBOOT t=2143] VISION: READY
+[VISION] READY: motor[BKBOOT t=2145] kernel_main: Vision READY
+[RAM:DESKTOP] installed_kib=1572351 managed_kib=1441664 used_kib=18157 free_kib=1423506 unmanaged_kib=130686 heap_used_kib=18029 heap_free_kib=440594 vm_free_kib=982912
+[SMP] escritorio listo; iniciando procesadores secundarios
+, escritorio y compositor bajo Vision
+[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000
+[SMP] iniciando CPU1 APIC=1...
+[VISION:SAVER] Ring 3 worker started
+[SMP] CPU1 online
+[SMP] 2/2 CPU(s) online; timer LAPIC=316727 cuentas/tick
+[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (123 slots libres)
+[SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI
+[BKBOOT] VISION ONLINE pid=4
+[WINE:BOOT] deferred until Windows program launch
+[BKBOOT t=2289] DISABLE SPLASH / ENTER GUI
+[BKBOOT] DESKTOP RELEASED
+[VISION:ENGINE] compositor y ventanas CPL=3
+[BKBOOT] QUEUE STARTUP SOUND
+[W3P:START] tick=2308 hz=300
+[PERF:ELF] entry=bleskernos_program_main address=0x2d07935 image=0x2d078d4
+[GATE:ASSOC] path=/SYSTEM/WINE/windows/system32/notepad.exe started=1
+[MM] proceso 8: 1 KiB recuperados
+[VFS:CWD] resolve FAIL full=/tmp/.wine-0/server-0-1c inner=/tmp/.wine-0/server-0-1c device=ata0
+[RAM:IDLE] installed_kib=1572351 managed_kib=1441664 used_kib=71785 free_kib=1369879 unmanaged_kib=130686 heap_used_kib=32729 heap_free_kib=425895 vm_free_kib=943984
+[PERF] 17s cpu=66% tsc=1094MHz gfx=vmware_svga 800x600x32 caps=0xd3
+[PERF:GUI] loop=635 ev=0 mouse=0 frame=130 fps=7 full=14 cursor=0 hwcur=0 gpu=0 dirty=11%
+[PERF:TIME] frame avg=10548us max=139223us share=7% compose=1% present=0% gpu=0%
+[PERF:SCHED] tick=7293 switch=384032 qfast=1178 blocked=3407 sched=6% x87=0% avg=0us max=9645us
+[PERF:3D] draw calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] upload calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] readback calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] publish calls=0 avg_us=0 max_us=0 share=0%
+[PERF:PC] tid=1 pc=0x11a880 hits=560 ticks=7293 collisions=2708
+[PERF:PC] tid=1 pc=0x181f80 hits=265 ticks=7293 collisions=2708
+[PERF:PC] tid=1 pc=0x125500 hits=168 ticks=7293 collisions=2708
+[PERF:PC] tid=4 pc=0x11bd80 hits=58 ticks=7293 collisions=2708
+[PERF:PC] tid=19 pc=0x182480 hits=52 ticks=7293 collisions=2708
+[PERF:PC] tid=1 pc=0x120800 hits=47 ticks=7293 collisions=2708
+[PERF:PC] tid=17 pc=0x13bf00 hits=46 ticks=7293 collisions=2708
+[PERF:PC] tid=1 pc=0x17e000 hits=43 ticks=7293 collisions=2708
+[PERF:IO] ata R=7209/72793sec avg=642us max=334006us err=0 W=1062/5456sec avg=720us max=19760us err=0
+[PERF:IRQ] 0=5309 1=1 3=0 4=0 6=0 12=1 14=9214 15=0
+[PERF:MEM] used=34818K free=423805K blocks=612 tasks=21
+[PERF:TASK] pid=1 kernel-core S cpu=20% ticks=1505 mem=64K
+[PERF:HINT] E/S lenta o espera del controlador: max=334006us
+[PERF] 11s cpu=62% tsc=1094MHz gfx=vmware_svga 800x600x32 caps=0xd3
+[PERF:GUI] loop=624 ev=0 mouse=0 frame=122 fps=10 full=9 cursor=0 hwcur=0 gpu=0 dirty=8%
+[PERF:TIME] frame avg=10891us max=230992us share=11% compose=1% present=0% gpu=0%
+[PERF:SCHED] tick=4928 switch=357289 qfast=167 blocked=3309 sched=10% x87=1% avg=0us max=9167us
+[PERF:3D] draw calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] upload calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] readback calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] publish calls=0 avg_us=0 max_us=0 share=0%
+[PERF:PC] tid=4 pc=0x125500 hits=469 ticks=4928 collisions=1135
+[PERF:PC] tid=25 pc=0x121280 hits=93 ticks=4928 collisions=1135
+[PERF:PC] tid=4 pc=0x110580 hits=82 ticks=4928 collisions=1135
+[PERF:PC] tid=53 pc=0x121280 hits=66 ticks=4928 collisions=1135
+[PERF:PC] tid=17 pc=0x13bf00 hits=58 ticks=4928 collisions=1135
+[PERF:PC] tid=19 pc=0x182480 hits=58 ticks=4928 collisions=1135
+[PERF:PC] tid=44 pc=0x182480 hits=52 ticks=4928 collisions=1135
+[PERF:PC] tid=4 pc=0x11db80 hits=52 ticks=4928 collisions=1135
+[PERF:IO] ata R=4224/32676sec avg=566us max=27084us err=0 W=414/1612sec avg=761us max=37046us err=0
+[PERF:IRQ] 0=3000 1=0 3=0 4=0 6=0 12=0 14=4959 15=0
+[PERF:MEM] used=41626K free=416997K blocks=911 tasks=46
+[PERF:TASK] pid=4 VISION.BEX S cpu=24% ticks=1201 mem=128K
+[PERF:TASK] pid=17 wineserver r cpu=6% ticks=310 mem=256K
+[PERF:TASK] pid=25 wine-preloader S cpu=3% ticks=166 mem=256K
+[PERF:HINT] E/S lenta o espera del controlador: max=37046us
+[PERF] 11s cpu=46% tsc=1094MHz gfx=vmware_svga 800x600x32 caps=0xd3
+[PERF:GUI] loop=752 ev=0 mouse=0 frame=84 fps=7 full=6 cursor=0 hwcur=0 gpu=0 dirty=14%
+[PERF:TIME] frame avg=9381us max=30050us share=6% compose=1% present=0% gpu=0%
+[PERF:SCHED] tick=4958 switch=257502 qfast=129 blocked=2612 sched=7% x87=0% avg=0us max=3426us
+[PERF:APP] pid=10 frames=5 gpu=0 cpu=5 fps=0.44 interval_ms=11350
+[PERF:3D] draw calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] upload calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] readback calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] publish calls=5 avg_us=480 max_us=1490 share=0%
+[PERF:PC] tid=79 pc=0x121280 hits=70 ticks=4958 collisions=1094
+[PERF:PC] tid=12 pc=0x121280 hits=61 ticks=4958 collisions=1094
+[PERF:PC] tid=35 pc=0x11e700 hits=59 ticks=4958 collisions=1094
+[PERF:PC] tid=17 pc=0x13bf00 hits=58 ticks=4958 collisions=1094
+[PERF:PC] tid=4 pc=0x110580 hits=54 ticks=4958 collisions=1094
+[PERF:PC] tid=77 pc=0x182480 hits=48 ticks=4958 collisions=1094
+[PERF:PC] tid=4 pc=0x11db80 hits=48 ticks=4958 collisions=1094
+[PERF:PC] tid=80 pc=0x121280 hits=46 ticks=4958 collisions=1094
+[PERF:IO] ata R=3786/17175sec avg=452us max=26031us err=0 W=2202/10714sec avg=451us max=10824us err=0
+[PERF:IRQ] 0=3000 1=0 3=0 4=0 6=0 12=0 14=8068 15=0
+[PERF:MEM] used=44506K free=414117K blocks=963 tasks=52
+[PERF:TASK] pid=4 VISION.BEX S cpu=17% ticks=850 mem=128K
+[PERF:TASK] pid=17 wineserver R cpu=9% ticks=468 mem=256K
+[PERF:TASK] pid=12 wine-preloader S cpu=8% ticks=441 mem=256K
+[PERF:HINT] E/S lenta o espera del controlador: max=26031us
+[PERF] 11s cpu=16% tsc=1094MHz gfx=vmware_svga 800x600x32 caps=0xd3
+[PERF:GUI] loop=964 ev=0 mouse=0 frame=26 fps=2 full=0 cursor=0 hwcur=0 gpu=0 dirty=24%
+[PERF:TIME] frame avg=12667us max=20050us share=2% compose=0% present=0% gpu=0%
+[PERF:SCHED] tick=4970 switch=40556 qfast=79 blocked=1041 sched=1% x87=0% avg=0us max=1146us
+[PERF:APP] pid=10 frames=16 gpu=0 cpu=16 fps=1.45 interval_ms=11033
+[PERF:3D] draw calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] upload calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] readback calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] publish calls=16 avg_us=247 max_us=747 share=0%
+[PERF:PC] tid=17 pc=0x182480 hits=105 ticks=4970 collisions=99
+[PERF:PC] tid=10 pc=0x125500 hits=86 ticks=4970 collisions=99
+[PERF:PC] tid=17 pc=0x182400 hits=74 ticks=4970 collisions=99
+[PERF:PC] tid=17 pc=0x13bf00 hits=67 ticks=4970 collisions=99
+[PERF:PC] tid=17 pc=0x182100 hits=56 ticks=4970 collisions=99
+[PERF:PC] tid=17 pc=0x181f80 hits=40 ticks=4970 collisions=99
+[PERF:PC] tid=17 pc=0x182180 hits=26 ticks=4970 collisions=99
+[PERF:PC] tid=17 pc=0x182500 hits=21 ticks=4970 collisions=99
+[PERF:IO] ata R=2468/3602sec avg=297us max=4301us err=0 W=2552/10135sec avg=461us max=18720us err=0
+[PERF:IRQ] 0=3001 1=0 3=0 4=0 6=0 12=0 14=7482 15=0
+[PERF:MEM] used=44254K free=414369K blocks=954 tasks=49
+[PERF:TASK] pid=17 wineserver S cpu=13% ticks=672 mem=256K
+[PERF:TASK] pid=4 VISION.BEX S cpu=4% ticks=225 mem=128K
+[PERF:TASK] pid=10 XFBDEV S cpu=2% ticks=145 mem=128K
+[PERF:HINT] sin cuello dominante; compare TASK, IRQ e IO
+[W3P:END] elapsed_ms=45150
+[W3P] id=1 n=14 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=3 n=46689 ms=220843 max_ms=18927 bytes=23832013 bins=44732,1869,39,6,43
+[W3P] id=4 n=21191 ms=5338 max_ms=83 bytes=3069291 bins=20760,430,0,0,0
+[W3P] id=5 n=22 ms=3 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=6 n=3909 ms=502 max_ms=43 bytes=0 bins=0,0,0,0,0
+[W3P] id=9 n=14 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=10 n=19 ms=484 max_ms=51 bytes=0 bins=0,0,0,0,0
+[W3P] id=11 n=14 ms=127 max_ms=40 bytes=0 bins=0,0,0,0,0
+[W3P] id=12 n=6 ms=496 max_ms=492 bytes=0 bins=0,0,0,0,0
+[W3P] id=15 n=2 ms=10 max_ms=10 bytes=0 bins=0,0,0,0,0
+[W3P] id=20 n=75 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=33 n=67 ms=49 max_ms=40 bytes=0 bins=0,0,0,0,0
+[W3P] id=37 n=3 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=38 n=3 ms=55 max_ms=18 bytes=0 bins=0,0,0,0,0
+[W3P] id=39 n=9 ms=23 max_ms=18 bytes=0 bins=0,0,0,0,0
+[W3P] id=41 n=533 ms=1 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=45 n=105 ms=6 max_ms=1 bytes=0 bins=0,0,0,0,0
+[W3P] id=54 n=28803 ms=5693 max_ms=487 bytes=0 bins=0,0,0,0,0
+[W3P] id=60 n=26 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=63 n=24 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=64 n=1 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=65 n=1 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=66 n=11 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=77 n=301 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=83 n=2 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=85 n=4763 ms=103 max_ms=12 bytes=0 bins=0,0,0,0,0
+[W3P] id=91 n=926 ms=302 max_ms=9 bytes=0 bins=0,0,0,0,0
+[W3P] id=97 n=58 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=102 n=11973 ms=7340 max_ms=461 bytes=0 bins=0,0,0,0,0
+[W3P] id=114 n=1523 ms=2762 max_ms=692 bytes=0 bins=0,0,0,0,0
+[W3P] id=116 n=19 ms=1 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=120 n=69 ms=5503 max_ms=671 bytes=0 bins=0,0,0,0,0
+[W3P] id=122 n=996 ms=5 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=125 n=4079 ms=315 max_ms=54 bytes=0 bins=0,0,0,0,0
+[W3P] id=133 n=133 ms=11 max_ms=9 bytes=0 bins=0,0,0,0,0
+[W3P] id=140 n=120 ms=24 max_ms=22 bytes=0 bins=0,0,0,0,0
+[W3P] id=146 n=14986 ms=1754 max_ms=163 bytes=0 bins=0,0,0,0,0
+[W3P] id=158 n=301 ms=1 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=168 n=13503 ms=35750 max_ms=227 bytes=0 bins=0,0,0,0,0
+[W3P] id=172 n=22 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=173 n=2 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=174 n=211 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=175 n=44667 ms=447 max_ms=29 bytes=0 bins=0,0,0,0,0
+[W3P] id=180 n=2313 ms=728 max_ms=41 bytes=270991 bins=2312,1,0,0,0
+[W3P] id=181 n=3 ms=252 max_ms=251 bytes=3 bins=3,0,0,0,0
+[W3P] id=183 n=1 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=186 n=56 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=191 n=18 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=192 n=6417 ms=1269 max_ms=35 bytes=0 bins=0,0,0,0,0
+[W3P] id=194 n=3 ms=16 max_ms=16 bytes=0 bins=0,0,0,0,0
+[W3P] id=199 n=250 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=200 n=234 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=201 n=236 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=202 n=234 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=209 n=234 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=220 n=460 ms=602 max_ms=19 bytes=0 bins=0,0,0,0,0
+[W3P] id=221 n=1447 ms=62 max_ms=12 bytes=0 bins=0,0,0,0,0
+[W3P] id=224 n=56 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=229 n=1066 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=231 n=14 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=240 n=397 ms=15 max_ms=10 bytes=0 bins=0,0,0,0,0
+[W3P] id=241 n=55 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=242 n=19 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=243 n=82 ms=44 max_ms=14 bytes=0 bins=0,0,0,0,0
+[W3P] id=252 n=14 ms=52 max_ms=51 bytes=0 bins=0,0,0,0,0
+[W3P] id=254 n=1 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=258 n=15 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=267 n=1512 ms=61 max_ms=38 bytes=0 bins=0,0,0,0,0
+[W3P] id=268 n=26 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=269 n=160 ms=3 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=295 n=5230 ms=1564 max_ms=184 bytes=0 bins=0,0,0,0,0
+[W3P] id=308 n=2651 ms=40371 max_ms=236 bytes=0 bins=0,0,0,0,0
+[W3P] id=311 n=83 ms=55 max_ms=13 bytes=0 bins=0,0,0,0,0
+[W3P] id=331 n=174 ms=260 max_ms=31 bytes=0 bins=0,0,0,0,0
+[W3P] id=340 n=71 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=355 n=65 ms=6 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=374 n=11 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=383 n=6734 ms=1639 max_ms=160 bytes=0 bins=0,0,0,0,0
+[W3P] id=386 n=15 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=403 n=33560 ms=4899 max_ms=184 bytes=0 bins=0,0,0,0,0
+[W3P] id=406 n=11 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=435 n=9 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=439 n=60 ms=1 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=512 n=80099 ms=2952 max_ms=492 bytes=0 bins=0,0,0,0,0
+[W3P] id=513 n=5262 ms=532 max_ms=55 bytes=0 bins=0,0,0,0,0
+[W3P] id=514 n=6109 ms=1757 max_ms=41 bytes=12642595 bins=2652,3452,0,4,1
+[W3P] id=515 n=877 ms=4565 max_ms=251 bytes=1757349 bins=18,859,0,0,0
+[W3P] id=516 n=2 ms=0 max_ms=0 bytes=0 bins=0,0,0,0,0
+[W3P] id=517 n=3673 ms=371 max_ms=43 bytes=0 bins=0,0,0,0,0
+[W3P] id=518 n=12098 ms=203 max_ms=40 bytes=0 bins=0,0,0,0,0
+[W3P] id=526 n=19959 ms=10793 max_ms=39 bytes=65588736 bins=0,19842,24,68,25
+[W3P] id=527 n=6895 ms=4131 max_ms=58 bytes=15647232 bins=0,6878,7,2,8
+[W3P] id=531 n=54497 ms=1179667 max_ms=1503 bytes=0 bins=0,0,0,0,0
+[W3P] id=532 n=56823 ms=217718 max_ms=18927 bytes=52874262 bins=45108,11667,10,38,0
+[W3P] id=533 n=50899 ms=475 max_ms=43 bytes=6075510 bins=50731,117,2,49,0
+[W3P] id=534 n=139 ms=5 max_ms=0 bytes=0 bins=0,0,0,0,0
+[PERF] 10s cpu=26% tsc=1094MHz gfx=vmware_svga 800x600x32 caps=0xd3
+[PERF:GUI] loop=746 ev=0 mouse=0 frame=28 fps=2 full=0 cursor=0 hwcur=0 gpu=0 dirty=31%
+[PERF:TIME] frame avg=7614us max=20591us share=1% compose=0% present=0% gpu=0%
+[PERF:SCHED] tick=4970 switch=42904 qfast=297 blocked=694 sched=1% x87=0% avg=0us max=2472us
+[PERF:APP] pid=10 frames=20 gpu=0 cpu=20 fps=1.83 interval_ms=10913
+[PERF:3D] draw calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] upload calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] readback calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] publish calls=20 avg_us=147 max_us=255 share=0%
+[PERF:PC] tid=6 pc=0x11a880 hits=322 ticks=4970 collisions=118
+[PERF:PC] tid=1 pc=0x125700 hits=135 ticks=4970 collisions=118
+[PERF:PC] tid=4 pc=0x125700 hits=132 ticks=4970 collisions=118
+[PERF:PC] tid=10 pc=0x125500 hits=78 ticks=4970 collisions=118
+[PERF:PC] tid=17 pc=0x13bf00 hits=68 ticks=4970 collisions=118
+[PERF:PC] tid=1 pc=0x12ac80 hits=55 ticks=4970 collisions=118
+[PERF:PC] tid=4 pc=0x11bd80 hits=37 ticks=4970 collisions=118
+[PERF:PC] tid=4 pc=0x11db80 hits=30 ticks=4970 collisions=118
+[PERF:IO] ata R=53/60sec avg=271us max=803us err=0 W=54/220sec avg=415us max=2032us err=0
+[PERF:IRQ] 0=3000 1=0 3=0 4=0 6=0 12=0 14=161 15=0
+[PERF:MEM] used=44254K free=414369K blocks=954 tasks=49
+[PERF:TASK] pid=4 VISION.BEX S cpu=9% ticks=470 mem=128K
+[PERF:TASK] pid=1 kernel-core S cpu=8% ticks=418 mem=64K
+[PERF:TASK] pid=6 stage2-gate S cpu=7% ticks=357 mem=64K
+[PERF:HINT] sin cuello dominante; compare TASK, IRQ e IO
+[PERF] 10s cpu=9% tsc=1094MHz gfx=vmware_svga 800x600x32 caps=0xd3
+[PERF:GUI] loop=960 ev=0 mouse=0 frame=30 fps=2 full=0 cursor=0 hwcur=0 gpu=0 dirty=26%
+[PERF:TIME] frame avg=14381us max=72963us share=3% compose=1% present=0% gpu=0%
+[PERF:SCHED] tick=4973 switch=32045 qfast=70 blocked=463 sched=1% x87=0% avg=0us max=1041us
+[PERF:APP] pid=10 frames=20 gpu=0 cpu=20 fps=1.82 interval_ms=10936
+[PERF:3D] draw calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] upload calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] readback calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] end calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] wait calls=0 avg_us=0 max_us=0 share=0%
+[PERF:3D] publish calls=20 avg_us=480 max_us=2590 share=0%
+[PERF:PC] tid=10 pc=0x125500 hits=96 ticks=4973 collisions=30
+[PERF:PC] tid=17 pc=0x13bf00 hits=72 ticks=4973 collisions=30
+[PERF:PC] tid=10 pc=0x606eda80 hits=29 ticks=4973 collisions=30
+[PERF:PC] tid=4 pc=0x11db80 hits=24 ticks=4973 collisions=30
+[PERF:PC] tid=9 pc=0x369cb80 hits=23 ticks=4973 collisions=30
+[PERF:PC] tid=17 pc=0x13b200 hits=21 ticks=4973 collisions=30
+[PERF:PC] tid=4 pc=0x11bd80 hits=19 ticks=4973 collisions=30
+[PERF:PC] tid=17 pc=0x125500 hits=11 ticks=4973 collisions=30
+[PERF:IO] ata R=53/60sec avg=556us max=1980us err=0 W=54/220sec avg=791us max=2591us err=0
+[PERF:IRQ] 0=3000 1=0 3=0 4=0 6=0 12=0 14=161 15=0
+[PERF:MEM] used=44254K free=414369K blocks=954 tasks=49
+[PERF:TASK] pid=10 XFBDEV r cpu=3% ticks=175 mem=128K
+[PERF:TASK] pid=4 VISION.BEX S cpu=3% ticks=159 mem=128K
+[PERF:TASK] pid=17 wineserver r cpu=2% ticks=117 mem=256K
+[PERF:HINT] sin cuello dominante; compare TASK, IRQ e IO

@@ -1,0 +1,12 @@
+--- ports/tinyx/wine-launch.c
++++ wine-launch-diag.c
+@@ -1050,8 +1050,7 @@
+     const char *application_cwd = NULL;
+     char virtual_desktop[64] = {0};
+ 
+-    diagnostics = getenv("BLES_WINE_DIAGNOSTICS") &&
+-                  !strcmp(getenv("BLES_WINE_DIAGNOSTICS"), "1");
++    diagnostics = 1;
+     while (argc > 2) {
+         if (!strcmp(argv[1], "--diagnostics")) diagnostics = 1;
+         else if (!strcmp(argv[1], "--software-gl")) {

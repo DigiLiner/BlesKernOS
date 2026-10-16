@@ -1,0 +1,7 @@
+[Printer]
+Id=USBESCP
+Name=USB ESC/P family
+Language=ESCP
+Transport=LPT
+Port=USBPRN1
+DPI=180

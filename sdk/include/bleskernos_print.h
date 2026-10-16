@@ -1,7 +1,9 @@
 #ifndef BLESKERNOS_PRINT_H
 #define BLESKERNOS_PRINT_H
 
+#ifndef BK_API_H
 #include <bleskernos_api.h>
+#endif
 
 #define BK_PRINT_API_VERSION 1U
 #define BK_PRINT_DEFAULT_PRINTER "PSFILE"

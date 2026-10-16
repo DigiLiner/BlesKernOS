@@ -1,20 +1,21 @@
+#include <bleskernos_theme.h>
 #ifndef BLESKERNOS_SYSTEM_TOOLS_COMMON_H
 #define BLESKERNOS_SYSTEM_TOOLS_COMMON_H
 
 #include <bleskernos_api.h>
 
-#define ST_FACE       0x00D4D0C8U
-#define ST_LIGHT      0x00FFFFFFU
-#define ST_SHADOW     0x00808080U
-#define ST_DARK       0x00404040U
-#define ST_TEXT       0x00202020U
-#define ST_MUTED      0x00606060U
+#define ST_FACE BK_THEME_FACE
+#define ST_LIGHT BK_THEME_LIGHT
+#define ST_SHADOW BK_THEME_SHADOW
+#define ST_DARK BK_THEME_DARK
+#define ST_TEXT BK_THEME_TEXT
+#define ST_MUTED BK_THEME_MUTED
 #define ST_BLUE       0x00002070U
 #define ST_GREEN      0x00007020U
 #define ST_RED        0x00900000U
-#define ST_PANEL      0x00FFFFFFU
-#define ST_SELECT     0x000060A0U
-#define ST_SELECT_TXT 0x00FFFFFFU
+#define ST_PANEL BK_THEME_PANEL
+#define ST_SELECT BK_THEME_SELECTION
+#define ST_SELECT_TXT BK_THEME_SELECTION_TEXT
 #define ST_LOCAL static __attribute__((unused))
 
 ST_LOCAL void st_zero(void *pointer, uint32_t size) {

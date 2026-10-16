@@ -1,0 +1,21 @@
+{"timestamp": {"seconds": 1791949387, "microseconds": 633676}, "event": "STOP"}
+{"timestamp": {"seconds": 1791949387, "microseconds": 659879}, "event": "RESUME"}
+{"timestamp": {"seconds": 1791949387, "microseconds": 728188}, "event": "STOP"}
+{"timestamp": {"seconds": 1791949387, "microseconds": 738558}, "event": "RESUME"}
+{"timestamp": {"seconds": 1791949388, "microseconds": 42122}, "event": "STOP"}
+{"timestamp": {"seconds": 1791949388, "microseconds": 67239}, "event": "RESUME"}
+{"timestamp": {"seconds": 1791949388, "microseconds": 370291}, "event": "STOP"}
+{"timestamp": {"seconds": 1791949388, "microseconds": 395671}, "event": "RESUME"}
+{"timestamp": {"seconds": 1791949388, "microseconds": 699227}, "event": "STOP"}
+{"timestamp": {"seconds": 1791949388, "microseconds": 724741}, "event": "RESUME"}
+{"timestamp": {"seconds": 1791949389, "microseconds": 28757}, "event": "STOP"}
+{"timestamp": {"seconds": 1791949389, "microseconds": 54978}, "event": "RESUME"}
+{"timestamp": {"seconds": 1791949389, "microseconds": 358176}, "event": "STOP"}
+{"timestamp": {"seconds": 1791949389, "microseconds": 384018}, "event": "RESUME"}
+{"timestamp": {"seconds": 1791949389, "microseconds": 687592}, "event": "STOP"}
+{"timestamp": {"seconds": 1791949389, "microseconds": 718779}, "event": "RESUME"}
+{"timestamp": {"seconds": 1791949390, "microseconds": 24230}, "event": "STOP"}
+{"timestamp": {"seconds": 1791949390, "microseconds": 62896}, "event": "RESUME"}
+{"timestamp": {"seconds": 1791949390, "microseconds": 373062}, "event": "STOP"}
+{"timestamp": {"seconds": 1791949390, "microseconds": 411430}, "event": "RESUME"}
+{"timestamp": {"seconds": 1791949411, "microseconds": 574341}, "event": "SHUTDOWN", "data": {"guest": false, "reason": "host-qmp-quit"}}

@@ -170,6 +170,7 @@ static void mouse_handle_packet(void) {
 
     mouse_apply_bounds();
     g_mouse.packets++;
+    mouse_state_t event=g_mouse;mouse_publish_state(&event);
 }
 
 static void mouse_consume_byte(uint8_t data) {
@@ -354,6 +355,7 @@ const bk_driver_module_t *bleskernos_driver_query(void) {
     static const bk_driver_module_t module = {
         BK_DRIVER_ABI_VERSION,
         sizeof(bk_driver_module_t),
+        1U, 0U,
         "ps2-mouse",
         "Mouse PS/2 mediante controlador 8042",
         ps2_mouse_driver_init,

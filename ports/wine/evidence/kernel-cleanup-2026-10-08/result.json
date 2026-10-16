@@ -1,0 +1,26 @@
+{
+  "normal_boot": {
+    "ram_MiB": 2048,
+    "smp": 2,
+    "gpu": "VirtIO VGA without GL",
+    "vision_ready": true,
+    "wine_ready": true,
+    "desktop_released": true,
+    "wine_elapsed_ms": 12156,
+    "kernel_size_bytes": 776132
+  },
+  "console_tools": {
+    "nasm_version": 0,
+    "compile_hello_c": 0,
+    "make_version": 0,
+    "ld_version": 0,
+    "compiler_error_status": 1
+  },
+  "compiled_artifact": {
+    "path": "/tmp/hello.o",
+    "bytes": 967,
+    "format": "ELF32 little-endian ET_REL EM_386"
+  },
+  "instrumentation": "Console cases use a temporary boot-launcher harness. Its child warmup is stopped after 60 seconds; it does not own the kernel boot-report PID. Its warmup timeout and launcher-exit log are harness effects. Normal boot is checked separately in normal-boot.log.",
+  "production_image_modified": false
+}

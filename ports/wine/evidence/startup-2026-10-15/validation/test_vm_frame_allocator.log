@@ -1,0 +1,1 @@
+PASS VM allocator: linear sequential allocation, zeroing, wrap/hint-spanning runs, reserved frames, exhaustion and 10000 oracle comparisons

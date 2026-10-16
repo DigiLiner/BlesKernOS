@@ -1,0 +1,7 @@
+{
+  "result": "PASS",
+  "installed_kernel_sha256": "9f7be7cb4ba457b951f58df8eae5d6a2337ae252bfeef9effd83e9e9172e2b96",
+  "installed_stage2_matches": true,
+  "installed_boot_smoke_pass": true,
+  "note": "run_ram_smoke --installed deliberately reports kernel_sha256=null; kernel/stage2 bytes verified separately against the saved production binaries and artifacts.json"
+}

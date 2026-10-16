@@ -1,6 +1,6 @@
 #include "system_tools_common.h"
 
-#define PERF_APP_MIN_API 26U
+#define PERF_APP_MIN_API 37U
 #define PERF_HISTORY 60U
 #define PERF_MAX_PROCESSES 32U
 #define PERF_TOP_PROCESSES 5U
@@ -358,6 +358,11 @@ static void perf_sample(perf_state_t *state) {
         return;
     }
     state->have_snapshot = true;
+    /* Profiling every 2 s is unnecessarily intrusive on real PII/PIII.
+     * Once the TSC estimate is known, halve the observer frequency. */
+    if (state->snapshot.tsc_mhz && state->snapshot.tsc_mhz <= 1200U &&
+        state->sample_ms < 4000U)
+        state->sample_ms = 4000U;
     perf_sample_processes(state);
     video = state->snapshot.present_share_percent +
             state->snapshot.gpu_share_percent;
@@ -495,14 +500,14 @@ static void perf_draw_tabs(perf_state_t *state, bk_gui_surface_t *surface,
     static const char *labels[PERF_TAB_COUNT] = {
         "Resumen", "Detalles", "IRQ y E/S", "Prueba completa"
     };
-    for (uint32_t i = 0U; i < PERF_TAB_COUNT; i++) {
-        bk_gui_rect_t tab = layout->tab[i];
-        bool active = state->tab == (perf_tab_t)i;
-        st_draw_panel(surface, tab, active ? ST_PANEL : ST_FACE);
-        bk_gui_surface_draw_text(surface, tab.x + 8, tab.y + 8,
-                                 labels[i], active ? ST_BLUE : ST_TEXT,
-                                 0, false);
+    for (uint32_t i=0;i<PERF_TAB_COUNT;i++) if(i!=(uint32_t)state->tab) {
+        bk_gui_rect_t tab=layout->tab[i];tab.h=layout->body.y-tab.y;
+        bk_gui_surface_draw_tab(surface,tab,labels[i],false,layout->body);
     }
+    st_draw_panel(surface,layout->body,ST_FACE);
+    bk_gui_rect_t tab=layout->tab[state->tab];tab.h=layout->body.y-tab.y;
+    bk_gui_surface_draw_tab(surface,tab,labels[state->tab],true,layout->body);
+
 }
 
 static void perf_draw_graph_line(bk_gui_surface_t *surface,
@@ -686,7 +691,9 @@ static void perf_draw_details(perf_state_t *state, bk_gui_surface_t *surface,
     y += 22;
     perf_draw_metric_row(surface,
         (bk_gui_rect_t){rect.x + 10, y, rect.w - 20, 18},
-        "GPU", state->snapshot.gpu_share_percent,
+        (state->snapshot.gfx_capabilities & BK_GFX_CAP_BITBLT_COPY_HW)
+            ? "GPU / HW 2D" : "GPU / CPU",
+        state->snapshot.gpu_share_percent,
         state->snapshot.gpu_average_us, state->snapshot.gpu_max_us,
         0x006040A0U);
     y += 22;
@@ -899,9 +906,11 @@ static void perf_draw_benchmark(perf_state_t *state,
         (b->available_mask & BK_PERF_BENCH_VIDEO) != 0U);
     y += 24;
     PERF_BENCH_DETAIL(b->disk_read_mib_s, " MB/s");
+    if (!b->disk_read_mib_s && b->disk_score)
+        st_copy(detail, sizeof(detail), "Menos de 1 MiB/s");
     perf_draw_benchmark_row(surface,
         (bk_gui_rect_t){rect.x + 10, y, rect.w - 20, 18},
-        "Disco", b->disk_score, detail,
+        "Disco (lectura)", b->disk_score, detail,
         (b->available_mask & BK_PERF_BENCH_DISK) != 0U);
     y += 24;
     PERF_BENCH_DETAIL(b->filesystem_lists_s, " listas/s");
@@ -1035,6 +1044,15 @@ static void perf_build_report(perf_state_t *state, char *report,
     st_append(line, sizeof(line), state->diagnosis_detail);
     st_append(line, sizeof(line), "\r\n\r\n");
     st_append(report, capacity, line);
+
+    st_append(report, capacity,
+        (state->snapshot.gfx_capabilities & BK_GFX_CAP_BITBLT_COPY_HW)
+            ? "2D: BitBlt hardware disponible\r\n"
+            : "2D: copia por CPU (sin BitBlt hardware)\r\n");
+    st_append(report, capacity,
+        (state->snapshot.gfx_capabilities & BK_GFX_CAP_PRESENT_VRAM_BLIT)
+            ? "Presentacion: BitBlt VRAM disponible; subida desde RAM por CPU\r\n"
+            : "Presentacion: copia de RAM al framebuffer por CPU\r\n");
 
     st_append(report, capacity, "[SISTEMA]\r\n");
     perf_report_append_line(report, capacity, "CPU ocupada: ",
@@ -1335,6 +1353,10 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     bk_gui_window_set_owner(state->window, bk_sys_getpid());
 
     perf_reset_measurements(state);
+    /* Let the window become visible before the first snapshot enables the
+     * expensive per-IRQ/per-frame counters. This also avoids stacking a deep
+     * profiling syscall onto the launch/paint call chain. */
+    state->last_sample_ms = bk_sys_uptime_ms();
     while (bk_gui_window_is_open(state->window) && !state->closing) {
         uint32_t now = bk_sys_uptime_ms();
         if (state->pending_reset && !state->busy) {
@@ -1352,7 +1374,9 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
             state->last_sample_ms = now;
             perf_sample(state);
             st_copy(state->status, sizeof(state->status),
-                    "Muestreo silencioso cada 2 segundos; COM1 no recibe salidas automaticas.");
+                    state->sample_ms >= 4000U
+                        ? "Muestreo cada 4 segundos (perfil de silicio antiguo)."
+                        : "Muestreo silencioso cada 2 segundos; COM1 sin salidas automaticas.");
             bk_gui_window_invalidate(state->window);
         }
         bk_sys_sleep_ms(20U);

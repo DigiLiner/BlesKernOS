@@ -1,0 +1,8 @@
+{
+  "file": "pci.ids",
+  "version": "2026.10.13",
+  "url": "https://raw.githubusercontent.com/pciutils/pciids/master/pci.ids",
+  "sha256": "9bb86a49349bbf9309987184fa8d9ad7f9f50beb58c5697a3821a3ad551f1a4f",
+  "use": "device identities/model labels compiled into BSD-licensed catalog; no PCI register programming",
+  "upstream_license": "BSD-3-Clause"
+}

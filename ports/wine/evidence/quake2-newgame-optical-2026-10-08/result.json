@@ -1,0 +1,7 @@
+{
+  "optical_probe": "PASS: Win32 drive types, mount-manager CdRom device, original CD executable read",
+  "newgame": "newgame command; 480 GPU frames; image captured at frame 480",
+  "renderer": "Virtio/VirGL; GPU draws 17090, triangles 1395849, fallbacks 0",
+  "vmware": "disk updated; gameplay not verified under VMware",
+  "limitation": "The previous CD error was captured, but detection also worked intermittently before this patch; user symptom needs confirmation."
+}

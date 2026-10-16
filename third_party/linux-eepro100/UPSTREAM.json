@@ -1,0 +1,8 @@
+{
+  "file": "eepro100.c",
+  "version": "v2.6.18",
+  "url": "https://raw.githubusercontent.com/torvalds/linux/v2.6.18/drivers/net/eepro100.c",
+  "sha256": "b3fdbf171066c4f283a0dde92500858b3d808cc66caf455cfc62c4c3c41b9ff8",
+  "use": "22-byte i82558_config_cmd template copied into e100.c; driver logic original",
+  "upstream_license": "GPL-2.0-only"
+}

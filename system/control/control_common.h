@@ -1,16 +1,17 @@
+#include "sdk/include/bleskernos_theme.h"
 #ifndef BLESKERNOS_CONTROL_COMMON_H
 #define BLESKERNOS_CONTROL_COMMON_H
 
 #include "kernel/include/api.h"
 #include <stdio.h>
 
-#define CPL_FACE       0x00C0C0C0
-#define CPL_LIGHT      0x00FFFFFF
-#define CPL_SHADOW     0x00808080
-#define CPL_DARK       0x00404040
-#define CPL_TEXT       0x00101010
-#define CPL_BLUE       0x00000080
-#define CPL_WHITE      0x00FFFFFF
+#define CPL_FACE BK_THEME_FACE
+#define CPL_LIGHT BK_THEME_LIGHT
+#define CPL_SHADOW BK_THEME_SHADOW
+#define CPL_DARK BK_THEME_DARK
+#define CPL_TEXT BK_THEME_TEXT
+#define CPL_BLUE BK_THEME_SELECTION
+#define CPL_WHITE BK_THEME_PANEL
 
 typedef struct {
     const char *label;
@@ -19,8 +20,9 @@ typedef struct {
 
 static inline void cpl_draw_bevel(gui_surface_t *surface, gui_rect_t rect,
                            uint32_t fill, bool sunken) {
-    uint32_t top = sunken ? CPL_SHADOW : CPL_LIGHT;
-    uint32_t bottom = sunken ? CPL_LIGHT : CPL_DARK;
+    if (!surface || rect.w <= 0 || rect.h <= 0) return;
+    uint32_t top = BK_THEME_BEVEL_OUTER_TL(sunken);
+    uint32_t bottom = BK_THEME_BEVEL_OUTER_BR(sunken);
     bk_gui_gfx_fill_rect(surface, rect, fill);
     bk_gui_gfx_draw_line(surface, rect.x, rect.y, rect.x + rect.w - 1, rect.y, top);
     bk_gui_gfx_draw_line(surface, rect.x, rect.y, rect.x, rect.y + rect.h - 1, top);
@@ -28,10 +30,19 @@ static inline void cpl_draw_bevel(gui_surface_t *surface, gui_rect_t rect,
                       rect.x + rect.w - 1, rect.y + rect.h - 1, bottom);
     bk_gui_gfx_draw_line(surface, rect.x + rect.w - 1, rect.y,
                       rect.x + rect.w - 1, rect.y + rect.h - 1, bottom);
+    if (rect.w > 4 && rect.h > 4) {
+        uint32_t inner_top = BK_THEME_BEVEL_INNER_TL(sunken);
+        uint32_t inner_bottom = BK_THEME_BEVEL_INNER_BR(sunken);
+        bk_gui_gfx_draw_line(surface, rect.x+1,rect.y+1,rect.x+rect.w-2,rect.y+1,inner_top);
+        bk_gui_gfx_draw_line(surface, rect.x+1,rect.y+1,rect.x+1,rect.y+rect.h-2,inner_top);
+        bk_gui_gfx_draw_line(surface, rect.x+1,rect.y+rect.h-2,rect.x+rect.w-2,rect.y+rect.h-2,inner_bottom);
+        bk_gui_gfx_draw_line(surface, rect.x+rect.w-2,rect.y+1,rect.x+rect.w-2,rect.y+rect.h-2,inner_bottom);
+    }
 }
 
 static inline void cpl_draw_group(gui_surface_t *surface, gui_rect_t rect,
                            const char *label) {
+    bk_gui_gfx_draw_rect(surface, (gui_rect_t){rect.x+1,rect.y+1,rect.w,rect.h}, CPL_LIGHT);
     bk_gui_gfx_draw_rect(surface, rect, CPL_SHADOW);
     if (label) {
         bk_gui_gfx_fill_rect(surface,
@@ -40,6 +51,118 @@ static inline void cpl_draw_group(gui_surface_t *surface, gui_rect_t rect,
         bk_gui_font_draw_string(surface, rect.x + 12, rect.y - 3, label,
                              CPL_TEXT, 0, false);
     }
+}
+
+/* Layout seguro para paneles de control.  Todo el texto estatico debe
+ * dibujarse dentro de un rectangulo conocido: asi una traduccion larga nunca
+ * invade botones, otros grupos o la barra de estado. */
+static inline gui_rect_t cpl_inset(gui_rect_t rect, int inset) {
+    if (inset < 0) inset = 0;
+    rect.x += inset;
+    rect.y += inset;
+    rect.w -= inset * 2;
+    rect.h -= inset * 2;
+    if (rect.w < 0) rect.w = 0;
+    if (rect.h < 0) rect.h = 0;
+    return rect;
+}
+
+static inline gui_rect_t cpl_group_inner(gui_rect_t group) {
+    group.x += 12;
+    group.y += 14;
+    group.w -= 24;
+    group.h -= 22;
+    if (group.w < 0) group.w = 0;
+    if (group.h < 0) group.h = 0;
+    return group;
+}
+
+static inline void cpl_draw_text_clipped(gui_surface_t *surface,
+                                         gui_rect_t rect,
+                                         const char *text,
+                                         uint32_t color) {
+    if (!surface || !text || rect.w <= 0 || rect.h <= 0) return;
+    bk_gui_font_draw_string_clipped(surface, rect.x, rect.y, text, color, rect);
+}
+
+/* Word-wrap pequeno y determinista para la fuente de 8 px del escritorio.
+ * Devuelve la coordenada Y inmediatamente posterior a la ultima linea. */
+static inline int cpl_draw_text_wrapped(gui_surface_t *surface,
+                                        gui_rect_t rect,
+                                        const char *text,
+                                        uint32_t color,
+                                        int line_height,
+                                        int max_lines) {
+    char translated[384];
+    char line[192];
+    const char *src;
+    int y;
+    int lines = 0;
+
+    if (!surface || !text || rect.w <= 0 || rect.h <= 0) return rect.y;
+    if (line_height < 9) line_height = 12;
+    src = bk_lang_translate(text);
+    if (!src) src = text;
+    bk_runtime_strncpy(translated, src, sizeof(translated) - 1);
+    translated[sizeof(translated) - 1] = '\0';
+    src = translated;
+    y = rect.y;
+
+    while (*src && y + 8 <= rect.y + rect.h &&
+           (max_lines <= 0 || lines < max_lines)) {
+        int used = 0;
+        int last_space = -1;
+        const char *start = src;
+
+        while (*src && *src != '\n' && used + 1 < (int)sizeof(line)) {
+            line[used] = *src;
+            line[used + 1] = '\0';
+            if (*src == ' ') last_space = used;
+            if ((int)bk_gui_font_text_width(line) > rect.w) {
+                if (last_space >= 0) {
+                    used = last_space;
+                    src = start + last_space + 1;
+                }
+                break;
+            }
+            used++;
+            src++;
+        }
+        if (used == 0 && *src) {
+            line[0] = *src++;
+            used = 1;
+        }
+        line[used] = '\0';
+        while (used > 0 && line[used - 1] == ' ') line[--used] = '\0';
+        cpl_draw_text_clipped(surface,
+            (gui_rect_t){rect.x, y, rect.w, 8}, line, color);
+        lines++;
+        y += line_height;
+        while (*src == ' ') src++;
+        if (*src == '\n') src++;
+    }
+    return y;
+}
+
+static inline gui_rect_t cpl_local_rect(gui_rect_t screen_rect,
+                                        gui_rect_t client) {
+    screen_rect.x -= client.x;
+    screen_rect.y -= client.y;
+    return screen_rect;
+}
+
+static inline gui_rect_t cpl_row_cell(gui_rect_t row, int index, int count,
+                                      int gap) {
+    int total_gap;
+    int cell_w;
+    if (count < 1) count = 1;
+    if (index < 0) index = 0;
+    if (index >= count) index = count - 1;
+    if (gap < 0) gap = 0;
+    total_gap = gap * (count - 1);
+    cell_w = (row.w - total_gap) / count;
+    if (cell_w < 1) cell_w = 1;
+    return (gui_rect_t){row.x + index * (cell_w + gap), row.y, cell_w, row.h};
 }
 
 static inline gui_rect_t cpl_tab_rect(gui_rect_t client,
@@ -51,7 +174,7 @@ static inline gui_rect_t cpl_tab_rect(gui_rect_t client,
 
     if (!tabs || index < 0) return (gui_rect_t){0, 0, 0, 0};
     for (int i = 0; i < index; i++) x += tabs[i].width;
-    return (gui_rect_t){x, client.y + top, tabs[index].width, 24};
+    return (gui_rect_t){x, client.y + top, tabs[index].width, BK_THEME_TAB_HEIGHT};
 }
 
 static inline int cpl_hit_tab(gui_rect_t client,
@@ -69,50 +192,26 @@ static inline int cpl_hit_tab(gui_rect_t client,
     return -1;
 }
 
+static inline void cpl_draw_tab_face(gui_surface_t *surface, gui_rect_t tab,
+                                      const char *label, bool selected,
+                                      gui_rect_t page) {
+    bk_gui_surface_draw_tab(surface,tab,label,selected,page);
+}
+
 static inline void cpl_draw_tabs(gui_surface_t *surface,
                                  gui_rect_t client,
                                  const cpl_tab_spec_t *tabs,
-                                 int count,
-                                 int active,
-                                 gui_rect_t page,
-                                 int left,
-                                 int top) {
+                                 int count, int active, gui_rect_t page,
+                                 int left, int top) {
     if (!surface || !tabs || count <= 0) return;
-
-    for (int i = 0; i < count; i++) {
-        gui_rect_t tab = cpl_tab_rect(client, tabs, i, left, top);
-        bool selected = i == active;
-        int text_x;
-
-        bk_gui_gfx_fill_rect(surface, tab, CPL_FACE);
-        bk_gui_gfx_draw_line(surface, tab.x, tab.y + tab.h - 1,
-                          tab.x, tab.y, CPL_LIGHT);
-        bk_gui_gfx_draw_line(surface, tab.x, tab.y,
-                          tab.x + tab.w - 1, tab.y, CPL_LIGHT);
-        bk_gui_gfx_draw_line(surface, tab.x + tab.w - 1, tab.y,
-                          tab.x + tab.w - 1, tab.y + tab.h - 1, CPL_DARK);
-        if (!selected) {
-            bk_gui_gfx_draw_line(surface, tab.x, tab.y + tab.h - 1,
-                              tab.x + tab.w - 1, tab.y + tab.h - 1,
-                              CPL_SHADOW);
-        } else if (tab.w > 4) {
-            bk_gui_gfx_fill_rect(surface,
-                (gui_rect_t){tab.x + 2, tab.y + tab.h - 1, tab.w - 4, 1},
-                CPL_FACE);
-        }
-
-        text_x = tab.x + (tab.w - (int)bk_gui_font_text_width(tabs[i].label)) / 2;
-        if (text_x < tab.x + 8) text_x = tab.x + 8;
-        bk_gui_font_draw_string(surface, text_x, tab.y + 7,
-                             tabs[i].label, CPL_TEXT, 0, false);
-    }
-
+    for (int i = 0; i < count; ++i)
+        if (i != active)
+            cpl_draw_tab_face(surface, cpl_tab_rect(client,tabs,i,left,top),
+                              tabs[i].label, false, page);
     cpl_draw_bevel(surface, page, CPL_FACE, false);
-    if (page.w > 4 && page.h > 4) {
-        bk_gui_gfx_fill_rect(surface,
-            (gui_rect_t){page.x + 2, page.y + 2, page.w - 4, page.h - 4},
-            CPL_FACE);
-    }
+    if (active >= 0 && active < count)
+        cpl_draw_tab_face(surface, cpl_tab_rect(client,tabs,active,left,top),
+                          tabs[active].label, true, page);
 }
 
 static inline bool cpl_write_text(const char *path, const char *text) {

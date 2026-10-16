@@ -1,0 +1,53 @@
+make: 'build/system/services/vision.o' is up to date.
+ld: warning: build/isr_stubs.o: missing .note.GNU-stack section implies executable stack
+ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+patched /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine-oct15/ipc-repeat/test.img: kernel 841772 bytes
+/SYSTEM/SERVICES/VISION.BEX 255380 bytes; mode 0o100644
+/WINEGATE/bin/futex-suite.ELF 15244 bytes; mode 0o100755
+/WINEGATE/bin/ipc-latency.ELF 15608 bytes; mode 0o100755
+/WINEGATE/bin/futex-latency.ELF 15548 bytes; mode 0o100755
+/WINEGATE/bin/futex-mapping.ELF 15524 bytes; mode 0o100755
+/WINEGATE/bin/writeback-batch.ELF 15516 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/SCREENSV.INI 23 bytes; mode 0o100644
+{'host_s': 30.31455276798806, 'line': '[IPC-LATENCY] poll=0 sample=0 rounds=500 us=30000'}
+{'host_s': 30.398034991987515, 'line': '[IPC-LATENCY] poll=0 sample=1 rounds=500 us=16667'}
+{'host_s': 30.521175873000175, 'line': '[IPC-LATENCY] poll=0 sample=2 rounds=500 us=36667'}
+{'host_s': 30.6347896179941, 'line': '[IPC-LATENCY] poll=1 sample=0 rounds=500 us=30000'}
+{'host_s': 30.738133573002415, 'line': '[IPC-LATENCY] poll=1 sample=1 rounds=500 us=30000'}
+{'host_s': 30.830495800997596, 'line': '[IPC-LATENCY] poll=1 sample=2 rounds=500 us=30000'}
+{'host_s': 30.87126958198496, 'line': '[IPC-LATENCY] PASS'}
+{'host_s': 30.987213318992872, 'line': '[FUTEX-LATENCY] run=0 rounds=1000 us=43333 waits=1019,1019 wakes=1019,1019'}
+{'host_s': 31.054999460000545, 'line': '[FUTEX-LATENCY] run=1 rounds=1000 us=23334 waits=1017,1017 wakes=1017,1017'}
+{'host_s': 31.14169352099998, 'line': '[FUTEX-LATENCY] run=2 rounds=1000 us=40000 waits=1019,1019 wakes=1019,1019'}
+{'host_s': 31.172269620001316, 'line': '[FUTEX-LATENCY] PASS'}
+{'host_s': 31.73083527898416, 'line': '[FUTEX-MAPPING] private aliases stay separate; wake survives file COW without PRIVATE flag PASS'}
+{'host_s': 32.88293359300587, 'line': '[FUTEX-SUITE] PASS'}
+[
+  {
+    "run": 0,
+    "rounds": 1000,
+    "us": 43333,
+    "waits_main": 1019,
+    "waits_peer": 1019,
+    "wakes_main": 1019,
+    "wakes_peer": 1019
+  },
+  {
+    "run": 1,
+    "rounds": 1000,
+    "us": 23334,
+    "waits_main": 1017,
+    "waits_peer": 1017,
+    "wakes_main": 1017,
+    "wakes_peer": 1017
+  },
+  {
+    "run": 2,
+    "rounds": 1000,
+    "us": 40000,
+    "waits_main": 1019,
+    "waits_peer": 1019,
+    "wakes_main": 1019,
+    "wakes_peer": 1019
+  }
+]

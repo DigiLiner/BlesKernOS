@@ -1,0 +1,200 @@
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -Dwin32_storage_resolve=win32_storage_module_resolve -c kernel/win32/cfb.c -o build/storage-module/cfb.o
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -Dwin32_storage_resolve=win32_storage_module_resolve -c kernel/win32/storage.c -o build/storage-module/storage.o
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -Dwin32_storage_resolve=win32_storage_module_resolve -c kernel/win32/storage_io.c -o build/storage-module/storage_io.o
+gcc -m32 -O2 -Wall -Wextra -no-pie -Wl,--disable-new-dtags -Wl,--dynamic-linker=/WINEGATE/lib/ld-linux.so.2 -Wl,-rpath,/WINEGATE/lib ports/tinyx/wine-launch.c -o build/wine/wine-launch -L/usr/lib/i386-linux-gnu -l:libX11.so.6 -l:libXfixes.so.3
+[AR]   Unificando compatibilidad Win32 en WINE.A...
+rm -f build/system/libs/wine/WINE.A
+ar rcs build/system/libs/wine/WINE.A build/kernel/ne_loader.o build/kernel/pe_loader.o build/kernel/win32/advapi32.o build/kernel/win32/com_bridge.o build/kernel/win32/com_memory.o build/kernel/win32/comctl32.o build/kernel/win32/comdlg32.o build/kernel/win32/dxcompat.o build/kernel/win32/exception.o build/kernel/win32/gdi32.o build/kernel/win32/imm32.o build/kernel/win32/kernel32.o build/kernel/win32/legacy_compat.o build/kernel/win32/lz32.o build/kernel/win32/msvcrt.o build/kernel/win32/ntdll.o build/kernel/win32/ole32.o build/kernel/win32/oleaut32.o build/kernel/win32/process.o build/kernel/win32/process_handle.o build/kernel/win32/profile.o build/kernel/win32/resources.o build/kernel/win32/riched20.o build/kernel/win32/rpcrt4.o build/kernel/win32/safearray.o build/kernel/win32/shell32.o build/kernel/win32/shlwapi.o build/kernel/win32/storage_loader.o build/kernel/win32/sync.o build/kernel/win32/thread.o build/kernel/win32/user32.o build/kernel/win32/version.o build/kernel/win32/vm.o build/kernel/win32/win32.o build/kernel/win32/win95_compat.o build/kernel/win32/wine_crt_jump.o build/kernel/win32/wine_library.o build/kernel/win32/wine_stage5.o build/kernel/win32/wine_stage6.o build/kernel/win32/wine_stage7.o build/kernel/win32/wine_stage8.o build/kernel/win32/wine_stage9.o build/kernel/win32/wininet.o build/kernel/win32/winmm.o build/kernel/win32/winsock.o build/kernel/win32/winspool.o build/kernel/win32/winzip70_compat.o build/kernel/win32/wzinet32.o
+[OK]   WINE.A: 1104936 bytes
+ld -m elf_i386 -r build/storage-module/cfb.o build/storage-module/storage.o build/storage-module/storage_io.o -o build/system/libs/wine/OLESTG.DVR
+[LD]   Linkeando kernel...
+ld -m elf_i386 -T kernel/linker.ld --gc-sections build/entry.o build/isr_stubs.o build/api_call.o build/kernel/ap_trampoline.o build/kernel/kernel.o build/kernel/installer.o build/kernel/floppy_installer.o build/kernel/bkl_setup.o build/kernel/setup_boot.o build/kernel/vga.o build/kernel/recovery_console.o build/kernel/paging.o build/kernel/usercopy.o build/kernel/memory.o build/kernel/compat_mode.o build/kernel/gdt.o build/kernel/task.o build/kernel/scheduler_smp.o build/kernel/smp.o build/kernel/smp_watchdog.o build/kernel/klock.o build/kernel/kernel_domains.o build/kernel/perfmon.o build/kernel/syscall.o build/kernel/api.o build/kernel/graphics_resources.o build/kernel/language.o build/kernel/public_api.o build/kernel/clipboard.o build/kernel/file_dialog.o build/kernel/usermode.o build/kernel/pic.o build/kernel/idt.o build/kernel/panic.o build/kernel/elf_loader.o build/kernel/bex_loader.o build/kernel/about_dialog.o build/kernel/sound_file.o build/kernel/system_sounds.o build/kernel/startup_sound.o build/kernel/driver_loader.o build/kernel/network.o build/kernel/bootsplash.o build/gui/gfx.o build/gui/font.o build/gui/windows.o build/gui/widget.o build/gui/desktop.o build/gui/compositor.o build/gui/gpu_compositor.o build/gui/event.o build/gui/gui.o build/gui/image.o build/gui/svg.o build/gui/jpeg.o build/programs/shell.o build/system/desktop/vision_bridge.o build/system/services/screensaverd.o build/programs/launcher.o build/kernel/drivers/core/block.o build/kernel/drivers/platform/lpt.o build/kernel/drivers/storage/floppy.o build/kernel/drivers/storage/usb_storage.o build/kernel/drivers/usb/usb_uhci.o build/kernel/drivers/core/vfs.o build/kernel/drivers/core/pci.o build/kernel/drivers/core/gfx.o build/kernel/drivers/core/gfx3d.o build/kernel/drivers/core/sdr.o build/kernel/drivers/core/rage128_engine.o build/kernel/drivers/graphics/svga_transport.o build/kernel/drivers/graphics/vga.o build/kernel/drivers/graphics/vesa_core.o build/kernel/drivers/input/mouse_core.o build/kernel/drivers/storage/ata.o build/kernel/drivers/storage/ahci.o build/kernel/drivers/core/pit.o build/kernel/drivers/audio/sound_core.o build/kernel/drivers/platform/rtc_core.o build/kernel/drivers/input/keyboard.o build/kernel/drivers/storage/iso9660_core.o build/kernel/drivers/storage/iso9660.o build/kernel/drivers/storage/fat.o build/kernel/drivers/storage/bfs.o build/kernel/drivers/storage/bfs4.o build/system/desktop/vision_image_compat.o --whole-archive build/system/libs/wine/WINE.A --no-whole-archive build/system/libs/libc/libc.a -o build/kernel.elf
+ld: warning: build/isr_stubs.o: missing .note.GNU-stack section implies executable stack
+ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+[OBJCOPY] Extrayendo binario...
+objcopy -O binary build/kernel.elf build/kernel.bin
+[OK]   Kernel: 1187364 bytes
+[NASM] Ensamblando Stage 2...
+[NASM] Kernel real: 2320 sectores, checksum 122332936
+[OK]   Stage 2: 4096 bytes
+[ATA]  Creando imagen BFS4 ATA...
+BLES_FS=bfs4 BLES_EDITION=user python3 tools/build_fat32_ata.py build/bleskernos-normal-check.img build/programs/shelllauncher.o build/programs/filebrowser.o build/programs/texteditor.o build/programs/calculator.o build/programs/midamp.o build/programs/processmanager.o build/programs/calendar.o Desktop.INI assets/icons assets/gif/abount.gif Associations.INI 2569 build/system/services/screensaverd.o build/system/screensavers/ss_logo.o build/system/screensavers/ss_pipes.o "" build/boot_fat32.bin build/stage2.bin build/kernel.bin 2560 build/system/libs/tinygl/tinygl.a build/system/libs/libc/libc.a build/system/control/control_panel.o build/system/control/appearance.o build/system/control/display.o build/system/control/sound.o build/system/control/datetime.o build/system/control/mouse.o build/system/control/keyboard.o build/system/control/system.o build/system/control/device_manager.o build/system/control/internet.o build/system/control/modem.o build/system/control/language.o build/system/control/wine.o build/system/screensavers/ss_balls.o build/system/libs/mesa35/mesa35.a
+[BVIPAK] /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/icons_runtime/ICONS.PAK: 33 iconos, 278807 bytes
+Desktop INI size: 104 bytes
+Associations INI size: 1657 bytes
+Shell size: 10068 bytes
+About size: 7712 bytes
+Runbox size: 11288 bytes
+Filebrowser size: 58304 bytes
+Texteditor size: 14340 bytes
+Calculator size: 7056 bytes
+Midamp size: 27588 bytes
+Processmanager size: 14616 bytes
+Calendar size: 11252 bytes
+Paint size: 18876 bytes
+Imageviewer size: 16140 bytes
+ScanDisk size: 7860 bytes
+Wine PE launcher size: 1568 bytes
+NetSurf bootstrap frontend size: 893736 bytes
+Help Center size: 8364 bytes
+Find Files size: 9380 bytes
+Archive Manager size: 9976 bytes
+Disk Tools size: 12236 bytes
+Network Status size: 8892 bytes
+Clipboard Viewer size: 6544 bytes
+Performance Monitor size: 29252 bytes
+Ring 3 command help size: 18300 bytes
+Ring 3 command echo size: 13060 bytes
+Ring 3 command about size: 13140 bytes
+Ring 3 command uname size: 13184 bytes
+Ring 3 command hostname size: 13228 bytes
+Ring 3 command uptime size: 13240 bytes
+Ring 3 command date size: 13264 bytes
+Ring 3 command time size: 13264 bytes
+Ring 3 command shutdown size: 13168 bytes
+Ring 3 command reboot size: 13168 bytes
+Ring 3 command sleep size: 13252 bytes
+Ring 3 command bosrecovery size: 15368 bytes
+Ring 3 command fdisk size: 14424 bytes
+Ring 3 command format size: 13628 bytes
+Ring 3 command mount size: 13296 bytes
+Ring 3 command unmount size: 13140 bytes
+Ring 3 command label size: 13284 bytes
+Ring 3 command checkdisk size: 18308 bytes
+Ring 3 command fsinfo size: 14680 bytes
+Ring 3 command backup size: 19700 bytes
+Ring 3 command dir size: 13116 bytes
+Ring 3 command ls size: 13112 bytes
+Ring 3 command copy size: 13168 bytes
+Ring 3 command cp size: 13176 bytes
+Ring 3 command move size: 13240 bytes
+Ring 3 command delete size: 13176 bytes
+Ring 3 command rm size: 13424 bytes
+Ring 3 command mkdir size: 13720 bytes
+Ring 3 command rmdir size: 13176 bytes
+Ring 3 command rename size: 13216 bytes
+Ring 3 command touch size: 13192 bytes
+Ring 3 command tree size: 13120 bytes
+Ring 3 command find size: 13196 bytes
+Ring 3 command attrib size: 13136 bytes
+Ring 3 command chmod size: 13136 bytes
+Ring 3 command type size: 13164 bytes
+Ring 3 command more size: 13164 bytes
+Ring 3 command cat size: 13164 bytes
+Ring 3 command diff size: 13556 bytes
+Ring 3 command ps size: 12996 bytes
+Ring 3 command kill size: 13248 bytes
+Ring 3 command tasklist size: 13004 bytes
+Ring 3 command taskkill size: 13256 bytes
+Ring 3 command top size: 13188 bytes
+Ring 3 command nice size: 13132 bytes
+Ring 3 command pci size: 13000 bytes
+Ring 3 command usb size: 13000 bytes
+Ring 3 command lspci size: 13000 bytes
+Ring 3 command lsusb size: 13000 bytes
+Ring 3 command cpuinfo size: 13176 bytes
+Ring 3 command mem size: 13240 bytes
+Ring 3 command soundtest size: 13232 bytes
+Ring 3 command ipconfig size: 13140 bytes
+Ring 3 command ping size: 13132 bytes
+Ring 3 command netstat size: 13140 bytes
+Ring 3 command ftp size: 13132 bytes
+Ring 3 command wget size: 13132 bytes
+Ring 3 command curl size: 13132 bytes
+Ring 3 command compile size: 13208 bytes
+Ring 3 command link size: 13224 bytes
+Ring 3 command gcc size: 13476 bytes
+Ring 3 command cc size: 13372 bytes
+Ring 3 command ld size: 13224 bytes
+Ring 3 command as size: 13220 bytes
+Ring 3 command ar size: 13224 bytes
+Ring 3 command ranlib size: 13148 bytes
+Ring 3 command build size: 13260 bytes
+Ring 3 command nasm size: 13140 bytes
+Ring 3 command ndisasm size: 13148 bytes
+Ring 3 command make size: 13260 bytes
+Ring 3 command fatpack size: 13152 bytes
+Ring 3 command addr2line size: 13152 bytes
+Ring 3 command cxxfilt size: 13152 bytes
+Ring 3 command elfedit size: 13152 bytes
+Ring 3 command objcopy size: 13152 bytes
+Ring 3 command objdump size: 13152 bytes
+Ring 3 command readelf size: 13152 bytes
+Ring 3 command nm size: 13140 bytes
+Ring 3 command size size: 13144 bytes
+Ring 3 command strip size: 13144 bytes
+Ring 3 command hexdump size: 13168 bytes
+Ring 3 command strings size: 13152 bytes
+Ring 3 command calc size: 13600 bytes
+Ring 3 command hexedit size: 13608 bytes
+Ring 3 command compress size: 13660 bytes
+Ring 3 command extract size: 13780 bytes
+Ring 3 command checksum size: 13172 bytes
+Ring 3 command benchmark size: 13232 bytes
+Ring 3 command start size: 14252 bytes
+Language pack ESPANOL.LNG size: 38206 bytes
+Language pack ENGLISH.LNG size: 37124 bytes
+Language pack ITALIANO.LNG size: 38018 bytes
+Warning: No se pudo leer /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/system/desktop/deskbar.o: [Errno 2] No such file or directory: '/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/system/desktop/deskbar.o'
+Desktop manager core size: 43080 bytes
+Program launcher core size: 5460 bytes
+ICH-compatible AC97 driver size: 20124 bytes
+ESS Allegro/Maestro3 DSP driver size: 18940 bytes
+Sound Blaster 16 driver size: 73032 bytes
+CMOS RTC driver size: 2740 bytes
+ISO9660 driver size: 8684 bytes
+PS/2 mouse driver size: 7056 bytes
+VESA framebuffer driver size: 8092 bytes
+VMware SVGA-II 2D transport driver size: 26780 bytes
+VMware SVGA3D extension driver size: 30224 bytes
+3Com EtherLink XL driver size: 6644 bytes
+IPv4 network stack size: 29352 bytes
+Realtek RTL8139 driver size: 5248 bytes
+BearSSL TLS 1.2 provider size: 256192 bytes
+ScreenSaver daemon size: 7468 bytes
+Vision GUI service size: 102924 bytes
+PrintSpool daemon size: 22644 bytes
+ScreenSaver logo size: 4304 bytes
+ScreenSaver pipes size: 2256308 bytes
+ScreenSaver balls size: 2256816 bytes
+TinyGL library size: 210522 bytes
+Mesa 3.5 GFX3D/OSMesa library size: 2454584 bytes
+C library size: 32304 bytes
+Resident OLE structured storage provider size: 26684 bytes
+Unified Win95/98 compatibility library size: 1104936 bytes
+Control Panel size: 13876 bytes
+Appearance CPL size: 2299416 bytes
+Display CPL size: 2299412 bytes
+Sound CPL size: 11016 bytes
+Date and Time CPL size: 18708 bytes
+Mouse CPL size: 12628 bytes
+Keyboard CPL size: 5236 bytes
+System CPL size: 20064 bytes
+Device Manager CPL size: 125636 bytes
+Internet CPL size: 13872 bytes
+Modem CPL size: 9076 bytes
+Language CPL size: 5472 bytes
+Windows applications CPL size: 1088 bytes
+Resident driver ATIR128.DVR size: 38368 bytes
+Resident driver ATIR1283D.DVR size: 31372 bytes
+Resident driver INTELGMA.DVR size: 11768 bytes
+Resident driver USBCLASS.DVR size: 15716 bytes
+Resident driver VIRTIOGPU.DVR size: 60152 bytes
+Startup WAV size: 129622 bytes
+Window open sound size: 1674 bytes
+Window close sound size: 3402 bytes
+Window minimize sound size: 1386 bytes
+Window restore sound size: 1098 bytes
+Window resize sound size: 2538 bytes
+GUI button sound size: 1674 bytes
+GUI scroll sound size: 10320 bytes
+Shared graphics package size: 575119 bytes
+Midamp HDR size: 1115 bytes
+Midamp BTN size: 644 bytes
+Midamp BOT size: 1344 bytes
+About GIF size: 27173 bytes
+[ATA] Start icon: /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/assets/icons/BLESKERNOS.BMP -> /ICONS/BLESKERNOS.BMP
+[ATA] BFS4 image: build/bleskernos-normal-check.img (768 MiB)
+BFS4: build/bleskernos-normal-check.img files=5457 blocks=196096 free=74164
+BFS4 OK: 5457 entries, 74164 free blocks, clean
+[OK]   ATA: 805306368 bytes

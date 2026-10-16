@@ -1,0 +1,5 @@
+f08cf96ea97d661373695f3fc6c99e09b5978182dd8f5fc121f60bf1601d326f  kernel/mm/pager.c
+559a1bc3ee80c344c08b241aa79c3026bfc260db735ee40c7fa3334334d66b1b  kernel/mm/paging.c
+c69b6526526f0fe48b0a1d77d07fdef25fe88325e68a415c75f80975f586b7fd  kernel/api/syscall.c
+e6b0695ae88db921996d86f3797dfc017c9d2bef45fc19097d87ccb631bd175f  kernel/sched/task.c
+9122b72ea0c57858a84ad619075d35c6ada6ec4cce7a22011c689c3aee187c20  kernel/drivers/storage/bfs4.c

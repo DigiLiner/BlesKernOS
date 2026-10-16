@@ -1,0 +1,265 @@
+{
+  "reference_repository": "https://github.com/C-Chads/tinygl",
+  "reference_commit": "36a7987e7bebfda19615ea33341b1cc0ff9c3b13",
+  "reference_is_import_commit": false,
+  "files": [
+    {
+      "path": "libs/src/api.c",
+      "sha256": "2f3a41151f5b1b11da25ac02bbcadbebf803c21ae4cacbfbadd76ab0b31fe342",
+      "reference_path": "src/api.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/arrays.c",
+      "sha256": "24dd507adeaea19318763cf391a979fca031a1f59587e3b04ba3ea7dac5af541",
+      "reference_path": "src/arrays.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/bleskernos_compat.c",
+      "sha256": "e8cc69cb1fd93e8b4d312bbafad4f77d9815b87c3e6157fa1819eaced240c362",
+      "reference_path": null,
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/bleskernos_gpu.c",
+      "sha256": "08e5e488df81ae6e6b48fa6eeaa630a415417d56aea3266362a689981f52037c",
+      "reference_path": null,
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/clear.c",
+      "sha256": "a0d3d51a418552cfde72110dd8c706cb51ebc144b049bcc9f7b888e5ebeb3c1c",
+      "reference_path": "src/clear.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/clip.c",
+      "sha256": "b442b2800a6b1b7bb4ac164bff50d15e5bd790fb511ec24dcea5546c5379582f",
+      "reference_path": "src/clip.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/error_check.h",
+      "sha256": "a9af67b1cd1a8e35ee2a0cd45cd648e8b6f17222377508b1826c3384d4850044",
+      "reference_path": "src/error_check.h",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/error_check_no_context.h",
+      "sha256": "b97f10989f73cede499ed20237f5c1782f6153432bad8df18475767c91c685d2",
+      "reference_path": "src/error_check_no_context.h",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/font8x8_basic.h",
+      "sha256": "7ce6dea6d72c8a4a7046c709565b90fc89e5c16323e7f677e71781e103d110ab",
+      "reference_path": "src/font8x8_basic.h",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/get.c",
+      "sha256": "ec4d85ccd0725beae10367bd0c6a80aa1828b17be41443dad80f5f8e40bb12fe",
+      "reference_path": "src/get.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/image_util.c",
+      "sha256": "5f3f8d09c8f7b640ec9d1aaeb80ab4fe07642812ace4a60f5cd407f9dae8ceb4",
+      "reference_path": "src/image_util.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/init.c",
+      "sha256": "ad1d6545899806f49db1f0081c86b8eb68737f601da69d202f465c7247ec09b2",
+      "reference_path": "src/init.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/light.c",
+      "sha256": "c8b2333411bafd626ca9b6577871112bdc91c21ee71b8c86b5091c1b03b94a9b",
+      "reference_path": "src/light.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/list.c",
+      "sha256": "21d6fb28a8f39479d881102404c131e0a9e66014875507d92fbc46041a3811bd",
+      "reference_path": "src/list.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/matrix.c",
+      "sha256": "10afecd12ce193973397baab3ae6f8357c828e7ad467a2afd098c79495ae701d",
+      "reference_path": "src/matrix.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/memory.c",
+      "sha256": "8ab61d27c316815e5bf6a93b9d65873f3f514677d43ad3a1d9ad3faa91853f9f",
+      "reference_path": "src/memory.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/misc.c",
+      "sha256": "cb6584682f173c820ebd36eba5023a81caa09b59ee0c73ad5ebdbfd1f0cb584b",
+      "reference_path": "src/misc.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/msghandling.c",
+      "sha256": "04ce5b1fe9ce08e3502cb66983baf3f317d0a0e39b6f1bc41afe2f9fe71cd5a8",
+      "reference_path": "src/msghandling.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/msghandling.h",
+      "sha256": "ab0c097d7eb4ba47b98d152409cf5d519d444de5997f6f3026a36a3c73dd35e3",
+      "reference_path": "src/msghandling.h",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/opinfo.h",
+      "sha256": "16a9f8589a42259708738a5a8b7206abc4865f271279c10e6a3f268f851d290d",
+      "reference_path": "src/opinfo.h",
+      "whitespace_equivalent": true
+    },
+    {
+      "path": "libs/src/select.c",
+      "sha256": "3b7fef6abfd84a083ba8845958b07968889fd67a17e4d6de15b2f92262eda82d",
+      "reference_path": "src/select.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/specbuf.c",
+      "sha256": "e3277c728e373bf8cdaa7c5d20becb0c26776670c3541286e7042175515474c3",
+      "reference_path": "src/specbuf.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/texture.c",
+      "sha256": "39c37eeb221655cd97a4474c8f2b963c592c6d53c8f52d056de98ecce362ac82",
+      "reference_path": "src/texture.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/vertex.c",
+      "sha256": "3be939eeb89e114ff51657e1a3e50c289a7af30aee0416c1bfd690e813625f1c",
+      "reference_path": "src/vertex.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/zbuffer.c",
+      "sha256": "39e98df935d06255e61a4c6220f3b18d22b7c82d4311503c4f133d835750f8f3",
+      "reference_path": "src/zbuffer.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/zgl.h",
+      "sha256": "3049b65a3a708cf30c761bddb7c19c4a03ff6cc876c651a5e81544bf6ae39f8d",
+      "reference_path": "src/zgl.h",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/zline.c",
+      "sha256": "b2d96897240d6f73e4fe58e1609655820919fffe633e60594fbc8137cd3b91ea",
+      "reference_path": "src/zline.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/zline.h",
+      "sha256": "334616f67e3b35479951afc3ebc4c785d33dafbe5fdb76f4447d6ded25726d9e",
+      "reference_path": "src/zline.h",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/zmath.c",
+      "sha256": "9f6f7a46a4c0ea317139c2d7566859bf19cd2eaa61d279be9564321b61be247a",
+      "reference_path": "src/zmath.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/zmath.h",
+      "sha256": "8186d1d1f3c835276e1a0907d94f9d8808dce5b51127e87f17edb75986a70c75",
+      "reference_path": "src/zmath.h",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/zpostprocess.c",
+      "sha256": "a49250a807a69c48e39bf75d43e1f1f34a2a169ba503e45ee1df4bb519781c90",
+      "reference_path": "src/zpostprocess.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/zraster.c",
+      "sha256": "e0f9be9d174044aa2c332b895b8d532838ffca11de3cc82e30190a7c6ffadc71",
+      "reference_path": "src/zraster.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/ztext.c",
+      "sha256": "e58a2f4bcec82163a6018fffc093eeffa83430c76b82acb5f7a34a8b9a96f2f3",
+      "reference_path": "src/ztext.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/ztriangle.c",
+      "sha256": "c91cd2600cf437ad4feb77afd523130428987e7f64673041f9311b979fd59b9f",
+      "reference_path": "src/ztriangle.c",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/ztriangle.h",
+      "sha256": "4932df0ce73017e26b93271461adb1def9110672889f86a4bd453e529a9202f7",
+      "reference_path": "src/ztriangle.h",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/src/ztriangle_variants.h",
+      "sha256": "b2cd471b875de3eeb741c90b8a272bde8f44cef4790169b448e4ef1ace5615b7",
+      "reference_path": null,
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/tinygl/TGL/gl.h",
+      "sha256": "23d0a0f3940c2aa2d2328a61165675225ed57510c0fdc3f44c77101500eb9729",
+      "reference_path": "include/GL/gl.h",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/tinygl/zbuffer.h",
+      "sha256": "c7cffbb36676cae5e57eecc4bd264d2e9f3570290280b09704f883698a1eff30",
+      "reference_path": "include/zbuffer.h",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "libs/tinygl/zfeatures.h",
+      "sha256": "92caf38ed5cf14d4e884425e809276609116f00395091b8356703eb989223cf1",
+      "reference_path": "include/zfeatures.h",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "sdk/include/TGL/gl.h",
+      "sha256": "23d0a0f3940c2aa2d2328a61165675225ed57510c0fdc3f44c77101500eb9729",
+      "reference_path": "include/GL/gl.h",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "sdk/include/tinygl/zbuffer.h",
+      "sha256": "c7cffbb36676cae5e57eecc4bd264d2e9f3570290280b09704f883698a1eff30",
+      "reference_path": "include/zbuffer.h",
+      "whitespace_equivalent": false
+    },
+    {
+      "path": "sdk/include/tinygl/zfeatures.h",
+      "sha256": "92caf38ed5cf14d4e884425e809276609116f00395091b8356703eb989223cf1",
+      "reference_path": "include/zfeatures.h",
+      "whitespace_equivalent": false
+    }
+  ],
+  "review_date": "2026-10-16",
+  "reference_license": "https://github.com/C-Chads/tinygl/blob/36a7987e7bebfda19615ea33341b1cc0ff9c3b13/LICENSE",
+  "reference_license_sha256": "73e1887dd4de6ca926439c24b629fab376b36343211e193e1a9fe6e4e2c69c1a",
+  "import_commit": null,
+  "conclusion": "Modified TinyGL family; the reference commit is a comparison point, not an asserted import revision. Whitespace equivalence is evidence only for the recorded files.",
+  "local_snapshot_note": "Hashes include BlesKernOS modifications present at review completion; reference comparisons are not assertions of an exact import revision."
+}

@@ -1,0 +1,71 @@
+{
+  "samples": [
+    {
+      "key_to_glyph_ms": 662.9786809789948,
+      "injection_ms": 3.2607729954179376,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 498.8024360209238,
+      "injection_ms": 1.5940000012051314,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 299.26624000654556,
+      "injection_ms": 3.293418005341664,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 302.19774701981805,
+      "injection_ms": 1.93262001266703,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 290.8706959860865,
+      "injection_ms": 2.239902998553589,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 288.07501099072397,
+      "injection_ms": 1.3777120038866997,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 263.5331840137951,
+      "injection_ms": 2.0542290003504604,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 277.65392899164,
+      "injection_ms": 3.1839270086493343,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    }
+  ],
+  "p50_ms": 295.06846799631603,
+  "p95_ms": 662.9786809789948,
+  "max_ms": 662.9786809789948,
+  "capture_p50_ms": 8.894589511328377,
+  "capture_max_ms": 176.73828700208105,
+  "ram_mib": 1536,
+  "smp": 2,
+  "vga": "vmware",
+  "tinyx": "None",
+  "framebuffer": "0xfd000000",
+  "method": "host monotonic from QMP key-down until new glyph ink in displayed VRAM scanlines; no guest stop while timing; includes VRAM query and QMP overhead"
+}

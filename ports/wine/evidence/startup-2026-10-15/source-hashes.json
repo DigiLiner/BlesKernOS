@@ -1,0 +1,19 @@
+{
+  "kernel/drivers/storage/bfs4.c": "55f435ecab4e5312abe95e6e7069bb83ec25f6a783698c0e1057001a7666f19f",
+  "kernel/drivers/storage/bfs4_journal.inc": "e25257f00c213a11a20ed1513c8c62c2e8db20fdf0e3ee123b878cab12e96539",
+  "kernel/drivers/core/vfs.c": "a941fa939123a8cdb9068b7ec04847a85f502d7e61784e3c89832c55b6932e42",
+  "kernel/mm/memory.c": "ba32daea2ab880b8be092d1ca3dbc93c868afa793cce55a5aff04abd871e2438",
+  "kernel/mm/paging.c": "5a4e501eb4d87f1d34f387cfd781ee54fa9b4e32ed5fbc55683a2452a8db56d9",
+  "kernel/mm/pager.c": "60361ebee059a6d50fac528ad0035ca3b6966d9f47ea06fa9c31849da8d7707d",
+  "kernel/linux/i386_exec.inc": "fe8b41f0864d90a7aa9194cddf42c56d55bc0e4acd394cabdf38ed2ab484fc73",
+  "kernel/api/syscall.c": "16a896b8b42a864d739360cce9fb5225731d22c2712ccceb46440a5853bf3cf8",
+  "kernel/api/api.c": "b00a31df6c8e05eb4b16ff80c3b417c0a6a26b311e7db9a667fb8b1e3d8f4df5",
+  "kernel/sched/kernel_domains.c": "1a3d659d6370bc0a0451232488d407b76bb5d45c526d5c0771200dbd9a237055",
+  "gui/gui.c": "eb6d3999c79d3800cceda58241fca77c714874ac63596b49a4f0b19446fa97c0",
+  "gui/gui.h": "103d570425fb9aecf00e942562582b797ba38c306cd1e9c14f6284761cf22c72",
+  "tests/kernel/run_wine_gui_smoke.py": "53350ae4025dc717061da48a63343b24514b40e805f2e04c86a021cbd682f797",
+  "tests/kernel/run_futex_bench.py": "20e32cdc331a419b9f7155fdc0df7f14e7fec53fe465707705925245e3641b01",
+  "tests/kernel/build_wine_profile.py": "9d7d9e718fbf677939568ea87ad445fa68e11df073e0c4c552fd306e56fde2a7",
+  "tests/userland/wine_gui_smoke.c": "35d3f380249584f1239d2233f753a805a144114a1cacf448a2556c6c4a4f47f3",
+  "ports/wine/tests/writeback-batch.c": "438f629f8f572b107f6c2aea88639b2aabbc351a80aa5ffa229abfe9a9963e62"
+}

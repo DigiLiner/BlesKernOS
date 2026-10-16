@@ -12,6 +12,7 @@ static int run(int argc, char **argv) {
     if (argc != 3) return command_error("compress", "@HB26ACBAB");
     if (!bk_file_read_all(argv[1], &raw, &size))
         return command_error("compress", "@HF45BFCE1");
+    if(size>(16U*1024U*1024U)) {bk_sys_free(raw);return command_error("compress","limite de entrada: 16 MiB");}
     packed = (uint8_t *)bk_sys_alloc(size * 2U + 8U);
     if (!packed) { bk_sys_free(raw); return command_error("compress", "@HBB0954F3"); }
     packed[0]='B'; packed[1]='K'; packed[2]='Z'; packed[3]='1'; put32(packed+4,size);

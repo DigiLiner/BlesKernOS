@@ -1,0 +1,354 @@
+[
+  {
+    "wall": 7344.432644758,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1066666 submit=19/133332us read=7/63335us write=12/216667us create=0 destroy=0 wait=0/0us write_bytes=329094 command_bytes=41244"
+  },
+  {
+    "wall": 7344.58135057,
+    "line": "[WINE:FRAME-PERF] frames=9973 drawable=10485886 size=640x480 elapsed_us=432213333 resolve_us=22443307 present_us=46010053 copy_us=23156645"
+  },
+  {
+    "wall": 7345.501771462,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1043334 submit=12/70001us read=4/56667us write=10/103333us create=1 destroy=1 wait=0/0us write_bytes=709262 command_bytes=25492"
+  },
+  {
+    "wall": 7345.656748844,
+    "line": "[WINE:FRAME-PERF] frames=9977 drawable=10485886 size=640x480 elapsed_us=433286667 resolve_us=22503307 present_us=46200053 copy_us=23216644"
+  },
+  {
+    "wall": 7346.513955785,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1050000 submit=18/106667us read=6/56667us write=12/40000us create=0 destroy=0 wait=0/0us write_bytes=310562 command_bytes=43524"
+  },
+  {
+    "wall": 7346.722591425,
+    "line": "[WINE:FRAME-PERF] frames=9985 drawable=10485886 size=640x480 elapsed_us=434360000 resolve_us=22583307 present_us=46296720 copy_us=23319977"
+  },
+  {
+    "wall": 7347.529866214,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1006666 submit=35/193332us read=12/103333us write=25/23336us create=2 destroy=2 wait=0/0us write_bytes=1821978 command_bytes=106112"
+  },
+  {
+    "wall": 7347.789542461,
+    "line": "[WINE:FRAME-PERF] frames=9997 drawable=10485886 size=640x480 elapsed_us=435423333 resolve_us=22713307 present_us=46423387 copy_us=23363311"
+  },
+  {
+    "wall": 7348.528969348,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1006667 submit=33/186666us read=10/80000us write=24/23335us create=2 destroy=2 wait=0/0us write_bytes=2314930 command_bytes=127848"
+  },
+  {
+    "wall": 7348.811860378,
+    "line": "[WINE:FRAME-PERF] frames=10007 drawable=10485886 size=640x480 elapsed_us=436433333 resolve_us=22819973 present_us=46610053 copy_us=23409979"
+  },
+  {
+    "wall": 7349.582860037,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1060000 submit=28/183332us read=10/103334us write=22/26667us create=3 destroy=3 wait=0/0us write_bytes=2719778 command_bytes=98744"
+  },
+  {
+    "wall": 7349.852810047,
+    "line": "[WINE:FRAME-PERF] frames=10018 drawable=10485886 size=640x480 elapsed_us=437490000 resolve_us=22946640 present_us=46766719 copy_us=23453315"
+  },
+  {
+    "wall": 7350.597192773,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1003333 submit=39/193333us read=13/83335us write=30/26667us create=4 destroy=4 wait=0/0us write_bytes=3594294 command_bytes=116972"
+  },
+  {
+    "wall": 7350.888234583,
+    "line": "[WINE:FRAME-PERF] frames=10031 drawable=10485886 size=640x480 elapsed_us=438520000 resolve_us=23056643 present_us=46990051 copy_us=23503317"
+  },
+  {
+    "wall": 7351.590258455,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1003334 submit=36/183331us read=12/90000us write=25/16666us create=2 destroy=2 wait=0/0us write_bytes=2294510 command_bytes=96156"
+  },
+  {
+    "wall": 7352.160226859,
+    "line": "[WINE:FRAME-PERF] frames=10043 drawable=10485886 size=640x480 elapsed_us=439780000 resolve_us=23183309 present_us=47030052 copy_us=23573317"
+  },
+  {
+    "wall": 7352.652562984,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1060000 submit=24/109999us read=8/50000us write=19/20001us create=2 destroy=2 wait=0/0us write_bytes=1960208 command_bytes=60824"
+  },
+  {
+    "wall": 7353.161197112,
+    "line": "[WINE:FRAME-PERF] frames=10054 drawable=10485886 size=640x480 elapsed_us=440800000 resolve_us=23259976 present_us=47163384 copy_us=23599984"
+  },
+  {
+    "wall": 7353.658246846,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1000000 submit=35/163335us read=11/66666us write=26/39997us create=3 destroy=3 wait=0/0us write_bytes=2906534 command_bytes=97216"
+  },
+  {
+    "wall": 7354.213962992,
+    "line": "[WINE:FRAME-PERF] frames=10064 drawable=10485886 size=640x480 elapsed_us=441846667 resolve_us=23333307 present_us=47226719 copy_us=23626650"
+  },
+  {
+    "wall": 7354.668943363,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1016666 submit=33/150001us read=11/43333us write=25/29998us create=3 destroy=3 wait=0/0us write_bytes=3009052 command_bytes=97748"
+  },
+  {
+    "wall": 7355.252073489,
+    "line": "[WINE:FRAME-PERF] frames=10077 drawable=10485886 size=640x480 elapsed_us=442886667 resolve_us=23429975 present_us=47353384 copy_us=23716650"
+  },
+  {
+    "wall": 7355.688694136,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1020000 submit=39/173333us read=13/70001us write=31/33333us create=5 destroy=5 wait=0/0us write_bytes=4426456 command_bytes=119248"
+  },
+  {
+    "wall": 7356.261328014,
+    "line": "[WINE:FRAME-PERF] frames=10090 drawable=10485886 size=640x480 elapsed_us=443900000 resolve_us=23543309 present_us=47520049 copy_us=23823315"
+  },
+  {
+    "wall": 7356.721693452,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1033334 submit=34/166667us read=12/66668us write=25/19999us create=4 destroy=3 wait=0/0us write_bytes=3486774 command_bytes=114484"
+  },
+  {
+    "wall": 7357.282226929,
+    "line": "[WINE:FRAME-PERF] frames=10098 drawable=10485886 size=640x480 elapsed_us=444903333 resolve_us=23613310 present_us=47573380 copy_us=23863315"
+  },
+  {
+    "wall": 7357.761215882,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1033333 submit=27/140005us read=9/73333us write=22/16666us create=2 destroy=3 wait=0/0us write_bytes=3190098 command_bytes=92452"
+  },
+  {
+    "wall": 7358.350045525,
+    "line": "[WINE:FRAME-PERF] frames=10110 drawable=10485886 size=640x480 elapsed_us=445990000 resolve_us=23706643 present_us=47636715 copy_us=23926646"
+  },
+  {
+    "wall": 7358.786539544,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1023333 submit=38/196667us read=12/66666us write=29/16668us create=4 destroy=4 wait=0/0us write_bytes=3632392 command_bytes=127140"
+  },
+  {
+    "wall": 7359.403128089,
+    "line": "[WINE:FRAME-PERF] frames=10122 drawable=10485886 size=640x480 elapsed_us=447043333 resolve_us=23819978 present_us=47766714 copy_us=23976645"
+  },
+  {
+    "wall": 7359.800110011,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1016667 submit=28/130000us read=10/90001us write=20/46666us create=3 destroy=2 wait=0/0us write_bytes=2287250 command_bytes=87232"
+  },
+  {
+    "wall": 7360.431975602,
+    "line": "[WINE:FRAME-PERF] frames=10131 drawable=10485886 size=640x480 elapsed_us=448063333 resolve_us=23906647 present_us=47810045 copy_us=24006646"
+  },
+  {
+    "wall": 7360.804763068,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1003333 submit=30/169999us read=10/73335us write=24/20002us create=3 destroy=4 wait=0/0us write_bytes=3447038 command_bytes=104404"
+  },
+  {
+    "wall": 7361.513145905,
+    "line": "[WINE:FRAME-PERF] frames=10143 drawable=10485886 size=640x480 elapsed_us=449150000 resolve_us=24009981 present_us=47950046 copy_us=24056645"
+  },
+  {
+    "wall": 7361.816245205,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1016667 submit=35/150000us read=11/76667us write=28/36665us create=4 destroy=4 wait=0/0us write_bytes=3943298 command_bytes=129276"
+  },
+  {
+    "wall": 7362.614080643,
+    "line": "[WINE:FRAME-PERF] frames=10156 drawable=10485886 size=640x480 elapsed_us=450253333 resolve_us=24123315 present_us=48030045 copy_us=24129978"
+  },
+  {
+    "wall": 7362.820306967,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1000000 submit=34/160001us read=12/76666us write=27/20000us create=4 destroy=4 wait=0/0us write_bytes=3825610 command_bytes=106104"
+  },
+  {
+    "wall": 7363.628744258,
+    "line": "[WINE:FRAME-PERF] frames=10165 drawable=10485886 size=640x480 elapsed_us=451266667 resolve_us=24203313 present_us=48120045 copy_us=24169981"
+  },
+  {
+    "wall": 7363.836078552,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1016667 submit=24/113334us read=8/49998us write=19/33334us create=3 destroy=3 wait=0/0us write_bytes=2885412 command_bytes=81200"
+  },
+  {
+    "wall": 7364.684057046,
+    "line": "[WINE:FRAME-PERF] frames=10173 drawable=10485886 size=640x480 elapsed_us=452316667 resolve_us=24253314 present_us=48193379 copy_us=24189981"
+  },
+  {
+    "wall": 7364.903844014,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1066666 submit=24/140002us read=8/46666us write=19/19999us create=3 destroy=3 wait=0/0us write_bytes=2985116 command_bytes=93452"
+  },
+  {
+    "wall": 7365.717072982,
+    "line": "[WINE:FRAME-PERF] frames=10181 drawable=10485886 size=640x480 elapsed_us=453356667 resolve_us=24323314 present_us=48256714 copy_us=24206647"
+  },
+  {
+    "wall": 7365.905184857,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1006667 submit=27/156666us read=9/46665us write=21/26666us create=4 destroy=4 wait=0/0us write_bytes=3605362 command_bytes=108496"
+  },
+  {
+    "wall": 7366.725326376,
+    "line": "[WINE:FRAME-PERF] frames=10192 drawable=10485886 size=640x480 elapsed_us=454360000 resolve_us=24409980 present_us=48403381 copy_us=24243314"
+  },
+  {
+    "wall": 7366.913326355,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1006667 submit=34/183336us read=11/70000us write=29/19999us create=5 destroy=5 wait=0/0us write_bytes=4784676 command_bytes=144908"
+  },
+  {
+    "wall": 7367.819983786,
+    "line": "[WINE:FRAME-PERF] frames=10205 drawable=10485886 size=640x480 elapsed_us=455443333 resolve_us=24519982 present_us=48576713 copy_us=24289979"
+  },
+  {
+    "wall": 7367.917205925,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1000000 submit=35/183335us read=12/83336us write=25/16665us create=4 destroy=3 wait=0/0us write_bytes=3155862 command_bytes=120152"
+  },
+  {
+    "wall": 7368.862206984,
+    "line": "[WINE:FRAME-PERF] frames=10216 drawable=10485886 size=640x480 elapsed_us=456493333 resolve_us=24633315 present_us=48706715 copy_us=24323310"
+  },
+  {
+    "wall": 7368.932578303,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1016666 submit=32/193332us read=10/69999us write=26/10000us create=3 destroy=4 wait=0/0us write_bytes=3722066 command_bytes=137732"
+  },
+  {
+    "wall": 7369.897847661,
+    "line": "[WINE:FRAME-PERF] frames=10227 drawable=10485886 size=640x480 elapsed_us=457533333 resolve_us=24769981 present_us=48933382 copy_us=24366644"
+  },
+  {
+    "wall": 7369.940142845,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1006667 submit=31/160000us read=11/110000us write=25/26666us create=6 destroy=5 wait=0/0us write_bytes=4143368 command_bytes=129592"
+  },
+  {
+    "wall": 7370.905070862,
+    "line": "[WINE:FRAME-PERF] frames=10237 drawable=10485886 size=640x480 elapsed_us=458543333 resolve_us=24873316 present_us=49080046 copy_us=24403312"
+  },
+  {
+    "wall": 7370.937156974,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1000000 submit=30/183333us read=10/100002us write=26/53333us create=4 destroy=5 wait=0/0us write_bytes=4915222 command_bytes=148160"
+  },
+  {
+    "wall": 7371.936736196,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1003333 submit=27/156668us read=9/59998us write=21/43333us create=5 destroy=4 wait=0/0us write_bytes=3680192 command_bytes=134676"
+  },
+  {
+    "wall": 7371.991475644,
+    "line": "[WINE:FRAME-PERF] frames=10247 drawable=10485886 size=640x480 elapsed_us=459623333 resolve_us=24956648 present_us=49213381 copy_us=24443312"
+  },
+  {
+    "wall": 7372.963782223,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1013334 submit=35/213333us read=11/69999us write=29/26665us create=4 destroy=5 wait=0/0us write_bytes=4894888 command_bytes=158124"
+  },
+  {
+    "wall": 7373.005761584,
+    "line": "[WINE:FRAME-PERF] frames=10258 drawable=10485886 size=640x480 elapsed_us=460640000 resolve_us=25099981 present_us=49360049 copy_us=24506646"
+  },
+  {
+    "wall": 7373.970305066,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1020000 submit=28/143331us read=10/80001us write=23/16668us create=4 destroy=4 wait=0/0us write_bytes=3511284 command_bytes=107608"
+  },
+  {
+    "wall": 7374.057672357,
+    "line": "[WINE:FRAME-PERF] frames=10268 drawable=10485886 size=640x480 elapsed_us=461690000 resolve_us=25203314 present_us=49493383 copy_us=24549980"
+  },
+  {
+    "wall": 7375.089858532,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1116666 submit=27/129999us read=9/63334us write=21/29999us create=3 destroy=3 wait=0/0us write_bytes=2863152 command_bytes=103108"
+  },
+  {
+    "wall": 7375.122035901,
+    "line": "[WINE:FRAME-PERF] frames=10277 drawable=10485886 size=640x480 elapsed_us=462763333 resolve_us=25279981 present_us=49593382 copy_us=24583313"
+  },
+  {
+    "wall": 7376.103255978,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1013334 submit=36/176667us read=12/63332us write=26/29999us create=3 destroy=3 wait=0/0us write_bytes=3111152 command_bytes=131172"
+  },
+  {
+    "wall": 7376.166477636,
+    "line": "[WINE:FRAME-PERF] frames=10289 drawable=10485886 size=640x480 elapsed_us=463806667 resolve_us=25366647 present_us=49666716 copy_us=24679980"
+  },
+  {
+    "wall": 7377.132318046,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1030000 submit=27/139999us read=9/56665us write=22/19999us create=5 destroy=4 wait=0/0us write_bytes=3987910 command_bytes=277416"
+  },
+  {
+    "wall": 7377.176414882,
+    "line": "[WINE:FRAME-PERF] frames=10298 drawable=10485886 size=640x480 elapsed_us=464813333 resolve_us=25436646 present_us=49683383 copy_us=24716646"
+  },
+  {
+    "wall": 7378.166823104,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1013333 submit=29/166666us read=9/56667us write=27/33335us create=6 destroy=7 wait=0/0us write_bytes=5725032 command_bytes=376824"
+  },
+  {
+    "wall": 7378.188380256,
+    "line": "[WINE:FRAME-PERF] frames=10307 drawable=10485886 size=640x480 elapsed_us=465820000 resolve_us=25526646 present_us=49713383 copy_us=24743314"
+  },
+  {
+    "wall": 7379.164961338,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1016667 submit=28/173333us read=10/69999us write=24/23334us create=5 destroy=5 wait=0/0us write_bytes=5012982 command_bytes=324764"
+  },
+  {
+    "wall": 7379.228821738,
+    "line": "[WINE:FRAME-PERF] frames=10317 drawable=10485886 size=640x480 elapsed_us=466870000 resolve_us=25623311 present_us=49776717 copy_us=24773313"
+  },
+  {
+    "wall": 7380.165066046,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1000000 submit=30/173337us read=10/69997us write=25/33333us create=5 destroy=5 wait=0/0us write_bytes=5131062 command_bytes=349496"
+  },
+  {
+    "wall": 7380.312262668,
+    "line": "[WINE:FRAME-PERF] frames=10328 drawable=10485886 size=640x480 elapsed_us=467950000 resolve_us=25739978 present_us=49840050 copy_us=24843313"
+  },
+  {
+    "wall": 7381.165986217,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1003333 submit=31/146666us read=10/80003us write=27/23333us create=6 destroy=5 wait=0/0us write_bytes=5308466 command_bytes=348420"
+  },
+  {
+    "wall": 7381.3944468,
+    "line": "[WINE:FRAME-PERF] frames=10339 drawable=10485886 size=640x480 elapsed_us=469023333 resolve_us=25849981 present_us=49906714 copy_us=24879982"
+  },
+  {
+    "wall": 7382.185773905,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1023333 submit=34/196670us read=11/90003us write=26/23333us create=4 destroy=5 wait=0/0us write_bytes=4009838 command_bytes=299416"
+  },
+  {
+    "wall": 7382.41848826,
+    "line": "[WINE:FRAME-PERF] frames=10350 drawable=10485886 size=640x480 elapsed_us=470053333 resolve_us=25976650 present_us=49993379 copy_us=24976649"
+  },
+  {
+    "wall": 7383.256043645,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1056667 submit=22/136667us read=8/63334us write=17/16667us create=2 destroy=2 wait=0/0us write_bytes=2442500 command_bytes=184484"
+  },
+  {
+    "wall": 7383.519296642,
+    "line": "[WINE:FRAME-PERF] frames=10358 drawable=10485886 size=640x480 elapsed_us=471153333 resolve_us=26026650 present_us=50040045 copy_us=24996650"
+  },
+  {
+    "wall": 7384.257653046,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1016667 submit=32/176667us read=10/56666us write=24/20001us create=3 destroy=3 wait=0/0us write_bytes=3069646 command_bytes=268984"
+  },
+  {
+    "wall": 7384.570588684,
+    "line": "[WINE:FRAME-PERF] frames=10369 drawable=10485886 size=640x480 elapsed_us=472210000 resolve_us=26139984 present_us=50143378 copy_us=25036652"
+  },
+  {
+    "wall": 7385.308449462,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1046666 submit=31/173332us read=11/120001us write=25/26668us create=4 destroy=4 wait=0/0us write_bytes=3866444 command_bytes=254560"
+  },
+  {
+    "wall": 7385.619788911,
+    "line": "[WINE:FRAME-PERF] frames=10380 drawable=10485886 size=640x480 elapsed_us=473260000 resolve_us=26263318 present_us=50246710 copy_us=25069986"
+  },
+  {
+    "wall": 7386.316803819,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1003334 submit=32/160002us read=11/113332us write=26/33333us create=5 destroy=5 wait=0/0us write_bytes=4288800 command_bytes=278188"
+  },
+  {
+    "wall": 7386.898196026,
+    "line": "[WINE:FRAME-PERF] frames=10389 drawable=10485886 size=640x480 elapsed_us=474516667 resolve_us=26419983 present_us=50353379 copy_us=25093318"
+  },
+  {
+    "wall": 7387.324624183,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1010000 submit=17/116665us read=5/76666us write=15/26667us create=3 destroy=2 wait=0/0us write_bytes=2568168 command_bytes=146496"
+  },
+  {
+    "wall": 7387.95499518,
+    "line": "[WINE:FRAME-PERF] frames=10398 drawable=10485886 size=640x480 elapsed_us=475590000 resolve_us=26506649 present_us=50456714 copy_us=25129984"
+  },
+  {
+    "wall": 7388.345438846,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1000000 submit=29/179999us read=10/83333us write=22/23333us create=4 destroy=5 wait=0/0us write_bytes=3803164 command_bytes=219276"
+  },
+  {
+    "wall": 7388.96868614,
+    "line": "[WINE:FRAME-PERF] frames=10409 drawable=10485886 size=640x480 elapsed_us=476606667 resolve_us=26603315 present_us=50646715 copy_us=25173318"
+  },
+  {
+    "wall": 7389.336184228,
+    "line": "[WINE:VIRGL-PERF] pid=95 elapsed_us=1016666 submit=32/199999us read=10/66667us write=26/43335us create=4 destroy=4 wait=0/0us write_bytes=4214556 command_bytes=269272"
+  }
+]

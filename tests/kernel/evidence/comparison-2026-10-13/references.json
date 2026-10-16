@@ -1,0 +1,84 @@
+[
+  {
+    "repository": "torvalds/linux",
+    "path": "arch/x86/kernel/ldt.c",
+    "commit": "3eaa50e1e255ec261c757b9eea811ef3bac10d1e",
+    "url": "https://raw.githubusercontent.com/torvalds/linux/3eaa50e1e255ec261c757b9eea811ef3bac10d1e/arch/x86/kernel/ldt.c",
+    "sha256": "a0d6374ce1442682cd83e094376498de1b5f5cd199664a54829c365f54781614",
+    "local": "tests/kernel/evidence/comparison-2026-10-13/upstream/torvalds-linux/arch/x86/kernel/ldt.c",
+    "bytes": 17336
+  },
+  {
+    "repository": "torvalds/linux",
+    "path": "include/linux/uaccess.h",
+    "commit": "2e05544060b9fef5d4d0e0172944e6956c55080f",
+    "url": "https://raw.githubusercontent.com/torvalds/linux/2e05544060b9fef5d4d0e0172944e6956c55080f/include/linux/uaccess.h",
+    "sha256": "e4c5e50317ef7edec73dec66b7e5075305634184db3c0a123bf24b1193c9bba0",
+    "local": "tests/kernel/evidence/comparison-2026-10-13/upstream/torvalds-linux/include/linux/uaccess.h",
+    "bytes": 31320
+  },
+  {
+    "repository": "SerenityOS/serenity",
+    "path": "Kernel/Library/UserOrKernelBuffer.cpp",
+    "commit": "7c0540a22900a8366741205dead7f76ae4cfabcc",
+    "url": "https://raw.githubusercontent.com/SerenityOS/serenity/7c0540a22900a8366741205dead7f76ae4cfabcc/Kernel/Library/UserOrKernelBuffer.cpp",
+    "sha256": "65ef1b2a37433ecb26cb70f1deb3abea85cbbcd7777b9bc947d2455b7be8049c",
+    "local": "tests/kernel/evidence/comparison-2026-10-13/upstream/SerenityOS-serenity/Kernel/Library/UserOrKernelBuffer.cpp",
+    "bytes": 1763
+  },
+  {
+    "repository": "SerenityOS/serenity",
+    "path": "Kernel/Library/UserOrKernelBuffer.h",
+    "commit": "7c0540a22900a8366741205dead7f76ae4cfabcc",
+    "url": "https://raw.githubusercontent.com/SerenityOS/serenity/7c0540a22900a8366741205dead7f76ae4cfabcc/Kernel/Library/UserOrKernelBuffer.h",
+    "sha256": "9f4a4c3960e6eb442666c5c303131aaeed9a74df0c7c103dbe0d9459a17863db",
+    "local": "tests/kernel/evidence/comparison-2026-10-13/upstream/SerenityOS-serenity/Kernel/Library/UserOrKernelBuffer.h",
+    "bytes": 5312
+  },
+  {
+    "repository": "SerenityOS/serenity",
+    "path": "Kernel/Syscalls/read.cpp",
+    "commit": "9ad0303622f37088feaf54a6ef8b689deb1a13ff",
+    "url": "https://raw.githubusercontent.com/SerenityOS/serenity/9ad0303622f37088feaf54a6ef8b689deb1a13ff/Kernel/Syscalls/read.cpp",
+    "sha256": "61ae10f72fb91e14d3f914294e8ed519fc27775bdfb71d5d078625ddce1ddf2c",
+    "local": "tests/kernel/evidence/comparison-2026-10-13/upstream/SerenityOS-serenity/Kernel/Syscalls/read.cpp",
+    "bytes": 4090
+  },
+  {
+    "repository": "freebsd/freebsd-src",
+    "path": "sys/kern/subr_witness.c",
+    "commit": "d9e2caccfac14c43bf9ad62bdd35d4a03356ff91",
+    "url": "https://raw.githubusercontent.com/freebsd/freebsd-src/d9e2caccfac14c43bf9ad62bdd35d4a03356ff91/sys/kern/subr_witness.c",
+    "sha256": "d3b8460ad59f78a647afeff3ef84717d4dd4454eea169af2480086faafde027b",
+    "local": "tests/kernel/evidence/comparison-2026-10-13/upstream/freebsd-freebsd-src/sys/kern/subr_witness.c",
+    "bytes": 99647
+  },
+  {
+    "repository": "haiku/haiku",
+    "path": "src/servers/app/ServerApp.cpp",
+    "commit": "9661ecabc2b8b461ddb0bf38b0cfd07c7e08c4e7",
+    "url": "https://raw.githubusercontent.com/haiku/haiku/9661ecabc2b8b461ddb0bf38b0cfd07c7e08c4e7/src/servers/app/ServerApp.cpp",
+    "sha256": "5b7067ae3d1b51fd7ed1c889bd35177c4967756e454382dfe08ed66e46664ea4",
+    "local": "tests/kernel/evidence/comparison-2026-10-13/upstream/haiku-haiku/src/servers/app/ServerApp.cpp",
+    "bytes": 90053
+  },
+  {
+    "repository": "openbsd/src",
+    "path": "sys/kern/kern_pledge.c",
+    "commit": "1c37ded5694cf0fe50d6c9e17c7176daf7afedc7",
+    "url": "https://raw.githubusercontent.com/openbsd/src/1c37ded5694cf0fe50d6c9e17c7176daf7afedc7/sys/kern/kern_pledge.c",
+    "sha256": "0d73ac5f2e792968f94ebd8de0c3e465c5711072c4cbb0ba9cfec2d07060583d",
+    "local": "tests/kernel/evidence/comparison-2026-10-13/upstream/openbsd-src/sys/kern/kern_pledge.c",
+    "bytes": 41924
+  },
+  {
+    "repository": "NetBSD/src",
+    "path": "sys/uvm/uvm_map.c",
+    "commit": "1fc61a5c45cdd2a67b7e1b272c41a67aa200f621",
+    "url": "https://raw.githubusercontent.com/NetBSD/src/1fc61a5c45cdd2a67b7e1b272c41a67aa200f621/sys/uvm/uvm_map.c",
+    "sha256": "284b88e04a279904b5841b7f9ef9dc8b68b16708f8ef08a1c48a373a67ef748e",
+    "local": "tests/kernel/evidence/comparison-2026-10-13/upstream/NetBSD-src/sys/uvm/uvm_map.c",
+    "bytes": 143388,
+    "pin_method": "branch HEAD; path commit history endpoint returned HTTP 500"
+  }
+]

@@ -1,0 +1,15 @@
+{
+  "base": "build/bleskernos-wine-tuned.img",
+  "image": "build/bleskernos-wine-texture-fix.img",
+  "unchanged_files": 6159,
+  "changed_files": [
+    {
+      "path": "/WINEGATE/LIB/LIBBKVIRGL.SO.8",
+      "before": "041cf0276e1e5e28c7ffd7f3e0ee478411a4e45fbf9892a714f4d7c1334edabf",
+      "after": "43af90d65f7ac7b0dad255c9e5b886e5c72e91bcda46b5347b53dc7ddf769ce0"
+    }
+  ],
+  "boot_unchanged": true,
+  "bleskernos-wine-tuned.img_sha256": "6b4e8ffdbd4ebb5f0cfee1d2e6a0f5c7727ad680db915a42717196752d8c56e8",
+  "bleskernos-wine-texture-fix.img_sha256": "38601d9bd962dca0e28649a6edead133aec1669b51e165f1f9f370f6789aae53"
+}

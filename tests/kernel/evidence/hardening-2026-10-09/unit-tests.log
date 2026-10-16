@@ -1,0 +1,10 @@
+tests/kernel/test_memory_accounting.py
+PASS heap metadata, free VM pool, frame allocation/free, reserved bits and saturation
+tests/kernel/test_paging_map.py
+PASS OOM preserves existing PTEs; overflow/alignment rejected; remaps publish TLB changes
+tests/kernel/test_paging_tlb.py
+PASS borrowed spaces receive shootdowns; stale CR3 reloads; concurrent edits remain unacknowledged
+tests/desktop/test_vm_protect.py
+PASS unchanged PTEs avoid shootdowns; read-only, PROT_NONE and COW invalidate; holes preserve pages
+tests/desktop/test_vm_auto_reservations.py
+PASS automatic mmap skips reservations, brk, crossing hints and wraps; full arena returns failure

@@ -1,0 +1,15 @@
+make: 'build/system/services/vision.o' is up to date.
+make: 'build/system/drivers/PS2MOUSE.DVR' is up to date.
+/SYSTEM/DRIVERS/PS2MOUSE.DVR 7140 bytes; mode 0o100644
+/WINEGATE/bin/wine-phase4.ELF 48100 bytes; mode 0o100755
+/SYSTEM/SERVICES/VISION.BEX 255436 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/WINEUITEST.BEX 3432 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/STARTUP.INI 89 bytes; mode 0o100644
+/SYSTEM/USER/CONFIG/SCREENSV.INI 56 bytes; mode 0o100644
+/WINEGATE/bin/XFBDEV 818644 bytes; mode 0o100644
+Notepad mapped: {'handle': 62076448, 'bounds': (36, 70, 511, 376), 'title': 'notepad.exe', 'visible': True, 'listed': True, 'owner': 8, 'controller': 7}
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/run_wine_gui_smoke.py", line 262, in <module>
+    else:raise AssertionError('No new glyph for latency sample '+str(index))
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: No new glyph for latency sample 0

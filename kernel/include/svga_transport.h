@@ -3,6 +3,11 @@
 
 #include "types.h"
 
+/* Shared VRAM staging budget: color + depth for every 3D surface, plus
+ * vertex storage and room for other transport clients. Handles use 8 bits
+ * for the slot; keep this limit below 256. */
+#define BK_SVGA_TRANSPORT_MAX_ALLOCATIONS 224U
+
 /* Interfaz privada entre VMWARESVGA.DVR y extensiones como VMWARESVGA3D.DVR. */
 #define BK_SVGA_TRANSPORT_ABI_VERSION 1U
 #define BK_SVGA_TRANSPORT_INVALID_ALLOCATION 0U

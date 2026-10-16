@@ -1,0 +1,364 @@
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA FAIL
+[BKBOOT t=0] STARTING KERNEL
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=6 util=15871 KiB top=16256 KiB
+  [MM] RAM usable: 15871 KB
+  [MM] Heap dinamico: 0x400000 - 0xee0000 (11136 KB)
+  [MM] VM frames: 0xee0000 - 0xfe0000 (1024 KiB, 256 paginas)
+  [MM] Vista PE fija desactivada: heap reducido ocupa 0x400000-0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x400000-0xee0000
+[COMPAT] perfil=normal RAM_top=16256 KiB heap=11136 KiB tareas=32 CPU=fam6/mod6 GUI=30FPS TIMER=100Hz
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 6 dispositivos detectados
+  [LPT] LPT1 base=0x0378 status=0xD9 listo
+  [ATA] ata0: 1572864 sectores de 512 bytes
+  [ATA] ata0: read burst=16 sectores
+  [ATA] ata0: PIO read width=32 bits
+  [ATAPI] cd0: unidad detectada sin medio listo
+  [ATA] canales IDE normalizados despues del probe
+[BKBOOT t=3] STORAGE DRIVERS
+[BKBOOT t=3] MOUNTING FILESYSTEM
+[BKBOOT t=3] F8: RECOVERY MODE (2 SEC)
+[BOOT] Pulse F8 para entrar a recovery sin Vision ni servicios
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=2
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 2
+[FAT] dev[0]=ata0 tipo=1 sectores=1572864
+[FAT] dev[1]=cd0 tipo=3 sectores=0
+Intentando montar ata0...
+fat_set_active(ata0)
+No es particion, buscando ata0
+Dispositivo encontrado
+[BFS4:CACHE] slots=64 bytes=263424
+fat_try_mount_device OK
+fat_set_active OK
+Montado ata0 OK
+[VFS] /TEMP listo
+[SWAP] /SYSTEM/SWAP.BKS en ata0 validado: 8191 slots de 4 KiB
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=6 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+  [USBCLASS] HID boot/report, hubs USB 1.1 y printers cargados
+[DVR] usbclass: cargado (/SYSTEM/DRIVERS/USBCLASS.DVR)
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado
+[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo
+[SVGA.DVR] dispositivo 15AD:0405 no detectado
+[DVR] /SYSTEM/DRIVERS/VMWARESVGA.DVR: ERROR: init del driver fallo
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 10 modulo(s) cargado(s)
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA OK mode=800x600x32 pitch=3200 fb=0xfd000000
+[GFX:MODE] cambio solicitado: 640x480x8; activo=800x600x32 backend=vesa
+[GFX:MODE] OK backend=vesa modo=640x480x8 pitch=640 gen=2
+[MM] escritorio inicial 640x480x8 para RAM limitada
+[GFXRES] boot icons 9/9 precargados
+[BKBOOT t=342] LOADING PRINT SERVICE
+[PRINT] spooler iniciado en segundo plano, pid=5
+[BKBOOT t=351] STARTING VISION
+[BKBOOT t=352] VISION: LOADING ELF
+[PRINT] PrintSpool Ring 3 listo
+[BKBOOT t=383] VISION: ENTER RING3
+[VISION] servicio lanzado pid=6
+[VISION] ownership grafico adquirido pid=6
+[BKBOOT t=384] VISION: GRAPHICS ENGINE
+[BKBOOT t=386] PREPARING DESKTOP
+[BKBOOT t=388] VISION: ENGINE READY
+[BKBOOT t=389] VISION: DESKTOP
+[BKBOOT t=389] LOADING DESKTOP ICONS
+[BKBOOT t=390] ICONPAK preload begin
+[BKBOOT t=390] LOADING ICON CACHE
+[BKBOOT t=393] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=395] DESKMANAGER read desktop config
+[BKBOOT t=395] DESKMANAGER desktop config loaded
+[BKBOOT t=404] VISION: DESKBAR
+[DESKBAR] alloc state bytes=17116
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[BKBOOT t=435] VISION: SCREENSAVER
+[BKBOOT t=441] VISION: START SHELL
+[BKBOOT t=442] VISION: READY
+[VISION] READY: motor, escritorio y compositor bajo Vision
+[BKBOOT t=444] kernel_main: Vision READY
+[RAM:DESKTOP] installed_kib=15871 managed_kib=12160 used_kib=9378 free_kib=2781 unmanaged_kib=3711 heap_used_kib=9374 heap_free_kib=1761 vm_free_kib=1020
+[SMP] escritorio listo; iniciando procesadores secundarios
+[SMP] CPU BSP APIC=0; no se detectaron procesadores secundarios
+[BKBOOT] VISION ONLINE pid=6
+[BKBOOT t=447] DISABLE SPLASH / ENTER GUI
+[BKBOOT] DESKTOP RELEASED
+[LOCK] inversion CPU0 tid=6: gui despues de legacy (se ocultan repeticiones)
+[BKBOOT] QUEUE STARTUP SOUND
+[LOCK] inversion CPU0 tid=6: gfx despues de legacy (se ocultan repeticiones)
+[VISION:SAVER] Ring 3 worker started
+[MM] ERROR: sin memoria! pedido=187716 caller=0x157da8 pid=6
+[MM] Resumen heap:
+  bloques=317 usados=11241192 libres=154464 mayor_libre=36600
+  ultimos bloques:
+  block 0xcfee60: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xcffe78: size=4128 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd00eb0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd01ec8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd02ee0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd03ef8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd04f10: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd05f28: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd18f40: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2bf58: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2f79c: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd427b4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd557cc: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda07e4: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xecc7fc: size=43228 free=0 owner=6 magic=0xb1e5c0de
+  block 0xed70f0: size=36600 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=187716 caller=0x157da8 pid=6
+[MM] Resumen heap:
+  bloques=317 usados=11241192 libres=154464 mayor_libre=36600
+  ultimos bloques:
+  block 0xcfee60: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xcffe78: size=4128 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd00eb0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd01ec8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd02ee0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd03ef8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd04f10: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd05f28: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd18f40: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2bf58: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2f79c: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd427b4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd557cc: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda07e4: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xecc7fc: size=43228 free=0 owner=6 magic=0xb1e5c0de
+  block 0xed70f0: size=36600 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=109416 caller=0x157da8 pid=6
+[MM] Resumen heap:
+  bloques=317 usados=11230264 libres=165392 mayor_libre=47528
+  ultimos bloques:
+  block 0xcfee60: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xcffe78: size=4128 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd00eb0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd01ec8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd02ee0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd03ef8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd04f10: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd05f28: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd18f40: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2bf58: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2f79c: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd427b4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd557cc: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda07e4: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xecc7fc: size=32300 free=0 owner=6 magic=0xb1e5c0de
+  block 0xed4640: size=47528 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=109416 caller=0x157da8 pid=6
+[MM] Resumen heap:
+  bloques=317 usados=11230264 libres=165392 mayor_libre=47528
+  ultimos bloques:
+  block 0xcfee60: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xcffe78: size=4128 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd00eb0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd01ec8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd02ee0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd03ef8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd04f10: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd05f28: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd18f40: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2bf58: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2f79c: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd427b4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd557cc: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda07e4: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xecc7fc: size=32300 free=0 owner=6 magic=0xb1e5c0de
+  block 0xed4640: size=47528 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=71960 caller=0x157da8 pid=6
+[MM] Resumen heap:
+  bloques=317 usados=11225600 libres=170056 mayor_libre=52192
+  ultimos bloques:
+  block 0xcfee60: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xcffe78: size=4128 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd00eb0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd01ec8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd02ee0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd03ef8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd04f10: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd05f28: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd18f40: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2bf58: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2f79c: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd427b4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd557cc: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda07e4: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xecc7fc: size=27636 free=0 owner=6 magic=0xb1e5c0de
+  block 0xed3408: size=52192 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=71960 caller=0x157da8 pid=6
+[MM] Resumen heap:
+  bloques=317 usados=11225600 libres=170056 mayor_libre=52192
+  ultimos bloques:
+  block 0xcfee60: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xcffe78: size=4128 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd00eb0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd01ec8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd02ee0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd03ef8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd04f10: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd05f28: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd18f40: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2bf58: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2f79c: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd427b4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd557cc: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda07e4: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xecc7fc: size=27636 free=0 owner=6 magic=0xb1e5c0de
+  block 0xed3408: size=52192 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=18176 caller=0x179a5f pid=6
+[MM] Resumen heap:
+  bloques=319 usados=11265064 libres=130544 mayor_libre=12864
+  ultimos bloques:
+  block 0xd00eb0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd01ec8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd02ee0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd03ef8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd04f10: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd05f28: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd18f40: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2bf58: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2f79c: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd427b4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd557cc: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda07e4: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xecc7fc: size=17152 free=0 owner=6 magic=0xb1e5c0de
+  block 0xed0b14: size=6844 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed25e8: size=49948 free=0 owner=6 magic=0xb1e5c0de
+  block 0xede91c: size=5836 free=1 owner=0 magic=0xb1e5c0de
+[MM] ERROR: sin memoria! pedido=18176 caller=0x179a5f pid=6
+[MM] Resumen heap:
+  bloques=319 usados=11265064 libres=130544 mayor_libre=12864
+  ultimos bloques:
+  block 0xd00eb0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd01ec8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd02ee0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd03ef8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd04f10: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd05f28: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd18f40: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2bf58: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2f79c: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd427b4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd557cc: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda07e4: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xecc7fc: size=17152 free=0 owner=6 magic=0xb1e5c0de
+  block 0xed0b14: size=6844 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed25e8: size=49948 free=0 owner=6 magic=0xb1e5c0de
+  block 0xede91c: size=5836 free=1 owner=0 magic=0xb1e5c0de
+[RAM:IDLE] installed_kib=15871 managed_kib=12160 used_kib=10995 free_kib=1164 unmanaged_kib=3711 heap_used_kib=10991 heap_free_kib=144 vm_free_kib=1020
+[SWAPTEST] enabled=1 slots=8191
+[MM] ERROR: sin memoria! pedido=77824 caller=0x11de68 pid=8
+[MM] Resumen heap:
+  bloques=319 usados=11264300 libres=131308 mayor_libre=12864
+  ultimos bloques:
+  block 0xd00eb0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd01ec8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd02ee0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd03ef8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd04f10: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd05f28: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd18f40: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2bf58: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2f79c: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd427b4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd557cc: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda07e4: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xecc7fc: size=16388 free=0 owner=8 magic=0xb1e5c0de
+  block 0xed0818: size=7608 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed25e8: size=49948 free=0 owner=6 magic=0xb1e5c0de
+  block 0xede91c: size=5836 free=1 owner=0 magic=0xb1e5c0de
+[SWAPTEST] child=-1 resident=0 swapped=0 slots_used=0 out=0 in=0 faults=0 errors=0
+[SWAPTEST] DONE result=FAIL
+[MM] ERROR: sin memoria! pedido=18176 caller=0x179a5f pid=6
+[MM] Resumen heap:
+  bloques=319 usados=11265064 libres=130544 mayor_libre=12864
+  ultimos bloques:
+  block 0xd00eb0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd01ec8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd02ee0: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd03ef8: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd04f10: size=4096 free=0 owner=6 magic=0xb1e5c0de
+  block 0xd05f28: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd18f40: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2bf58: size=14380 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd2f79c: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd427b4: size=77824 free=0 owner=0 magic=0xb1e5c0de
+  block 0xd557cc: size=307200 free=0 owner=0 magic=0xb1e5c0de
+  block 0xda07e4: size=1228800 free=0 owner=0 magic=0xb1e5c0de
+  block 0xecc7fc: size=17152 free=0 owner=6 magic=0xb1e5c0de
+  block 0xed0b14: size=6844 free=1 owner=0 magic=0xb1e5c0de
+  block 0xed25e8: size=49948 free=0 owner=6 magic=0xb1e5c0de
+  block 0xede91c: size=5836 free=1 owner=0 magic=0xb1e5c0de
+[LOCK] inversion CPU0 tid=6: wine despues de legacy (se ocultan repeticiones)
+[LOCK] inversion CPU0 tid=6: vfs despues de legacy (se ocultan repeticiones)

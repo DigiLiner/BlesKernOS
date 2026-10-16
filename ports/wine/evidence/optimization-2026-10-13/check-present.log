@@ -1,0 +1,1 @@
+PASS TinyX publication: direct pixel writes at every byte, unchanged suppression, failed publish retry, exact bounds, resize/OOM and repeated reset

@@ -28,9 +28,12 @@ typedef struct {
 
 void lpt_init(void);
 bool lpt_register_virtual_provider(const lpt_virtual_provider_t *provider);
+bool lpt_register_identity_provider(const lpt_virtual_provider_t *provider,
+    bool (*identify)(uint32_t index, char *buffer, uint32_t capacity));
 bool lpt_unregister_virtual_provider(const lpt_virtual_provider_t *provider);
 uint32_t lpt_port_count(void);
 bool lpt_port_info(uint32_t index, lpt_port_info_t *info);
+bool lpt_device_id(uint32_t index, char *buffer, uint32_t capacity);
 int32_t lpt_write(uint32_t index, const void *data, uint32_t length,
                   uint32_t idle_timeout_ms);
 

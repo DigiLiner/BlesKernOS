@@ -1,23 +1,26 @@
+#include "../sdk/include/bleskernos_theme.h"
 #include "gui.h"
+#include "../sdk/include/bleskernos_input.h"
 #include "../kernel/include/task.h"
 #include "../kernel/include/memory.h"
 #include "../kernel/include/keyboard.h"
 #include "../kernel/include/mouse.h"
 #include "../kernel/include/clipboard.h"
+#include "../kernel/include/system_sounds.h"
 
 #define GUI_DROPDOWN_MAX_ITEMS 96
 #define GUI_DROPDOWN_ITEM_HEIGHT 18
 #define GUI_TEXTBOX_STORAGE 512
 
-#define WIDGET_CDE_FACE       0x00C4B3ABU
-#define WIDGET_CDE_FACE_HOVER 0x00D0C0B9U
-#define WIDGET_CDE_FACE_DOWN  0x00A99A94U
-#define WIDGET_CDE_SELECT     0x004B93A8U
-#define WIDGET_CDE_SELECT_DN  0x003C7484U
-#define WIDGET_CDE_LIGHT      0x00F1E5DFU
-#define WIDGET_CDE_MIDLIGHT   0x00D8C7BFU
-#define WIDGET_CDE_SHADOW     0x007F746EU
-#define WIDGET_CDE_DARK       0x004D4C4FU
+#define WIDGET_CDE_FACE BK_THEME_FACE
+#define WIDGET_CDE_FACE_HOVER BK_THEME_FACE_HOVER
+#define WIDGET_CDE_FACE_DOWN BK_THEME_FACE_DOWN
+#define WIDGET_CDE_SELECT BK_THEME_ACTIVE_TITLE
+#define WIDGET_CDE_SELECT_DN BK_THEME_SELECTION
+#define WIDGET_CDE_LIGHT BK_THEME_LIGHT
+#define WIDGET_CDE_MIDLIGHT BK_THEME_MIDLIGHT
+#define WIDGET_CDE_SHADOW BK_THEME_SHADOW
+#define WIDGET_CDE_DARK BK_THEME_DARK
 
 typedef struct {
     uint8_t item_count;
@@ -54,6 +57,42 @@ gui_rect_t gui_widget_screen_bounds(const gui_window_t *window,
     };
 }
 
+/* Widget state is compositor damage, not application-content damage.  The
+ * old code used window->dirty for hover/press/caret changes, which upgrades a
+ * 20x20 interaction into a complete-window redraw and may queue a Ring-3
+ * content callback.  Keep these paths on the desktop dirty rectangle only. */
+static void widget_invalidate_rect(gui_window_t *window, gui_rect_t rect) {
+    if (!window || !window->desktop || rect.w <= 0 || rect.h <= 0) return;
+    gui_desktop_invalidate_rect(window->desktop, rect);
+    gui_request_paint();
+}
+
+static void widget_invalidate_bounds(gui_window_t *window,
+                                     const gui_widget_t *widget) {
+    if (!window || !widget) return;
+    widget_invalidate_rect(window, gui_widget_screen_bounds(window, widget));
+}
+
+static void widget_invalidate_owner(const gui_widget_t *widget) {
+    if (!widget || !widget->window) return;
+    widget_invalidate_bounds(widget->window, widget);
+}
+
+static bool g_caret_visible=true;
+void gui_widget_tick_caret(uint32_t now_ms) {
+    uint32_t blink=bk_input_preference_get(BK_INPUT_CARET_BLINK);
+    bool visible=!blink || (now_ms/blink)%2U==0U;
+    if (visible==g_caret_visible) return;
+    g_caret_visible=visible;
+    gui_desktop_t *desktop=gui_get_desktop();
+    gui_window_t *window=desktop ? desktop->focused_window : NULL;
+    if (!window) return;
+    for (gui_widget_t *w=window->widgets;w;w=w->next) {
+        if (w->type==GUI_WIDGET_TEXTBOX && w->visible && w->payload &&
+            ((gui_textbox_state_t *)w->payload)->focused) widget_invalidate_bounds(window,w);
+    }
+}
+
 static uint32_t widget_text_color(const gui_widget_t *widget, uint32_t bg) {
     uint32_t sum;
 
@@ -66,10 +105,10 @@ static uint32_t widget_text_color(const gui_widget_t *widget, uint32_t bg) {
 
 static void widget_draw_button_bevel(gui_surface_t *surface, gui_rect_t bounds,
                                      bool sunken, uint32_t fill) {
-    uint32_t outer_tl = sunken ? WIDGET_CDE_DARK : WIDGET_CDE_LIGHT;
-    uint32_t inner_tl = sunken ? WIDGET_CDE_SHADOW : WIDGET_CDE_MIDLIGHT;
-    uint32_t outer_br = sunken ? WIDGET_CDE_LIGHT : WIDGET_CDE_DARK;
-    uint32_t inner_br = sunken ? WIDGET_CDE_MIDLIGHT : WIDGET_CDE_SHADOW;
+    uint32_t outer_tl = BK_THEME_BEVEL_OUTER_TL(sunken);
+    uint32_t inner_tl = BK_THEME_BEVEL_INNER_TL(sunken);
+    uint32_t outer_br = BK_THEME_BEVEL_OUTER_BR(sunken);
+    uint32_t inner_br = BK_THEME_BEVEL_INNER_BR(sunken);
 
     gui_gfx_fill_rect(surface, bounds, fill);
     if (bounds.w < 4 || bounds.h < 4) return;
@@ -303,7 +342,7 @@ static bool textbox_delete_selection(gui_textbox_state_t *textbox) {
 
 static void textbox_copy_selection(gui_textbox_state_t *textbox) {
     char buffer[GUI_TEXTBOX_STORAGE];
-    uint16_t start, end, length, i;
+    uint16_t start=0, end=0, length, i;
     if (!textbox_has_selection(textbox)) return;
     textbox_selection_bounds(textbox, &start, &end);
     length = (uint16_t)(end - start);
@@ -339,8 +378,7 @@ static void textbox_context_action(gui_window_t *window, uint32_t item_id,
     else if (item_id == GUI_TEXT_ACTION_PASTE)
         textbox_paste_clipboard(textbox);
     textbox_ensure_cursor_visible(widget);
-    window->dirty = true;
-    gui_request_paint();
+    widget_invalidate_bounds(window, widget);
 }
 
 static void textbox_insert(gui_textbox_state_t *textbox, char character) {
@@ -358,6 +396,16 @@ static void widget_invoke_callback(gui_window_t *window,
                                    gui_widget_t *widget) {
     uint32_t arguments[2];
     if (!window || !widget || !widget->callback) return;
+    /* Sound follows a successful button activation, not mouse-down noise.
+       Dropdowns/textboxes also use this callback helper, so only the classic
+       push-button style gets BOTTON.WAV. */
+    if (widget->style == GUI_WIDGET_STYLE_BUTTON &&
+        widget->type == GUI_WIDGET_BUTTON)
+        (void)system_sound_event_play(SYSTEM_SOUND_BUTTON);
+    /* A real application callback may change arbitrary client state. Keep the
+       legacy full-content repaint only for activation, not hover/press noise. */
+    window->dirty = true;
+    gui_request_paint();
     arguments[0] = (uint32_t)(uintptr_t)window;
     arguments[1] = widget->id;
     if (widget->callback_pid)
@@ -369,6 +417,14 @@ static void widget_invoke_callback(gui_window_t *window,
         widget->callback(window, widget->id);
 }
 
+static gui_rect_t widget_normalize_local_bounds(gui_rect_t bounds) {
+    if (bounds.x < 0) bounds.x = 0;
+    if (bounds.y < 0) bounds.y = 0;
+    if (bounds.w < 0) bounds.w = 0;
+    if (bounds.h < 0) bounds.h = 0;
+    return bounds;
+}
+
 gui_widget_t *gui_widget_create(gui_desktop_t *desktop, gui_window_t *window,
                                 gui_widget_type_t type, gui_rect_t bounds,
                                 const char *text,
@@ -376,18 +432,30 @@ gui_widget_t *gui_widget_create(gui_desktop_t *desktop, gui_window_t *window,
     gui_widget_t *widget;
 
     if (!desktop || !window) return NULL;
+    gui_desktop_paint_lock();
 
     widget = (gui_widget_t *)kzalloc(sizeof(gui_widget_t));
-    if (!widget) return NULL;
+    if (!widget) {
+        gui_desktop_paint_unlock();
+        return NULL;
+    }
     if (!mm_set_allocation_owner(widget, 0U)) {
         kfree(widget);
+        gui_desktop_paint_unlock();
         return NULL;
     }
 
     widget->id = desktop->next_widget_id++;
+    widget->window = window;
     widget->type = type;
     widget->style = GUI_WIDGET_STYLE_BUTTON;
-    widget->bounds = gui_window_clamp_local_rect(window, bounds);
+    /* Fixed-layout native apps must keep the coordinates they authored.
+       Clamping X/Y into a window that is temporarily too small was the source
+       of stacked buttons and labels.  The layout guard grows/limits the window
+       after publication instead.  Extended clients retain legacy clamping. */
+    widget->bounds = window->layout_guard_enabled
+        ? widget_normalize_local_bounds(bounds)
+        : gui_window_clamp_local_rect(window, bounds);
     widget->callback = callback;
     if (callback && (uint32_t)(uintptr_t)callback >= HEAP_START &&
         task_current_is_user()) {
@@ -405,11 +473,21 @@ gui_widget_t *gui_widget_create(gui_desktop_t *desktop, gui_window_t *window,
         window->widgets = widget;
     } else {
         gui_widget_t *last = window->widgets;
-        while (last->next) last = last->next;
+        uint32_t guard = 0U;
+        while (last->next && guard++ < 4096U) last = last->next;
+        if (guard >= 4096U) {
+            /* Do not turn a pre-existing damaged widget list into an infinite
+               compositor-disabled loop. */
+            kfree(widget);
+            gui_desktop_paint_unlock();
+            return NULL;
+        }
         last->next = widget;
         widget->prev = last;
     }
-    window->dirty = true;
+    gui_window_refresh_layout_limits(window);
+    widget_invalidate_bounds(window, widget);
+    gui_desktop_paint_unlock();
     return widget;
 }
 
@@ -433,6 +511,36 @@ gui_widget_t *gui_widget_create_selectable_button(gui_desktop_t *desktop,
                                              bounds, text, callback);
     if (widget) widget->style = GUI_WIDGET_STYLE_SELECTABLE;
     return widget;
+}
+
+int32_t bk_gui_slider_get_value(const gui_widget_t *w) {
+    return w && w->style == GUI_WIDGET_STYLE_SLIDER ? w->range_value : 0;
+}
+void bk_gui_slider_set_value(gui_widget_t *w, int32_t value) {
+    if (!w || w->style != GUI_WIDGET_STYLE_SLIDER) return;
+    if (value <= w->range_min) value = w->range_min;
+    else if (value >= w->range_max) value = w->range_max;
+    else {
+        value = w->range_min + ((value - w->range_min + w->range_step / 2) / w->range_step) * w->range_step;
+        if (value > w->range_max) value = w->range_max;
+    }
+    if (w->range_value != value) { w->range_value = value; widget_invalidate_owner(w); }
+}
+void bk_gui_choice_set_checked(gui_widget_t *w, bool checked) {
+    if (!w || (w->style != GUI_WIDGET_STYLE_CHECKBOX && w->style != GUI_WIDGET_STYLE_RADIO)) return;
+    gui_widget_set_selected(w, checked);
+}
+bool bk_gui_choice_is_checked(const gui_widget_t *w) {
+    return w && (w->style == GUI_WIDGET_STYLE_CHECKBOX || w->style == GUI_WIDGET_STYLE_RADIO) && w->selected;
+}
+static void widget_slider_at(gui_widget_t *w, gui_rect_t b, int x) {
+    int span = b.w - 16, offset = x - b.x - 8;
+    if (span <= 0) return;
+    if (offset < 0) offset = 0;
+    if (offset > span) offset = span;
+    int old = w->range_value;
+    bk_gui_slider_set_value(w, w->range_min + (int64_t)offset * (w->range_max - w->range_min) / span);
+    if (old != w->range_value) w->range_changed = true;
 }
 
 gui_widget_t *gui_widget_create_listbox(gui_desktop_t *desktop,
@@ -502,46 +610,63 @@ gui_widget_t *gui_widget_create_textbox(gui_desktop_t *desktop,
 
 void gui_widget_destroy(gui_widget_t *widget) {
     if (!widget) return;
+    gui_desktop_paint_lock();
     if (widget->icon_pixels) kfree(widget->icon_pixels);
     if (widget->payload) kfree(widget->payload);
     kfree(widget);
+    gui_desktop_paint_unlock();
 }
 
 void gui_widget_set_style(gui_widget_t *widget, gui_widget_style_t style) {
-    if (!widget) return;
+    if (!widget || widget->style == style) return;
     widget->style = style;
+    if (widget->window) gui_window_refresh_layout_limits(widget->window);
+    widget_invalidate_owner(widget);
 }
 
 void gui_widget_set_selected(gui_widget_t *widget, bool selected) {
-    if (!widget) return;
+    if (!widget || widget->selected == selected) return;
     widget->selected = selected;
+    widget_invalidate_owner(widget);
 }
 
 void gui_widget_set_enabled(gui_widget_t *widget, bool enabled) {
-    if (!widget) return;
+    if (!widget || widget->enabled == enabled) return;
     widget->enabled = enabled;
+    widget_invalidate_owner(widget);
 }
 
 void gui_widget_set_visible(gui_window_t *window, gui_widget_t *widget,
                             bool visible) {
+    gui_rect_t old_bounds;
     if (!window || !widget || widget->visible == visible) return;
+    old_bounds = gui_widget_screen_bounds(window, widget);
     if (!visible && window->focused_widget == widget)
         gui_widget_set_focus(window, widget, false);
     widget->visible = visible;
-    window->dirty = true;
+    /* Repaint the old rectangle when hiding and the new rectangle when
+       showing.  No client callback is required for either operation. */
+    widget_invalidate_rect(window, old_bounds);
+    if (visible) widget_invalidate_bounds(window, widget);
 }
 
 void gui_widget_set_bounds(gui_window_t *window, gui_widget_t *widget,
                            gui_rect_t bounds) {
-    gui_rect_t clamped;
+    gui_rect_t old_bounds;
+    gui_rect_t next;
     if (!window || !widget) return;
-    clamped = gui_window_clamp_local_rect(window, bounds);
-    if (widget->bounds.x == clamped.x && widget->bounds.y == clamped.y &&
-        widget->bounds.w == clamped.w && widget->bounds.h == clamped.h)
+    next = window->layout_guard_enabled
+        ? widget_normalize_local_bounds(bounds)
+        : gui_window_clamp_local_rect(window, bounds);
+    if (widget->bounds.x == next.x && widget->bounds.y == next.y &&
+        widget->bounds.w == next.w && widget->bounds.h == next.h)
         return;
-    widget->bounds = clamped;
+    old_bounds = gui_widget_screen_bounds(window, widget);
+    widget->bounds = next;
+    gui_window_refresh_layout_limits(window);
     textbox_ensure_cursor_visible(widget);
-    window->dirty = true;
+    widget_invalidate_rect(window, old_bounds);
+    widget_invalidate_bounds(window, widget);
 }
 
 void gui_widget_set_text(gui_widget_t *widget, const char *text) {
@@ -553,6 +678,8 @@ void gui_widget_set_text(gui_widget_t *widget, const char *text) {
     if (!textbox) {
         kstrncpy(widget->text, text ? text : "", sizeof(widget->text) - 1U);
         widget->text[sizeof(widget->text) - 1U] = '\0';
+        if (widget->window) gui_window_refresh_layout_limits(widget->window);
+        widget_invalidate_owner(widget);
         return;
     }
     while (text && text[length] && length < textbox->max_length &&
@@ -567,6 +694,7 @@ void gui_widget_set_text(gui_widget_t *widget, const char *text) {
     textbox->scroll = 0;
     textbox->mouse_selecting = false;
     textbox_ensure_cursor_visible(widget);
+    widget_invalidate_owner(widget);
 }
 
 void gui_widget_take_icon(gui_widget_t *widget, uint32_t *pixels,
@@ -585,7 +713,8 @@ void gui_widget_take_icon(gui_widget_t *widget, uint32_t *pixels,
     widget->icon_pixels = pixels;
     widget->icon_width = pixels ? width : 0U;
     widget->icon_height = pixels ? height : 0U;
-    gui_request_paint();
+    if (widget->window) gui_window_refresh_layout_limits(widget->window);
+    widget_invalidate_owner(widget);
 }
 
 static void widget_draw_icon(gui_surface_t *surface, gui_rect_t destination,
@@ -646,37 +775,50 @@ bool gui_widget_get_text(const gui_widget_t *widget, char *buffer,
 
 void gui_widget_set_focus(gui_window_t *window, gui_widget_t *widget,
                           bool focused) {
+    gui_widget_t *previous_widget;
     gui_textbox_state_t *textbox;
 
     if (!window) return;
+    previous_widget = window->focused_widget;
 
     if (!focused || !widget) {
         if (!widget) {
-            gui_textbox_state_t *previous =
-                widget_textbox(window->focused_widget);
-            if (previous) { previous->focused = false; previous->mouse_selecting = false; }
+            gui_textbox_state_t *previous = widget_textbox(previous_widget);
+            if (previous) {
+                previous->focused = false;
+                previous->mouse_selecting = false;
+            }
             window->focused_widget = NULL;
         } else {
             textbox = widget_textbox(widget);
-            if (textbox) { textbox->focused = false; textbox->mouse_selecting = false; }
+            if (textbox) {
+                textbox->focused = false;
+                textbox->mouse_selecting = false;
+            }
             if (window->focused_widget == widget)
                 window->focused_widget = NULL;
         }
-        window->dirty = true;
+        if (previous_widget) widget_invalidate_bounds(window, previous_widget);
+        if (widget && widget != previous_widget)
+            widget_invalidate_bounds(window, widget);
         return;
     }
 
     textbox = widget_textbox(widget);
     if (!textbox) return;
-    if (window->focused_widget && window->focused_widget != widget) {
-        gui_textbox_state_t *previous =
-            widget_textbox(window->focused_widget);
-        if (previous) { previous->focused = false; previous->mouse_selecting = false; }
+    if (previous_widget && previous_widget != widget) {
+        gui_textbox_state_t *previous = widget_textbox(previous_widget);
+        if (previous) {
+            previous->focused = false;
+            previous->mouse_selecting = false;
+        }
     }
     window->focused_widget = widget;
     textbox->focused = true;
     textbox_ensure_cursor_visible(widget);
-    window->dirty = true;
+    if (previous_widget && previous_widget != widget)
+        widget_invalidate_bounds(window, previous_widget);
+    widget_invalidate_bounds(window, widget);
 }
 
 bool gui_widget_is_focused(const gui_window_t *window,
@@ -696,6 +838,7 @@ void gui_widget_dropdown_clear(gui_widget_t *widget) {
     dropdown->hover_index = -1;
     dropdown->expanded = false;
     widget->text[0] = '\0';
+    widget_invalidate_owner(widget);
 }
 
 bool gui_widget_dropdown_add_item(gui_widget_t *widget,
@@ -717,6 +860,7 @@ bool gui_widget_dropdown_add_item(gui_widget_t *widget,
         dropdown->selected_index = 0;
         widget_dropdown_sync_text(widget);
     }
+    widget_invalidate_owner(widget);
     return true;
 }
 
@@ -734,8 +878,10 @@ void gui_widget_dropdown_set_selected(gui_widget_t *widget, int index) {
     if (index < 0 || index >= dropdown->item_count) {
         dropdown->selected_index = -1;
         widget->text[0] = '\0';
+        widget_invalidate_owner(widget);
         return;
     }
+    if (dropdown->selected_index == index) return;
     dropdown->selected_index = (int8_t)index;
     if (dropdown->item_count > 5 &&
         dropdown->selected_index >= 4)
@@ -743,6 +889,7 @@ void gui_widget_dropdown_set_selected(gui_widget_t *widget, int index) {
     else
         dropdown->scroll_index = 0;
     widget_dropdown_sync_text(widget);
+    widget_invalidate_owner(widget);
 }
 
 bool gui_widget_dropdown_set_selected_by_value(gui_widget_t *widget,
@@ -809,6 +956,40 @@ void gui_widget_paint(gui_surface_t *surface, gui_window_t *window,
     if (!surface || !window || !widget || !widget->visible) return;
     bounds = gui_widget_screen_bounds(window, widget);
 
+    if (widget->style == GUI_WIDGET_STYLE_SLIDER) {
+        int span = bounds.w - 16;
+        int x = bounds.x + 8 + (span > 0 ? (int64_t)span * (widget->range_value - widget->range_min) / (widget->range_max - widget->range_min) : 0);
+        int y = bounds.y + bounds.h / 2;
+        widget_draw_button_bevel(surface, (gui_rect_t){bounds.x+8,y-2,span,4}, true, 0x00808080);
+        for (int i=0;i<=4;i++) gui_gfx_fill_rect(surface,(gui_rect_t){bounds.x+8+span*i/4,y+8,1,3},0x00808080);
+        widget_draw_button_bevel(surface,(gui_rect_t){x-6,y-8,12,16},widget->pressed,widget->enabled ? WIDGET_CDE_FACE : 0x00B0B0B0);
+        return;
+    }
+    if (widget->style == GUI_WIDGET_STYLE_CHECKBOX || widget->style == GUI_WIDGET_STYLE_RADIO) {
+        int x=bounds.x+2,y=bounds.y+(bounds.h-14)/2;
+        bool radio=widget->style==GUI_WIDGET_STYLE_RADIO;
+        gui_rect_t box={x,y,14,14};
+        if(radio) {
+            const int inset[]={5,3,2,1,1,0,0,0,0,1,1,2,3,5};
+            for(int row=0;row<14;row++) {
+                int left=x+inset[row],width=14-2*inset[row];
+                gui_gfx_fill_rect(surface,(gui_rect_t){left,y+row,width,1},widget->enabled ? 0x00FFFFFF : 0x00D8D8D8);
+                gui_gfx_fill_rect(surface,(gui_rect_t){left,y+row,1,1},BK_THEME_SHADOW);
+                gui_gfx_fill_rect(surface,(gui_rect_t){left+width-1,y+row,1,1},BK_THEME_LIGHT);
+            }
+        } else widget_draw_button_bevel(surface,box,true,widget->enabled ? 0x00FFFFFF : 0x00D8D8D8);
+        if(widget->selected) {
+            if(radio) gui_gfx_fill_rect(surface,(gui_rect_t){x+5,y+5,4,4},0x00101010);
+            else for(int i=3;i<11;i++) {
+                gui_gfx_fill_rect(surface,(gui_rect_t){x+i,y+i,1,1},0x00101010);
+                gui_gfx_fill_rect(surface,(gui_rect_t){x+13-i,y+i,1,1},0x00101010);
+            }
+        }
+        gui_font_draw_string_clipped(surface,x+22,bounds.y+(bounds.h-8)/2,widget->text,
+            widget->enabled ? 0x00101010 : 0x00707070,(gui_rect_t){x+22,bounds.y,bounds.w-24,bounds.h});
+        return;
+    }
+
     if (widget->type == GUI_WIDGET_TEXTBOX) {
         gui_textbox_state_t *textbox = widget_textbox(widget);
         gui_rect_t inner;
@@ -845,7 +1026,7 @@ void gui_widget_paint(gui_surface_t *surface, gui_window_t *window,
                 index++;
             }
         }
-        if (textbox->focused && window->focused && widget->enabled) {
+        if (textbox->focused && window->focused && widget->enabled && g_caret_visible) {
             caret_x = inner.x + textbox_range_width(textbox,
                 textbox->scroll, textbox->cursor);
             if (caret_x >= inner.x + inner.w) caret_x = inner.x + inner.w - 1;
@@ -866,7 +1047,7 @@ void gui_widget_paint(gui_surface_t *surface, gui_window_t *window,
         if (!dropdown) return;
         widget_dropdown_prepare_popup(window, widget, &popup,
                                       &start_index, &visible_count);
-        bg = !widget->enabled ? 0x00AFA6A2U :
+        bg = !widget->enabled ? 0x00B0B0B0U :
              (dropdown->expanded ? WIDGET_CDE_FACE_DOWN :
               (widget->hovered ? WIDGET_CDE_FACE_HOVER : WIDGET_CDE_FACE));
         widget_draw_button_bevel(surface, bounds, dropdown->expanded, bg);
@@ -900,7 +1081,7 @@ void gui_widget_paint(gui_surface_t *surface, gui_window_t *window,
                 gui_gfx_fill_rect(surface, item_bounds, WIDGET_CDE_SELECT);
                 item_fg = 0x00FFFFFF;
             } else if (item_index == dropdown->selected_index) {
-                gui_gfx_fill_rect(surface, item_bounds, 0x00D8CBC6U);
+                gui_gfx_fill_rect(surface, item_bounds, 0x00D8D8D8U);
             }
             gui_font_draw_string_clipped(surface, item_bounds.x + 4,
                 item_bounds.y + 5, dropdown->labels[item_index], item_fg,
@@ -925,11 +1106,11 @@ void gui_widget_paint(gui_surface_t *surface, gui_window_t *window,
 
     if (widget->type == GUI_WIDGET_LABEL) {
         gui_font_draw_string_clipped(surface, bounds.x, bounds.y + 4,
-                                     widget->text, 0x00283C4A, text_clip);
+                                     widget->text, 0x00101010, text_clip);
         return;
     }
 
-    if (!widget->enabled) bg = 0x00AFA6A2U;
+    if (!widget->enabled) bg = 0x00B0B0B0U;
     else if (widget->style == GUI_WIDGET_STYLE_SELECTABLE && widget->selected)
         bg = widget->pressed ? WIDGET_CDE_SELECT_DN : WIDGET_CDE_SELECT;
     else if (widget->hovered)
@@ -959,9 +1140,10 @@ void gui_widget_paint(gui_surface_t *surface, gui_window_t *window,
         int icon_x;
         int icon_y;
         if (widget->icon_pixels) {
-            icon_size = bounds.h - 8;
-            if (icon_size > 20) icon_size = 20;
-            if (icon_size < 8) icon_size = 8;
+            /* Button resources are native 16px bitmaps. Never squeeze them
+             * to 15px in a 23px-high button or enlarge them on taller ones. */
+            if (widget->icon_width == 16U && widget->icon_height == 16U)
+                icon_size = 16;
             gap = widget->text[0] ? 4 : 0;
         }
         group_width = icon_size + gap + text_width;
@@ -1025,6 +1207,26 @@ bool gui_widget_handle_event(gui_window_t *window, gui_widget_t *widget,
 
     bounds = gui_widget_screen_bounds(window, widget);
 
+    if (widget->style == GUI_WIDGET_STYLE_SLIDER) {
+        inside = gui_rect_contains(bounds, event->x, event->y);
+        if (event->type == GUI_EVENT_MOUSE_DOWN && inside && event->button == MOUSE_LEFT_BUTTON) {
+            widget->range_start=widget->range_value;
+            widget->pressed = true; widget->range_changed = false;
+            widget_slider_at(widget, bounds, event->x); widget_invalidate_bounds(window,widget); return true;
+        }
+        if (event->type == GUI_EVENT_MOUSE_MOVE && widget->pressed) {
+            widget_slider_at(widget,bounds,event->x); return true;
+        }
+        if (event->type == GUI_EVENT_MOUSE_UP && event->button == MOUSE_LEFT_BUTTON && widget->pressed) {
+            widget->pressed=false; widget_invalidate_bounds(window,widget);
+            if(widget->range_changed && widget->callback) widget_invoke_callback(window,widget);
+            widget->range_changed=false; return true;
+        }
+        return false;
+    }
+    if ((widget->style == GUI_WIDGET_STYLE_CHECKBOX || widget->style == GUI_WIDGET_STYLE_RADIO) &&
+        (event->type == GUI_EVENT_MOUSE_DOWN || event->type == GUI_EVENT_MOUSE_UP) && event->button != MOUSE_LEFT_BUTTON) return false;
+
     if (widget->type == GUI_WIDGET_TEXTBOX) {
         gui_textbox_state_t *textbox = widget_textbox(widget);
         bool textbox_inside = gui_rect_contains(bounds, event->x, event->y);
@@ -1040,11 +1242,11 @@ bool gui_widget_handle_event(gui_window_t *window, gui_widget_t *widget,
                 if (local_x < 0) local_x = 0;
                 textbox->cursor = textbox_hit_test(textbox, local_x);
                 textbox_ensure_cursor_visible(widget);
-                window->dirty = true;
-                gui_request_paint();
+                widget_invalidate_bounds(window, widget);
                 return true;
             }
-            if (changed) window->dirty = true;
+            /* Textbox hover has no visual state; selection/caret paths below
+               invalidate only the control when pixels actually change. */
             return changed || textbox_inside;
         }
         if (event->type == GUI_EVENT_MOUSE_DOWN) {
@@ -1057,14 +1259,12 @@ bool gui_widget_handle_event(gui_window_t *window, gui_widget_t *widget,
                 if (!event->shift) textbox->anchor = cursor;
                 textbox->mouse_selecting = true;
                 textbox_ensure_cursor_visible(widget);
-                window->dirty = true;
-                gui_request_paint();
+                widget_invalidate_bounds(window, widget);
                 return true;
             }
             if (gui_widget_is_focused(window, widget)) {
                 textbox->mouse_selecting = false;
                 gui_widget_set_focus(window, widget, false);
-                gui_request_paint();
                 return true;
             }
             return false;
@@ -1073,8 +1273,6 @@ bool gui_widget_handle_event(gui_window_t *window, gui_widget_t *widget,
             if (event->button != MOUSE_LEFT_BUTTON) return false;
             if (textbox->mouse_selecting) {
                 textbox->mouse_selecting = false;
-                window->dirty = true;
-                gui_request_paint();
                 return true;
             }
             return textbox_inside && gui_widget_is_focused(window, widget);
@@ -1123,7 +1321,7 @@ bool gui_widget_handle_event(gui_window_t *window, gui_widget_t *widget,
             widget_invoke_callback(window, widget);
         } else if (key == KEY_ESCAPE || key == KEY_TAB) {
             gui_widget_set_focus(window, widget, false);
-        } else if (!event->alt && key >= 32U && key < 127U) {
+        } else if (!event->alt && ((key >= 32U && key < 127U) || key >= 0xA0U)) {
             (void)textbox_delete_selection(textbox);
             textbox_insert(textbox, (char)key);
             textbox->anchor = textbox->cursor;
@@ -1131,8 +1329,7 @@ bool gui_widget_handle_event(gui_window_t *window, gui_widget_t *widget,
             return false;
         }
         textbox_ensure_cursor_visible(widget);
-        window->dirty = true;
-        gui_request_paint();
+        widget_invalidate_bounds(window, widget);
         return true;
     }
 
@@ -1156,21 +1353,23 @@ bool gui_widget_handle_event(gui_window_t *window, gui_widget_t *widget,
                            dropdown->hover_index != hover_index;
             widget->hovered = inside_header;
             dropdown->hover_index = hover_index;
-            if (changed) window->dirty = true;
+            if (changed) {
+                widget_invalidate_bounds(window, widget);
+                if (was_expanded) widget_invalidate_rect(window, popup);
+            }
             return changed || inside_header || hover_index >= 0 || was_expanded;
         }
 
         if (event->type == GUI_EVENT_MOUSE_DOWN) {
             if (inside_header || hover_index >= 0) {
                 widget->pressed = true;
-                window->dirty = true;
                 return true;
             }
             if (dropdown->expanded) {
                 dropdown->expanded = false;
                 dropdown->hover_index = -1;
-                window->dirty = true;
-                gui_request_paint();
+                widget_invalidate_bounds(window, widget);
+                widget_invalidate_rect(window, popup);
                 return true;
             }
             return false;
@@ -1179,7 +1378,6 @@ bool gui_widget_handle_event(gui_window_t *window, gui_widget_t *widget,
         if (event->type == GUI_EVENT_MOUSE_UP) {
             bool was_pressed = widget->pressed;
             widget->pressed = false;
-            if (was_pressed || was_expanded) window->dirty = true;
 
             if (was_pressed && inside_header) {
                 dropdown->expanded = !dropdown->expanded;
@@ -1192,7 +1390,10 @@ bool gui_widget_handle_event(gui_window_t *window, gui_widget_t *widget,
                 } else {
                     dropdown->hover_index = -1;
                 }
-                gui_request_paint();
+                widget_invalidate_bounds(window, widget);
+                /* popup describes the same geometry before/after toggling; it
+                   must be restored on close and painted on open. */
+                widget_invalidate_rect(window, popup);
                 return true;
             }
 
@@ -1201,24 +1402,17 @@ bool gui_widget_handle_event(gui_window_t *window, gui_widget_t *widget,
                 dropdown->expanded = false;
                 dropdown->hover_index = -1;
                 widget_dropdown_sync_text(widget);
-                if (widget->callback) {
-                    uint32_t arguments[2] = {
-                        (uint32_t)(uintptr_t)window, widget->id};
-                    if (widget->callback_pid)
-                        (void)task_queue_window_upcall(
-                            window, widget->callback_pid,
-                            (uint32_t)(uintptr_t)widget->callback, arguments,
-                            2, NULL, 0, -1);
-                    else widget->callback(window, widget->id);
-                }
-                gui_request_paint();
+                widget_invalidate_bounds(window, widget);
+                widget_invalidate_rect(window, popup);
+                widget_invoke_callback(window, widget);
                 return true;
             }
 
             if (was_expanded) {
                 dropdown->expanded = false;
                 dropdown->hover_index = -1;
-                gui_request_paint();
+                widget_invalidate_bounds(window, widget);
+                widget_invalidate_rect(window, popup);
                 return true;
             }
             return was_pressed;
@@ -1233,14 +1427,14 @@ bool gui_widget_handle_event(gui_window_t *window, gui_widget_t *widget,
     if (event->type == GUI_EVENT_MOUSE_MOVE) {
         bool changed = widget->hovered != inside;
         widget->hovered = inside;
-        if (changed) window->dirty = true;
+        if (changed) widget_invalidate_bounds(window, widget);
         return changed || inside;
     }
 
     if (event->type == GUI_EVENT_MOUSE_DOWN && inside) {
         if (!widget->pressed) {
             widget->pressed = true;
-            window->dirty = true;
+            widget_invalidate_bounds(window, widget);
         }
         return true;
     }
@@ -1248,20 +1442,41 @@ bool gui_widget_handle_event(gui_window_t *window, gui_widget_t *widget,
     if (event->type == GUI_EVENT_MOUSE_UP) {
         bool was_pressed = widget->pressed;
         widget->pressed = false;
-        if (was_pressed) window->dirty = true;
+        if (was_pressed) widget_invalidate_bounds(window, widget);
+        if (was_pressed && inside && (widget->style == GUI_WIDGET_STYLE_CHECKBOX || widget->style == GUI_WIDGET_STYLE_RADIO)) {
+            widget->selected = widget->style == GUI_WIDGET_STYLE_RADIO ? true : !widget->selected;
+        }
         if (was_pressed && inside && widget->callback) {
-            uint32_t arguments[2] = {
-                (uint32_t)(uintptr_t)window, widget->id};
-            if (widget->callback_pid)
-                (void)task_queue_window_upcall(
-                    window, widget->callback_pid,
-                    (uint32_t)(uintptr_t)widget->callback, arguments, 2,
-                    NULL, 0, -1);
-            else widget->callback(window, widget->id);
+            widget_invoke_callback(window, widget);
             return true;
         }
         if (was_pressed) return true;
     }
 
     return false;
+}
+
+void bk_gui_surface_draw_tab(gui_surface_t *surface, gui_rect_t tab,
+    const char *label, bool selected, gui_rect_t page) {
+    if (!surface || tab.w < 8 || tab.h < 8) return;
+    if (selected) { tab.y -= 2; tab.h += 2; }
+    else { tab.y += 2; tab.h -= 2; }
+    /* Inactive tabs end behind the page. Keep the active tab within its
+       horizontal slot so it cannot cover its neighbours. */
+    if (!selected && tab.y + tab.h > page.y) tab.h = page.y - tab.y;
+    uint32_t face = selected ? BK_THEME_FACE : BK_THEME_TAB_INACTIVE;
+    gui_gfx_fill_rect(surface,(gui_rect_t){tab.x+3,tab.y,tab.w-6,tab.h},face);
+    gui_gfx_fill_rect(surface,(gui_rect_t){tab.x,tab.y+3,tab.w,tab.h-3},face);
+    gui_gfx_fill_rect(surface,(gui_rect_t){tab.x+3,tab.y,tab.w-6,1},BK_THEME_PANEL);
+    gui_gfx_fill_rect(surface,(gui_rect_t){tab.x+1,tab.y+1,2,1},BK_THEME_PANEL);
+    gui_gfx_fill_rect(surface,(gui_rect_t){tab.x,tab.y+3,1,tab.h-3},BK_THEME_PANEL);
+    gui_gfx_fill_rect(surface,(gui_rect_t){tab.x+tab.w-3,tab.y+1,2,1},BK_THEME_SHADOW);
+    gui_gfx_fill_rect(surface,(gui_rect_t){tab.x+tab.w-1,tab.y+3,1,tab.h-3},BK_THEME_DARK);
+    gui_gfx_fill_rect(surface,(gui_rect_t){tab.x+tab.w-2,tab.y+3,1,tab.h-3},BK_THEME_SHADOW);
+    if (selected) gui_gfx_fill_rect(surface,
+        (gui_rect_t){tab.x+2,page.y,tab.w-4,3},BK_THEME_FACE);
+    int text_x = tab.x + (tab.w - (int)gui_font_text_width(label)) / 2;
+    if (text_x < tab.x + 4) text_x = tab.x + 4;
+    gui_font_draw_string_clipped(surface, text_x, tab.y + 7, label,
+        BK_THEME_TEXT, (gui_rect_t){tab.x + 4, tab.y + 3, tab.w - 8, tab.h - 4});
 }

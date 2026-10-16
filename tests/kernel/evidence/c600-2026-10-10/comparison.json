@@ -1,0 +1,15 @@
+{
+  "before-settled": {
+    "kernel_to_desktop_seconds": 151.3,
+    "cold_read_1mib_seconds": 9.05,
+    "both_reads_valid": true,
+    "fixture_pass": false
+  },
+  "final": {
+    "kernel_to_desktop_seconds": 28.72,
+    "cold_read_1mib_seconds": 2.29,
+    "both_reads_valid": true,
+    "fixture_pass": true
+  },
+  "baseline_fixture_note": "The baseline fixture expected only the filebrowser thread name. Native FILE.BEX was running (boot.log and desktop screenshot); the corrected fixture accepts either name and the final run passes."
+}

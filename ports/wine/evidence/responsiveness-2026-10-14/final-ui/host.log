@@ -1,0 +1,77 @@
+make: 'build/system/services/vision.o' is up to date.
+make: 'build/system/drivers/PS2MOUSE.DVR' is up to date.
+/SYSTEM/DRIVERS/PS2MOUSE.DVR 7140 bytes; mode 0o100644
+/WINEGATE/bin/wine-phase4.ELF 48100 bytes; mode 0o100755
+/SYSTEM/SERVICES/VISION.BEX 255436 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/WINEUITEST.BEX 3432 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/STARTUP.INI 89 bytes; mode 0o100644
+/SYSTEM/USER/CONFIG/SCREENSV.INI 56 bytes; mode 0o100644
+Notepad mapped: {'handle': 62077256, 'bounds': (36, 70, 511, 376), 'title': 'notepad.exe', 'visible': True, 'listed': True, 'owner': 8, 'controller': 7}
+LATENCY 0 127.9
+LATENCY 1 169.87
+LATENCY 2 83.92
+LATENCY 3 123.39
+LATENCY 4 78.33
+LATENCY 5 90.74
+LATENCY 6 199.88
+LATENCY 7 68.65
+LATENCY 8 123.22
+LATENCY 9 104.14
+LATENCY 10 79.37
+LATENCY 11 135.87
+LATENCY 12 103.32
+LATENCY 13 86.96
+LATENCY 14 111.95
+LATENCY 15 75.23
+LATENCY 16 73.24
+LATENCY 17 83.18
+LATENCY 18 107.38
+LATENCY 19 86.87
+LATENCY 20 145.66
+LATENCY 21 89.57
+LATENCY 22 103.03
+LATENCY 23 105.71
+LATENCY 24 69.79
+LATENCY 25 76.25
+LATENCY 26 81.79
+LATENCY 27 103.03
+LATENCY 28 90.16
+LATENCY 29 95.53
+LATENCY 30 100.73
+LATENCY 31 88.76
+{
+  "result": "PASS",
+  "ram_mib": 1536,
+  "smp": 2,
+  "vga": "vmware",
+  "notepad": {
+    "handle": 62077256,
+    "bounds": [
+      36,
+      70,
+      511,
+      376
+    ],
+    "title": "notepad.exe",
+    "visible": true,
+    "listed": true,
+    "owner": 8,
+    "controller": 7
+  },
+  "notepad_after_restart": {
+    "handle": 62077256,
+    "bounds": [
+      36,
+      70,
+      511,
+      376
+    ],
+    "title": "notepad.exe",
+    "visible": true,
+    "listed": true,
+    "owner": 8,
+    "controller": 7
+  },
+  "keyboard_clipboard_before_after": true,
+  "compositor_cpl3": true
+}

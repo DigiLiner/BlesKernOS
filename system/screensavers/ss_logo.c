@@ -1,4 +1,7 @@
 #include "kernel/include/api.h"
+#include "ss_timing.h"
+
+#define SS_INPUT_GRACE_MS 500U
 
 typedef struct {
     gui_desktop_t *desktop;
@@ -8,8 +11,9 @@ typedef struct {
     int y;
     int dx;
     int dy;
-    uint32_t last_tick;
+    uint32_t last_motion_ms;
     uint32_t seed;
+    uint32_t input_armed_ms;
 } ss_logo_state_t;
 
 static ss_logo_state_t *g_ss_logo;
@@ -53,8 +57,11 @@ static void ss_logo_paint(gui_program_t *program, gui_desktop_t *desktop,
 
     if (!st || !desktop || !surface || !st->active) return;
 
-    now = bk_sys_ticks();
-    if (now - st->last_tick >= 3U) {
+    now = bk_sys_uptime_ms();
+    uint32_t steps = (uint32_t)(now - st->last_motion_ms) / 10U;
+    st->last_motion_ms += steps * 10U;
+    if (steps > 8U) steps = 8U;
+    while (steps--) {
         st->x += st->dx;
         st->y += st->dy;
 
@@ -74,15 +81,11 @@ static void ss_logo_paint(gui_program_t *program, gui_desktop_t *desktop,
             st->y = surface->height - logo_h - 1;
             st->dy = -2;
         }
-        st->last_tick = now;
     }
 
     bk_gui_gfx_clear(surface, 0x00000000);
     draw_stars(surface, st);
     draw_logo(surface, st->x, st->y);
-
-    /* Ask the GUI loop for the next frame without creating a private loop. */
-    bk_gui_request_paint();
 }
 
 static bool ss_logo_is_input_event(const gui_event_t *event) {
@@ -115,6 +118,9 @@ static bool ss_logo_event(gui_program_t *program, gui_desktop_t *desktop,
     ss_logo_state_t *st = program ? (ss_logo_state_t *)program->state : NULL;
 
     if (!st || !event) return false;
+    if (ss_logo_is_input_event(event) &&
+        (int32_t)(bk_sys_uptime_ms() - st->input_armed_ms) < 0)
+        return true;
     if (ss_logo_is_input_event(event)) {
         ss_logo_close(desktop, st);
         return true;
@@ -126,6 +132,8 @@ bool ss_logo_is_active(void);
 bool ss_logo_handle_global_event(gui_desktop_t *desktop,
                                  const gui_event_t *event) {
     if (!ss_logo_is_active() || !ss_logo_is_input_event(event)) return false;
+    if ((int32_t)(bk_sys_uptime_ms() - g_ss_logo->input_armed_ms) < 0)
+        return true;
     ss_logo_close(desktop, g_ss_logo);
     return true;
 }
@@ -147,8 +155,9 @@ void ss_logo_open_from_desktop(gui_desktop_t *desktop) {
     st->y = desktop->surface.height / 3;
     st->dx = 2;
     st->dy = 2;
-    st->last_tick = bk_sys_ticks();
-    st->seed = st->last_tick ^ 0x516A0E0U;
+    st->last_motion_ms = bk_sys_uptime_ms();
+    st->seed = st->last_motion_ms ^ 0x516A0E0U;
+    st->input_armed_ms = bk_sys_uptime_ms() + SS_INPUT_GRACE_MS;
 
     st->program = bk_gui_desktop_register_program(desktop, "ss_logo", st,
                                                ss_logo_paint,
@@ -166,20 +175,22 @@ void ss_logo_open_from_desktop(gui_desktop_t *desktop) {
 
 /* Optional entry points for ELF-style builds. Use whichever name your loader calls. */
 void ss_logo_main(gui_desktop_t *desktop) {
-    gui_desktop_t *target = desktop ? desktop : bk_gui_get_desktop();
+    gui_desktop_t *target = desktop ? desktop : bk_gui_desktop();
+    uint32_t last_request;
 
     if (!target || ss_logo_is_active()) return;
     ss_logo_open_from_desktop(target);
     if (!ss_logo_is_active()) return;
 
-    /*
-     * El gui_program guarda el PID propietario de sus callbacks. Si el entrypoint
-     * retorna, ese proceso pasa a ZOMBIE y el compositor ya no puede entregar
-     * nuevos frames. Mantenerlo dormido conserva los callbacks Ring 3 activos
-     * sin consumir CPU.
-     */
-    while (ss_logo_is_active() && !bk_proc_exit_requested())
-        bk_sys_sleep_ticks(2);
+    /* Keep callbacks alive and request only the next animation frame. */
+    last_request = bk_sys_uptime_ms();
+    while (ss_logo_is_active() && !bk_proc_exit_requested()) {
+        if (ss_frame_due(bk_sys_uptime_ms(), &last_request)) {
+            bk_gui_desktop_invalidate_all(target);
+            bk_gui_request_paint();
+        }
+        bk_sys_sleep_ms(5U);
+    }
 
     if (bk_proc_exit_requested() && ss_logo_is_active())
         ss_logo_close(target, g_ss_logo);

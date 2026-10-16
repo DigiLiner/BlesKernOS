@@ -1,0 +1,699 @@
+{
+  "host_s": 22.24458091100678,
+  "note": "inclusive overlapping scopes, not sequential wall time; diagnostic build",
+  "rows": [
+    {
+      "id": 531,
+      "calls": 44439,
+      "bytes": 0,
+      "cycles": 461920959266,
+      "inclusive_host_ms": 422088.0489164924
+    },
+    {
+      "id": 3,
+      "calls": 45711,
+      "bytes": 24082208,
+      "cycles": 166264775270,
+      "inclusive_host_ms": 151927.23601190984
+    },
+    {
+      "id": 532,
+      "calls": 51012,
+      "bytes": 32146361,
+      "cycles": 162924058759,
+      "inclusive_host_ms": 148874.6000883273
+    },
+    {
+      "id": 308,
+      "calls": 1502,
+      "bytes": 0,
+      "cycles": 21983849921,
+      "inclusive_host_ms": 20088.112770575623
+    },
+    {
+      "id": 168,
+      "calls": 11841,
+      "bytes": 0,
+      "cycles": 18952619071,
+      "inclusive_host_ms": 17318.27457720799
+    },
+    {
+      "id": 539,
+      "calls": 807988,
+      "bytes": 0,
+      "cycles": 12109699969,
+      "inclusive_host_ms": 11065.442107241362
+    },
+    {
+      "id": 54,
+      "calls": 26289,
+      "bytes": 0,
+      "cycles": 5234704821,
+      "inclusive_host_ms": 4783.299610523386
+    },
+    {
+      "id": 102,
+      "calls": 7113,
+      "bytes": 0,
+      "cycles": 4705526774,
+      "inclusive_host_ms": 4299.754266006887
+    },
+    {
+      "id": 526,
+      "calls": 3390,
+      "bytes": 125721600,
+      "cycles": 4070535608,
+      "inclusive_host_ms": 3719.5204035685156
+    },
+    {
+      "id": 120,
+      "calls": 68,
+      "bytes": 0,
+      "cycles": 3594082151,
+      "inclusive_host_ms": 3284.1530403204665
+    },
+    {
+      "id": 4,
+      "calls": 20409,
+      "bytes": 1291668,
+      "cycles": 2373846525,
+      "inclusive_host_ms": 2169.142205100621
+    },
+    {
+      "id": 403,
+      "calls": 27056,
+      "bytes": 0,
+      "cycles": 1718456902,
+      "inclusive_host_ms": 1570.2689093494205
+    },
+    {
+      "id": 383,
+      "calls": 6731,
+      "bytes": 0,
+      "cycles": 1627004973,
+      "inclusive_host_ms": 1486.7031704347007
+    },
+    {
+      "id": 512,
+      "calls": 79791,
+      "bytes": 0,
+      "cycles": 1601101886,
+      "inclusive_host_ms": 1463.0337888372135
+    },
+    {
+      "id": 192,
+      "calls": 6373,
+      "bytes": 0,
+      "cycles": 1503592062,
+      "inclusive_host_ms": 1373.932546434724
+    },
+    {
+      "id": 514,
+      "calls": 3628,
+      "bytes": 12625658,
+      "cycles": 1409635127,
+      "inclusive_host_ms": 1288.0778161377027
+    },
+    {
+      "id": 114,
+      "calls": 668,
+      "bytes": 0,
+      "cycles": 1403075225,
+      "inclusive_host_ms": 1282.0835953067985
+    },
+    {
+      "id": 295,
+      "calls": 5156,
+      "bytes": 0,
+      "cycles": 1390281880,
+      "inclusive_host_ms": 1270.3934610493143
+    },
+    {
+      "id": 535,
+      "calls": 58987,
+      "bytes": 0,
+      "cycles": 1352804690,
+      "inclusive_host_ms": 1236.1480480870862
+    },
+    {
+      "id": 146,
+      "calls": 13914,
+      "bytes": 0,
+      "cycles": 1348283821,
+      "inclusive_host_ms": 1232.0170279691656
+    },
+    {
+      "id": 527,
+      "calls": 856,
+      "bytes": 3373568,
+      "cycles": 1012740241,
+      "inclusive_host_ms": 925.4084358115252
+    },
+    {
+      "id": 220,
+      "calls": 460,
+      "bytes": 0,
+      "cycles": 942729031,
+      "inclusive_host_ms": 861.4345146494725
+    },
+    {
+      "id": 6,
+      "calls": 3891,
+      "bytes": 0,
+      "cycles": 770983934,
+      "inclusive_host_ms": 704.4995424436346
+    },
+    {
+      "id": 91,
+      "calls": 924,
+      "bytes": 0,
+      "cycles": 508065866,
+      "inclusive_host_ms": 464.25373388938726
+    },
+    {
+      "id": 180,
+      "calls": 2348,
+      "bytes": 274959,
+      "cycles": 493876693,
+      "inclusive_host_ms": 451.2881383103832
+    },
+    {
+      "id": 10,
+      "calls": 19,
+      "bytes": 0,
+      "cycles": 460030237,
+      "inclusive_host_ms": 420.3603696322117
+    },
+    {
+      "id": 533,
+      "calls": 49288,
+      "bytes": 7118113,
+      "cycles": 417736676,
+      "inclusive_host_ms": 381.7139166273792
+    },
+    {
+      "id": 125,
+      "calls": 4070,
+      "bytes": 0,
+      "cycles": 405026373,
+      "inclusive_host_ms": 370.0996633946783
+    },
+    {
+      "id": 517,
+      "calls": 3661,
+      "bytes": 0,
+      "cycles": 363208414,
+      "inclusive_host_ms": 331.8877997199332
+    },
+    {
+      "id": 513,
+      "calls": 5181,
+      "bytes": 0,
+      "cycles": 343992969,
+      "inclusive_host_ms": 314.32936352773254
+    },
+    {
+      "id": 11,
+      "calls": 13,
+      "bytes": 0,
+      "cycles": 333535173,
+      "inclusive_host_ms": 304.7733764674771
+    },
+    {
+      "id": 175,
+      "calls": 44237,
+      "bytes": 0,
+      "cycles": 311493862,
+      "inclusive_host_ms": 284.632757669112
+    },
+    {
+      "id": 518,
+      "calls": 12017,
+      "bytes": 0,
+      "cycles": 194908958,
+      "inclusive_host_ms": 178.1013399549848
+    },
+    {
+      "id": 331,
+      "calls": 174,
+      "bytes": 0,
+      "cycles": 192071473,
+      "inclusive_host_ms": 175.50854029206647
+    },
+    {
+      "id": 536,
+      "calls": 7335,
+      "bytes": 0,
+      "cycles": 150280589,
+      "inclusive_host_ms": 137.3214168541415
+    },
+    {
+      "id": 267,
+      "calls": 657,
+      "bytes": 0,
+      "cycles": 134815225,
+      "inclusive_host_ms": 123.1896802754072
+    },
+    {
+      "id": 85,
+      "calls": 4826,
+      "bytes": 0,
+      "cycles": 108992523,
+      "inclusive_host_ms": 99.59375182424661
+    },
+    {
+      "id": 221,
+      "calls": 1451,
+      "bytes": 0,
+      "cycles": 105873762,
+      "inclusive_host_ms": 96.74393148351423
+    },
+    {
+      "id": 243,
+      "calls": 81,
+      "bytes": 0,
+      "cycles": 101156258,
+      "inclusive_host_ms": 92.43323282571832
+    },
+    {
+      "id": 311,
+      "calls": 81,
+      "bytes": 0,
+      "cycles": 94848776,
+      "inclusive_host_ms": 86.66966501709072
+    },
+    {
+      "id": 12,
+      "calls": 6,
+      "bytes": 0,
+      "cycles": 48656035,
+      "inclusive_host_ms": 44.46027067876808
+    },
+    {
+      "id": 241,
+      "calls": 55,
+      "bytes": 0,
+      "cycles": 46963206,
+      "inclusive_host_ms": 42.91341969609207
+    },
+    {
+      "id": 39,
+      "calls": 7,
+      "bytes": 0,
+      "cycles": 30528135,
+      "inclusive_host_ms": 27.895597029597127
+    },
+    {
+      "id": 355,
+      "calls": 64,
+      "bytes": 0,
+      "cycles": 26785924,
+      "inclusive_host_ms": 24.476088761053184
+    },
+    {
+      "id": 63,
+      "calls": 22,
+      "bytes": 0,
+      "cycles": 19478222,
+      "inclusive_host_ms": 17.79855309749624
+    },
+    {
+      "id": 258,
+      "calls": 14,
+      "bytes": 0,
+      "cycles": 18287244,
+      "inclusive_host_ms": 16.71027691032937
+    },
+    {
+      "id": 45,
+      "calls": 100,
+      "bytes": 0,
+      "cycles": 17087904,
+      "inclusive_host_ms": 15.614359804961584
+    },
+    {
+      "id": 122,
+      "calls": 970,
+      "bytes": 0,
+      "cycles": 15535781,
+      "inclusive_host_ms": 14.19608129733675
+    },
+    {
+      "id": 240,
+      "calls": 420,
+      "bytes": 0,
+      "cycles": 13095025,
+      "inclusive_host_ms": 11.965799433620823
+    },
+    {
+      "id": 41,
+      "calls": 539,
+      "bytes": 0,
+      "cycles": 11873014,
+      "inclusive_host_ms": 10.849166320535634
+    },
+    {
+      "id": 140,
+      "calls": 120,
+      "bytes": 0,
+      "cycles": 10378796,
+      "inclusive_host_ms": 9.48379948098351
+    },
+    {
+      "id": 5,
+      "calls": 22,
+      "bytes": 0,
+      "cycles": 9415276,
+      "inclusive_host_ms": 8.603366868576712
+    },
+    {
+      "id": 252,
+      "calls": 14,
+      "bytes": 0,
+      "cycles": 6927522,
+      "inclusive_host_ms": 6.330139791561743
+    },
+    {
+      "id": 534,
+      "calls": 127,
+      "bytes": 0,
+      "cycles": 6370113,
+      "inclusive_host_ms": 5.8207979387210536
+    },
+    {
+      "id": 33,
+      "calls": 65,
+      "bytes": 0,
+      "cycles": 6033707,
+      "inclusive_host_ms": 5.513401295777138
+    },
+    {
+      "id": 269,
+      "calls": 160,
+      "bytes": 0,
+      "cycles": 4704142,
+      "inclusive_host_ms": 4.298488905463864
+    },
+    {
+      "id": 515,
+      "calls": 18,
+      "bytes": 53,
+      "cycles": 4521925,
+      "inclusive_host_ms": 4.131985055689152
+    },
+    {
+      "id": 181,
+      "calls": 3,
+      "bytes": 3,
+      "cycles": 4494334,
+      "inclusive_host_ms": 4.106773315186708
+    },
+    {
+      "id": 133,
+      "calls": 131,
+      "bytes": 0,
+      "cycles": 3277078,
+      "inclusive_host_ms": 2.9944851633602276
+    },
+    {
+      "id": 1,
+      "calls": 13,
+      "bytes": 0,
+      "cycles": 2032898,
+      "inclusive_host_ms": 1.8575947535043962
+    },
+    {
+      "id": 116,
+      "calls": 19,
+      "bytes": 0,
+      "cycles": 1753641,
+      "inclusive_host_ms": 1.602418970912561
+    },
+    {
+      "id": 439,
+      "calls": 60,
+      "bytes": 0,
+      "cycles": 1357158,
+      "inclusive_host_ms": 1.240125958349371
+    },
+    {
+      "id": 158,
+      "calls": 270,
+      "bytes": 0,
+      "cycles": 1170986,
+      "inclusive_host_ms": 1.0700081607769298
+    },
+    {
+      "id": 268,
+      "calls": 26,
+      "bytes": 0,
+      "cycles": 808008,
+      "inclusive_host_ms": 0.7383309057264951
+    },
+    {
+      "id": 174,
+      "calls": 211,
+      "bytes": 0,
+      "cycles": 429046,
+      "inclusive_host_ms": 0.3920480017256386
+    },
+    {
+      "id": 229,
+      "calls": 1066,
+      "bytes": 0,
+      "cycles": 313471,
+      "inclusive_host_ms": 0.28643940078438596
+    },
+    {
+      "id": 194,
+      "calls": 3,
+      "bytes": 0,
+      "cycles": 136135,
+      "inclusive_host_ms": 0.1243956468884917
+    },
+    {
+      "id": 186,
+      "calls": 56,
+      "bytes": 0,
+      "cycles": 131480,
+      "inclusive_host_ms": 0.1201420623124023
+    },
+    {
+      "id": 77,
+      "calls": 270,
+      "bytes": 0,
+      "cycles": 123624,
+      "inclusive_host_ms": 0.11296351012555844
+    },
+    {
+      "id": 340,
+      "calls": 71,
+      "bytes": 0,
+      "cycles": 108548,
+      "inclusive_host_ms": 0.09918756145335143
+    },
+    {
+      "id": 199,
+      "calls": 250,
+      "bytes": 0,
+      "cycles": 92447,
+      "inclusive_host_ms": 0.08447500178426115
+    },
+    {
+      "id": 242,
+      "calls": 19,
+      "bytes": 0,
+      "cycles": 66667,
+      "inclusive_host_ms": 0.06091809300411412
+    },
+    {
+      "id": 201,
+      "calls": 236,
+      "bytes": 0,
+      "cycles": 56928,
+      "inclusive_host_ms": 0.05201891788348371
+    },
+    {
+      "id": 209,
+      "calls": 234,
+      "bytes": 0,
+      "cycles": 55167,
+      "inclusive_host_ms": 0.05040977450249695
+    },
+    {
+      "id": 200,
+      "calls": 234,
+      "bytes": 0,
+      "cycles": 53431,
+      "inclusive_host_ms": 0.048823475292165866
+    },
+    {
+      "id": 202,
+      "calls": 234,
+      "bytes": 0,
+      "cycles": 51623,
+      "inclusive_host_ms": 0.047171384870346396
+    },
+    {
+      "id": 191,
+      "calls": 17,
+      "bytes": 0,
+      "cycles": 49782,
+      "inclusive_host_ms": 0.04548914014326142
+    },
+    {
+      "id": 20,
+      "calls": 71,
+      "bytes": 0,
+      "cycles": 41998,
+      "inclusive_host_ms": 0.038376379167905934
+    },
+    {
+      "id": 224,
+      "calls": 56,
+      "bytes": 0,
+      "cycles": 27301,
+      "inclusive_host_ms": 0.024946748122839184
+    },
+    {
+      "id": 83,
+      "calls": 2,
+      "bytes": 0,
+      "cycles": 26072,
+      "inclusive_host_ms": 0.023823728693405485
+    },
+    {
+      "id": 406,
+      "calls": 11,
+      "bytes": 0,
+      "cycles": 23504,
+      "inclusive_host_ms": 0.021477175483653056
+    },
+    {
+      "id": 97,
+      "calls": 58,
+      "bytes": 0,
+      "cycles": 18902,
+      "inclusive_host_ms": 0.01727202054935373
+    },
+    {
+      "id": 66,
+      "calls": 11,
+      "bytes": 0,
+      "cycles": 17764,
+      "inclusive_host_ms": 0.016232153901106744
+    },
+    {
+      "id": 15,
+      "calls": 1,
+      "bytes": 0,
+      "cycles": 15212,
+      "inclusive_host_ms": 0.013900220960573957
+    },
+    {
+      "id": 9,
+      "calls": 14,
+      "bytes": 0,
+      "cycles": 11072,
+      "inclusive_host_ms": 0.010117226299991774
+    },
+    {
+      "id": 60,
+      "calls": 26,
+      "bytes": 0,
+      "cycles": 10837,
+      "inclusive_host_ms": 0.009902491095828293
+    },
+    {
+      "id": 173,
+      "calls": 2,
+      "bytes": 0,
+      "cycles": 10532,
+      "inclusive_host_ms": 0.00962379221382888
+    },
+    {
+      "id": 172,
+      "calls": 22,
+      "bytes": 0,
+      "cycles": 10380,
+      "inclusive_host_ms": 0.009484899656242288
+    },
+    {
+      "id": 37,
+      "calls": 3,
+      "bytes": 0,
+      "cycles": 9961,
+      "inclusive_host_ms": 0.009102031356052932
+    },
+    {
+      "id": 374,
+      "calls": 11,
+      "bytes": 0,
+      "cycles": 6999,
+      "inclusive_host_ms": 0.006395454016766837
+    },
+    {
+      "id": 231,
+      "calls": 14,
+      "bytes": 0,
+      "cycles": 5475,
+      "inclusive_host_ms": 0.0050028733735960045
+    },
+    {
+      "id": 435,
+      "calls": 9,
+      "bytes": 0,
+      "cycles": 4649,
+      "inclusive_host_ms": 0.004248101975132023
+    },
+    {
+      "id": 386,
+      "calls": 14,
+      "bytes": 0,
+      "cycles": 3720,
+      "inclusive_host_ms": 0.0033992125935666004
+    },
+    {
+      "id": 183,
+      "calls": 1,
+      "bytes": 0,
+      "cycles": 3491,
+      "inclusive_host_ms": 0.003189959990360484
+    },
+    {
+      "id": 516,
+      "calls": 2,
+      "bytes": 0,
+      "cycles": 2410,
+      "inclusive_host_ms": 0.0022021780512084697
+    },
+    {
+      "id": 64,
+      "calls": 1,
+      "bytes": 0,
+      "cycles": 603,
+      "inclusive_host_ms": 0.0005510013962152312
+    },
+    {
+      "id": 254,
+      "calls": 1,
+      "bytes": 0,
+      "cycles": 573,
+      "inclusive_host_ms": 0.0005235883914284038
+    },
+    {
+      "id": 65,
+      "calls": 1,
+      "bytes": 0,
+      "cycles": 470,
+      "inclusive_host_ms": 0.00042947040832696295
+    },
+    {
+      "id": 163,
+      "calls": 1,
+      "bytes": 0,
+      "cycles": 212,
+      "inclusive_host_ms": 0.0001937185671602471
+    }
+  ]
+}

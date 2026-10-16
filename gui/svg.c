@@ -1,6 +1,6 @@
 #include "image.h"
 #include "../kernel/include/memory.h"
-#include "../kernel/string.h"
+#include "../kernel/libc/include/string.h"
 
 #define SVG_SCALE 1024
 #define SVG_POINT_MAX 768

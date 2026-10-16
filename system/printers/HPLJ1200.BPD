@@ -1,0 +1,7 @@
+[Printer]
+Id=HPLJ1200
+Name=HP LaserJet 1200
+Language=PCL5
+Transport=LPT
+Port=USBPRN1
+DPI=600

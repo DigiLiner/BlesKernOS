@@ -1,0 +1,27 @@
+
+TEST admin
+PASS bounded events, user snapshots, paths, dependency cycles, tombstones, forward dependencies, disk rollback, readiness ownership and critical controls
+
+TEST event_filter
+PASS strict process filter, empty results, source/severity/search and scroll anchoring
+
+TEST gui_content
+PASS compact client allocation, nonzero origins, RGB332/full-color capture, slot exclusion and retained-buffer reuse
+
+TEST native_api_abi
+PASS actual i386 API wrapper: cdecl, hidden struct return pointer and bounded ret N
+
+TEST process_graph_layout
+PASS 1..16 CPU panels remain separated and above the window midpoint
+
+TEST process_menu_target
+PASS process, service, startup and event actions retain the menu's original target
+
+TEST process_priority
+PASS process-wide priority, atomic system protection, bounded levels, quantum weighting and stop/priority inheritance for new threads
+
+TEST scrollbar_domains
+PASS caller-owned scrollbar helpers avoid GUI/GFX inversion; window mutations remain guarded
+
+TEST upcall_cleanup
+PASS active and queued paints release staging; unlinked tombstones finalize once; payloads release once

@@ -1,0 +1,7 @@
+test: /tmp/bk-buffer-reuse-_rr67752/test.c:159: main: Assertion `!corruption && barriers==1 && !gpu_read' failed.
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/desktop/test_virgl_buffer_reuse.py", line 89, in <module>
+    subprocess.run([str(exe)],check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/tmp/bk-buffer-reuse-_rr67752/test']' died with <Signals.SIGABRT: 6>.

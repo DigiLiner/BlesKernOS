@@ -1,0 +1,19 @@
+{
+  "ide_no_profile": {
+    "observation_host_s": 150.29429071201594,
+    "spawn_guest_ms": 2310,
+    "first_surface_seen": false
+  },
+  "clock_repeat": {
+    "samples_total": 99,
+    "steady_samples": 43,
+    "steady_wall_s": 28.25796151199029,
+    "steady_guest_s": 28.19,
+    "guest_wall_ratio": 0.9975949605578786,
+    "max_query_ms_steady": 224.25681300228462,
+    "observation_host_s": 67.81254268501652,
+    "first_surface_seen": false
+  },
+  "new_key_to_pixel_measurement": null,
+  "new_fifa_measurement": null
+}

@@ -1,0 +1,43 @@
+make: 'build/system/services/vision.o' is up to date.
+ld: warning: build/isr_stubs.o: missing .note.GNU-stack section implies executable stack
+ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+patched /tmp/bk-wine-perf-20261014/ipc-before/test.img: kernel 837676 bytes
+/SYSTEM/SERVICES/VISION.BEX 255436 bytes; mode 0o100644
+/WINEGATE/bin/futex-suite.ELF 15244 bytes; mode 0o100755
+/WINEGATE/bin/ipc-latency.ELF 15608 bytes; mode 0o100755
+/WINEGATE/bin/futex-latency.ELF 15548 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/SCREENSV.INI 23 bytes; mode 0o100644
+{'host_s': 26.830146335996687, 'line': '[FUTEX-LATENCY] run=0 rounds=1000 us=2610000 waits=964,967 wakes=967,964'}
+{'host_s': 30.79415700302343, 'line': '[FUTEX-LATENCY] run=1 rounds=1000 us=3760000 waits=997,994 wakes=994,997'}
+{'host_s': 34.017922561004525, 'line': '[FUTEX-LATENCY] run=2 rounds=1000 us=2766667 waits=972,985 wakes=985,972'}
+{'host_s': 34.04904730399721, 'line': '[FUTEX-LATENCY] PASS'}
+{'host_s': 34.15280881902436, 'line': '[FUTEX-SUITE] PASS'}
+[
+  {
+    "run": 0,
+    "rounds": 1000,
+    "us": 2610000,
+    "waits_main": 964,
+    "waits_peer": 967,
+    "wakes_main": 967,
+    "wakes_peer": 964
+  },
+  {
+    "run": 1,
+    "rounds": 1000,
+    "us": 3760000,
+    "waits_main": 997,
+    "waits_peer": 994,
+    "wakes_main": 994,
+    "wakes_peer": 997
+  },
+  {
+    "run": 2,
+    "rounds": 1000,
+    "us": 2766667,
+    "waits_main": 972,
+    "waits_peer": 985,
+    "wakes_main": 985,
+    "wakes_peer": 972
+  }
+]

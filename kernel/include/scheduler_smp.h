@@ -24,5 +24,7 @@ uint32_t scheduler_smp_depth(uint32_t cpu);
 uint32_t scheduler_smp_steals(uint32_t cpu);
 uint32_t scheduler_smp_migrations(uint32_t cpu);
 uint32_t scheduler_smp_ipis(uint32_t cpu);
+/* W3 diagnostic: copy one runqueue without exposing scheduler internals. */
+uint32_t scheduler_smp_debug_copy_queue(uint32_t cpu, int16_t *out, uint32_t capacity);
 
 #endif

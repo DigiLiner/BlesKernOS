@@ -14,14 +14,14 @@
 #define bk_gui_desktop_cursor_trail_enabled gui_desktop_cursor_trail_enabled
 #define bk_gui_desktop_drag_outline_enabled gui_desktop_drag_outline_enabled
 #define bk_gui_desktop_focus_window gui_desktop_focus_window
-#define bk_gui_desktop_invalidate_all gui_desktop_invalidate_all
+#define bk_gui_desktop_invalidate_all bk_gui_invalidate_all
 #define bk_gui_desktop_invalidate_rect gui_desktop_invalidate_rect
 #define bk_gui_desktop_raise_window gui_desktop_raise_window
-#define bk_gui_desktop_register_program gui_desktop_register_program
+#define bk_gui_desktop_register_program bk_gui_register_program
 #define bk_gui_desktop_remove_window gui_desktop_remove_window
 #define bk_gui_desktop_set_cursor_trail gui_desktop_set_cursor_trail
 #define bk_gui_desktop_set_drag_outline gui_desktop_set_drag_outline
-#define bk_gui_desktop_unregister_program gui_desktop_unregister_program
+#define bk_gui_desktop_unregister_program bk_gui_unregister_program
 #define bk_gui_event_queue_pop gui_event_queue_pop
 #define bk_gui_event_queue_push gui_event_queue_push
 #define bk_gui_event_queue_reset gui_event_queue_reset
@@ -96,7 +96,6 @@
 #define bk_device_block_type_name block_type_name
 #define bk_device_refresh_media ata_refresh_media
 #define bk_device_driver_at driver_at
-#define bk_device_driver_count driver_count
 #define bk_device_driver_last_error driver_last_error
 #define bk_device_driver_load driver_load
 #define bk_device_pci_class_name pci_class_name
@@ -157,8 +156,6 @@
 /* Cargadores. */
 #define bk_app_elf_execute elf_execute_program_ex
 #define bk_app_elf_last_error elf_last_error
-#define bk_app_pe_execute pe_execute_program
-#define bk_app_pe_last_error pe_last_error
 #define bk_app_execute_path program_execute_path
 #define bk_app_execute_path_arg program_execute_path_arg
 #define bk_app_is_object program_is_object
@@ -176,6 +173,7 @@
 #define bk_desktop_set_wallpaper deskmanager_set_wallpaper
 #define bk_desktop_set_wallpaper_mode deskmanager_set_wallpaper_mode
 #define bk_screensaver_get_path screensaver_get_path
+#define bk_screensaver_copy_path screensaver_copy_path
 #define bk_screensaver_get_timeout screensaver_get_timeout_seconds
 #define bk_screensaver_is_enabled screensaver_is_enabled
 #define bk_screensaver_preview screensaver_preview
@@ -185,6 +183,8 @@
 
 /* Consola y shell embebida. */
 #define bk_console_set_output_sink vga_set_output_sink
+#define bk_console_input_reset vga_console_input_reset
+#define bk_console_input_push vga_console_input_push
 #define bk_shell_execute_line shell_execute_line
 
 #endif

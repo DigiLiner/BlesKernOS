@@ -92,6 +92,8 @@ static const uint8_t *glyph_for(unsigned char c) {
         case '_': { static const uint8_t g[8] = {0,0,0,0,0,0,0x7C,0}; return g; }
         case '[': { static const uint8_t g[8] = {0x30,0x20,0x20,0x20,0x20,0x20,0x30,0}; return g; }
         case ']': { static const uint8_t g[8] = {0x30,0x10,0x10,0x10,0x10,0x10,0x30,0}; return g; }
+        case '{': { static const uint8_t g[8] = {0x18,0x20,0x20,0x40,0x20,0x20,0x18,0}; return g; }
+        case '}': { static const uint8_t g[8] = {0x30,0x08,0x08,0x04,0x08,0x08,0x30,0}; return g; }
         case '+': { static const uint8_t g[8] = {0,0x10,0x10,0x7C,0x10,0x10,0,0}; return g; }
         case '*': { static const uint8_t g[8] = {0,0x44,0x28,0x7C,0x28,0x44,0,0}; return g; }
         case '=': { static const uint8_t g[8] = {0,0,0x7C,0,0x7C,0,0,0}; return g; }

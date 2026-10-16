@@ -13,6 +13,9 @@
  */
 
 #include "../../include/types.h"
+#include "../../include/perfmon.h"
+#include "../../include/pit.h"
+#include "../../include/rgb565.h"
 #include "../../include/memory.h"
 #include "../../include/driver.h"
 #include "../../include/gfx.h"
@@ -31,6 +34,13 @@
  * como staging: CPU sube dirty rects de forma secuencial y el motor 2D hace
  * el BitBlt final VRAM -> scanout. */
 #define R128_VRAM_STAGING           1
+
+/* Mobility M3 flat-panel table. XFree86/X11Libre searches the first 64 KiB
+ * of the VGA option ROM for the literal "M3      ". */
+#define R128_VBIOS_BASE             0x000C0000U
+#define R128_VBIOS_SCAN_SIZE        0x00010000U
+#define R128_VBIOS_PANEL_X_OFFSET   25U
+#define R128_VBIOS_PANEL_Y_OFFSET   27U
 
 /* MMIO / PLL registers used by the conservative 2D path. */
 #define R128_CLOCK_CNTL_INDEX       0x0008U
@@ -85,12 +95,53 @@
 #define R128_CRTC_OFFSET            0x0224U
 #define R128_CRTC_OFFSET_CNTL       0x0228U
 #define R128_CRTC_PITCH             0x022CU
+#define R128_FP_CRTC_H_TOTAL_DISP   0x0250U
+#define R128_FP_CRTC_V_TOTAL_DISP   0x0254U
+#define R128_FP_GEN_CNTL            0x0284U
+#define R128_FP_SEL_CRTC2           (1U << 13)
+#define R128_FP_DONT_SHADOW_VPAR    (1U << 16)
+#define R128_FP_DONT_SHADOW_HEND    (1U << 17)
+#define R128_FP_USE_SHADOW_VEND     (1U << 18)
+#define R128_FP_USE_SHADOW_ROWCUR   (1U << 19)
+#define R128_FP_HORZ_DIV2_EN        (1U << 20)
+#define R128_FP_HOR_CRT_DIV2_DIS    (1U << 21)
+#define R128_FP_CRT_SYNC_SEL        (1U << 23)
+#define R128_FP_USE_SHADOW_EN       (1U << 24)
+#define R128_FP_HORZ_STRETCH        0x028CU
+#define R128_FP_VERT_STRETCH        0x0290U
+#define R128_FP_H_SYNC_STRT_WID     0x02C4U
+#define R128_FP_V_SYNC_STRT_WID     0x02C8U
+#define R128_LVDS_GEN_CNTL          0x02D0U
+#define R128_FP_OUT_EN              (1U << 22)
+#define R128_FP_ACTIVE              (1U << 23)
+#define R128_LVDS_ON                (1U << 0)
+#define R128_LVDS_EN                (1U << 7)
+#define R128_LVDS_DIGON             (1U << 18)
+#define R128_LVDS_SEL_CRTC2         (1U << 23)
+#define R128_HORZ_STRETCH_RATIO_MASK 0x0000FFFFU
+#define R128_HORZ_STRETCH_RATIO_MAX 4096U
+#define R128_HORZ_PANEL_SIZE        0x00FF0000U
+#define R128_HORZ_PANEL_SHIFT       16U
+#define R128_HORZ_STRETCH_BLEND     (1U << 25)
+#define R128_HORZ_STRETCH_ENABLE    (1U << 26)
+#define R128_HORZ_AUTO_RATIO_FIX_EN (1U << 31)
+#define R128_VERT_PANEL_SIZE        0x000007FFU
+#define R128_VERT_PANEL_SHIFT       0U
+#define R128_VERT_STRETCH_RATIO_MASK 0x000003FFU
+#define R128_VERT_STRETCH_RATIO_SHIFT 11U
+#define R128_VERT_STRETCH_RATIO_MAX 1024U
+#define R128_VERT_STRETCH_ENABLE    (1U << 24)
+#define R128_VERT_STRETCH_BLEND     (1U << 25)
+#define R128_VERT_AUTO_RATIO_EN     (1U << 26)
 #define R128_DDA_CONFIG             0x02E0U
 #define R128_DDA_ON_OFF             0x02E4U
 #define R128_DDA_XFER_MASK          0x00003FFFU
 #define R128_DDA_PRECISION_MASK     0x000F0000U
 #define R128_DDA_LOOP_MASK          0x01F00000U
 #define R128_CRTC_PIX_WIDTH_MASK    (7U << 8)
+#define R128_CRTC_DBL_SCAN_EN       (1U << 0)
+#define R128_CRTC_INTERLACE_EN      (1U << 1)
+#define R128_CRTC_CSYNC_EN          (1U << 4)
 #define R128_CRTC_CUR_EN            (1U << 16)
 #define R128_CRTC_EXT_DISP_EN       (1U << 24)
 #define R128_CRTC_EN                (1U << 25)
@@ -172,6 +223,7 @@
 #define R128_GMC_BRUSH_SOLID_COLOR     (13U << 4)
 #define R128_GMC_BRUSH_NONE            (15U << 4)
 #define R128_GMC_DST_8BPP               (2U << 8)
+#define R128_GMC_DST_16BPP              (4U << 8)
 #define R128_GMC_DST_32BPP              (6U << 8)
 #define R128_GMC_SRC_DATATYPE_COLOR     (3U << 12)
 #define R128_DP_SRC_SOURCE_MEMORY       (2U << 24)
@@ -257,6 +309,7 @@ typedef struct {
     uint16_t native_height;
     uint32_t current_pixel_khz;
     uint32_t native_pixel_khz;
+    uint32_t pll_min_khz,pll_max_khz;
     uint32_t saved_crtc_gen_cntl;
     uint32_t saved_crtc_ext_cntl;
     uint32_t saved_crtc_h_total_disp;
@@ -266,11 +319,24 @@ typedef struct {
     uint32_t saved_crtc_offset;
     uint32_t saved_crtc_offset_cntl;
     uint32_t saved_crtc_pitch;
+    uint32_t saved_fp_crtc_h_total_disp;
+    uint32_t saved_fp_gen_cntl;
+    uint32_t saved_fp_crtc_v_total_disp;
+    uint32_t saved_fp_h_sync_strt_wid;
+    uint32_t saved_fp_v_sync_strt_wid;
+    uint32_t saved_fp_horz_stretch;
+    uint32_t saved_fp_vert_stretch;
+    uint32_t saved_lvds_gen_cntl;
+    bool panel_native_valid;
+    bool panel_native_vbios;
     uint32_t saved_dda_config;
     uint32_t saved_dda_on_off;
     uint32_t saved_ppll_cntl;
     uint32_t saved_ppll_ref_div;
     uint32_t saved_ppll_div_3;
+    uint32_t saved_ppll_active_div;
+    uint32_t saved_clock_cntl_index;
+    uint32_t panel_vbios_offset;
     uint32_t saved_vclk_ecp_cntl;
     uint32_t saved_htotal_cntl;
 
@@ -326,7 +392,7 @@ static void r128_stats_report(const char *reason) {
 }
 
 static uint32_t r128_bytes_per_pixel(void) {
-    return g_r128.bpp == 32U ? 4U : 1U;
+    return g_r128.bpp == 32U ? 4U : (g_r128.bpp == 16U ? 2U : 1U);
 }
 
 /* Rage 128 encodes 2D pitch in groups of eight pixels, independent of bpp. */
@@ -365,8 +431,28 @@ static bool r128_surface_layout(uint32_t *offset_out, uint32_t *size_out) {
     return true;
 }
 
+/* Private upload strip when VRAM cannot hold a second full-size scanout.
+ * The bridge reserves it before the 3D allocator chooses its arena. */
+static bool r128_staging_tile_layout(uint32_t *offset_out, uint32_t *rows_out) {
+    uint32_t offset, limit, rows;
+    if (!R128_VRAM_STAGING || !g_r128.active || !g_r128.accel_ok ||
+        g_r128.overlay_active || (g_r128.bpp != 16U && g_r128.bpp != 32U) || !g_r128.pitch ||
+        !g_r128.height || !r128_pitch_units()) return false;
+    offset = r128_align_up(r128_visible_end(), 32U);
+    limit = g_r128.cursor_ready ? g_r128.cursor_offset : g_r128.vram_size;
+    if (offset >= limit) return false;
+    rows = (limit - offset) / g_r128.pitch;
+    if (rows > 128U) rows = 128U;
+    if (rows > g_r128.height) rows = g_r128.height;
+    if (!rows) return false;
+    if (offset_out) *offset_out = offset;
+    if (rows_out) *rows_out = rows;
+    return true;
+}
+
 static uint32_t r128_gmc_dst_datatype(void) {
-    return g_r128.bpp == 8U ? R128_GMC_DST_8BPP : R128_GMC_DST_32BPP;
+    return g_r128.bpp == 8U ? R128_GMC_DST_8BPP :
+           (g_r128.bpp == 16U ? R128_GMC_DST_16BPP : R128_GMC_DST_32BPP);
 }
 
 static uint8_t r128_rgb_to_332(uint32_t rgb) {
@@ -380,6 +466,7 @@ static uint32_t r128_native_color(uint32_t rgb) {
         uint32_t index = r128_rgb_to_332(rgb);
         return index | (index << 8) | (index << 16) | (index << 24);
     }
+    if(g_r128.bpp==16U) {uint32_t c=bk_rgb565_encode(rgb);return c|(c<<16);}
     return rgb & 0x00FFFFFFU;
 }
 
@@ -393,6 +480,8 @@ static bool r128_pointer_is_vram(const void *pointer) {
 static void r128_copy_dwords_to_vram(volatile uint32_t *destination,
                                      const uint32_t *source,
                                      uint32_t count) {
+    uint64_t started = perfmon_scope_begin();
+    uint32_t bytes = count * 4U;
     uint32_t *dst = (uint32_t *)(uintptr_t)destination;
     const uint32_t *src = source;
 
@@ -401,6 +490,8 @@ static void r128_copy_dwords_to_vram(volatile uint32_t *destination,
     __asm__ volatile ("cld; rep movsl"
                       : "+D"(dst), "+S"(src), "+c"(count)
                       : : "memory");
+    perfmon_scope_end(PERF_SCOPE_ATI_COPY_2D, started);
+    perfmon_scope_note(PERF_SCOPE_ATI_COPY_2D, bytes, 0U, 0U);
 }
 
 static bool r128_engine_reset(void);
@@ -493,34 +584,51 @@ static uint32_t r128_post_bits(uint32_t divisor) {
     }
 }
 
-static bool r128_wait_fifo(uint32_t entries) {
-    for (uint32_t i = 0; i < R128_TIMEOUT; i++) {
-        if ((r128_read(R128_GUI_STAT) & R128_GUI_FIFOCNT_MASK) >= entries)
-            return true;
+static bool r128_perf_poll(uint32_t reg, uint32_t free_mask, uint32_t slots,
+                           uint32_t busy_mask, perf_scope_id_t scope) {
+    uint64_t started = perfmon_scope_begin();
+    uint32_t polls = 0U;
+    /* Bound MMIO stalls in real time. Keep the graphics domain held: yielding
+     * here could let another task alter an in-flight 2D command or staging tile.
+     * The iteration limit also covers early boot with interrupts disabled. */
+    uint32_t first_tick = pit_get_ticks();
+    uint32_t deadline_ticks = pit_get_frequency_hz() / 10U;
+    if (!deadline_ticks) deadline_ticks = 1U;
+    bool ok = false;
+    while (polls < R128_TIMEOUT) {
+        uint32_t stat = r128_read(reg);
+        polls++;
+        if ((stat & free_mask) >= slots && !(stat & busy_mask)) {
+            ok = true;
+            break;
+        }
+        if ((polls & 4095U) == 0U) {
+            if (pit_get_ticks() - first_tick >= deadline_ticks) break;
+        }
         __asm__ volatile ("pause");
     }
-    return false;
+    perfmon_scope_end(scope, started);
+    perfmon_scope_note(scope, 0U, polls, !ok);
+    return ok;
+}
+
+static bool r128_wait_fifo(uint32_t entries) {
+    return r128_perf_poll(R128_GUI_STAT, R128_GUI_FIFOCNT_MASK, entries,
+                          0U, PERF_SCOPE_ATI_FIFO_2D);
 }
 
 static bool r128_flush_pixel_cache(void) {
     uint32_t value = r128_read(R128_PC_NGUI_CTLSTAT);
     value = (value & ~R128_PC_FLUSH_ALL) | R128_PC_FLUSH_ALL;
     r128_write(R128_PC_NGUI_CTLSTAT, value);
-    for (uint32_t i = 0; i < R128_TIMEOUT; i++) {
-        if (!(r128_read(R128_PC_NGUI_CTLSTAT) & R128_PC_BUSY)) return true;
-        __asm__ volatile ("pause");
-    }
-    return false;
+    return r128_perf_poll(R128_PC_NGUI_CTLSTAT, 0U, 0U,
+                          R128_PC_BUSY, PERF_SCOPE_ATI_CACHE_2D);
 }
 
 static bool r128_wait_idle_raw(void) {
-    if (!r128_wait_fifo(64U)) return false;
-    for (uint32_t i = 0; i < R128_TIMEOUT; i++) {
-        if (!(r128_read(R128_GUI_STAT) & R128_GUI_ACTIVE))
-            return r128_flush_pixel_cache();
-        __asm__ volatile ("pause");
-    }
-    return false;
+    return r128_wait_fifo(64U) &&
+           r128_perf_poll(R128_GUI_STAT, 0U, 0U, R128_GUI_ACTIVE,
+                          PERF_SCOPE_ATI_IDLE_2D) && r128_flush_pixel_cache();
 }
 
 static bool r128_fail_acceleration(const char *where) {
@@ -616,7 +724,7 @@ static bool r128_program_2d_context(void) {
     uint32_t datatype;
     uint32_t pitch_units = r128_pitch_units();
 
-    if (!pitch_units || (g_r128.bpp != 8U && g_r128.bpp != 32U))
+    if (!pitch_units || (g_r128.bpp != 8U && g_r128.bpp != 16U && g_r128.bpp != 32U))
         return false;
 
     /* A 3D client can leave PM4 in 192PIO. Stop the micro-engine without a
@@ -657,7 +765,7 @@ static bool r128_program_2d_context(void) {
 static bool r128_engine_init(void) {
     uint32_t pitch_units = r128_pitch_units();
 
-    if (!pitch_units || (g_r128.bpp != 8U && g_r128.bpp != 32U)) {
+    if (!pitch_units || (g_r128.bpp != 8U && g_r128.bpp != 16U && g_r128.bpp != 32U)) {
         kprintf("[ATIR128:TRACE] ENGINE reject bpp=%u pitch=%u units=%u\n",
                 (uint32_t)g_r128.bpp, (uint32_t)g_r128.pitch, pitch_units);
         return false;
@@ -721,6 +829,257 @@ static bool r128_find_device(void) {
     return false;
 }
 
+static uint16_t r128_vbios_read16(const volatile uint8_t *rom,
+                                    uint32_t offset) {
+    return (uint16_t)rom[offset] |
+           (uint16_t)((uint16_t)rom[offset + 1U] << 8);
+}
+
+static uint32_t r128_vbios_pixel_clock(void) {
+    const volatile uint8_t *rom =
+        (const volatile uint8_t *)(uintptr_t)R128_VBIOS_BASE;
+    uint32_t header, pll, reference, divisor, feedback, post, clock;
+    if (rom[0] != 0x55U || rom[1] != 0xAAU) return 0U;
+    header = r128_vbios_read16(rom, 0x48U);
+    if (!header || header + 0x31U >= R128_VBIOS_SCAN_SIZE) return 0U;
+    pll = r128_vbios_read16(rom, header + 0x30U);
+    if (!pll || pll + 0x0FU >= R128_VBIOS_SCAN_SIZE) return 0U;
+    reference = (uint32_t)r128_vbios_read16(rom, pll + 0x0EU) * 10U;
+    divisor = g_r128.saved_ppll_ref_div & 0x3FFU;
+    feedback = g_r128.saved_ppll_active_div & R128_PPLL_FB3_DIV_MASK;
+    post = r128_post_divisor(g_r128.saved_ppll_active_div);
+    if (reference < 10000U || reference > 50000U ||
+        !divisor || !feedback || !post) return 0U;
+    clock = (reference * feedback + divisor * post / 2U) / (divisor * post);
+    return clock >= 10000U && clock <= 200000U ? clock : 0U;
+}
+
+static void r128_vbios_pll_limits(void) {
+    const volatile uint8_t *rom=(const volatile uint8_t *)(uintptr_t)R128_VBIOS_BASE;
+    /* Conservative Rage128 limits also used by xf86-video-r128 without ROM. */
+    g_r128.pll_min_khz=125000U;g_r128.pll_max_khz=250000U;
+    if(rom[0]!=0x55U || rom[1]!=0xAAU)return;
+    uint32_t header=r128_vbios_read16(rom,0x48U);
+    if(!header || header+0x31U>=R128_VBIOS_SCAN_SIZE)return;
+    uint32_t pll=r128_vbios_read16(rom,header+0x30U);
+    if(!pll || pll+0x19U>=R128_VBIOS_SCAN_SIZE)return;
+    uint32_t min=r128_vbios_read16(rom,pll+0x12U)|((uint32_t)r128_vbios_read16(rom,pll+0x14U)<<16);
+    uint32_t max=r128_vbios_read16(rom,pll+0x16U)|((uint32_t)r128_vbios_read16(rom,pll+0x18U)<<16);
+    if(min>=5000U && min<=30000U && max>min && max<=50000U) {
+        g_r128.pll_min_khz=min*10U;g_r128.pll_max_khz=max*10U;
+    }
+}
+
+static bool r128_detect_panel_vbios(uint16_t *width_out,
+                                    uint16_t *height_out) {
+    static const uint8_t signature[8] = {
+        'M', '3', ' ', ' ', ' ', ' ', ' ', ' '
+    };
+    const volatile uint8_t *rom =
+        (const volatile uint8_t *)(uintptr_t)R128_VBIOS_BASE;
+
+    /* The VGA option ROM must start with the standard 55 AA signature. */
+    if (rom[0] != 0x55U || rom[1] != 0xAAU) {
+        kprintf("[ATIR128:TRACE] PANEL VBIOS sin firma 55AA en C0000\n");
+        return false;
+    }
+
+    for (uint32_t i = 4U;
+         i + sizeof(signature) <= R128_VBIOS_SCAN_SIZE; i++) {
+        bool match = true;
+        uint32_t table = 0U;
+        uint32_t width;
+        uint32_t height;
+
+        for (uint32_t j = 0U; j < sizeof(signature); j++) {
+            if (rom[i + j] != signature[j]) {
+                match = false;
+                break;
+            }
+        }
+        if (!match) continue;
+
+        /* M3 identifies a header, not the panel record itself. The header
+         * starts two bytes earlier and contains a list of ROM offsets. */
+        for (uint32_t slot = i - 2U + 20U;
+             slot < i - 2U + 84U && slot + 1U < R128_VBIOS_SCAN_SIZE;
+             slot += 2U) {
+            table = r128_vbios_read16(rom, slot);
+            if (table) break;
+        }
+        if (!table || table + R128_VBIOS_PANEL_Y_OFFSET + 1U >=
+                      R128_VBIOS_SCAN_SIZE) continue;
+        width = r128_vbios_read16(rom, table + R128_VBIOS_PANEL_X_OFFSET);
+        height = r128_vbios_read16(rom, table + R128_VBIOS_PANEL_Y_OFFSET);
+
+        /* Accept only a mode we actually know how to program and never let a
+         * corrupt/shadowed ROM shrink the current firmware scanout. */
+        if (width < g_r128.width || height < g_r128.height ||
+            width > R128_MAX_COORD || height > R128_MAX_COORD ||
+            !r128_find_mode((uint16_t)width, (uint16_t)height)) {
+            kprintf("[ATIR128:TRACE] PANEL VBIOS M3 candidato invalido %ux%u @%x\n",
+                    width, height, i);
+            continue;
+        }
+
+        g_r128.panel_vbios_offset=table;
+        if (width_out) *width_out = (uint16_t)width;
+        if (height_out) *height_out = (uint16_t)height;
+        kprintf("[ATIR128:TRACE] PANEL VBIOS M3 @%x -> %ux%u\n",
+                i, width, height);
+        return true;
+    }
+
+    kprintf("[ATIR128:TRACE] PANEL VBIOS: tabla M3 no encontrada\n");
+    return false;
+}
+
+/* M3 panel mode records are indexed from panel_table+64. Decode bounded
+ * records as described by xf86-video-r128 R128DoValidMode. Accept only records
+ * whose scanout dimensions match our logical framebuffer; expanded records
+ * for another geometry need a different scaler/CRTC integration. */
+static bool r128_panel_mode(uint16_t width,uint16_t height,r128_mode_t *out) {
+    const volatile uint8_t *rom=(const volatile uint8_t *)(uintptr_t)R128_VBIOS_BASE;
+    uint32_t table=g_r128.panel_vbios_offset;
+    if(!table || !out || rom[0]!=0x55U || rom[1]!=0xAAU)return false;
+    for(uint32_t slot=0;slot<64U;slot++) {
+        uint32_t at=table+64U+slot*2U;
+        if(at+1U>=R128_VBIOS_SCAN_SIZE)break;
+        uint32_t entry=r128_vbios_read16(rom,at);
+        if(!entry)break;
+        if(entry+8U>=R128_VBIOS_SCAN_SIZE)continue;
+        if(r128_vbios_read16(rom,entry)!=width || r128_vbios_read16(rom,entry+2U)!=height)continue;
+        uint32_t timing=r128_vbios_read16(rom,entry+5U);
+        if(!timing)timing=entry+9U;
+        if(timing+20U>=R128_VBIOS_SCAN_SIZE)continue;
+        const r128_mode_t *fallback=r128_find_mode(width,height);
+        if(!fallback)return false;
+        r128_mode_t mode=*fallback;
+        mode.pixel_khz=(uint32_t)r128_vbios_read16(rom,timing)*10U;
+        mode.h_total=((r128_vbios_read16(rom,timing+8U)&511U)+1U)*8U;
+        mode.width=((r128_vbios_read16(rom,timing+10U)&511U)+1U)*8U;
+        mode.h_sync_start=((r128_vbios_read16(rom,timing+12U)&511U)+1U)*8U;
+        /* BIOS horizontal widths are character-clock units, like CRTC. */
+        mode.h_sync_end=mode.h_sync_start+(rom[timing+14U]&31U)*8U;
+        mode.v_total=(r128_vbios_read16(rom,timing+15U)&2047U)+1U;
+        mode.height=(r128_vbios_read16(rom,timing+17U)&2047U)+1U;
+        uint32_t vsync=r128_vbios_read16(rom,timing+19U);
+        mode.v_sync_start=(vsync&2047U)+1U;
+        mode.v_sync_end=mode.v_sync_start+((vsync>>11)&31U);
+        uint32_t pixels=(uint32_t)mode.h_total*mode.v_total;
+        if(mode.width!=width || mode.height!=height || mode.pixel_khz<10000U ||
+           mode.pixel_khz>200000U || mode.h_total<=width || mode.v_total<=height ||
+           mode.h_sync_start<width || mode.h_sync_end<=mode.h_sync_start ||
+           mode.h_sync_end>mode.h_total || mode.v_sync_start<height ||
+           mode.v_sync_end<=mode.v_sync_start || mode.v_sync_end>mode.v_total ||
+           mode.pixel_khz*1000U<pixels*40U || mode.pixel_khz*1000U>pixels*100U)continue;
+        *out=mode;return true;
+    }
+    return false;
+}
+
+static bool r128_detect_panel_native(uint16_t *width_out,
+                                      uint16_t *height_out) {
+    uint32_t hreg = r128_read(R128_FP_HORZ_STRETCH);
+    uint32_t vreg = r128_read(R128_FP_VERT_STRETCH);
+    uint32_t lvds = r128_read(R128_LVDS_GEN_CNTL);
+    uint32_t ext = r128_read(R128_CRTC_EXT_CNTL);
+    uint32_t width;
+    uint32_t height;
+
+    /* Rage128 stores panel width as (pixels / 8) - 1 and panel height as
+     * lines - 1. Only trust these fields while the flat-panel/LVDS path is
+     * actually enabled; otherwise zeroed CRT registers decode as 8x1. */
+    if (!(lvds & (R128_LVDS_ON | R128_LVDS_EN | R128_LVDS_DIGON)) &&
+        !(ext & (R128_FP_OUT_EN | R128_FP_ACTIVE)))
+        return false;
+
+    width = ((((hreg & R128_HORZ_PANEL_SIZE) >>
+               R128_HORZ_PANEL_SHIFT) + 1U) * 8U);
+    height = (((vreg & R128_VERT_PANEL_SIZE) >>
+               R128_VERT_PANEL_SHIFT) + 1U);
+
+    /* Reject obviously stale/nonsensical register contents and never claim
+     * that the physical panel is smaller than the firmware scanout. */
+    if (width < 320U || height < 200U ||
+        width > R128_MAX_COORD || height > R128_MAX_COORD ||
+        width < g_r128.width || height < g_r128.height ||
+        !r128_find_mode((uint16_t)width, (uint16_t)height))
+        return false;
+
+    if (width_out) *width_out = (uint16_t)width;
+    if (height_out) *height_out = (uint16_t)height;
+    kprintf("[ATIR128:TRACE] PANEL regs h=%x v=%x lvds=%x ext=%x -> %ux%u\n",
+            hreg, vreg, lvds, ext, width, height);
+    return true;
+}
+
+static bool r128_program_panel_scaler(const r128_mode_t *mode) {
+    uint32_t h;
+    uint32_t v;
+    uint32_t hratio;
+    uint32_t vratio;
+
+    if (!g_r128.panel_native_valid || !mode ||
+        !g_r128.native_width || !g_r128.native_height)
+        return true;
+    if (mode->width > g_r128.native_width ||
+        mode->height > g_r128.native_height)
+        return false;
+
+    hratio = ((uint32_t)mode->width * R128_HORZ_STRETCH_RATIO_MAX +
+              g_r128.native_width / 2U) / g_r128.native_width;
+    vratio = ((uint32_t)mode->height * R128_VERT_STRETCH_RATIO_MAX +
+              g_r128.native_height / 2U) / g_r128.native_height;
+    if (!hratio || hratio > R128_HORZ_STRETCH_RATIO_MAX ||
+        !vratio || vratio > R128_VERT_STRETCH_RATIO_MAX)
+        return false;
+
+    h = g_r128.saved_fp_horz_stretch;
+    h &= ~(R128_HORZ_STRETCH_RATIO_MASK |
+           R128_HORZ_STRETCH_BLEND | R128_HORZ_STRETCH_ENABLE |
+           R128_HORZ_AUTO_RATIO_FIX_EN | R128_HORZ_PANEL_SIZE);
+    h |= ((g_r128.native_width / 8U - 1U) << R128_HORZ_PANEL_SHIFT) &
+         R128_HORZ_PANEL_SIZE;
+    h |= hratio & R128_HORZ_STRETCH_RATIO_MASK;
+    if (mode->width != g_r128.native_width)
+        h |= R128_HORZ_STRETCH_BLEND | R128_HORZ_STRETCH_ENABLE;
+
+    v = g_r128.saved_fp_vert_stretch;
+    v &= ~((R128_VERT_STRETCH_RATIO_MASK << R128_VERT_STRETCH_RATIO_SHIFT) |
+           R128_VERT_STRETCH_ENABLE | R128_VERT_STRETCH_BLEND |
+           R128_VERT_AUTO_RATIO_EN | R128_VERT_PANEL_SIZE);
+    v |= ((g_r128.native_height - 1U) << R128_VERT_PANEL_SHIFT) &
+         R128_VERT_PANEL_SIZE;
+    v |= (vratio & R128_VERT_STRETCH_RATIO_MASK) <<
+         R128_VERT_STRETCH_RATIO_SHIFT;
+    if (mode->height != g_r128.native_height)
+        v |= R128_VERT_STRETCH_ENABLE | R128_VERT_STRETCH_BLEND;
+
+    r128_write(R128_FP_HORZ_STRETCH, h);
+    r128_write(R128_FP_VERT_STRETCH, v);
+
+    /* Keep the FP shadow timing coherent with CRTC1. This mirrors the
+     * long-standing Rage128 RMX path and avoids a stale 800x600 shadow when
+     * the internal 1024x768 panel is selected. */
+    r128_write(R128_FP_CRTC_H_TOTAL_DISP, r128_read(R128_CRTC_H_TOTAL_DISP));
+    r128_write(R128_FP_CRTC_V_TOTAL_DISP, r128_read(R128_CRTC_V_TOTAL_DISP));
+    r128_write(R128_FP_H_SYNC_STRT_WID, r128_read(R128_CRTC_H_SYNC_STRT_WID));
+    r128_write(R128_FP_V_SYNC_STRT_WID, r128_read(R128_CRTC_V_SYNC_STRT_WID));
+    /* All supported modes are progressive and driven by CRTC1. Firmware
+     * half-clock/shadow selections belong to its boot mode, not the new one.
+     * Preserve panel power/backlight bits while selecting coherent timings. */
+    r128_write(R128_FP_GEN_CNTL,
+        (g_r128.saved_fp_gen_cntl & ~(R128_FP_SEL_CRTC2 |
+         R128_FP_USE_SHADOW_VEND | R128_FP_USE_SHADOW_ROWCUR |
+         R128_FP_HORZ_DIV2_EN | R128_FP_HOR_CRT_DIV2_DIS |
+         R128_FP_CRT_SYNC_SEL | R128_FP_USE_SHADOW_EN)) |
+         R128_FP_DONT_SHADOW_VPAR | R128_FP_DONT_SHADOW_HEND);
+    r128_write(R128_LVDS_GEN_CNTL,
+               g_r128.saved_lvds_gen_cntl & ~R128_LVDS_SEL_CRTC2);
+    return true;
+}
+
 static void r128_save_display(void) {
     const r128_mode_t *boot_mode;
     if (g_r128.display_saved) return;
@@ -733,8 +1092,19 @@ static void r128_save_display(void) {
     g_r128.saved_crtc_offset = r128_read(R128_CRTC_OFFSET);
     g_r128.saved_crtc_offset_cntl = r128_read(R128_CRTC_OFFSET_CNTL);
     g_r128.saved_crtc_pitch = r128_read(R128_CRTC_PITCH);
+    g_r128.saved_fp_crtc_h_total_disp = r128_read(R128_FP_CRTC_H_TOTAL_DISP);
+    g_r128.saved_fp_gen_cntl = r128_read(R128_FP_GEN_CNTL);
+    g_r128.saved_fp_crtc_v_total_disp = r128_read(R128_FP_CRTC_V_TOTAL_DISP);
+    g_r128.saved_fp_h_sync_strt_wid = r128_read(R128_FP_H_SYNC_STRT_WID);
+    g_r128.saved_fp_v_sync_strt_wid = r128_read(R128_FP_V_SYNC_STRT_WID);
+    g_r128.saved_fp_horz_stretch = r128_read(R128_FP_HORZ_STRETCH);
+    g_r128.saved_fp_vert_stretch = r128_read(R128_FP_VERT_STRETCH);
+    g_r128.saved_lvds_gen_cntl = r128_read(R128_LVDS_GEN_CNTL);
     g_r128.saved_dda_config = r128_read(R128_DDA_CONFIG);
     g_r128.saved_dda_on_off = r128_read(R128_DDA_ON_OFF);
+    g_r128.saved_clock_cntl_index = r128_read(R128_CLOCK_CNTL_INDEX);
+    g_r128.saved_ppll_active_div = r128_pll_read(4U +
+        ((g_r128.saved_clock_cntl_index >> 8) & 3U));
     g_r128.saved_ppll_cntl = r128_pll_read(R128_PPLL_CNTL);
     g_r128.saved_ppll_ref_div = r128_pll_read(R128_PPLL_REF_DIV);
     g_r128.saved_ppll_div_3 = r128_pll_read(R128_PPLL_DIV_3);
@@ -742,13 +1112,26 @@ static void r128_save_display(void) {
     g_r128.saved_htotal_cntl = r128_pll_read(R128_HTOTAL_CNTL);
     boot_mode = r128_find_mode(g_r128.width, g_r128.height);
     g_r128.current_pixel_khz = boot_mode ? boot_mode->pixel_khz : 0U;
+    /* A scaled LCD boot mode may retain the panel's PLL clock. Derive the
+     * saved clock from its actual dividers instead of assuming VGA timings. */
+    r128_vbios_pll_limits();
+    uint32_t firmware_clock = r128_vbios_pixel_clock();
+    if (firmware_clock) g_r128.current_pixel_khz = firmware_clock;
     g_r128.native_pixel_khz = g_r128.current_pixel_khz;
     g_r128.native_width = g_r128.width;
     g_r128.native_height = g_r128.height;
+    g_r128.panel_native_vbios = false;
+    g_r128.panel_native_valid = r128_detect_panel_vbios(
+        &g_r128.native_width, &g_r128.native_height);
+    g_r128.panel_native_vbios = g_r128.panel_native_valid;
+    if (!g_r128.panel_native_valid) {
+        g_r128.panel_native_valid = r128_detect_panel_native(
+            &g_r128.native_width, &g_r128.native_height);
+    }
     g_r128.direct_modeset_ok = boot_mode != NULL &&
-        (g_r128.bpp == 8U || g_r128.bpp == 32U) &&
-        (g_r128.saved_ppll_div_3 & R128_PPLL_FB3_DIV_MASK) != 0U &&
-        r128_post_divisor(g_r128.saved_ppll_div_3) != 0U &&
+        (g_r128.bpp == 8U || g_r128.bpp == 16U || g_r128.bpp == 32U) &&
+        (g_r128.saved_ppll_active_div & R128_PPLL_FB3_DIV_MASK) != 0U &&
+        r128_post_divisor(g_r128.saved_ppll_active_div) != 0U &&
         (g_r128.saved_dda_config & R128_DDA_XFER_MASK) != 0U &&
         (g_r128.saved_dda_on_off & 0xFFFFU) != 0U;
     g_r128.display_saved = true;
@@ -761,8 +1144,8 @@ static void r128_save_display(void) {
 }
 
 static bool r128_program_pll(uint32_t pixel_khz) {
-    uint32_t old_feedback = g_r128.saved_ppll_div_3 & R128_PPLL_FB3_DIV_MASK;
-    uint32_t old_post = r128_post_divisor(g_r128.saved_ppll_div_3);
+    uint32_t old_feedback = g_r128.saved_ppll_active_div & R128_PPLL_FB3_DIV_MASK;
+    uint32_t old_post = r128_post_divisor(g_r128.saved_ppll_active_div);
     uint32_t target_post = old_post;
     uint32_t target_feedback;
     uint32_t post_bits;
@@ -777,10 +1160,14 @@ static bool r128_program_pll(uint32_t pixel_khz) {
     native_vco = (uint64_t)g_r128.native_pixel_khz * old_post;
     for (uint32_t i = 0; i < sizeof(post_candidates); i++) {
         uint64_t candidate_vco = (uint64_t)pixel_khz * post_candidates[i];
+        uint32_t min=g_r128.pll_min_khz?g_r128.pll_min_khz:125000U;
+        uint32_t max=g_r128.pll_max_khz?g_r128.pll_max_khz:250000U;
+        if(candidate_vco<min || candidate_vco>max)continue;
         uint64_t error = candidate_vco > native_vco ?
                          candidate_vco - native_vco : native_vco - candidate_vco;
         if (error < best_error) { best_error = error; target_post = post_candidates[i]; }
     }
+    if(best_error==~(uint64_t)0)return false;
     target_feedback = (uint32_t)(((uint64_t)old_feedback * pixel_khz * target_post +
                                  ((uint64_t)g_r128.native_pixel_khz * old_post) / 2U) /
                                 ((uint64_t)g_r128.native_pixel_khz * old_post));
@@ -808,7 +1195,9 @@ static bool r128_program_pll(uint32_t pixel_khz) {
     r128_spin_delay(500000U);
     r128_pll_write(R128_VCLK_ECP_CNTL,
                    (vclk & ~R128_VCLK_SRC_SEL_MASK) | R128_VCLK_SRC_SEL_PPLLCLK);
-    r128_write(R128_CLOCK_CNTL_INDEX, clock_index);
+    /* DIV3 contains the new clock. Restoring the firmware divider selector
+     * here could instead select an untouched DIV0/1/2 and corrupt scanout. */
+    r128_write(R128_CLOCK_CNTL_INDEX, clock_index | R128_PLL_DIV_SEL);
     return true;
 }
 
@@ -836,7 +1225,7 @@ static bool r128_program_dda(uint32_t pixel_khz) {
     uint32_t new_onoff;
 
     if (!pixel_khz || !g_r128.native_pixel_khz ||
-        (g_r128.bpp != 8U && g_r128.bpp != 32U) ||
+        (g_r128.bpp != 8U && g_r128.bpp != 16U && g_r128.bpp != 32U) ||
         !xfer || !old_on || !old_off || precision > 11U)
         return false;
     shift = 11U - precision;
@@ -845,21 +1234,27 @@ static bool r128_program_dda(uint32_t pixel_khz) {
         return false;
     latency = (old_on >> shift) - old_xfer_integer;
 
-    new_xfer = (uint32_t)(((uint64_t)xfer * g_r128.native_pixel_khz +
-                           pixel_khz / 2U) / pixel_khz);
-    new_xfer_integer = (uint32_t)(((uint64_t)old_xfer_integer *
-                                   g_r128.native_pixel_khz + pixel_khz / 2U) /
-                                  pixel_khz);
-    new_off = (uint32_t)(((uint64_t)old_off * g_r128.native_pixel_khz +
-                          pixel_khz / 2U) / pixel_khz);
+    uint32_t saved_bytes=g_r128.firmware_info_valid ?
+        (g_r128.firmware_info.bpp+7U)/8U :
+        (((g_r128.saved_crtc_gen_cntl>>8)&7U)==2U?1U:
+         (((g_r128.saved_crtc_gen_cntl>>8)&7U)==4U?2U:4U));
+    uint64_t numerator=(uint64_t)g_r128.native_pixel_khz*saved_bytes;
+    uint64_t denominator=(uint64_t)pixel_khz*r128_bytes_per_pixel();
+    new_xfer_integer=(uint32_t)(((uint64_t)old_xfer_integer*numerator+denominator/2U)/denominator);
+    if(!new_xfer_integer)return false;
+    uint32_t new_precision=1U;
+    for(uint32_t value=new_xfer_integer;value;value>>=1)new_precision++;
+    if(new_precision>11U)return false;
+    uint32_t new_shift=11U-new_precision;
+    uint64_t divisor=denominator<<shift;
+    new_xfer=(uint32_t)((((uint64_t)xfer*numerator<<new_shift)+divisor/2U)/divisor);
+    new_off=(uint32_t)((((uint64_t)old_off*numerator<<new_shift)+divisor/2U)/divisor);
     if (!new_xfer || new_xfer > R128_DDA_XFER_MASK || !new_off ||
-        new_off > 0xFFFFU)
-        return false;
-    new_on = (latency + new_xfer_integer) << shift;
-    if (!new_on || new_on > 0xFFFFU || new_on + loop >= new_off)
-        return false;
-
-    new_cfg = (cfg & ~R128_DDA_XFER_MASK) | new_xfer;
+        new_off > 0xFFFFU)return false;
+    new_on = (latency + new_xfer_integer) << new_shift;
+    if (!new_on || new_on > 0xFFFFU || new_on + loop >= new_off)return false;
+    new_cfg = (cfg & ~(R128_DDA_XFER_MASK|R128_DDA_PRECISION_MASK)) |
+              new_xfer | (new_precision<<16);
     new_onoff = (new_on << 16) | new_off;
     r128_write(R128_DDA_CONFIG, new_cfg);
     r128_write(R128_DDA_ON_OFF, new_onoff);
@@ -879,8 +1274,7 @@ static bool r128_write_mode_registers(const r128_mode_t *mode, uint16_t pitch) {
     uint32_t bytes_per_pixel = r128_bytes_per_pixel();
     uint32_t pitch_pixels;
     uint32_t pitch_units;
-    uint32_t pixel_width = g_r128.bpp == 8U ? R128_GMC_DST_8BPP :
-                           R128_GMC_DST_32BPP;
+    uint32_t pixel_width = r128_gmc_dst_datatype();
     if (!mode || !bytes_per_pixel ||
         pitch < mode->width * bytes_per_pixel || (pitch & 31U)) return false;
     pitch_pixels = pitch / bytes_per_pixel;
@@ -890,12 +1284,16 @@ static bool r128_write_mode_registers(const r128_mode_t *mode, uint16_t pitch) {
     hsync_width = (mode->h_sync_end - mode->h_sync_start) / 8U;
     if (!hsync_width) hsync_width = 1U;
     if (hsync_width > 0x3FU) hsync_width = 0x3FU;
-    hsync_start = mode->h_sync_start - 8U + 5U;
+    hsync_start = mode->h_sync_start - 8U +
+                  (g_r128.bpp == 16U ? 9U :
+                   (g_r128.bpp == 8U && g_r128.panel_native_valid ? 17U : 5U));
     vsync_width = mode->v_sync_end - mode->v_sync_start;
     if (!vsync_width) vsync_width = 1U;
     if (vsync_width > 0x1FU) vsync_width = 0x1FU;
 
-    gen = (g_r128.saved_crtc_gen_cntl & ~R128_CRTC_PIX_WIDTH_MASK) |
+    gen = (g_r128.saved_crtc_gen_cntl & ~(R128_CRTC_PIX_WIDTH_MASK |
+           R128_CRTC_DBL_SCAN_EN | R128_CRTC_INTERLACE_EN |
+           R128_CRTC_CSYNC_EN)) |
           R128_CRTC_EXT_DISP_EN | R128_CRTC_EN | pixel_width;
     r128_write(R128_CRTC_GEN_CNTL, gen);
     r128_write(R128_CRTC_H_TOTAL_DISP,
@@ -943,8 +1341,17 @@ static bool r128_restore_display(gfx_info_t *info) {
     r128_write(R128_CRTC_OFFSET, g_r128.saved_crtc_offset);
     r128_write(R128_CRTC_OFFSET_CNTL, g_r128.saved_crtc_offset_cntl);
     r128_write(R128_CRTC_PITCH, g_r128.saved_crtc_pitch);
+    r128_write(R128_FP_CRTC_H_TOTAL_DISP, g_r128.saved_fp_crtc_h_total_disp);
+    r128_write(R128_FP_CRTC_V_TOTAL_DISP, g_r128.saved_fp_crtc_v_total_disp);
+    r128_write(R128_FP_H_SYNC_STRT_WID, g_r128.saved_fp_h_sync_strt_wid);
+    r128_write(R128_FP_V_SYNC_STRT_WID, g_r128.saved_fp_v_sync_strt_wid);
+    r128_write(R128_FP_HORZ_STRETCH, g_r128.saved_fp_horz_stretch);
+    r128_write(R128_FP_VERT_STRETCH, g_r128.saved_fp_vert_stretch);
+    r128_write(R128_FP_GEN_CNTL, g_r128.saved_fp_gen_cntl);
+    r128_write(R128_LVDS_GEN_CNTL, g_r128.saved_lvds_gen_cntl);
     r128_write(R128_CRTC_GEN_CNTL, g_r128.saved_crtc_gen_cntl);
     r128_write(R128_CRTC_EXT_CNTL, g_r128.saved_crtc_ext_cntl);
+    r128_write(R128_CLOCK_CNTL_INDEX, g_r128.saved_clock_cntl_index);
     if (g_r128.firmware_info_valid) {
         if (info) {
             *info = g_r128.firmware_info;
@@ -977,12 +1384,12 @@ static bool r128_validate_mode(const gfx_info_t *info) {
     uint32_t pitch_units;
 
     if (!info || info->mode != GFX_MODE_VESA_LFB ||
-        (info->bpp != 8U && info->bpp != 32U) ||
+        (info->bpp != 8U && info->bpp != 16U && info->bpp != 32U) ||
         !info->framebuffer || !info->width || !info->height ||
         info->width > R128_MAX_COORD || info->height > R128_MAX_COORD)
         return false;
 
-    bytes_per_pixel = info->bpp == 32U ? 4U : 1U;
+    bytes_per_pixel = (info->bpp + 7U) / 8U;
     if ((uint32_t)info->pitch < (uint32_t)info->width * bytes_per_pixel ||
         ((uint32_t)info->pitch % bytes_per_pixel) != 0U)
         return false;
@@ -1176,6 +1583,13 @@ static bool r128_activate(gfx_info_t *info, uint16_t preferred_width,
             g_r128.direct_modeset_ok ? "estandar a profundidad nativa" : "firmware protegido");
     kprintf("[ATIR128.DVR] compositor=RAM cacheada; present 32bpp=upload dirty + BitBlt VRAM->VRAM; Fill/BitBlt=%s\n",
             g_r128.accel_ok ? "GPU" : "inactivos");
+    kprintf("[ATIR128.DVR] silicon panel fix: boot=%ux%ux%u panel=%ux%u fuente=%s\n",
+            (uint32_t)info->width, (uint32_t)info->height,
+            (uint32_t)info->bpp, (uint32_t)g_r128.native_width,
+            (uint32_t)g_r128.native_height,
+            g_r128.panel_native_vbios ? "VBIOS M3" :
+            (g_r128.panel_native_valid ? "FP/LVDS regs" : "modo firmware"));
+    kprintf("[ATIR128.DVR] silicon perf: cursor HW ATI permitido; present staging asincrono\n");
     return true;
 }
 
@@ -1185,7 +1599,7 @@ static uint32_t r128_capabilities(void) {
     uint32_t surface_size;
     if (!g_r128.active) return 0U;
     caps = GFX_CAP_DIRTY_RECTS;
-    if (g_r128.bpp == 8U || g_r128.bpp == 32U)
+    if (g_r128.bpp == 8U || g_r128.bpp == 16U || g_r128.bpp == 32U)
         caps |= GFX_CAP_PRESENT_BUFFER;
     if (g_r128.accel_ok) {
         caps |= GFX_CAP_BITBLT | GFX_CAP_FILL | GFX_CAP_FILL_HW |
@@ -1200,6 +1614,8 @@ static uint32_t r128_capabilities(void) {
                     GFX_CAP_SURFACE_BLIT_HW;
         }
     }
+    if (g_r128.accel_ok && r128_staging_tile_layout(NULL, NULL))
+        caps |= GFX_CAP_PRESENT_VRAM_BLIT;
     /* Incluso con staging, los píxeles nacen en RAM y se suben por CPU. No
      * anunciar un mapa CPU de VRAM: en Mobility M3 sin write-combining eso
      * convierte todo el compositor en escrituras MMIO lentas. */
@@ -1254,15 +1670,24 @@ static bool r128_list_modes(gfx_display_mode_t *modes, uint32_t max_modes,
     uint32_t written = 0U;
     if (!count || !g_r128.active) return false;
 
-    for (uint32_t i = 0; i < sizeof(g_r128_modes) / sizeof(g_r128_modes[0]); i++) {
-        if (!r128_mode_allowed(&g_r128_modes[i])) continue;
-        if (modes && written < max_modes) {
-            modes[written].width = g_r128_modes[i].width;
-            modes[written].height = g_r128_modes[i].height;
-            modes[written].bpp = g_r128.bpp;
+    uint8_t previous_bpp=g_r128.bpp;
+    static const uint8_t depths[]={8U,16U,32U};
+    for(uint32_t d=0;d<sizeof(depths);d++) {
+        /* Switching to indexed color also needs a palette setup, so expose it
+         * only when the firmware booted indexed. True-color 16/32 can switch. */
+        if(depths[d]==8U && previous_bpp!=8U)continue;
+        g_r128.bpp=depths[d];
+        for (uint32_t i=0;i<sizeof(g_r128_modes)/sizeof(g_r128_modes[0]);i++) {
+            if(!r128_mode_allowed(&g_r128_modes[i]))continue;
+            if(modes && written<max_modes) {
+                modes[written].width=g_r128_modes[i].width;
+                modes[written].height=g_r128_modes[i].height;
+                modes[written].bpp=depths[d];
+            }
+            written++;
         }
-        written++;
     }
+    g_r128.bpp=previous_bpp;
     if (!written) {
         if (modes && max_modes) {
             modes[0].width = g_r128.width;
@@ -1275,6 +1700,39 @@ static bool r128_list_modes(gfx_display_mode_t *modes, uint32_t max_modes,
     return true;
 }
 
+/* Roll back to the last working mode, rather than always to boot geometry.
+ * The generic graphics core retains its previous info after a failed modeset. */
+static void r128_mode_checkpoint(r128_state_t *state,const gfx_info_t *info) {
+    *state=g_r128;
+    state->firmware_info=*info;state->firmware_info_valid=true;
+    state->saved_crtc_gen_cntl=r128_read(R128_CRTC_GEN_CNTL);
+    state->saved_crtc_ext_cntl=r128_read(R128_CRTC_EXT_CNTL);
+    state->saved_crtc_h_total_disp=r128_read(R128_CRTC_H_TOTAL_DISP);
+    state->saved_crtc_h_sync_strt_wid=r128_read(R128_CRTC_H_SYNC_STRT_WID);
+    state->saved_crtc_v_total_disp=r128_read(R128_CRTC_V_TOTAL_DISP);
+    state->saved_crtc_v_sync_strt_wid=r128_read(R128_CRTC_V_SYNC_STRT_WID);
+    state->saved_crtc_offset=r128_read(R128_CRTC_OFFSET);
+    state->saved_crtc_offset_cntl=r128_read(R128_CRTC_OFFSET_CNTL);
+    state->saved_crtc_pitch=r128_read(R128_CRTC_PITCH);
+    state->saved_fp_crtc_h_total_disp=r128_read(R128_FP_CRTC_H_TOTAL_DISP);
+    state->saved_fp_crtc_v_total_disp=r128_read(R128_FP_CRTC_V_TOTAL_DISP);
+    state->saved_fp_h_sync_strt_wid=r128_read(R128_FP_H_SYNC_STRT_WID);
+    state->saved_fp_v_sync_strt_wid=r128_read(R128_FP_V_SYNC_STRT_WID);
+    state->saved_fp_horz_stretch=r128_read(R128_FP_HORZ_STRETCH);
+    state->saved_fp_vert_stretch=r128_read(R128_FP_VERT_STRETCH);
+    state->saved_fp_gen_cntl=r128_read(R128_FP_GEN_CNTL);
+    state->saved_lvds_gen_cntl=r128_read(R128_LVDS_GEN_CNTL);
+    state->saved_dda_config=r128_read(R128_DDA_CONFIG);
+    state->saved_dda_on_off=r128_read(R128_DDA_ON_OFF);
+    state->saved_clock_cntl_index=r128_read(R128_CLOCK_CNTL_INDEX);
+    state->saved_ppll_cntl=r128_pll_read(R128_PPLL_CNTL);
+    state->saved_ppll_ref_div=r128_pll_read(R128_PPLL_REF_DIV);
+    state->saved_ppll_div_3=r128_pll_read(R128_PPLL_DIV_3);
+    state->saved_vclk_ecp_cntl=r128_pll_read(R128_VCLK_ECP_CNTL);
+    state->saved_htotal_cntl=r128_pll_read(R128_HTOTAL_CNTL);
+    state->native_pixel_khz=g_r128.current_pixel_khz;
+}
+
 static bool r128_set_mode(gfx_info_t *info, uint16_t width, uint16_t height,
                           uint8_t bpp) {
     const r128_mode_t *mode;
@@ -1282,16 +1740,25 @@ static bool r128_set_mode(gfx_info_t *info, uint16_t width, uint16_t height,
     uint32_t old_ext;
     if (!g_r128.active || !info) return false;
 
-    /* No cambie profundidad: los registros LVDS/DDA del Mobility M3 dependen
-     * de ella. Los cambios 8->8 y 32->32 conservan el estado validado BIOS. */
-    if (bpp != g_r128.bpp || (bpp != 8U && bpp != 32U)) return false;
-    if (width == g_r128.width && height == g_r128.height) return true;
-    mode = r128_find_mode(width, height);
-    if (!r128_mode_allowed(mode)) return false;
-    pitch = (uint16_t)r128_align_up((uint32_t)width *
-                                   r128_bytes_per_pixel(), 32U);
-
+    if(bpp!=8U && bpp!=16U && bpp!=32U)return false;
+    if(bpp==8U && g_r128.bpp!=8U)return false;
+    if(width==g_r128.width && height==g_r128.height && bpp==g_r128.bpp)return true;
+    mode=r128_find_mode(width,height);
+    r128_mode_t panel_mode;
+    if(r128_panel_mode(width,height,&panel_mode)) {
+        mode=&panel_mode;
+        kprintf("[ATIR128.DVR] LCD timings BIOS %ux%u clock=%u\n",(uint32_t)width,(uint32_t)height,mode->pixel_khz);
+    }
+    uint8_t old_bpp=g_r128.bpp;
+    g_r128.bpp=bpp;
+    bool allowed=r128_mode_allowed(mode);
+    pitch=(uint16_t)r128_align_up((uint32_t)width*r128_bytes_per_pixel(),32U);
+    g_r128.bpp=old_bpp;
+    if(!allowed)return false;
     (void)r128_wait_idle();
+    r128_state_t previous=g_r128,checkpoint;
+    uint32_t previous_overlay=r128_read(R128_OV0_SCALE_CNTL);
+    r128_mode_checkpoint(&checkpoint,info);
     r128_write(R128_CRTC_GEN_CNTL,
                r128_read(R128_CRTC_GEN_CNTL) & ~R128_CRTC_CUR_EN);
     r128_write(R128_OV0_SCALE_CNTL, 0U);
@@ -1300,14 +1767,14 @@ static bool r128_set_mode(gfx_info_t *info, uint16_t width, uint16_t height,
     r128_write(R128_CRTC_EXT_CNTL, old_ext | R128_CRTC_HSYNC_DIS |
                R128_CRTC_VSYNC_DIS | R128_CRTC_DISPLAY_DIS);
 
+    g_r128.bpp=bpp;
     if (!r128_program_pll(mode->pixel_khz) ||
         !r128_program_dda(mode->pixel_khz) ||
-        !r128_write_mode_registers(mode, pitch)) {
-        kprintf("[ATIR128.DVR] modeset %ux%u fallo; restaurando firmware\n",
+        !r128_write_mode_registers(mode, pitch) ||
+        !r128_program_panel_scaler(mode)) {
+        kprintf("[ATIR128.DVR] modeset %ux%u fallo; restaurando modo anterior\n",
                 (uint32_t)width, (uint32_t)height);
-        (void)r128_restore_display(info);
-        (void)r128_engine_init();
-        return false;
+        goto rollback;
     }
     r128_write(R128_CRTC_EXT_CNTL, old_ext & ~(R128_CRTC_HSYNC_DIS |
                R128_CRTC_VSYNC_DIS | R128_CRTC_DISPLAY_DIS));
@@ -1330,11 +1797,17 @@ static bool r128_set_mode(gfx_info_t *info, uint16_t width, uint16_t height,
     g_r128.accel_ok = true;
     if (!r128_engine_init()) {
         g_r128.accel_ok = false;
-        (void)r128_restore_display(info);
-        (void)r128_engine_init();
-        return false;
+        goto rollback;
     }
     return true;
+rollback:
+    g_r128=checkpoint;
+    (void)r128_restore_display(info);
+    g_r128=previous;
+    g_r128.engine_busy=false;
+    if(!r128_engine_init())g_r128.accel_ok=false;
+    r128_write(R128_OV0_SCALE_CNTL,previous_overlay);
+    return false;
 }
 
 static bool r128_emit_bitblt(const gfx_info_t *info,
@@ -1414,6 +1887,43 @@ static bool r128_prepare_staging_surface(void) {
     return true;
 }
 
+static bool r128_present_tiles(const gfx_info_t *info, const uint32_t *pixels,
+                               uint32_t source_pitch, const gfx_rect_t *rects,
+                               uint32_t rect_count) {
+    uint32_t offset, rows;
+    uint32_t pitch = g_r128.pitch / sizeof(uint32_t);
+    uint32_t pitch_offset;
+    volatile uint32_t *staging;
+    if (!r128_staging_tile_layout(&offset, &rows)) return false;
+    pitch_offset = (r128_pitch_units() << 21) | (offset >> 5);
+    staging = (volatile uint32_t *)(uintptr_t)(g_r128.fb_bar + offset);
+    for (uint32_t i = 0; i < rect_count; i++) {
+        int x = rects[i].x, y = rects[i].y, w = rects[i].w, h = rects[i].h;
+        if (!r128_clip_rect(info, &x, &y, &w, &h)) continue;
+        for (uint32_t done = 0; done < (uint32_t)h; done += rows) {
+            uint32_t height = (uint32_t)h - done;
+            if (height > rows) height = rows;
+            /* The GPU must finish reading this strip before it is reused. */
+            if (g_r128.engine_busy && !r128_wait_idle()) return false;
+            for (uint32_t row = 0; row < height; row++) {
+                const uint32_t *src=pixels+((uint32_t)y+done+row)*source_pitch+(uint32_t)x;
+                if(g_r128.bpp==16U)
+                    bk_rgb565_upload((volatile uint16_t *)(uintptr_t)
+                        (g_r128.fb_bar+offset+row*g_r128.pitch)+(uint32_t)x,src,(uint32_t)w);
+                else r128_copy_dwords_to_vram(staging+row*pitch+(uint32_t)x,src,(uint32_t)w);
+            }
+            __asm__ volatile ("" ::: "memory");
+            g_r128.stat_present_cpu_bytes += (uint32_t)w * height * r128_bytes_per_pixel();
+            if (!r128_emit_bitblt(info, pitch_offset, x, 0, x,
+                                  y + (int)done, w, (int)height,
+                                  GFX_ROP_COPY, false)) return false;
+        }
+    }
+    g_r128.stat_present_vram_calls++;
+    g_r128.stat_present_staging_calls++;
+    return true;
+}
+
 static bool r128_present_buffer(const gfx_info_t *info,
                                 const uint32_t *pixels,
                                 uint32_t source_pitch,
@@ -1427,9 +1937,13 @@ static bool r128_present_buffer(const gfx_info_t *info,
     if (fence_out) *fence_out = 0U;
     if (!g_r128.active || !info || !pixels || !rects || !rect_count ||
         source_pitch < info->width ||
-        (info->bpp != 8U && info->bpp != 32U))
+        (info->bpp != 8U && info->bpp != 16U && info->bpp != 32U))
         return false;
-    if (!r128_engine_acquire_2d()) return false;
+    uint64_t started = perfmon_scope_begin();
+    if (!r128_engine_acquire_2d()) {
+        perfmon_scope_end(PERF_SCOPE_ATI_PRESENT_2D, started);
+        return false;
+    }
 
     g_r128.stat_present_calls++;
     g_r128.stat_present_rects += rect_count;
@@ -1505,13 +2019,24 @@ static bool r128_present_buffer(const gfx_info_t *info,
                     break;
                 }
             }
-            if (submitted && r128_wait_idle()) {
+            if (submitted) {
+                /* Do not serialize CPU and 2D engine at the end of every GUI
+                 * frame. r128_emit_bitblt() marks engine_busy; the next staging
+                 * upload, gfx_flush(), fence, modeset or CPU fallback performs
+                 * the required barrier before touching shared VRAM again. */
                 g_r128.stat_present_vram_calls++;
                 g_r128.stat_present_staging_calls++;
                 result = true;
                 goto out;
             }
         }
+    }
+
+    if (!source_is_vram && (info->bpp == 16U || info->bpp == 32U) && g_r128.accel_ok &&
+        !g_r128.surface_used &&
+        r128_present_tiles(info, pixels, source_pitch, rects, rect_count)) {
+        result = true;
+        goto out;
     }
 
     /* Nunca hacer fallback CPU desde un puntero VRAM: leer VRAM y volver a
@@ -1546,7 +2071,12 @@ static bool r128_present_buffer(const gfx_info_t *info,
         for (int row = 0; row < h; row++) {
             const uint32_t *src = pixels +
                 (uint32_t)(y + row) * source_pitch + (uint32_t)x;
-            if (info->bpp == 8U) {
+            if (info->bpp == 16U) {
+                volatile uint16_t *dst=(volatile uint16_t *)(uintptr_t)
+                    (info->framebuffer+(uint32_t)(y+row)*info->pitch)+x;
+                bk_rgb565_upload(dst,src,(uint32_t)w);
+                g_r128.stat_present_cpu_bytes+=(uint32_t)w*2U;
+            } else if (info->bpp == 8U) {
                 volatile uint8_t *dst = (volatile uint8_t *)(uintptr_t)
                     (info->framebuffer + (uint32_t)(y + row) * info->pitch) + x;
                 int col = 0;
@@ -1577,6 +2107,8 @@ static bool r128_present_buffer(const gfx_info_t *info,
     result = true;
 out:
     r128_engine_release_2d();
+    perfmon_scope_end(PERF_SCOPE_ATI_PRESENT_2D, started);
+    perfmon_scope_note(PERF_SCOPE_ATI_PRESENT_2D, rect_count, 0U, 0U);
     return result;
 }
 
@@ -1804,6 +2336,8 @@ static uint32_t r128_bridge_reserved_vram_end(void) {
     uint32_t size;
     if (!g_r128.active) return 0U;
     if (r128_surface_layout(&offset, &size)) return offset + size;
+    if (r128_staging_tile_layout(&offset, &size))
+        return offset + size * g_r128.pitch;
     return r128_visible_end();
 }
 
@@ -1947,6 +2481,12 @@ static bool r128_overlay_put_locked(const gfx_info_t *info, const void *pixels,
     if (g_r128.surface_used &&
         g_r128.surface_offset + g_r128.surface_size > reserved_end)
         reserved_end = g_r128.surface_offset + g_r128.surface_size;
+    {
+        uint32_t tile_offset, tile_rows;
+        if (r128_staging_tile_layout(&tile_offset, &tile_rows) &&
+            tile_offset + tile_rows * g_r128.pitch > reserved_end)
+            reserved_end = tile_offset + tile_rows * g_r128.pitch;
+    }
     if (offset < reserved_end + R128_OVERLAY_MIN_FREE) return false;
     dst = (uint8_t *)(uintptr_t)(g_r128.fb_bar + offset);
     for (uint32_t y = 0; y < source_height; y++) {
@@ -2094,6 +2634,7 @@ const bk_driver_module_t *bleskernos_driver_query(void) {
     static const bk_driver_module_t module = {
         BK_DRIVER_ABI_VERSION,
         sizeof(bk_driver_module_t),
+        1U, 0U,
         "ati_rage128_mobility",
         "ATI Rage Mobility M3/LF: 2D/cursor nativo 8/32bpp, overlay y modeset seguro",
         ati_rage128_driver_init,

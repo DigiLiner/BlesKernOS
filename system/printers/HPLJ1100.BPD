@@ -1,0 +1,7 @@
+[Printer]
+Id=HPLJ1100
+Name=HP LaserJet 1100
+Language=PCL5
+Transport=LPT
+Port=LPT1
+DPI=600

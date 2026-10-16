@@ -1,0 +1,8 @@
+FAIL stale pre-wrap TLB acknowledged as current after wrap
+test: /tmp/bk-tlb-wrap-olw2lp04/test.c:52: main: Assertion `!ok' failed.
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/test_tlb_generation_wrap.py", line 58, in <module>
+    subprocess.run([str(binary)], check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/tmp/bk-tlb-wrap-olw2lp04/test']' died with <Signals.SIGABRT: 6>.

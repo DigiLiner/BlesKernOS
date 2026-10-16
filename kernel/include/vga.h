@@ -40,9 +40,18 @@ void vga_set_output_sink(vga_output_char_t output,
                          vga_output_clear_t clear,
                          void *context);
 
+/* Entrada de la terminal grafica asociada al mismo console_route que el sink.
+ * El frontend publica lineas aqui y SYS_READ(0, ...) las consume. */
+void vga_console_input_reset(void);
+bool vga_console_input_push(char character);
+int32_t vga_console_input_read(char *buffer, uint32_t length);
+
 /* Espejo en RAM del flujo de diagnostico que normalmente sale por COM1. */
+uint32_t vga_com1_tx_bytes(void);
+uint32_t vga_com1_timeout_count(void);
 uint32_t vga_com1_log_size(void);
 uint32_t vga_com1_log_dropped(void);
+char vga_com1_log_char_at(uint32_t index);
 bool vga_com1_log_save(const char *path);
 
 void kprintf(const char *fmt, ...);

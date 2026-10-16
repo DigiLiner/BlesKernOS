@@ -1,4 +1,4 @@
-#include "../math.h"
+#include "include/math.h"
 
 double floor(double x) {
     int i = (int)x;
@@ -76,12 +76,8 @@ double atan(double x) {
 }
 
 double sqrt(double x) {
-    double guess;
-
+    double result;
     if (x <= 0.0) return 0.0;
-    guess = x > 1.0 ? x : 1.0;
-    for (int i = 0; i < 10; i++) {
-        guess = 0.5 * (guess + x / guess);
-    }
-    return guess;
+    __asm__ ("fsqrt" : "=t" (result) : "0" (x));
+    return result;
 }

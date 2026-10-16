@@ -1,0 +1,243 @@
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=1572351 KiB top=1572736 KiB
+  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000
+  [MM] RAM usable: 1536 MB
+  [MM] Heap dinamico: 0x2000000 - 0x1ffe0000 (491392 KB)
+  [MM] VM frames: 0x1ffe0000 - 0x5ffe0000 (1048576 KiB, 262144 paginas)
+  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)
+  [MM] Vista PE fija: 0x400000 - 0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2000000-0x1ffe0000
+[COMPAT] perfil=normal RAM_top=1572736 KiB heap=491392 KiB tareas=128 CPU=fam6/mod122 GUI=60FPS TIMER=300Hz
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:EARLY] BIOS LFB 800x600x32 pitch=3200 fb=0xfd000000
+[BKBOOT t=0] STARTING KERNEL
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 5 dispositivos detectados
+  [LPT] no se detectaron puertos paralelos
+  [ATA] ata0: 1572864 sectores de 512 bytes
+  [ATA] ata0: read burst=16 sectores
+  [ATA] ata0: PIO read width=32 bits
+[ATA:PROBE] io=0x1f0 slave=1 ausente (status=0x0)
+[ATA:PROBE] io=0x170 slave=0 ausente (status=0x0)
+[ATA:PROBE] io=0x170 slave=1 ausente (status=0x0)
+  [ATA] canales IDE normalizados despues del probe
+  [ATA] ata0: QEMU PIIX DMA read/write enabled
+[BKBOOT t=167] STORAGE DRIVERS
+[BKBOOT t=167] MOUNTING FILESYSTEM
+[BKBOOT t=167] F8: RECOVERY MODE (2 SEC)
+[BOOT] Pulse F8 para entrar a recovery sin Vision ni servicios
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=1
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 1
+[FAT] dev[0]=ata0 tipo=1 sectores=1572864
+Intentando montar ata0...
+fat_set_active(ata0)
+No es particion, buscando ata0
+Dispositivo encontrado
+[BFS4:CACHE] slots=2048 bytes=8429568
+fat_try_mount_device OK
+fat_set_active OK
+Montado ata0 OK
+[VFS] /TEMP listo
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=5 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+[DVR] /SYSTEM/DRIVERS/USBCLASS.DVR: ERROR: init del driver fallo
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado
+[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo
+[GFX:TRACE] REGISTER request ops=0x2cfc0e0 abi=2 size=100 name_ptr=0x2cfc086 priority=200 caps=0x4ff
+[GFX:TRACE] REGISTER SELECT name=vmware_svga priority=200 previous=(ninguno) previous_priority=0
+[DVR] vmware_svga: cargado (/SYSTEM/DRIVERS/VMWARESVGA.DVR)
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 10 modulo(s) cargado(s)
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=vmware_svga ops=0x2cfc0e0
+[GFX:TRACE] ACTIVATE call name=vmware_svga preferred=800x600
+[SVGA:MODE] begin 800x600 active=0 generation=1
+[SVGA:MODE] OK 800x600x32 pitch=3200 fb=0xfd000000 generation=2
+[SVGA.DVR] SVGA3D preflight guest=0x20001 rb=0x0 memregs=0 reserved=4 modern=0
+[SVGA.DVR] VMware SVGA-II ID=0x90000002 IO=0xc010 FB=0xfd000000 FIFO=0xfe000000
+[SVGA.DVR] 800x600x32 pitch=3200 caps=0x3 fifo=0x0 GMR=fallback
+[GFX:TRACE] ACTIVATE OK name=vmware_svga mode=800x600x32 pitch=3200 fb=0xfd000000
+[GFXRES] boot icons 9/9 precargados
+[BKBOOT t=1342] LOADING PRINT SERVICE
+[PRINT] spooler iniciado en segundo plano, pid=3
+[BK[PRINT] PriBOOT t=1357] STARTING VISION
+[BKBOOT t=1358] VISION: LOADING ELF
+ntSpool Ring 3 listo
+[VISION] servicio lanzado pid=4
+[BKBOOT t=1387] VISION: ENTER RING3
+[VISION] ownership grafico adquirido pid=4
+[BKBOOT t=1397] VISION: GRAPHICS ENGINE
+[BKBOOT t=1400] PREPARING DESKTOP
+[BKBOOT t=1402] VISION: ENGINE READY
+[BKBOOT t=1404] VISION: DESKTOP
+[BKBOOT t=1405] LOADING DESKTOP ICONS
+[BKBOOT t=1406] ICONPAK preload begin
+[BKBOOT t=1407] LOADING ICON CACHE
+[BKBOOT t=1409] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=1418] DESKMANAGER read desktop config
+[BKBOOT t=1418] DESKMANAGER desktop config loaded
+[BKBOOT t=1419] VISION: DESKBAR
+[DESKBAR] alloc state bytes=17116
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[BKBOOT t=1744] VISION: SCREENSAVER
+[BKBOOT t=1771] VISION: START SHELL
+[BKBOOT t=1773] VISION: READY
+[VIS[BKBOOT t=1775] kernel_main: Vision READY
+[RAM:DESKTOP] installed_kib=1572351 managed_kib=1441664 used_kib=18157 free_kib=1423506 unmanaged_kib=130686 heap_used_kib=18029 heap_free_kib=440594 vm_free_kib=982ION] R912
+[SMP] escritorio listo; iEADY: motor, escritorio y compositor bajo Vision
+niciando procesadores secundarios
+[VISION:SAVER] Ring 3 worker started
+[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000
+[SMP] iniciando CPU1 APIC=1...
+[SMP] CPU1 online
+[SMP] 2/2 CPU(s) online; timer LAPIC=265140 cuentas/tick
+[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (123 slots libres)
+[SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI
+[BKBOOT] VISION ONLINE pid=4
+[WINE:BOOT] deferred until Windows program launch
+[BKBOOT t=1926] DISABLE SPLASH / ENTER GUI
+[BKBOOT] DESKTOP RELEASED
+[BKBOOT] QUEUE STARTUP SOUND
+[VISION:ENGINE] compositor y ventanas CPL=3
+[WINEUITEST] Notepad launch=1
+[WINE:DESKTOP] rootless start /WINEGATE/no-such-startup-test.exe
+[WINEUITEST:PROC] pid=1 process=1 name=kernel-core state=3 cpu=1080 exit=0
+[WINEUITEST:PROC] pid=2 process=2 name=system-admin state=3 cpu=96 exit=0
+[WINEUITEST:PROC] pid=3 process=3 name=PRINTSPL.BEX state=3 cpu=21 exit=0
+[WINEUITEST:PROC] pid=4 process=4 name=VISION.BEX state=3 cpu=234 exit=0
+[WINEUITEST:PROC] pid=5 process=4 name=screensaverd state=3 cpu=5 exit=0
+[WINEUITEST:PROC] pid=6 process=6 name=WINEUITEST.BEX state=2 cpu=12 exit=0
+_[XWSIENREVUTIrTaEnSsTT:rPaRnOsCN]o Lpiisdt=e7n :p ruoncaebslse= 7t on afmien=dw itnrea-npshpaosret4:. EtLcFp 
+state=2 cpu=29 exit=0
+[WINE:DESKTOP] TinyX rootless ready on :17 pid=8
+[WINE:TIME] x-ready ms=633
+[WINE:STAGE] PREFIX exclusive lock acquired
+[WINE:STAGE] PREFIX ready marker=1
+[[RWAIMN:EI:DLSET]A GiEn] THEMsEt arleady marker=1
+l[eWdI_NkEi:bT=I1M5E]7 2p3r5e1f imxa-nraegaeddy_ kmisb==811404 1d6e6l4t au_smesd=_1k7i7b
+[WINE:TIME] theme-ready ms=880 delta_ms=70
+=[3W5I0N2E8: SfTrAeGeE_]k iTbA=R1G4E0T6 6b3e5g iunn mpaantaghe=d/_WINEkGiAbT=E1/3n0o6-8s6u chhe-aspt_aursteudp_-kibt=e2s7t4.9e2x eh ekaipn_df=reexee_
+[WINE:TIME] target-begin msk=ib8=8403
+1131 vm_free_kib=975504
+[WINE:STAGE] TARGET spawned pid=10
+[WINE:TIME] target-spawned ms=1033 delta_ms=153
+[VFS:CWD] resolve FAIL full=/tmp/.wine-0/server-0-1c inner=/tmp/.wine-0/server-0-1c device=ata0
+[WINEUITEST:PROC] pid=1 process=1 name=kernel-core state=3 cpu=1343 exit=0
+[WINEUITEST:PROC] pid=2 process=2 name=system-admin state=3 cpu=112 exit=0
+[WINEUITEST:PROC] pid=3 process=3 name=PRINTSPL.BEX state=3 cpu=108 exit=0
+[WINEUITEST:PROC] pid=4 process=4 name=VISION.BEX state=3 cpu=2974 exit=0
+[WINEUITEST:PROC] pid=5 process=4 name=screensaverd state=3 cpu=58 exit=0
+[WINEUITEST:PROC] pid=6 process=6 name=WINEUITEST.BEX state=2 cpu=279 exit=0
+[WINEUITEST:PROC] pid=7 process=7 name=wine-phase4.ELF state=3 cpu=274 exit=0
+[WINEUITEST:PROC] pid=10 process=10 name=wine-preloader state=3 cpu=57 exit=0
+[WINEUITEST:PROC] pid=8 process=8 name=XFBDEV state=1 cpu=282 exit=0
+[WINEUITEST:PROC] pid=15 process=15 name=wineserver state=2 cpu=643 exit=0
+[WINEUITEST:PROC] pid=17 process=17 name=wine-preloader state=3 cpu=223 exit=0
+[WINEUITEST:PROC] pid=20 process=20 name=wine-preloader state=3 cpu=892 exit=0
+[WINEUITEST:PROC] pid=23 process=23 name=wine-preloader state=3 cpu=397 exit=0
+[WINEUITEST:PROC] pid=28 process=23 name=linux-thread state=3 cpu=6 exit=0
+[WINEUITEST:PROC] pid=30 process=30 name=wine-preloader state=3 cpu=113 exit=0
+[WINEUITEST:PROC] pid=26 process=26 name=wine-preloader state=3 cpu=520 exit=0
+[WINEUITEST:PROC] pid=32 process=23 name=linux-thread state=3 cpu=3 exit=0
+[WINEUITEST:PROC] pid=33 process=23 name=linux-thread state=1 cpu=53 exit=0
+[WINEUITEST:PROC] pid=34 process=30 name=linux-thread state=3 cpu=23 exit=0
+[WINEUITEST:PROC] pid=35 process=30 name=linux-thread state=3 cpu=2 exit=0
+[WINEUITEST:PROC] pid=36 process=30 name=linux-thread state=3 cpu=1 exit=0
+[WINEUITEST:PROC] pid=37 process=26 name=linux-thread state=3 cpu=8 exit=0
+[WINEUITEST:PROC] pid=38 process=26 name=linux-thread state=3 cpu=3 exit=0
+[WINEUITEST:PROC] pid=39 process=30 name=linux-thread state=3 cpu=0 exit=0
+[WINEUITEST:PROC] pid=1 process=1 name=kernel-core state=3 cpu=1622 exit=0
+[WINEUITEST:PROC] pid=2 process=2 name=system-admin state=3 cpu=176 exit=0
+[WINEUITEST:PROC] pid=3 process=3 name=PRINTSPL.BEX state=3 cpu=153 exit=0
+[WINEUITEST:PROC] pid=4 process=4 name=VISION.BEX state=1 cpu=5233 exit=0
+[WINEUITEST:PROC] pid=5 process=4 name=screensaverd state=3 cpu=143 exit=0
+[WINEUITEST:PROC] pid=6 process=6 name=WINEUITEST.BEX state=2 cpu=1254 exit=0
+[WINEUITEST:PROC] pid=7 process=7 name=wine-phase4.ELF state=3 cpu=490 exit=0
+[WINEUITEST:PROC] pid=10 process=10 name=wine-preloader state=3 cpu=69 exit=0
+[WINEUITEST:PROC] pid=8 process=8 name=XFBDEV state=1 cpu=587 exit=0
+[WINEUITEST:PROC] pid=15 process=15 name=wineserver state=1 cpu=2737 exit=0
+[WINEUITEST:PROC] pid=17 process=17 name=wine-preloader state=2 cpu=568 exit=0
+[WINEUITEST:PROC] pid=60 process=60 name=wine-preloader state=3 cpu=109 exit=0
+[WINEUITEST:PROC] pid=23 process=23 name=wine-preloader state=3 cpu=656 exit=0
+[WINEUITEST:PROC] pid=28 process=23 name=linux-thread state=3 cpu=44 exit=0
+[WINEUITEST:PROC] pid=30 process=30 name=wine-preloader state=3 cpu=128 exit=0
+[WINEUITEST:PROC] pid=62 process=23 name=linux-thread state=3 cpu=10 exit=0
+[WINEUITEST:PROC] pid=32 process=23 name=linux-thread state=3 cpu=17 exit=0
+[WINEUITEST:PROC] pid=33 process=23 name=linux-thread state=3 cpu=146 exit=0
+[WINEUITEST:PROC] pid=34 process=30 name=linux-thread state=3 cpu=246 exit=0
+[WINEUITEST:PROC] pid=35 process=30 name=linux-thread state=3 cpu=14 exit=0
+[WINEUITEST:PROC] pid=36 process=30 name=linux-thread state=3 cpu=1 exit=0
+[WINEUITEST:PROC] pid=63 process=60 name=linux-thread state=3 cpu=51 exit=0
+[WINEUITEST:PROC] pid=64 process=60 name=linux-thread state=3 cpu=3 exit=0
+[WINEUITEST:PROC] pid=39 process=30 name=linux-thread state=3 cpu=3 exit=0
+wine: failed to open "/WINEGATE/no-such-startup-test.exe"
+[LINUX:EXIT] pid=10 proc=10 ppid=7 name=wine-preloader status=13568 thread=0
+[WINE] application failed raw=13568
+[WINE:STAGE] TARGET exited raw=13568 code=53 signal=0

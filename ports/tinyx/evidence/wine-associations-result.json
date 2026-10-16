@@ -1,0 +1,27 @@
+{
+  "exe": {
+    "source_log": "build/wine-association-detached.log",
+    "lines": [
+      "[GATE:ASSOC] path=/WINEG[ELF:LINUX] ET_EXEC cargado base=0x8048000 entry=0x804adA20 span=32 KiB",
+      "[WINE:STAGE] PREFIX ready marker=1",
+      "[WINE:STAGE] THEME ready marker=1",
+      "[WINE:STAGE] TARGET begin path=/WINEGATE/bin/WINE-MESSAGEBOX.EXE kind=exe",
+      "[WINE:STAGE] TARGET exited raw=0 code=0 signal=0",
+      "[WINE:DESKTOP] rootless app status=0 display=:15"
+    ],
+    "passed": true
+  },
+  "bat": {
+    "source_log": "build/wine-bat-detached.log",
+    "lines": [
+      "[GATE:ASSOC] path=/WINEGATE/bin/BLES.BAT started=1",
+      "[WINE:STAGE] PREFIX ready marker=1",
+      "[WINE:STAGE] THEME ready marker=1",
+      "[WINE:STAGE] TARGET begin path=/WINEGATE/bin/BLES.BAT kind=bat",
+      "BLES_WINE_BAT_OK",
+      "[WINE:STAGE] TARGET exited raw=0 code=0 signal=0",
+      "[WINE:DESKTOP] rootless app status=0 display=:15"
+    ],
+    "passed": true
+  }
+}

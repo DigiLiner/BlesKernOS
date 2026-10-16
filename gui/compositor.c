@@ -1,4 +1,5 @@
 #include "gui.h"
+#include "../sdk/include/bleskernos_input.h"
 
 #include "../kernel/include/gfx.h"
 #include "../kernel/include/perfmon.h"
@@ -6,8 +7,9 @@
 #include "../kernel/include/memory.h"
 #include "../kernel/include/graphics_resources.h"
 #include "../kernel/include/vga.h"
-#include "../kernel/stdio.h"
+#include "../kernel/libc/include/stdio.h"
 #include "image.h"
+#include "../kernel/include/pit.h"
 #define GUI_DEFAULT_CURSOR_WIDTH  17
 #define GUI_DEFAULT_CURSOR_HEIGHT 17
 
@@ -36,11 +38,16 @@ typedef struct {
     uint16_t width, height;
     int16_t hot_x, hot_y;
     bool loaded;
+    uint8_t *animation;
+    uint32_t animation_size, cycle_ms;
+    uint16_t frame_count, frame_index;
 } system_cursor_t;
 
-static system_cursor_t g_system_cursor;
-static gui_cursor_style_t g_system_cursor_style = GUI_CURSOR_ARROW;
-static bool g_system_cursor_valid;
+/* Cache every stock cursor independently.  The old single-entry cache caused
+ * a real VFS read each time the pointer crossed a resize border
+ * (arrow->resize->arrow), which is very visible on old IDE disks. */
+static system_cursor_t *g_system_cursors[GUI_CURSOR_COUNT];
+static bool g_system_cursor_attempted[GUI_CURSOR_COUNT];
 
 static const char *compositor_system_cursor_path(uint32_t index) {
     switch (index) {
@@ -50,6 +57,48 @@ static const char *compositor_system_cursor_path(uint32_t index) {
         case GUI_CURSOR_SIZE_NS: return "/SYSTEM/CURSORS/VRESIZE.CUR";
         case GUI_CURSOR_SIZE_NWSE: return "/SYSTEM/CURSORS/DRESIZE1.CUR";
         case GUI_CURSOR_SIZE_NESW: return "/SYSTEM/CURSORS/DRESIZE2.CUR";
+        case GUI_CURSOR_PROGRESS: return "/SYSTEM/CURSORS/PROGRESS.CUR";
+        case GUI_CURSOR_TEXT: return "/SYSTEM/CURSORS/TEXT.CUR";
+        case GUI_CURSOR_POINTER: return "/SYSTEM/CURSORS/POINTER.CUR";
+        case GUI_CURSOR_HELP: return "/SYSTEM/CURSORS/HELP.CUR";
+        case GUI_CURSOR_MOVE: return "/SYSTEM/CURSORS/FLEUR.CUR";
+        case GUI_CURSOR_NOT_ALLOWED: return "/SYSTEM/CURSORS/NOT-ALLOWED.CUR";
+        case GUI_CURSOR_CROSSHAIR: return "/SYSTEM/CURSORS/CROSSHAIR.CUR";
+        case GUI_CURSOR_ALIAS: return "/SYSTEM/CURSORS/ALIAS.CUR";
+        case GUI_CURSOR_ALL_SCROLL: return "/SYSTEM/CURSORS/ALL-SCROLL.CUR";
+        case GUI_CURSOR_BOTTOM_LEFT_CORNER: return "/SYSTEM/CURSORS/BOTTOM_LEFT_CORNER.CUR";
+        case GUI_CURSOR_BOTTOM_RIGHT_CORNER: return "/SYSTEM/CURSORS/BOTTOM_RIGHT_CORNER.CUR";
+        case GUI_CURSOR_BOTTOM_SIDE: return "/SYSTEM/CURSORS/BOTTOM_SIDE.CUR";
+        case GUI_CURSOR_CELL: return "/SYSTEM/CURSORS/CELL.CUR";
+        case GUI_CURSOR_CENTER_PTR: return "/SYSTEM/CURSORS/CENTER_PTR.CUR";
+        case GUI_CURSOR_CLOSEDHAND: return "/SYSTEM/CURSORS/CLOSEDHAND.CUR";
+        case GUI_CURSOR_COL_RESIZE: return "/SYSTEM/CURSORS/COL-RESIZE.CUR";
+        case GUI_CURSOR_COLOR_PICKER: return "/SYSTEM/CURSORS/COLOR-PICKER.CUR";
+        case GUI_CURSOR_CONTEXT_MENU: return "/SYSTEM/CURSORS/CONTEXT-MENU.CUR";
+        case GUI_CURSOR_COPY: return "/SYSTEM/CURSORS/COPY.CUR";
+        case GUI_CURSOR_DND_MOVE: return "/SYSTEM/CURSORS/DND-MOVE.CUR";
+        case GUI_CURSOR_DND_NO_DROP: return "/SYSTEM/CURSORS/DND-NO-DROP.CUR";
+        case GUI_CURSOR_DOWN_ARROW: return "/SYSTEM/CURSORS/DOWN-ARROW.CUR";
+        case GUI_CURSOR_DRAFT: return "/SYSTEM/CURSORS/DRAFT.CUR";
+        case GUI_CURSOR_LEFT_ARROW: return "/SYSTEM/CURSORS/LEFT-ARROW.CUR";
+        case GUI_CURSOR_LEFT_SIDE: return "/SYSTEM/CURSORS/LEFT_SIDE.CUR";
+        case GUI_CURSOR_NO_DROP: return "/SYSTEM/CURSORS/NO-DROP.CUR";
+        case GUI_CURSOR_OPENHAND: return "/SYSTEM/CURSORS/OPENHAND.CUR";
+        case GUI_CURSOR_PENCIL: return "/SYSTEM/CURSORS/PENCIL.CUR";
+        case GUI_CURSOR_PIRATE: return "/SYSTEM/CURSORS/PIRATE.CUR";
+        case GUI_CURSOR_RIGHT_ARROW: return "/SYSTEM/CURSORS/RIGHT-ARROW.CUR";
+        case GUI_CURSOR_RIGHT_PTR: return "/SYSTEM/CURSORS/RIGHT_PTR.CUR";
+        case GUI_CURSOR_RIGHT_SIDE: return "/SYSTEM/CURSORS/RIGHT_SIDE.CUR";
+        case GUI_CURSOR_ROW_RESIZE: return "/SYSTEM/CURSORS/ROW-RESIZE.CUR";
+        case GUI_CURSOR_TOP_LEFT_CORNER: return "/SYSTEM/CURSORS/TOP_LEFT_CORNER.CUR";
+        case GUI_CURSOR_TOP_RIGHT_CORNER: return "/SYSTEM/CURSORS/TOP_RIGHT_CORNER.CUR";
+        case GUI_CURSOR_TOP_SIDE: return "/SYSTEM/CURSORS/TOP_SIDE.CUR";
+        case GUI_CURSOR_UP_ARROW: return "/SYSTEM/CURSORS/UP-ARROW.CUR";
+        case GUI_CURSOR_VERTICAL_TEXT: return "/SYSTEM/CURSORS/VERTICAL-TEXT.CUR";
+        case GUI_CURSOR_WAYLAND_CURSOR: return "/SYSTEM/CURSORS/WAYLAND-CURSOR.CUR";
+        case GUI_CURSOR_X_CURSOR: return "/SYSTEM/CURSORS/X-CURSOR.CUR";
+        case GUI_CURSOR_ZOOM_IN: return "/SYSTEM/CURSORS/ZOOM-IN.CUR";
+        case GUI_CURSOR_ZOOM_OUT: return "/SYSTEM/CURSORS/ZOOM-OUT.CUR";
         default: return NULL;
     }
 }
@@ -83,14 +132,18 @@ static bool compositor_decode_cursor(system_cursor_t *cursor,
     width = (uint16_t)cur_le32(dib + 4);
     height = (uint16_t)(cur_le32(dib + 8) / 2U);
     bpp = cur_le16(dib + 14);
-    if (dib_size < 40U || width == 0U || height == 0U ||
+    if (dib_size < 40U || dib_size > size - offset || width == 0U || height == 0U ||
         width > GUI_CURSOR_WIDTH || height > GUI_CURSOR_HEIGHT ||
         (bpp != 1U && bpp != 4U && bpp != 8U && bpp != 32U)) return false;
     palette_count = bpp <= 8U ? cur_le32(dib + 32) : 0U;
     if (bpp <= 8U && !palette_count) palette_count = 1U << bpp;
+    if (palette_count > 256U || palette_count * 4U > size - offset - dib_size)
+        return false;
     palette = dib + dib_size;
     xor_stride = ((uint32_t)width * bpp + 31U) / 32U * 4U;
     and_stride = ((uint32_t)width + 31U) / 32U * 4U;
+    if (xor_stride * height + and_stride * height >
+        size - offset - dib_size - palette_count * 4U) return false;
     xor_bits = palette + palette_count * 4U;
     and_bits = xor_bits + xor_stride * height;
     if (xor_bits > file + size || and_bits > file + size ||
@@ -123,27 +176,145 @@ static bool compositor_decode_cursor(system_cursor_t *cursor,
     cursor->height = height;
     cursor->hot_x = (int16_t)cur_le16(entry + 4);
     cursor->hot_y = (int16_t)cur_le16(entry + 6);
-    cursor->loaded = cursor->hot_x < width && cursor->hot_y < height;
+    cursor->loaded = cursor->hot_x >= 0 && cursor->hot_y >= 0 &&
+        cursor->hot_x < width && cursor->hot_y < height;
     return cursor->loaded;
 }
 
+/* BKCA keeps indexed CUR frames in one OS-owned allocation. Only the active
+ * frame is expanded to ARGB; no allocations or disk reads on animation ticks. */
+static bool compositor_decode_animation(system_cursor_t *cursor,
+                                         uint8_t *file, uint32_t size) {
+    uint32_t cycle = 0U;
+    uint16_t count;
+    if (size < 8U || cur_le32(file) != 0x41434B42U ||
+        cur_le16(file + 4) != 1U) return false;
+    count = cur_le16(file + 6);
+    if (!count || count > 64U || size < 8U + count * 12U) return false;
+    for (uint16_t i = 0; i < count; i++) {
+        const uint8_t *entry = file + 8U + i * 12U;
+        uint32_t delay = cur_le32(entry), offset = cur_le32(entry + 4);
+        uint32_t length = cur_le32(entry + 8);
+        if (!delay || delay > 10000U || offset < 8U + count * 12U ||
+            offset > size || length > size - offset ||
+            !compositor_decode_cursor(cursor, file + offset, length)) return false;
+        cycle += delay;
+    }
+    cursor->animation = file;
+    cursor->animation_size = size;
+    cursor->cycle_ms = cycle;
+    cursor->frame_count = count;
+    cursor->frame_index = 0U;
+    return compositor_decode_cursor(cursor, file + cur_le32(file + 12),
+                                     cur_le32(file + 16));
+}
+
+static uint16_t compositor_cursor_frame(const system_cursor_t *cursor,
+                                        uint32_t now_tick) {
+    uint32_t hz = pit_get_frequency_hz();
+    uint32_t phase;
+    if (!cursor->animation || !hz || !cursor->cycle_ms) return 0U;
+    phase = (uint32_t)(((uint64_t)now_tick * 1000U / hz) % cursor->cycle_ms);
+    for (uint16_t i = 0U; i < cursor->frame_count; i++) {
+        uint32_t delay = cur_le32(cursor->animation + 8U + i * 12U);
+        if (phase < delay) return i;
+        phase -= delay;
+    }
+    return 0U;
+}
+
 static const system_cursor_t *compositor_system_cursor(gui_cursor_style_t style) {
+    system_cursor_t *cursor;
     const char *path;
     void *file = NULL;
     uint32_t size = 0U;
-    if (style > GUI_CURSOR_SIZE_NESW) style = GUI_CURSOR_ARROW;
-    if (g_system_cursor_valid && g_system_cursor_style == style)
-        return &g_system_cursor;
-    g_system_cursor_valid = false;
-    g_system_cursor.loaded = false;
-    g_system_cursor_style = style;
+    if (style >= GUI_CURSOR_COUNT) style = GUI_CURSOR_ARROW;
+    if (g_system_cursor_attempted[(uint32_t)style])
+        return g_system_cursors[(uint32_t)style];
+    g_system_cursor_attempted[(uint32_t)style] = true;
+    cursor = (system_cursor_t *)kzalloc(sizeof(*cursor));
+    if (!cursor) return NULL;
     path = compositor_system_cursor_path((uint32_t)style);
-    if (!path || !vfs_read_all(path, &file, &size)) return NULL;
-    if (compositor_decode_cursor(&g_system_cursor, file, size)) {
-        g_system_cursor_valid = true;
+    const char *animation_path = style == GUI_CURSOR_WAIT ? "/SYSTEM/CURSORS/WAIT.BCA" :
+        (style == GUI_CURSOR_PROGRESS ? "/SYSTEM/CURSORS/PROGRESS.BCA" : NULL);
+    if (animation_path && vfs_read_all(animation_path, &file, &size)) {
+        if (!compositor_decode_animation(cursor, file, size)) {
+            kfree(file); file = NULL;
+            cursor->animation = NULL;
+        }
     }
-    kfree(file);
-    return g_system_cursor_valid ? &g_system_cursor : NULL;
+    if (!cursor->animation) {
+        if (!path || !vfs_read_all(path, &file, &size)) { kfree(cursor); return NULL; }
+        if (!compositor_decode_cursor(cursor, file, size)) {
+            kfree(file); kfree(cursor); return NULL;
+        }
+        kfree(file);
+    }
+#ifndef BLES_VISION_SERVICE
+    if (!mm_set_allocation_owner(cursor, 0U) ||
+        (cursor->animation && !mm_set_allocation_owner(cursor->animation, 0U))) {
+        kfree(cursor->animation); kfree(cursor); return NULL;
+    }
+#endif
+    g_system_cursors[(uint32_t)style] = cursor;
+    return cursor;
+}
+
+static bool g_cursor_busy_was_active;
+
+static bool compositor_busy(const gui_desktop_t *desktop) {
+    return desktop && __atomic_load_n(&desktop->cursor_busy_count, __ATOMIC_RELAXED);
+}
+
+static bool compositor_custom_cursor(const gui_desktop_t *desktop) {
+    return desktop && desktop->cursor_custom && !compositor_busy(desktop);
+}
+
+void gui_compositor_busy_begin(void) {
+    gui_desktop_t *desktop = gui_get_desktop();
+    if (!desktop) return;
+    __atomic_add_fetch(&desktop->cursor_busy_count, 1U, __ATOMIC_RELAXED);
+    gui_request_paint();
+}
+
+void gui_compositor_busy_end(void) {
+    gui_desktop_t *desktop = gui_get_desktop();
+    if (!desktop) return;
+    uint32_t count = __atomic_load_n(&desktop->cursor_busy_count, __ATOMIC_RELAXED);
+    while (count && !__atomic_compare_exchange_n(&desktop->cursor_busy_count,
+            &count, count - 1U, false, __ATOMIC_RELAXED, __ATOMIC_RELAXED)) { }
+    gui_request_paint();
+}
+
+static gui_cursor_style_t compositor_cursor_style(const gui_desktop_t *desktop) {
+    if (compositor_busy(desktop)) return GUI_CURSOR_PROGRESS;
+    return desktop ? desktop->cursor_style : GUI_CURSOR_ARROW;
+}
+
+bool gui_compositor_tick_cursor(gui_desktop_t *desktop, uint32_t now_tick) {
+    bool busy = compositor_busy(desktop);
+    bool changed = busy != g_cursor_busy_was_active;
+    g_cursor_busy_was_active = busy;
+    if (!desktop || compositor_custom_cursor(desktop)) return false;
+    system_cursor_t *cursor = (system_cursor_t *)compositor_system_cursor(
+        compositor_cursor_style(desktop));
+    if (cursor && cursor->animation) {
+        uint16_t frame = compositor_cursor_frame(cursor, now_tick);
+        if (frame != cursor->frame_index) {
+            const uint8_t *entry = cursor->animation + 8U + frame * 12U;
+            compositor_decode_cursor(cursor, cursor->animation + cur_le32(entry + 4),
+                                     cur_le32(entry + 8));
+            cursor->frame_index = frame;
+            changed = true;
+        }
+    }
+    if (changed) {
+        /* Include the previous hotspot and trail, without repainting the desktop. */
+        gui_desktop_invalidate_rect(desktop, (gui_rect_t){
+            desktop->mouse_x - GUI_CURSOR_WIDTH, desktop->mouse_y - GUI_CURSOR_HEIGHT,
+            GUI_CURSOR_WIDTH * 2, GUI_CURSOR_HEIGHT * 2});
+    }
+    return changed;
 }
 
 
@@ -151,14 +322,31 @@ static const system_cursor_t *compositor_system_cursor(gui_cursor_style_t style)
 static bool g_hardware_cursor_ready;
 static uint32_t g_hardware_cursor_generation;
 
-static bool compositor_prepare_hardware_cursor(void) {
+/* BLESKERNOS_SVGA3D_PIPELINE_V6
+ * While a direct GPU viewport is visible VMware uses a GPU-composited
+ * software cursor. Track the last cursor position that actually reached the
+ * scanout so mouse motion can request a cached GPU present without turning
+ * every unrelated GUI paint into a full-screen 3D submission. */
+static bool g_gpu_cursor_present_valid;
+static int g_gpu_cursor_present_x;
+static int g_gpu_cursor_present_y;
+
+static bool compositor_prepare_hardware_cursor(
+    const gui_desktop_t *desktop) {
     static uint32_t pixels[GUI_CURSOR_WIDTH * GUI_CURSOR_HEIGHT];
+    const gfx_info_t *info = gfx_get_info();
     uint32_t generation = gfx_driver_generation();
 
-    /* Usar siempre el raster .CUR: el camino XOR de varios SVGA antiguos
-       reduce el cursor a líneas negras aunque el bitmap sea correcto. */
-    (void)generation;
-    return false;
+    /* VMware's legacy cursor path has shown XOR artifacts, so keep it on the
+     * software cursor. Rage128 and VirtIO GPU both expose native ARGB cursor
+     * planes that are safe for the stock arrow. Moving those cursors must not
+     * invalidate/present a desktop rectangle for every PS/2 packet. */
+    if (bk_input_preference_get(BK_INPUT_CURSOR_SCHEME) || !desktop || compositor_custom_cursor(desktop) ||
+        compositor_cursor_style(desktop) != GUI_CURSOR_ARROW || !info ||
+        (info->mode != GFX_MODE_ATI_RAGE128 &&
+         info->mode != GFX_MODE_VIRTIO_GPU)) {
+        return false;
+    }
 
     if (!gfx_cursor_supported()) {
         g_hardware_cursor_ready = false;
@@ -171,18 +359,11 @@ static bool compositor_prepare_hardware_cursor(void) {
     g_hardware_cursor_ready = false;
     for (uint32_t i = 0U; i < GUI_CURSOR_WIDTH * GUI_CURSOR_HEIGHT; i++)
         pixels[i] = 0U;
-    for (int row = 0; row < GUI_DEFAULT_CURSOR_HEIGHT; row++) {
-        for (int col = 0; col < GUI_DEFAULT_CURSOR_WIDTH; col++) {
-            char px = g_arrow_cursor[row][col];
-            uint32_t color = 0U;
-            if (px == 'X') color = 0xFF000000U;
-            else if (px == 'o') color = 0xFF808080U;
-            else if (px == '.') color = 0xFFFFFFFFU;
-            pixels[row * GUI_CURSOR_WIDTH + col] = color;
-        }
-    }
+    const system_cursor_t *stock = compositor_system_cursor(GUI_CURSOR_ARROW);
+    if (!stock) return false;
+    kmemcpy(pixels, stock->pixels, sizeof(pixels));
     g_hardware_cursor_ready = gfx_cursor_define(
-        pixels, GUI_CURSOR_WIDTH, GUI_CURSOR_HEIGHT, 0U, 0U);
+        pixels, GUI_CURSOR_WIDTH, GUI_CURSOR_HEIGHT, stock->hot_x, stock->hot_y);
     if (g_hardware_cursor_ready) {
         g_hardware_cursor_generation = generation;
         /* Definir el bitmap no garantiza que UPDATE_CURSOR haya llegado al
@@ -199,10 +380,36 @@ static bool compositor_prepare_hardware_cursor(void) {
 }
 /* BLESKERNOS_SVGA_HW_CURSOR_HELPER_END */
 
+bool gui_compositor_move_hardware_cursor(gui_desktop_t *desktop) {
+    const gfx_info_t *info = gfx_get_info();
+
+    /* Do not initialize/transition the cursor here: those paths need one real
+     * compositor frame to restore any previous software backing. This helper
+     * is the hot path once Rage128/VirtIO's native arrow is live. */
+    if (!desktop || desktop->cursor_trail_enabled || compositor_custom_cursor(desktop) ||
+        compositor_cursor_style(desktop) != GUI_CURSOR_ARROW || !info ||
+        (info->mode != GFX_MODE_ATI_RAGE128 &&
+         info->mode != GFX_MODE_VIRTIO_GPU) ||
+        !g_hardware_cursor_ready ||
+        g_hardware_cursor_generation != gfx_driver_generation()) {
+        return false;
+    }
+
+    if (!gfx_cursor_move(desktop->mouse_x, desktop->mouse_y) ||
+        !gfx_cursor_show(true)) {
+        /* Fall back to the normal compositor on the same event if the device
+         * stops accepting cursor commands. */
+        g_hardware_cursor_ready = false;
+        g_hardware_cursor_generation = 0U;
+        return false;
+    }
+    return true;
+}
+
 static gui_rect_t cursor_rect(const gui_desktop_t *desktop, int x, int y) {
-    bool custom = desktop && desktop->cursor_custom;
+    bool custom = desktop && compositor_custom_cursor(desktop);
     const system_cursor_t *system = custom ? NULL : compositor_system_cursor(
-        desktop ? desktop->cursor_style : GUI_CURSOR_ARROW);
+        compositor_cursor_style(desktop));
     int hot_x = custom ? desktop->cursor_hotspot_x :
                 (system ? system->hot_x : 0);
     int hot_y = custom ? desktop->cursor_hotspot_y :
@@ -307,7 +514,7 @@ static void paint_cursor_with_palette(gui_surface_t *surface, int x, int y,
         gui_gfx_putpixel(surface, x + 8, y + 12, mid);
         return;
     }
-    if (style >= GUI_CURSOR_SIZE_WE) {
+    if (style >= GUI_CURSOR_SIZE_WE && style <= GUI_CURSOR_SIZE_NESW) {
         int x0 = x + 2, y0 = y + 2, x1 = x + 14, y1 = y + 14;
         if (style == GUI_CURSOR_SIZE_WE) {
             gui_gfx_draw_line(surface, x0, y + 8, x1, y + 8, dark);
@@ -371,14 +578,22 @@ static uint32_t cursor_alpha_blend(uint32_t destination, uint32_t source) {
     return rb | g;
 }
 
+static uint32_t compositor_stock_cursor_color(uint32_t color) {
+    uint32_t scheme=bk_input_preference_get(BK_INPUT_CURSOR_SCHEME);
+    uint32_t rgb=color&0xFFFFFFU,alpha=color&0xFF000000U;
+    if (!scheme || !alpha) return color;
+    if (scheme==1U) return alpha | (rgb^0xFFFFFFU);
+    return alpha | (rgb==0U ? 0U : 0x004B93A8U);
+}
+
 static void paint_cursor(gui_desktop_t *desktop, gui_surface_t *surface,
                          int x, int y) {
     int origin_x;
     int origin_y;
-    if (!desktop || !desktop->cursor_custom || !desktop->cursor_width ||
+    if (!desktop || !compositor_custom_cursor(desktop) || !desktop->cursor_width ||
         !desktop->cursor_height) {
         const system_cursor_t *system = compositor_system_cursor(
-            desktop ? desktop->cursor_style : GUI_CURSOR_ARROW);
+            compositor_cursor_style(desktop));
         if (system) {
             origin_x = x - system->hot_x;
             origin_y = y - system->hot_y;
@@ -386,6 +601,7 @@ static void paint_cursor(gui_desktop_t *desktop, gui_surface_t *surface,
                 for (int col = 0; col < system->width; col++) {
                     uint32_t source = system->pixels[(uint32_t)row *
                                                      GUI_CURSOR_WIDTH + col];
+                    source=compositor_stock_cursor_color(source);
                     int px = origin_x + col, py = origin_y + row;
                     if (!(source >> 24) || px < 0 || py < 0 ||
                         px >= surface->width || py >= surface->height) continue;
@@ -396,8 +612,10 @@ static void paint_cursor(gui_desktop_t *desktop, gui_surface_t *surface,
             return;
         }
         paint_cursor_with_palette(surface, x, y,
-                                  0x00000000, 0x00808080, 0x00FFFFFF,
-                                  desktop ? desktop->cursor_style : GUI_CURSOR_ARROW);
+                                  compositor_stock_cursor_color(0xFF000000U)&0xFFFFFFU,
+                                  compositor_stock_cursor_color(0xFF808080U)&0xFFFFFFU,
+                                  compositor_stock_cursor_color(0xFFFFFFFFU)&0xFFFFFFU,
+                                  compositor_cursor_style(desktop));
         return;
     }
     origin_x = x - desktop->cursor_hotspot_x;
@@ -420,6 +638,67 @@ static void paint_cursor(gui_desktop_t *desktop, gui_surface_t *surface,
     }
 }
 
+/* Exporta el bitmap ARGB real del cursor para que el compositor 3D pueda
+ * mantenerlo como una capa GPU.  Esto evita leer de vuelta un viewport 3D
+ * solo para restaurar los pixeles que quedan debajo del cursor software. */
+bool gui_compositor_cursor_argb(const gui_desktop_t *desktop,
+                                uint32_t *pixels,
+                                uint16_t *width, uint16_t *height,
+                                int16_t *hot_x, int16_t *hot_y) {
+    const system_cursor_t *system;
+    gui_surface_t temp;
+
+    if (!desktop || !pixels || !width || !height || !hot_x || !hot_y)
+        return false;
+    kmemset(pixels, 0,
+            GUI_CURSOR_WIDTH * GUI_CURSOR_HEIGHT * sizeof(uint32_t));
+
+    if (compositor_custom_cursor(desktop) && desktop->cursor_width &&
+        desktop->cursor_height &&
+        desktop->cursor_width <= GUI_CURSOR_WIDTH &&
+        desktop->cursor_height <= GUI_CURSOR_HEIGHT) {
+        for (uint16_t row = 0U; row < desktop->cursor_height; row++)
+            kmemcpy(pixels + (uint32_t)row * GUI_CURSOR_WIDTH,
+                    desktop->cursor_pixels +
+                        (uint32_t)row * GUI_CURSOR_WIDTH,
+                    (size_t)desktop->cursor_width * sizeof(uint32_t));
+        *width = desktop->cursor_width;
+        *height = desktop->cursor_height;
+        *hot_x = desktop->cursor_hotspot_x;
+        *hot_y = desktop->cursor_hotspot_y;
+        return true;
+    }
+
+    system = compositor_system_cursor(compositor_cursor_style(desktop));
+    if (system && system->loaded) {
+        kmemcpy(pixels, system->pixels,
+                GUI_CURSOR_WIDTH * GUI_CURSOR_HEIGHT * sizeof(uint32_t));
+        for (uint32_t i=0;i<GUI_CURSOR_WIDTH*GUI_CURSOR_HEIGHT;i++)
+            pixels[i]=compositor_stock_cursor_color(pixels[i]);
+        *width = system->width;
+        *height = system->height;
+        *hot_x = system->hot_x;
+        *hot_y = system->hot_y;
+        return true;
+    }
+
+    /* Fallback sin VFS: conserva las mismas formas que el cursor software. */
+    temp = (gui_surface_t){
+        pixels, GUI_CURSOR_WIDTH, GUI_CURSOR_HEIGHT, GUI_CURSOR_WIDTH,
+        {0, 0, GUI_CURSOR_WIDTH, GUI_CURSOR_HEIGHT},
+        0, 0, GUI_CURSOR_WIDTH, GUI_CURSOR_HEIGHT
+    };
+    paint_cursor_with_palette(&temp, 0, 0,
+                              compositor_stock_cursor_color(0xFF000000U), compositor_stock_cursor_color(0xFF808080U),
+                              compositor_stock_cursor_color(0xFFFFFFFFU),
+                              desktop->cursor_style);
+    *width = GUI_DEFAULT_CURSOR_WIDTH;
+    *height = GUI_DEFAULT_CURSOR_HEIGHT;
+    *hot_x = 0;
+    *hot_y = 0;
+    return true;
+}
+
 static gui_image_t g_alert_icons[4];
 
 void gui_alert_resources_init(void) {
@@ -435,10 +714,10 @@ void gui_alert_resources_init(void) {
 
 static void alert_bevel(gui_surface_t *surface, gui_rect_t bounds,
                         bool sunken, uint32_t fill, int depth) {
-    const uint32_t highlight = 0x00F1E5DFU;
-    const uint32_t midlight = 0x00D8C7BFU;
-    const uint32_t shadow = 0x007F746EU;
-    const uint32_t dark = 0x004D4C4FU;
+    const uint32_t highlight = 0x00FFFFFFU;
+    const uint32_t midlight = 0x00DFDFDFU;
+    const uint32_t shadow = 0x00808080U;
+    const uint32_t dark = 0x00404040U;
     uint32_t top = sunken ? dark : highlight;
     uint32_t top2 = sunken ? shadow : midlight;
     uint32_t bottom = sunken ? highlight : dark;
@@ -516,9 +795,9 @@ static void compositor_paint_error(gui_desktop_t *desktop,
     box.h = GUI_ALERT_HEIGHT;
     box.x = (surface->width - box.w) / 2;
     box.y = (surface->height - box.h) / 2;
-    alert_bevel(surface, box, false, 0x00C4B3ABU, 2);
+    alert_bevel(surface, box, false, 0x00C0C0C0U, 2);
     alert_stipple(surface, (gui_rect_t){box.x + 3, box.y + 3,
-                  box.w - 6, box.h - 6}, 0x00B6A49DU);
+                  box.w - 6, box.h - 6}, 0x00B8B8B8U);
     alert_bevel(surface, (gui_rect_t){box.x + 6, box.y + 5,
                 box.w - 12, 24}, true, 0x004B93A8U, 1);
     alert_stipple(surface, (gui_rect_t){box.x + 7, box.y + 6,
@@ -526,14 +805,14 @@ static void compositor_paint_error(gui_desktop_t *desktop,
     gui_font_draw_string(surface, box.x + 14, box.y + 12,
                          desktop->error_title, 0x00FFFFFF, 0U, false);
     close_button = (gui_rect_t){box.x + box.w - 28, box.y + 7, 19, 18};
-    alert_bevel(surface, close_button, false, 0x00C4B3ABU, 2);
+    alert_bevel(surface, close_button, false, 0x00C0C0C0U, 2);
     gui_gfx_draw_line(surface, close_button.x + 5, close_button.y + 5,
-                      close_button.x + 13, close_button.y + 12, 0x004D4C4FU);
+                      close_button.x + 13, close_button.y + 12, 0x00404040U);
     gui_gfx_draw_line(surface, close_button.x + 13, close_button.y + 5,
-                      close_button.x + 5, close_button.y + 12, 0x004D4C4FU);
+                      close_button.x + 5, close_button.y + 12, 0x00404040U);
 
     alert_bevel(surface, (gui_rect_t){box.x + 10, box.y + 35,
-                box.w - 20, 103}, true, 0x00D8C7BFU, 2);
+                box.w - 20, 103}, true, 0x00DFDFDFU, 2);
     gui_gfx_fill_rect(surface, (gui_rect_t){box.x + 14, box.y + 39, 5, 95},
                       accent_color);
     alert_draw_icon(surface, &g_alert_icons[desktop->error_kind],
@@ -566,9 +845,54 @@ static void compositor_paint_error(gui_desktop_t *desktop,
                              0x00404040U, 0U, false);
     }
     ok_button = (gui_rect_t){box.x + box.w - 105, box.y + box.h - 43, 82, 27};
-    alert_bevel(surface, ok_button, false, 0x00C4B3ABU, 2);
+    alert_bevel(surface, ok_button, false, 0x00C0C0C0U, 2);
     gui_font_draw_string(surface, ok_button.x + 30, ok_button.y + 9,
                          "OK", 0x00101010U, 0U, false);
+}
+
+static void compositor_draw_outline(gui_surface_t *surface, gui_rect_t rect) {
+    if (!surface || rect.w <= 0 || rect.h <= 0) return;
+    gui_gfx_draw_rect(surface, rect, 0x00000000);
+    if (rect.w > 2 && rect.h > 2) {
+        rect.x++;
+        rect.y++;
+        rect.w -= 2;
+        rect.h -= 2;
+        gui_gfx_draw_rect(surface, rect, 0x00FFFFFF);
+    }
+}
+
+static void compositor_draw_icon_ghost(gui_desktop_t *desktop,gui_surface_t *surface) {
+    unsigned size=desktop->drag_icon_size;
+    if(!size || size>64)return;
+    gui_rect_t clip=gui_gfx_get_clip(surface);
+    unsigned count=desktop->drag_icon_count>1?2:1;
+    for(unsigned layer=count;layer>0;--layer) {
+        int offset=(int)(layer-1)*6;
+        for(unsigned y=0;y<size;++y)for(unsigned x=0;x<size;++x) {
+            unsigned value=desktop->drag_icon_mask[y*64+x];
+            if(!value || (value==1 && ((x+y)&1)))continue;
+            int px=desktop->drag_outline_bounds.x+(int)x+offset;
+            int py=desktop->drag_outline_bounds.y+(int)y+offset;
+            if(px<clip.x || py<clip.y || px>=clip.x+clip.w || py>=clip.y+clip.h ||
+               px<0 || py<0 || px>=surface->width || py>=surface->height)continue;
+            surface->pixels[py*surface->pitch+px]=value==2 ?
+                (((x+y)&1)?0x00FFFFFF:0x00000000) : 0x00808080;
+        }
+    }
+}
+
+static void compositor_paint_interaction_overlay(gui_desktop_t *desktop,
+                                                 gui_surface_t *surface) {
+    if (!desktop || !surface) return;
+    /* These are transient server-side overlays.  They intentionally live
+     * above client windows and outside Vision's persistent shell cache. */
+    if (desktop->drag_outline_visible) {
+        if(desktop->drag_icon_ghost)compositor_draw_icon_ghost(desktop,surface);
+        else compositor_draw_outline(surface, desktop->drag_outline_bounds);
+    }
+    if (desktop->minimize_animation_active)
+        compositor_draw_outline(surface, desktop->minimize_animation_bounds);
 }
 
 static bool compositor_has_content_dirty(const gui_desktop_t *desktop) {
@@ -613,6 +937,41 @@ static void cursor_save_background(gui_desktop_t *desktop, gui_rect_t rect) {
     }
 }
 
+bool gui_compositor_stream_cursor_begin(gui_desktop_t *desktop) {
+    if (!desktop || desktop->cursor_trail_enabled || !desktop->cursor_valid)
+        return false;
+    cursor_restore_background(desktop);
+    desktop->cursor_valid = false;
+    return true;
+}
+
+void gui_compositor_stream_cursor_end(gui_desktop_t *desktop, bool redraw) {
+    gui_rect_t rect;
+    if (!desktop || !redraw || desktop->cursor_trail_enabled) return;
+    rect = cursor_rect(desktop, desktop->mouse_x, desktop->mouse_y);
+    cursor_save_background(desktop, rect);
+    paint_cursor(desktop, &desktop->surface,
+                 desktop->mouse_x, desktop->mouse_y);
+    desktop->cursor_rect = rect;
+    desktop->cursor_valid = true;
+}
+
+static bool compositor_has_gpu_frame_dirty(const gui_desktop_t *desktop) {
+    const gui_window_t *window;
+    if (!desktop) return false;
+    for (window = desktop->first_window; window; window = window->next)
+        if (window->visible && window->gpu_view_visible &&
+            window->gpu_view_frame_dirty) return true;
+    return false;
+}
+
+static void compositor_clear_gpu_frame_dirty(gui_desktop_t *desktop) {
+    gui_window_t *window;
+    if (!desktop) return;
+    for (window = desktop->first_window; window; window = window->next)
+        window->gpu_view_frame_dirty = false;
+}
+
 void gui_compositor_paint(gui_desktop_t *desktop) {
     gui_rect_t content_rect = {0, 0, 0, 0};
     gui_rect_t present_rects[3];
@@ -626,6 +985,8 @@ void gui_compositor_paint(gui_desktop_t *desktop) {
     bool content_valid;
     bool old_cursor_valid;
     bool hardware_cursor;
+    bool gpu_frame_dirty;
+    bool gpu_cached_wanted = false;
     bool gpu_presented = false;
 
     if (!desktop) return;
@@ -633,19 +994,82 @@ void gui_compositor_paint(gui_desktop_t *desktop) {
     content_valid = compositor_content_dirty_rect(desktop, &content_rect);
     old_cursor_valid = desktop->cursor_valid;
     /* BLESKERNOS_SVGA_HW_CURSOR_INIT_BEGIN */
-    hardware_cursor = !desktop->cursor_trail_enabled &&
-                      compositor_prepare_hardware_cursor();
+    hardware_cursor = !gui_gfx_output_depth() && !desktop->cursor_trail_enabled &&
+                      compositor_prepare_hardware_cursor(desktop);
     if (!hardware_cursor && g_hardware_cursor_ready)
         (void)gfx_cursor_show(false);
     /* BLESKERNOS_SVGA_HW_CURSOR_INIT_END */
 
     screen = (gui_rect_t){0, 0, desktop->surface.width,
                           desktop->surface.height};
+    gpu_frame_dirty = compositor_has_gpu_frame_dirty(desktop);
+    if (!gui_gpu_compositor_needed(desktop))
+        g_gpu_cursor_present_valid = false;
+
+    /* A game/video frame on an unchanged GPU viewport is not desktop damage.
+     * Re-submit the cached GPU scene directly.  VMware keeps its cursor in
+     * software, so the cursor must become the last GPU layer while a direct
+     * viewport is visible; writing a 2D cursor rectangle over a 3D surface
+     * destroys the pixels below it and makes the game appear to update only
+     * when the pointer or deskbar clock invalidates a region. */
+    gpu_cached_wanted = !content_dirty && !desktop->cursor_trail_enabled &&
+        gui_gpu_compositor_needed(desktop) &&
+        (gpu_frame_dirty ||
+         (!hardware_cursor &&
+          (!g_gpu_cursor_present_valid ||
+           g_gpu_cursor_present_x != desktop->mouse_x ||
+           g_gpu_cursor_present_y != desktop->mouse_y)));
+    if (gpu_cached_wanted &&
+        gui_gpu_compositor_present_cached(desktop, !hardware_cursor)) {
+        if (hardware_cursor) {
+            if (!gfx_cursor_move(desktop->mouse_x, desktop->mouse_y) ||
+                !gfx_cursor_show(true)) {
+                g_hardware_cursor_ready = false;
+                g_hardware_cursor_generation = 0U;
+                hardware_cursor = false;
+                /* The frame just presented did not contain a cursor. Re-submit
+                 * once with the GPU cursor instead of falling through to the
+                 * incompatible 2D software-cursor path. */
+                if (!gui_gpu_compositor_present_cached(desktop, true))
+                    goto gpu_cached_failed;
+            }
+        }
+        if (!hardware_cursor) {
+            g_gpu_cursor_present_valid = true;
+            g_gpu_cursor_present_x = desktop->mouse_x;
+            g_gpu_cursor_present_y = desktop->mouse_y;
+        } else {
+            g_gpu_cursor_present_valid = false;
+        }
+        compositor_clear_gpu_frame_dirty(desktop);
+        desktop->cursor_valid = false;
+        desktop->cursor_paint_count = 0U;
+        desktop->paint_valid = true;
+        perfmon_gui_frame(0U, (uint32_t)screen.w * (uint32_t)screen.h,
+                          false, true, true);
+        return;
+    }
+gpu_cached_failed:
+    /* BLESKERNOS_GPU_CACHED_FALLTHROUGH_V9_1
+     * Este label tambien se alcanza por flujo normal. Solo promueva a frame
+     * completo si de verdad intentamos el cached present y fallo. Un click
+     * sin dano visual debe ser un no-op de presentacion. */
+    if (gpu_cached_wanted && gui_gpu_compositor_needed(desktop)) {
+        content_dirty = true;
+        content_rect = screen;
+        content_valid = true;
+    } else if (!content_dirty && gui_gpu_compositor_needed(desktop) &&
+               !desktop->cursor_trail_enabled) {
+        desktop->paint_valid = true;
+        perfmon_gui_frame(0U, 0U, false, true, true);
+        return;
+    }
     /* BLESKERNOS_SVGA3D_FULL_FRAME_BEGIN
      * La primera ruta compuesta por GPU reconstruye sus capas completas
      * cuando cambia contenido. Los cuadros que sólo mueven el cursor
      * conservan el camino de rectángulos sucios existente. */
-    if (content_dirty && gui_gpu_compositor_enabled()) {
+    if (content_dirty && gui_gpu_compositor_needed(desktop) &&
+        gui_gpu_compositor_enabled()) {
         content_rect = screen;
         content_valid = true;
     }
@@ -686,8 +1110,18 @@ void gui_compositor_paint(gui_desktop_t *desktop) {
         {
             uint64_t perf_compose_started = perfmon_scope_begin();
             gui_desktop_paint_programs(desktop);
+            compositor_paint_interaction_overlay(desktop, &desktop->surface);
             perfmon_scope_end(PERF_SCOPE_GUI_COMPOSE,
                               perf_compose_started);
+        }
+        /* A Ring-3 scene owner (Vision) is asynchronous.  If it is rebuilding
+         * this dirty region, presenting now would publish the previous scene
+         * and can erase a newly completed application frame.  Leave the last
+         * good scanout untouched; the paint-completion upcall records the exact
+         * clip and wakes the compositor again. */
+        if (gui_desktop_scene_waiting(desktop)) {
+            gui_gfx_reset_clip(&desktop->surface);
+            return;
         }
     }
     compositor_paint_error(desktop, &desktop->surface);
@@ -707,10 +1141,33 @@ void gui_compositor_paint(gui_desktop_t *desktop) {
     if (content_valid) {
         uint64_t perf_gpu_started = perfmon_scope_begin();
         gpu_presented = gui_gpu_compositor_present(
-            desktop, &desktop->surface);
+            desktop, &desktop->surface, !hardware_cursor);
         perfmon_scope_end(PERF_SCOPE_GPU_PRESENT, perf_gpu_started);
+        if (gpu_presented) compositor_clear_gpu_frame_dirty(desktop);
     }
     /* BLESKERNOS_SVGA3D_PRESENT_END */
+
+    /* A direct GPU viewport and a CPU software cursor cannot safely share the
+     * scanout: the CPU backing store has no copy of the 3D pixels underneath
+     * the pointer.  When the GPU compositor presented the frame with its cursor
+     * layer, finish the dirty bookkeeping here and never issue 2D cursor
+     * rectangles over that frame. */
+    if (gpu_presented && !hardware_cursor) {
+        g_gpu_cursor_present_valid = true;
+        g_gpu_cursor_present_x = desktop->mouse_x;
+        g_gpu_cursor_present_y = desktop->mouse_y;
+        if (content_valid) compositor_finish_windows(desktop);
+        if (content_valid && desktop->dirty_generation == dirty_generation)
+            desktop->dirty_valid = false;
+        desktop->cursor_valid = false;
+        desktop->cursor_paint_count = 0U;
+        desktop->paint_valid = true;
+        perfmon_gui_frame(content_valid
+                ? (uint32_t)content_rect.w * (uint32_t)content_rect.h : 0U,
+            (uint32_t)screen.w * (uint32_t)screen.h,
+            content_valid, true, true);
+        return;
+    }
 
     /* BLESKERNOS_SVGA_HW_CURSOR_BRANCH_BEGIN */
     if (hardware_cursor) {

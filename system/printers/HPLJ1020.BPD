@@ -1,0 +1,7 @@
+[Printer]
+Id=HPLJ1020
+Name=HP LaserJet 1020 ZjStream
+Language=ZJS
+Transport=LPT
+Port=USBPRN1
+DPI=600

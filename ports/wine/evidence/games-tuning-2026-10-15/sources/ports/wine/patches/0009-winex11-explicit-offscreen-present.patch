@@ -1,0 +1,105 @@
+--- a/dlls/winex11.drv/init.c
++++ b/dlls/winex11.drv/init.c
+@@ -293,6 +293,9 @@
+     TRACE( "%s\n", debugstr_client_surface( client ) );
+ 
+     if (surface->colormap != default_colormap) XFreeColormap( gdi_display, surface->colormap );
++#ifdef SONAME_LIBGL
++    x11drv_set_gl_offscreen( surface->window, FALSE );
++#endif
+     if (surface->window) destroy_client_window( hwnd, surface->window );
+     if (surface->hdc_dst) NtGdiDeleteObjectApp( surface->hdc_dst );
+     if (surface->hdc_src) NtGdiDeleteObjectApp( surface->hdc_src );
+@@ -358,6 +361,10 @@
+ {
+     BOOL offscreen = needs_offscreen_rendering( hwnd );
+     struct x11drv_win_data *data;
++
++#ifdef SONAME_LIBGL
++    x11drv_set_gl_offscreen( surface->window, offscreen );
++#endif
+ 
+     TRACE( "%s offscreen %u\n", debugstr_client_surface( &surface->client ), offscreen );
+ 
+@@ -451,6 +458,8 @@
+         }
+         if (surface->local_front && x11drv_copy_gl_front( surface->window, surface->local_front ))
+             source = surface->local_front;
++        else
++            x11drv_copy_gl_front( surface->window, surface->window );
+         set_dc_drawable( surface->hdc_src, source, &surface->rect, IncludeInferiors );
+     }
+ #endif
+--- a/dlls/winex11.drv/opengl.c
++++ b/dlls/winex11.drv/opengl.c
+@@ -319,6 +319,7 @@
+ 
+ static void *opengl_handle;
+ static Bool (*p_bles_glx_copy_front)(Display *, GLXDrawable, Pixmap);
++static void (*p_bles_glx_set_offscreen)(Display *, GLXDrawable, Bool);
+ static const struct opengl_funcs *funcs;
+ static struct opengl_driver_funcs x11drv_driver_funcs;
+ static const struct opengl_drawable_funcs x11drv_surface_funcs;
+@@ -587,6 +588,7 @@
+        and include all dependencies */
+     opengl_handle = dlopen( SONAME_LIBGL, RTLD_NOW | RTLD_GLOBAL );
+     if (opengl_handle) p_bles_glx_copy_front = dlsym( opengl_handle, "bles_glx_copy_front" );
++    if (opengl_handle) p_bles_glx_set_offscreen = dlsym( opengl_handle, "bles_glx_set_offscreen" );
+     if (opengl_handle == NULL)
+     {
+         ERR( "Failed to load libGL: %s\n", dlerror() );
+@@ -757,6 +759,8 @@
+     return STATUS_SUCCESS;
+ 
+ failed:
++    p_bles_glx_set_offscreen = NULL;
++    p_bles_glx_copy_front = NULL;
+     dlclose(opengl_handle);
+     opengl_handle = NULL;
+     return STATUS_NOT_SUPPORTED;
+@@ -1207,9 +1211,16 @@
+     if (!pglXMakeContextCurrent || !context) ret = pglXMakeCurrent( gdi_display, context ? draw->drawable : None, context );
+     else ret = pglXMakeContextCurrent( gdi_display, draw->drawable, read->drawable, context );
+     if (ret) NtCurrentTeb()->glReserved2 = context;
++    if (ret && context && draw_base->client) x11drv_set_gl_offscreen( draw->drawable,
++        InterlockedCompareExchange( &draw_base->client->offscreen, 0, 0 ) );
+     return ret;
+ }
+ 
++void x11drv_set_gl_offscreen( Drawable source, BOOL offscreen )
++{
++    if (p_bles_glx_set_offscreen) p_bles_glx_set_offscreen( gdi_display, source, offscreen );
++}
++
+ BOOL x11drv_copy_gl_front( Drawable source, Pixmap target )
+ {
+     return p_bles_glx_copy_front && p_bles_glx_copy_front( gdi_display, source, target );
+@@ -1221,6 +1232,7 @@
+ 
+     TRACE( "%s flags %#x\n", debugstr_opengl_drawable( base ), flags );
+ 
++    x11drv_set_gl_offscreen( gl->drawable, InterlockedCompareExchange( &base->client->offscreen, 0, 0 ) );
+     if (flags & GL_FLUSH_INTERVAL) set_swap_interval( gl, base->interval );
+     if (!(flags & GL_FLUSH_PRESENT)) return;
+ 
+@@ -1482,7 +1494,9 @@
+ 
+     TRACE( "drawable %s\n", debugstr_opengl_drawable( base ) );
+ 
+-    if (!(offscreen = InterlockedCompareExchange( &base->client->offscreen, 0, 0 )) ||
++    offscreen = InterlockedCompareExchange( &base->client->offscreen, 0, 0 );
++    x11drv_set_gl_offscreen( gl->drawable, offscreen );
++    if (!offscreen ||
+         !ctx || !pglXSwapBuffersMscOML) pglXSwapBuffers( gdi_display, gl->drawable );
+     else
+     {
+--- a/dlls/winex11.drv/x11drv.h
++++ b/dlls/winex11.drv/x11drv.h
+@@ -291,6 +291,7 @@
+ extern const struct gdi_dc_funcs *X11DRV_XRender_Init(void);
+ 
+ extern BOOL x11drv_copy_gl_front( Drawable source, Pixmap target );
++extern void x11drv_set_gl_offscreen( Drawable source, BOOL offscreen );
+ extern BOOL visual_from_pixel_format( int format, XVisualInfo *visual );
+ 
+ extern UINT X11DRV_OpenGLInit( UINT, const struct opengl_funcs *, const struct opengl_driver_funcs ** );

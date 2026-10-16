@@ -1,0 +1,6 @@
+run=0 mode=scalar ns=586034142 checksum=1464769743
+run=0 mode=dispatch ns=177048274 checksum=1464769743
+run=1 mode=scalar ns=543746707 checksum=1464769743
+run=1 mode=dispatch ns=215518068 checksum=1464769743
+run=2 mode=scalar ns=540778644 checksum=1464769743
+run=2 mode=dispatch ns=201712736 checksum=1464769743

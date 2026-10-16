@@ -1,0 +1,28 @@
+{
+  "project": "JBIG-KIT",
+  "author": "Markus Kuhn",
+  "license": "GPL-2.0-or-later",
+  "retrieved": "2026-10-13",
+  "files": [
+    {
+      "file": "jbig.c",
+      "url": "https://raw.githubusercontent.com/OpenPrinting/foo2zjs/master/jbig.c",
+      "sha256": "835ce9b964a6735187b6e064562695063a65f35fe29924de1d60db660c3e21b3"
+    },
+    {
+      "file": "jbig.h",
+      "url": "https://raw.githubusercontent.com/OpenPrinting/foo2zjs/master/jbig.h",
+      "sha256": "0c016a8c69e349c510630edbf5b96057be952c2ac19c1a9b8488ad8c9864d7a4"
+    },
+    {
+      "file": "jbig_ar.c",
+      "url": "https://raw.githubusercontent.com/OpenPrinting/foo2zjs/master/jbig_ar.c",
+      "sha256": "a51552d2f839ce8b758400660bd423b95b4b25cde11e65cc4e7d6c63c1a19d6f"
+    },
+    {
+      "file": "jbig_ar.h",
+      "url": "https://raw.githubusercontent.com/OpenPrinting/foo2zjs/master/jbig_ar.h",
+      "sha256": "292c4c43c944e2573b558d89b7004cec6c59c70dbbfd7b9890868a2291d1250a"
+    }
+  ]
+}

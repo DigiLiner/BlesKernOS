@@ -1,0 +1,1 @@
+PASS production AC97 MMIO preserves full addresses/widths; D3->D0 preserves PME enable without W1C acknowledgement; bounded capability walk

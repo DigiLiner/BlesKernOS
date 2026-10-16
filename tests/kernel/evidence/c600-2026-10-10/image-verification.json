@@ -1,0 +1,7 @@
+{
+  "normal": "build/bleskernos-ata-user.img",
+  "usb": "build/bleskernos-usb-user.img",
+  "kernel_sha256": "b825b67e98d59be84f21cef2b687a29b5e1678d58003366805a39a4a3a969706",
+  "partition_after_boot_sector_sha256": "769f732340d1951ad7010c81d83c2cc061b0b7a67f30f794b66772fda654ec63",
+  "verified": true
+}

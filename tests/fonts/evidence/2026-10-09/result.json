@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-09",
+  "fonts": [
+    {
+      "file": "assets/fonts/DEJAVUSANS.BFN",
+      "bytes": 11758761,
+      "sha256": "5d375c67b713bf0c09c7c92be3fb0c366043cc6f7e078259d6420cf98b24c1ef"
+    },
+    {
+      "file": "assets/fonts/DEJAVUSANSMONO.BFN",
+      "bytes": 11545678,
+      "sha256": "8efe848e45de4e9e8e4143039d3b2fea64beb73ede83fef85662d2f31beb62b2"
+    },
+    {
+      "file": "assets/fonts/DEJAVUSERIF.BFN",
+      "bytes": 12197028,
+      "sha256": "47393c7bd3cc258528cc69f6655c1a055ab09ea011f627547ec8c235947e6375"
+    }
+  ],
+  "source_format": "DejaVu 2.37 TrueType originals",
+  "runtime_format": "BFN1 grayscale 8-bit strikes",
+  "sizes": {
+    "min": 8,
+    "max": 72,
+    "step": 1
+  },
+  "glyphs_per_size": 201,
+  "checks": {
+    "kernel_x86": "passed",
+    "viewer_x86": "passed",
+    "native_renderer_asan_ubsan": "passed: all faces and sizes, UTF-8, metrics, cache, storage-origin/pitch clipping, malformed pack rejection",
+    "bfs4_install": "passed: exact font payloads and existing user data retained",
+    "public_sdk_api": "passed syntax check",
+    "arm_renderer_object": "passed (full ARM link has previous unresolved symbols)",
+    "guest": {
+      "ram_MiB": 2048,
+      "cpus": 2,
+      "gpu": "virtio-vga without GL",
+      "vision_and_wine_boot": "passed",
+      "font_viewer_opened": "passed",
+      "keyboard_family_and_size_changes": [
+        "Sans 24",
+        "Mono 26",
+        "Serif 25",
+        "Mono 24"
+      ],
+      "image": "normal User build, no injected startup harness"
+    },
+    "normal_user_image": "passed: full normal build to scratch image, BFS4 check, exact font/viewer/license payloads, desktop association and shortcut",
+    "normal_build_exit_status": 0,
+    "kernel_size_bytes": 780228
+  },
+  "production_image_modified": false,
+  "notes": [
+    "Final guest captures use the image produced by the normal User build and its default Font desktop shortcut; production disk was untouched.",
+    "Existing bitmap UI and Wine font configuration are unchanged."
+  ],
+  "production_image_sha256": "f9729d3c085deb5f89c8ffb0f5c229b9557e05b0c5c967693a6e3e7284466f4f"
+}

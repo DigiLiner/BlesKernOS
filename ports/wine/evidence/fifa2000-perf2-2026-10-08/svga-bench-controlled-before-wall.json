@@ -1,0 +1,166 @@
+[
+  {
+    "wall": 6743.523328475,
+    "line": "[GLX-BENCH] renderer=BlesKernOS GFX3D version=1.2 Mesa 3.5 glsl=(null)"
+  },
+  {
+    "wall": 6743.60903552,
+    "line": "[GLX-BENCH] begin phase=render size=320x240 batches=1"
+  },
+  {
+    "wall": 6743.883077096,
+    "line": "[GLX-BENCH] phase=render size=320x240 batches=1 frames=24 us=273334"
+  },
+  {
+    "wall": 6743.914885068,
+    "line": "[GLX-BENCH] begin phase=present size=320x240 batches=1"
+  },
+  {
+    "wall": 6744.05023376,
+    "line": "[GLX-BENCH] phase=present size=320x240 batches=1 frames=24 us=136667"
+  },
+  {
+    "wall": 6744.071408179,
+    "line": "[GLX-BENCH] begin phase=render size=320x240 batches=128"
+  },
+  {
+    "wall": 6744.207956436,
+    "line": "[GLX-BENCH] phase=render size=320x240 batches=128 frames=24 us=126667"
+  },
+  {
+    "wall": 6744.239846952,
+    "line": "[GLX-BENCH] begin phase=present size=320x240 batches=128"
+  },
+  {
+    "wall": 6744.386321467,
+    "line": "[GLX-BENCH] phase=present size=320x240 batches=128 frames=24 us=150000"
+  },
+  {
+    "wall": 6744.41850397,
+    "line": "[GLX-BENCH] begin phase=render size=320x240 batches=1024"
+  },
+  {
+    "wall": 6744.662134782,
+    "line": "[GLX-BENCH] phase=render size=320x240 batches=1024 frames=24 us=236666"
+  },
+  {
+    "wall": 6744.706385518,
+    "line": "[GLX-BENCH] begin phase=present size=320x240 batches=1024"
+  },
+  {
+    "wall": 6744.897790245,
+    "line": "[GLX-BENCH] phase=present size=320x240 batches=1024 frames=24 us=193333"
+  },
+  {
+    "wall": 6744.908616763,
+    "line": "[GLX-BENCH] corner=0000ff expected=0000ff"
+  },
+  {
+    "wall": 6744.979026541,
+    "line": "[GLX-BENCH] begin phase=render size=640x480 batches=1"
+  },
+  {
+    "wall": 6745.212157421,
+    "line": "[GLX-BENCH] phase=render size=640x480 batches=1 frames=24 us=233333"
+  },
+  {
+    "wall": 6745.254341909,
+    "line": "[GLX-BENCH] begin phase=present size=640x480 batches=1"
+  },
+  {
+    "wall": 6745.515798603,
+    "line": "[GLX-BENCH] phase=present size=640x480 batches=1 frames=24 us=260000"
+  },
+  {
+    "wall": 6745.559173641,
+    "line": "[GLX-BENCH] begin phase=render size=640x480 batches=128"
+  },
+  {
+    "wall": 6745.814618743,
+    "line": "[GLX-BENCH] phase=render size=640x480 batches=128 frames=24 us=256667"
+  },
+  {
+    "wall": 6745.858184482,
+    "line": "[GLX-BENCH] begin phase=present size=640x480 batches=128"
+  },
+  {
+    "wall": 6746.12366975,
+    "line": "[GLX-BENCH] phase=present size=640x480 batches=128 frames=24 us=263333"
+  },
+  {
+    "wall": 6746.167132435,
+    "line": "[GLX-BENCH] begin phase=render size=640x480 batches=1024"
+  },
+  {
+    "wall": 6746.461656422,
+    "line": "[GLX-BENCH] phase=render size=640x480 batches=1024 frames=24 us=286667"
+  },
+  {
+    "wall": 6746.514525818,
+    "line": "[GLX-BENCH] begin phase=present size=640x480 batches=1024"
+  },
+  {
+    "wall": 6746.823139815,
+    "line": "[GLX-BENCH] phase=present size=640x480 batches=1024 frames=24 us=306666"
+  },
+  {
+    "wall": 6746.834134372,
+    "line": "[GLX-BENCH] corner=0000ff expected=0000ff"
+  },
+  {
+    "wall": 6746.99268074,
+    "line": "[GLX-BENCH] begin phase=render size=1024x768 batches=1"
+  },
+  {
+    "wall": 6747.462071251,
+    "line": "[GLX-BENCH] phase=render size=1024x768 batches=1 frames=24 us=466666"
+  },
+  {
+    "wall": 6747.547266412,
+    "line": "[GLX-BENCH] begin phase=present size=1024x768 batches=1"
+  },
+  {
+    "wall": 6748.009525426,
+    "line": "[GLX-BENCH] phase=present size=1024x768 batches=1 frames=24 us=443333"
+  },
+  {
+    "wall": 6748.093842615,
+    "line": "[GLX-BENCH] begin phase=render size=1024x768 batches=128"
+  },
+  {
+    "wall": 6748.51530581,
+    "line": "[GLX-BENCH] phase=render size=1024x768 batches=128 frames=24 us=423333"
+  },
+  {
+    "wall": 6748.600149957,
+    "line": "[GLX-BENCH] begin phase=present size=1024x768 batches=128"
+  },
+  {
+    "wall": 6749.077069295,
+    "line": "[GLX-BENCH] phase=present size=1024x768 batches=128 frames=24 us=473334"
+  },
+  {
+    "wall": 6749.153325672,
+    "line": "[GLX-BENCH] begin phase=render size=1024x768 batches=1024"
+  },
+  {
+    "wall": 6749.624402954,
+    "line": "[GLX-BENCH] phase=render size=1024x768 batches=1024 frames=24 us=466667"
+  },
+  {
+    "wall": 6749.71031762,
+    "line": "[GLX-BENCH] begin phase=present size=1024x768 batches=1024"
+  },
+  {
+    "wall": 6750.219625666,
+    "line": "[GLX-BENCH] phase=present size=1024x768 batches=1024 frames=24 us=496667"
+  },
+  {
+    "wall": 6750.231536898,
+    "line": "[GLX-BENCH] corner=0000ff expected=0000ff"
+  },
+  {
+    "wall": 6750.249141208,
+    "line": "[GLX-BENCH] PASS"
+  }
+]

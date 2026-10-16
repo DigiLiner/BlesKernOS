@@ -1,0 +1,257 @@
+--- a/ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesos.c
++++ b/ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesos.c
+@@ -13,6 +13,7 @@
+ #include <unistd.h>
+ #include <string.h>
+ #include <ctype.h>
++#include "bles_present.h"
+ 
+ /* Values exported by BlesKernOS kernel/include/keyboard.h.  Keep the X
+  * keycodes stable: printable characters retain their original positions. */
+@@ -23,11 +24,26 @@
+ #define BLES_KEY_ALT      0x9a
+ #define BLES_KEY_INSERT   0x9b
+ 
++static int blesInputType;
++static int blesInputFd = -1;
++static void BlesPoll(void);
++static void BlesReadInput(int fd, void *closure)
++{
++    (void)fd; (void)closure;
++    BlesPoll();
++}
++
+ static int BlesInit(void) { return 1; }
+ static void BlesEnable(void) { }
+ static Bool BlesSpecialKey(KeySym key) { (void)key; return FALSE; }
+ static void BlesDisable(void) { }
+-static void BlesFini(void) { }
++static void BlesFini(void)
++{
++    if (blesInputFd >= 0) KdUnregisterFds(blesInputType, FALSE);
++    blesInputFd = -1;
++    blesInputType = 0;
++    BlesFrameFini();
++}
+ 
+ /* The GUI supplies translated characters, while X11 and Wine expect a
+  * stable keycode for each physical key plus modifier state. */
+@@ -67,6 +83,12 @@
+     KdCardInfo *card = kdCardInfo;
+     FbdevPriv *priv = card ? card->driver : NULL;
+     if (!priv || priv->fd < 0) return;
++    if (blesInputFd != priv->fd) {
++        if (blesInputFd >= 0) KdUnregisterFds(blesInputType, FALSE);
++        if (!blesInputType) blesInputType = KdAllocInputType();
++        blesInputFd = KdRegisterFd(blesInputType, priv->fd,
++                                  BlesReadInput, NULL) ? priv->fd : -1;
++    }
+     bles_gfx_event_t event;
+     for (unsigned i = 0; i < 32; ++i) {
+         int result = syscall(SYS_ioctl, priv->fd, BLES_GFX_EVENT, &event);
+@@ -84,32 +106,20 @@
+         }
+     }
+     static CARD32 last_present;
+-    static CARD32 last_hash, last_sum;
+-    static Bool have_hash;
+     CARD32 now = GetTimeInMillis();
+     if (now - last_present >= 33) {
+-        /* KDrive writes directly into this buffer. A static Wine desktop used
+-         * to copy its entire 760x536 image into the kernel 20 times/second.
+-         * Scan once and publish only when pixels or host window mappings
+-         * changed. Cursor events still take the normal input path above. */
+-        const CARD32 *pixels = (const CARD32 *)priv->fb;
+-        CARD32 count = priv->var.xres * priv->var.yres;
+-        CARD32 hash = 2166136261U, sum = 0U;
+-        for (CARD32 i = 0; i < count; ++i) {
+-            CARD32 value = pixels[i];
+-            hash = (hash ^ value) * 16777619U;
+-            sum += value + i;
+-        }
+-        Bool changed = !have_hash || hash != last_hash || sum != last_sum;
++        /* libc compares idle images without the serial FNV dependency on
++         * every pixel. Exact comparison retains direct framebuffer writes. */
++        size_t bytes = (size_t)priv->var.xres * priv->var.yres * 4U;
++        Bool changed = BlesFrameChanged(priv->fb, bytes);
+         if (changed || syscall(SYS_ioctl, priv->fd, BLES_GFX_NEEDS_PRESENT, 0) > 0) {
++            const void *pixels = BlesFramePrepare(priv->fb, bytes);
+             bles_gfx_present_t present = {
+-                (uint32_t)(uintptr_t)priv->fb,
++                (uint32_t)(uintptr_t)pixels,
+                 priv->var.xres, priv->var.yres
+             };
+             if (syscall(SYS_ioctl, priv->fd, BLES_GFX_PRESENT, &present) >= 0) {
+-                last_hash = hash;
+-                last_sum = sum;
+-                have_hash = TRUE;
++                BlesFramePublished(pixels, bytes);
+             }
+         }
+         last_present = now;
+--- a/ports/tinyx/upstream/tinycorelinux-tinyx/fb/fbcompose.c
++++ b/ports/tinyx/upstream/tinycorelinux-tinyx/fb/fbcompose.c
+@@ -3319,7 +3319,7 @@
+     }
+ }
+ 
+-#ifdef BLES_ENABLE_FAST_BILINEAR
++#if defined(BLESK) || defined(BLES_ENABLE_FAST_BILINEAR)
+ #include "fb_bles_bilinear.h"
+ #endif
+ 
+@@ -3500,9 +3500,8 @@
+         unit.vector[0] -= unit.vector[2] / 2;
+         unit.vector[1] -= unit.vector[2] / 2;
+ 
+-#ifdef BLES_ENABLE_FAST_BILINEAR
+-        /* Experimental until prolonged host-fence validation is complete.
+-         * BlesKernOS: Wine mode emulation usually scales an opaque XRGB
++#if defined(BLESK) || defined(BLES_ENABLE_FAST_BILINEAR)
++        /* BlesKernOS: Wine mode emulation usually scales an opaque XRGB
+          * pixmap along horizontal scanlines. Avoid four indirect fetch calls
+          * and repeated clip tests per pixel when the entire row is interior.
+          * Preserve the original 8-bit fractions and 16-bit final rounding.
+@@ -3512,21 +3511,24 @@
+             pict->repeatType == RepeatNone &&
+             REGION_NUM_RECTS(pict->pCompositeClip) == 1 &&
+             (pict->format == PICT_x8r8g8b8 || pict->format == PICT_a8r8g8b8)) {
+-            xFixed_48_16 last = (xFixed_48_16)v.vector[0] +
+-                               (xFixed_48_16)(width - 1) * unit.vector[0];
+-            int first_x = v.vector[0] >> 16;
+-            int last_x = last >> 16;
++            int skip, count;
+             int row_y = v.vector[1] >> 16;
+             box = pict->pCompositeClip->extents;
+-            if (first_x >= box.x1 - dx && first_x < box.x2 - dx - 1 &&
+-                last_x >= box.x1 - dx && last_x < box.x2 - dx - 1 &&
+-                row_y >= box.y1 - dy && row_y < box.y2 - dy - 1 &&
+-                last >= (-2147483647LL - 1) && last <= 2147483647LL) {
++            if (row_y >= box.y1 - dy && row_y < box.y2 - dy - 1 &&
++                fbBlesBilinearSpan(width, v.vector[0], unit.vector[0],
++                                   box.x1 - dx, box.x2 - dx - 1, &skip, &count)) {
+                 const CARD32 *top = (const CARD32 *)(bits + (row_y + dy) * stride);
+                 const CARD32 *bottom = (const CARD32 *)(bits + (row_y + dy + 1) * stride);
+-                fbBlesBilinear32(top, bottom, buffer, width, v.vector[0],
++                if (skip)
++                    fbFetchTransformed(pict, x - xoff, y - yoff, skip, buffer);
++                xFixed first = (xFixed)((xFixed_48_16)v.vector[0] +
++                                       (xFixed_48_16)skip * unit.vector[0]);
++                fbBlesBilinear32(top, bottom, buffer + skip, count, first,
+                                 unit.vector[0], dx, (v.vector[1] >> 8) & 255,
+                                 pict->format == PICT_x8r8g8b8);
++                if (skip + count < width)
++                    fbFetchTransformed(pict, x - xoff + skip + count, y - yoff,
++                                        width - skip - count, buffer + skip + count);
+                 return;
+             }
+         }
+--- a/kernel/linux/i386_ipc.inc
++++ b/kernel/linux/i386_ipc.inc
+@@ -1087,7 +1087,14 @@
+ 
+ static uint32_t linux_poll_raw(int raw,uint32_t requested) {
+     linux_device *d=linux_device_for(raw);
+-    if(d) return requested & ((d->flags&3)?4U:(d->kind==2?1U:0U));
++    if(d) {
++        uint32_t ready=(d->flags&3)?4U:(d->kind==2?1U:0U);
++        /* KDrive can watch the native input queue alongside its X sockets.
++         * Level readiness lasts until BLES_GFX_EVENT drains the queue. */
++        if(d->kind==3 && d->gfx && d->gfx->read_pos!=d->gfx->write_pos)
++            ready|=1U;
++        return requested & ready;
++    }
+     if(raw<0)return 32;
+     if(raw<LINUX_IO_BASE)return requested&(1|4);
+     linux_endpoint *e=linux_endpoint_for(raw),*peer=linux_endpoint_for(raw^1);
+--- /dev/null
++++ b/ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/bles_present.h
+@@ -0,0 +1,50 @@
++/* SPDX-License-Identifier: GPL-3.0-or-later
++ * Exact comparison also observes direct/shared framebuffer writes which do
++ * not pass through X Damage. Freeze uploads before ioctl; commit the reference
++ * only after successful publication. */
++#include <stdlib.h>
++#include <string.h>
++
++static void *blesFramePixels;
++static size_t blesFrameSize;
++static int blesFrameValid;
++
++static void BlesFrameFini(void)
++{
++    free(blesFramePixels);
++    blesFramePixels = NULL;
++    blesFrameSize = 0;
++    blesFrameValid = 0;
++}
++
++static int BlesFrameChanged(const void *pixels, size_t bytes)
++{
++    if (!bytes) return 0;
++    if (bytes != blesFrameSize) {
++        void *snapshot;
++        blesFrameValid = 0;
++        snapshot = realloc(blesFramePixels, bytes);
++        if (!snapshot) return 1; /* OOM: publish conservatively. */
++        blesFramePixels = snapshot;
++        blesFrameSize = bytes;
++    }
++    return !blesFrameValid || memcmp(pixels, blesFramePixels, bytes) != 0;
++}
++
++static const void *BlesFramePrepare(const void *pixels, size_t bytes)
++{
++    blesFrameValid = 0;
++    if (blesFramePixels && bytes == blesFrameSize) {
++        memcpy(blesFramePixels, pixels, bytes);
++        return blesFramePixels;
++    }
++    return pixels;
++}
++
++static void BlesFramePublished(const void *pixels, size_t bytes)
++{
++    /* The upload and the reference must describe the same frozen image.
++     * A shared-memory writer may change the live buffer while ioctl sleeps. */
++    if (blesFramePixels && pixels == blesFramePixels && bytes == blesFrameSize)
++        blesFrameValid = 1;
++}
+--- a/ports/tinyx/upstream/tinycorelinux-tinyx/fb/fb_bles_bilinear.h
++++ b/ports/tinyx/upstream/tinycorelinux-tinyx/fb/fb_bles_bilinear.h
+@@ -2,6 +2,35 @@
+  * Interior affine ARGB/XRGB scanline; fbFetchTransformed checks the clip.
+  * Keep the generic fetcher's precision, including alpha for ARGB pictures.
+  */
++/* A full scaled row normally touches a border at each end. Keep those
++ * pixels on the general path instead of rejecting the entire fast row. */
++static int
++fbBlesBilinearSpan(int width, xFixed start, xFixed step, int left, int right,
++                    int *skip, int *count)
++{
++    int first = 0, end = width;
++    long long last;
++    if (width <= 0 || right <= left) return 0;
++    last = (long long)start + (long long)(width - 1) * step;
++    if (last < (-2147483647LL - 1) || last > 2147483647LL) return 0;
++    if (((start >> 16) < left && (last >> 16) < left) ||
++        ((start >> 16) >= right && (last >> 16) >= right)) return 0;
++    while (first < end) {
++        int x = ((long long)start + (long long)first * step) >> 16;
++        if (x >= left && x < right) break;
++        first++;
++    }
++    while (end > first) {
++        int x = ((long long)start + (long long)(end - 1) * step) >> 16;
++        if (x >= left && x < right) break;
++        end--;
++    }
++    if (first == end) return 0;
++    *skip = first;
++    *count = end - first;
++    return 1;
++}
++
+ static void
+ fbBlesBilinear32(const CARD32 *top, const CARD32 *bottom, CARD32 *out,
+                  int width, xFixed start, xFixed step, int dx,

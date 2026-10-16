@@ -1,0 +1,13 @@
+make: 'build/system/services/vision.o' is up to date.
+ld: warning: build/isr_stubs.o: missing .note.GNU-stack section implies executable stack
+ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+patched /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine-notify/baseline-valid/guest/test.img: kernel 841772 bytes
+/SYSTEM/SERVICES/VISION.BEX 255380 bytes; mode 0o100644
+/WINEGATE/bin/futex-suite.ELF 15244 bytes; mode 0o100755
+/WINEGATE/bin/directory-notify-launch.ELF 15244 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/SCREENSV.INI 23 bytes; mode 0o100644
+{'host_s': 39.0023425979889, 'line': '[FUTEX-SUITE] FAIL test=directory-notify-launch status=256'}
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/run_futex_bench.py", line 96, in <module>
+    raise RuntimeError(line)
+RuntimeError: [FUTEX-SUITE] FAIL test=directory-notify-launch status=256

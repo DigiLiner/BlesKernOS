@@ -4,7 +4,7 @@
 #include "types.h"
 #include "block.h"
 
-#define ISO9660_MAX_NAME 32
+#define ISO9660_MAX_NAME 256
 
 typedef struct {
     char name[ISO9660_MAX_NAME];
@@ -16,6 +16,8 @@ typedef struct {
 typedef struct {
     bool (*mount_default)(void);
     bool (*is_mounted)(void);
+    void (*unmount)(void);
+    uint32_t (*media_signature)(void);
     bool (*resolve)(const char *path, iso9660_entry_t *entry);
     bool (*list)(const iso9660_entry_t *directory,
                  iso9660_entry_t *entries, uint32_t max_entries,
@@ -29,6 +31,8 @@ bool iso9660_register_driver(const iso9660_driver_ops_t *ops);
 bool iso9660_builtin_init(void);
 bool iso9660_mount_default(void);
 bool iso9660_is_mounted(void);
+void iso9660_unmount(void);
+uint32_t iso9660_media_signature(void);
 bool iso9660_resolve(const char *path, iso9660_entry_t *entry);
 bool iso9660_list(const iso9660_entry_t *directory, iso9660_entry_t *entries,
                   uint32_t max_entries, uint32_t *count);

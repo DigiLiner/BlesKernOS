@@ -1,0 +1,167 @@
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=32255 KiB top=32640 KiB
+  [MM] RAM usable: 32255 KB
+  [MM] Heap dinamico: 0x400000 - 0x1de0000 (26496 KB)
+  [MM] VM frames: 0x1de0000 - 0x1fe0000 (2048 KiB, 512 paginas)
+  [MM] Vista PE fija desactivada: heap reducido ocupa 0x400000-0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x400000-0x1de0000
+[COMPAT] perfil=normal RAM_top=32640 KiB heap=26496 KiB tareas=32 CPU=fam6/mod122 GUI=60FPS TIMER=300Hz
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:EARLY] BIOS LFB 800x600x32 pitch=3200 fb=0xfd000000
+[BKBOOT t=0] STARTING KERNEL
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 5 dispositivos detectados
+  [LPT] no se detectaron puertos paralelos
+  [ATA] ata0: 1572864 sectores de 512 bytes
+  [ATA] ata0: read burst=16 sectores
+  [ATA] ata0: PIO read width=32 bits
+[ATA:PROBE] io=0x1f0 slave=1 ausente (status=0x0)
+[ATA:PROBE] io=0x170 slave=0 ausente (status=0x0)
+[ATA:PROBE] io=0x170 slave=1 ausente (status=0x0)
+  [ATA] canales IDE normalizados despues del probe
+  [ATA] ata0: QEMU PIIX DMA read/write enabled
+[BKBOOT t=455] STORAGE DRIVERS
+[BKBOOT t=456] MOUNTING FILESYSTEM
+[BKBOOT t=457] F8: RECOVERY MODE (2 SEC)
+[BOOT] Pulse F8 para entrar a recovery sin Vision ni servicios
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=1
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 1
+[FAT] dev[0]=ata0 tipo=1 sectores=1572864
+Intentando montar ata0...
+fat_set_active(ata0)
+No es particion, buscando ata0
+Dispositivo encontrado
+[BFS4:CACHE] slots=64 bytes=263424
+fat_try_mount_device OK
+fat_set_active OK
+Montado ata0 OK
+[VFS] /TEMP listo
+[SWAP] /SYSTEM/SWAP.BKS en ata0 validado: 8191 slots de 4 KiB
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=5 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+[DVR] /SYSTEM/DRIVERS/USBCLASS.DVR: ERROR: init del driver fallo
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado
+[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo
+[SVGA.DVR] dispositivo 15AD:0405 no detectado
+[DVR] /SYSTEM/DRIVERS/VMWARESVGA.DVR: ERROR: init del driver fallo
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 9 modulo(s) cargado(s)
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA OK mode=800x600x32 pitch=3200 fb=0xfd000000
+[GFXRES] boot icons 9/9 precargados
+[BKBOOT t=2287] LOADING PRINT SERVICE
+[PRINT] spooler ini[PRINT] PrintSpool Ring 3ciado en segundo plano, pid=3
+[BKBO OT t=2314] STARTING VISION
+[BKBOOT t=2315] VISION: LOADING ELF
+.listo
+[VISION] servicio lanzado pid=4
+[BKBOOT t=2361] VISION: ENTER RING3
+[VISION] ownership grafico adquirido pid=4
+[BKBOOT t=2379] VISION: GRAPHICS ENGINE
+[BKBOOT t=2381] PREPARING DESKTOP
+[BKBOOT t=2383] VISION: ENGINE READY
+[BKBOOT t=2384] VISION: DESKTOP
+[BKBOOT t=2384] LOADING DESKTOP ICONS
+[BKBOOT t=2385] ICONPAK preload begin
+[BKBOOT t=2386] LOADING ICON CACHE
+[BKBOOT t=2394] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPR/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=2413] DESKMANAGER read desktop config
+[BKBOOT t=2414] DESKMANAGER desktop config loaded
+[BKBOOT t=2418] VISION: DESKBAR
+[DESKBAR] alloc state bytes=17116
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[BKBOOT t=3327] VISION: SCREENSAVER
+[BKBOOT t=3342] VISION: START SHELL
+[BKBOOT t=3343] VISION: READY
+[[BKBOOT t=3344] kernel_main: Vision READY
+[RAM:DESKTOP] installed_kib=32255 managed_kib=28544 used_kib=9048 free_kib=19495 unmanaged_kib=3711 heap_used_kib=8916 heap_free_kib=17579 vm_free_kib=1916
+V[SMP] escrIitorio listo; iniciando procesadores secundarios
+SION] READY: motor, escritorio y co[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000
+[SMP] iniciando CPU1 APIC=1...
+mpositor bajo Vision
+[SMP] CPU1 online
+[SMP] 2/2 CPU(s) online; timer LAPIC=209677 cuentas/tick
+[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (123 slots libres)
+[SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI
+[BKB[VISION:SAVER] Ring 3 worker started
+OOT] VISION ONLINE pid=4
+[WINE:BOOT] deferred until Windows program launch
+[BKBOOT t=3562] DISABLE SPLASH / ENTER GUI
+[BKBOOT] [VISION:ENGINE] compositor y ventanas CPL=3
+DESKTOP RELEASED
+[BKBOOT] QUEUE STARTUP SOUND
+[RAM:IDLE] installed_kib=32255 managed_kib=28544 used_kib=13425 free_kib=15118 unmanaged_kib=3711 heap_used_kib=13293 heap_free_kib=13202 vm_free_kib=1916
+[SWAPTEST] enabled=1 slots=8191
+[SWAPTEST:LINUX] touching private pages
+[SWAPTEST:LINUX] integrity PASS
+[SWAPTEST] child=0 resident=0 swapped=0 slots_used=0 out=10737 in=8143 faults=10111 errors=0
+[SWAPTEST] DONE result=PASS

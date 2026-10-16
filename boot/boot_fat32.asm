@@ -52,7 +52,9 @@ stage2_loaded:
 
 load_stage2_lba:
     pusha
+    mov byte [read_retries], 3
 
+.retry:
     mov byte [dap_size], 0x10
     mov byte [dap_reserved], 0x00
     mov word [dap_sectors], STAGE2_SECTORS
@@ -67,8 +69,23 @@ load_stage2_lba:
     mov dl, [BOOT_DRIVE_SAVE]
     mov si, dap
     int 0x13
-    jc .error
+    pushf
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    popf
+    jnc .success
+    dec byte [read_retries]
+    jz .error
+    xor ax, ax
+    mov dl, [BOOT_DRIVE_SAVE]
+    int 0x13
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    jmp .retry
 
+.success:
     popa
     clc
     ret
@@ -101,6 +118,7 @@ dap_offset    dw STAGE2_LOAD_OFF
 dap_segment   dw STAGE2_LOAD_SEG
 dap_lba_lo    dd STAGE2_START_LBA
 dap_lba_hi    dd 0
+read_retries  db 0
 
 msg_boot_fail db 0x0D, 0x0A, 'ATA boot error', 0
 

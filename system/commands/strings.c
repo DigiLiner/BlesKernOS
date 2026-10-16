@@ -1,5 +1,8 @@
 #include "common.h"
 
-static int run(int argc,char **argv){ return argc==2?command_strings(argv[1]):command_error("strings","@H5D8BCF60"); }
+static int run(int argc, char **argv) {
+    return command_toolchain_run("/SYSTEM/DEVEL/BINUTILS/STRINGS.EXE",
+                                 argc, argv, NULL);
+}
 
 BK_COMMAND_MAIN(run)

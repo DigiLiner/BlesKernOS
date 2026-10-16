@@ -1,0 +1,758 @@
+{
+  "command": [
+    "qemu-system-i386",
+    "-accel",
+    "kvm",
+    "-cpu",
+    "host",
+    "-smp",
+    "2",
+    "-m",
+    "1536",
+    "-drive",
+    "file=/tmp/blesk-wine-opt-20261013/render-confirmed/test.img,format=raw,if=ide",
+    "-vga",
+    "vmware",
+    "-display",
+    "none",
+    "-serial",
+    "file:/tmp/blesk-wine-opt-20261013/render-confirmed/serial.log",
+    "-nodefaults",
+    "-no-reboot",
+    "-no-shutdown"
+  ],
+  "events": [
+    {
+      "host_s": 0.4724947669892572,
+      "line": "[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP"
+    },
+    {
+      "host_s": 0.4725020539772231,
+      "line": "[MM] E820: entradas=7 util=1572351 KiB top=1572736 KiB"
+    },
+    {
+      "host_s": 0.4827057679940481,
+      "line": "  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000"
+    },
+    {
+      "host_s": 0.4827098189853132,
+      "line": "  [MM] RAM usable: 1536 MB"
+    },
+    {
+      "host_s": 0.4827111059857998,
+      "line": "  [MM] Heap dinamico: 0x2000000 - 0x1ffe0000 (491392 KB)"
+    },
+    {
+      "host_s": 0.49302001399337314,
+      "line": "  [MM] VM frames: 0x1ffe0000 - 0x5ffe0000 (1048576 KiB, 262144 paginas)"
+    },
+    {
+      "host_s": 0.493024721974507,
+      "line": "  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)"
+    },
+    {
+      "host_s": 0.49302641197573394,
+      "line": "  [MM] Vista PE fija: 0x400000 - 0x2000000"
+    },
+    {
+      "host_s": 0.5032315149728674,
+      "line": "[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2000000-0x1ffe0000"
+    },
+    {
+      "host_s": 0.5134472689824179,
+      "line": "[COMPAT] perfil=normal RAM_top=1572736 KiB heap=491392 KiB tareas=128 CPU=fam6/mod122 GUI=60FPS TIMER=300Hz"
+    },
+    {
+      "host_s": 0.5134523209999315,
+      "line": "[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0"
+    },
+    {
+      "host_s": 0.5134537319827359,
+      "line": "[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado"
+    },
+    {
+      "host_s": 0.5240711409715004,
+      "line": "[GFX:EARLY] BIOS LFB 800x600x32 pitch=3200 fb=0xfd000000"
+    },
+    {
+      "host_s": 0.5240752689715009,
+      "line": "[BKBOOT t=0] STARTING KERNEL"
+    },
+    {
+      "host_s": 0.5240764459886122,
+      "line": "[BKBOOT t=0] MEMORY MANAGER"
+    },
+    {
+      "host_s": 0.534438352973666,
+      "line": "[TASK] FPU context=FXSAVE SSE=1"
+    },
+    {
+      "host_s": 0.5344424349896144,
+      "line": "[BKBOOT t=0] TASK SYSTEM"
+    },
+    {
+      "host_s": 0.5344444410002325,
+      "line": "[BKBOOT t=0] INTERRUPTS READY"
+    },
+    {
+      "host_s": 0.534445394994691,
+      "line": "[BKBOOT t=0] INPUT DEVICES"
+    },
+    {
+      "host_s": 0.6365933869965374,
+      "line": "  [PCI] 5 dispositivos detectados"
+    },
+    {
+      "host_s": 0.646801331982715,
+      "line": "  [LPT] no se detectaron puertos paralelos"
+    },
+    {
+      "host_s": 0.8822812919970602,
+      "line": "  [ATA] ata0: 1572864 sectores de 512 bytes"
+    },
+    {
+      "host_s": 0.8822862429951783,
+      "line": "  [ATA] ata0: read burst=16 sectores"
+    },
+    {
+      "host_s": 0.8822880160005298,
+      "line": "  [ATA] ata0: PIO read width=32 bits"
+    },
+    {
+      "host_s": 0.8822889569855761,
+      "line": "[ATA:PROBE] io=0x1f0 slave=1 ausente (status=0x0)"
+    },
+    {
+      "host_s": 0.8925168459827546,
+      "line": "[ATA:PROBE] io=0x170 slave=0 ausente (status=0x0)"
+    },
+    {
+      "host_s": 0.8925217309733853,
+      "line": "[ATA:PROBE] io=0x170 slave=1 ausente (status=0x0)"
+    },
+    {
+      "host_s": 1.128967302996898,
+      "line": "  [ATA] canales IDE normalizados despues del probe"
+    },
+    {
+      "host_s": 1.1289722619985696,
+      "line": "  [ATA] ata0: QEMU PIIX DMA read/write enabled"
+    },
+    {
+      "host_s": 1.1698607059952337,
+      "line": "[BKBOOT t=189] STORAGE DRIVERS"
+    },
+    {
+      "host_s": 1.1698657919769175,
+      "line": "[BKBOOT t=190] MOUNTING FILESYSTEM"
+    },
+    {
+      "host_s": 1.169867302000057,
+      "line": "[BKBOOT t=190] F8: RECOVERY MODE (2 SEC)"
+    },
+    {
+      "host_s": 1.1698684179864358,
+      "line": "[BOOT] Pulse F8 para entrar a recovery sin Vision ni servicios"
+    },
+    {
+      "host_s": 3.1733529630000703,
+      "line": "[VFS] entrando a vfs_mount_default"
+    },
+    {
+      "host_s": 3.214037958998233,
+      "line": "[VFS] block_count=1"
+    },
+    {
+      "host_s": 3.2454728139855433,
+      "line": "[FAT] entrando a fat_mount_default"
+    },
+    {
+      "host_s": 3.2766768359870184,
+      "line": "[FAT] dispositivos registrados: 1"
+    },
+    {
+      "host_s": 3.3259199599851854,
+      "line": "[FAT] dev[0]=ata0 tipo=1 sectores=1572864"
+    },
+    {
+      "host_s": 3.3463083359820303,
+      "line": "Intentando montar ata0..."
+    },
+    {
+      "host_s": 3.3769520329951774,
+      "line": "fat_set_active(ata0)"
+    },
+    {
+      "host_s": 3.4075228389992844,
+      "line": "No es particion, buscando ata0"
+    },
+    {
+      "host_s": 3.427932989987312,
+      "line": "Dispositivo encontrado"
+    },
+    {
+      "host_s": 3.662649296980817,
+      "line": "[BFS4:CACHE] slots=2048 bytes=8429568"
+    },
+    {
+      "host_s": 3.724689602997387,
+      "line": "fat_try_mount_device OK"
+    },
+    {
+      "host_s": 3.7451298269734252,
+      "line": "fat_set_active OK"
+    },
+    {
+      "host_s": 3.7759449269797187,
+      "line": "Montado ata0 OK"
+    },
+    {
+      "host_s": 3.7962427659949753,
+      "line": "[VFS] /TEMP listo"
+    },
+    {
+      "host_s": 3.959458157973131,
+      "line": "[RING3] no se pudo cargar autoprueba: no se pudo leer el programa"
+    },
+    {
+      "host_s": 3.991245698998682,
+      "line": "[DVR] Buscando modulos en /SYSTEM/DRIVERS"
+    },
+    {
+      "host_s": 4.021734208974522,
+      "line": "[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 4.052222638973035,
+      "line": "[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 4.0833715299959294,
+      "line": "[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2"
+    },
+    {
+      "host_s": 4.104119824973168,
+      "line": "[ATIR128:TRACE] PCI scan count=5 target=1002:4C46"
+    },
+    {
+      "host_s": 4.135086418973515,
+      "line": "[ATIR128:TRACE] PCI target no utilizable"
+    },
+    {
+      "host_s": 4.16606613699696,
+      "line": "[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado"
+    },
+    {
+      "host_s": 4.187068856990663,
+      "line": "[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 4.217585787991993,
+      "line": "[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp"
+    },
+    {
+      "host_s": 4.248494956991635,
+      "line": "[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)"
+    },
+    {
+      "host_s": 4.27898254597676,
+      "line": "[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)"
+    },
+    {
+      "host_s": 4.309496131987544,
+      "line": "[INTELGMA.DVR] Intel GMA 915/945/965 no detectada"
+    },
+    {
+      "host_s": 4.340209563990356,
+      "line": "[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 4.3708253749937285,
+      "line": "[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)"
+    },
+    {
+      "host_s": 4.391348208999261,
+      "line": "[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 4.422086799982935,
+      "line": "  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado"
+    },
+    {
+      "host_s": 4.452596539980732,
+      "line": "[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)"
+    },
+    {
+      "host_s": 4.483097783988342,
+      "line": "  [MOUSE] PS/2 id=0 packet=3"
+    },
+    {
+      "host_s": 4.513932184985606,
+      "line": "[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)"
+    },
+    {
+      "host_s": 4.544653216988081,
+      "line": "[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 4.575856412993744,
+      "line": "  [SND] PC speaker activo, SB16 no detectada"
+    },
+    {
+      "host_s": 4.606863341992721,
+      "line": "[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)"
+    },
+    {
+      "host_s": 4.637296784989303,
+      "line": "  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)"
+    },
+    {
+      "host_s": 4.667841660993872,
+      "line": "[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)"
+    },
+    {
+      "host_s": 4.698340555973118,
+      "line": "[DVR] /SYSTEM/DRIVERS/USBCLASS.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 4.718706724990625,
+      "line": "[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)"
+    },
+    {
+      "host_s": 4.749908985977527,
+      "line": "[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado"
+    },
+    {
+      "host_s": 4.780937638977775,
+      "line": "[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 4.84202001299127,
+      "line": "[GFX:TRACE] REGISTER request ops=0x2cfc0e0 abi=2 size=100 name_ptr=0x2cfc086 priority=200 caps=0x4ff"
+    },
+    {
+      "host_s": 4.903010286972858,
+      "line": "[GFX:TRACE] REGISTER SELECT name=vmware_svga priority=200 previous=(ninguno) previous_priority=0"
+    },
+    {
+      "host_s": 4.924606673972448,
+      "line": "[DVR] vmware_svga: cargado (/SYSTEM/DRIVERS/VMWARESVGA.DVR)"
+    },
+    {
+      "host_s": 4.95532388499123,
+      "line": "[SVGA3D.DVR] extension 3D registrada; activacion por capacidades"
+    },
+    {
+      "host_s": 4.9861022619879805,
+      "line": "[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)"
+    },
+    {
+      "host_s": 5.0166535879834555,
+      "line": "[DVR] 10 modulo(s) cargado(s)"
+    },
+    {
+      "host_s": 5.047709714999655,
+      "line": "[GFX:TRACE] INIT boot_magic=0x31495547 registered=vmware_svga ops=0x2cfc0e0"
+    },
+    {
+      "host_s": 5.0681524159736,
+      "line": "[GFX:TRACE] ACTIVATE call name=vmware_svga preferred=800x600"
+    },
+    {
+      "host_s": 5.10032864799723,
+      "line": "[SVGA:MODE] begin 800x600 active=0 generation=1"
+    },
+    {
+      "host_s": 5.130930913990596,
+      "line": "[SVGA:MODE] OK 800x600x32 pitch=3200 fb=0xfd000000 generation=2"
+    },
+    {
+      "host_s": 5.161432656983379,
+      "line": "[SVGA.DVR] SVGA3D preflight guest=0x20001 rb=0x0 memregs=0 reserved=4 modern=0"
+    },
+    {
+      "host_s": 5.192021790979197,
+      "line": "[SVGA.DVR] VMware SVGA-II ID=0x90000002 IO=0xc010 FB=0xfd000000 FIFO=0xfe000000"
+    },
+    {
+      "host_s": 5.222491738997633,
+      "line": "[SVGA.DVR] 800x600x32 pitch=3200 caps=0x3 fifo=0x0 GMR=fallback"
+    },
+    {
+      "host_s": 5.273212199972477,
+      "line": "[GFX:TRACE] ACTIVATE OK name=vmware_svga mode=800x600x32 pitch=3200 fb=0xfd000000"
+    },
+    {
+      "host_s": 5.325012413988588,
+      "line": "[GFXRES] boot icons 9/9 precargados"
+    },
+    {
+      "host_s": 5.355423075990984,
+      "line": "[BKBOOT t=1445] LOADING PRINT SERVICE"
+    },
+    {
+      "host_s": 5.365622685989365,
+      "line": "[PRINT] spooler iniciado en segundo plano, pid=3"
+    },
+    {
+      "host_s": 5.38611289599794,
+      "line": "[BKBOOT t=1457] STARTING VISION"
+    },
+    {
+      "host_s": 5.908677110972349,
+      "line": "[PRINT] PrintSpool Ring 3 listo"
+    },
+    {
+      "host_s": 5.9289815289957915,
+      "line": "[BKBOOT t=1619] VISION: LOADING ELF"
+    },
+    {
+      "host_s": 6.236279297998408,
+      "line": "[VISION] servicio lanzado pid=4"
+    },
+    {
+      "host_s": 6.266737898986321,
+      "line": "[BKBOOT t=1719] VISION: ENTER RING3"
+    },
+    {
+      "host_s": 6.276946572994348,
+      "line": "[VISION] ownership grafico adquirido pid=4"
+    },
+    {
+      "host_s": 6.297362368990434,
+      "line": "[BKBOOT t=1730] VISION: GRAPHICS ENGINE"
+    },
+    {
+      "host_s": 6.317909849982243,
+      "line": "[BKBOOT t=1735] PREPARING DESKTOP"
+    },
+    {
+      "host_s": 6.328070642979583,
+      "line": ".[BKBOOT t=1737] VISION: ENGINE READY"
+    },
+    {
+      "host_s": 6.328074693999952,
+      "line": "[BKBOOT t=1739] VISION: DESKTOP"
+    },
+    {
+      "host_s": 6.3385173969727475,
+      "line": "[BKBOOT t=1740] LOADING DESKTOP ICONS"
+    },
+    {
+      "host_s": 6.338521140976809,
+      "line": "[BKBOOT t=1742] ICONPAK preload begin"
+    },
+    {
+      "host_s": 6.338522095989902,
+      "line": "[BKBOOT t=1742] LOADING ICON CACHE"
+    },
+    {
+      "host_s": 6.348728347977158,
+      "line": "[BKBOOT t=1744] ICONPAK preload end"
+    },
+    {
+      "host_s": 6.358937037992291,
+      "line": "[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2"
+    },
+    {
+      "host_s": 6.379387016990222,
+      "line": "[BKBOOT t=1753] DESKMANAGER read desktop config"
+    },
+    {
+      "host_s": 6.3793914539855905,
+      "line": "[BKBOOT t=1754] DESKMANAGER desktop config loaded"
+    },
+    {
+      "host_s": 6.389579825976398,
+      "line": "[BKBOOT t=1755] VISION: DESKBAR"
+    },
+    {
+      "host_s": 6.389584203978302,
+      "line": "[DESKBAR] alloc state bytes=17116"
+    },
+    {
+      "host_s": 6.420172988990089,
+      "line": "[DESKBAR] reset state"
+    },
+    {
+      "host_s": 6.440521952987183,
+      "line": "[DESKBAR] load clock preferences"
+    },
+    {
+      "host_s": 6.48114785697544,
+      "line": "[DESKBAR] load React95 launcher icons"
+    },
+    {
+      "host_s": 6.511594268988119,
+      "line": "[DESKBAR] launcher Files / WindowsExplorer OK"
+    },
+    {
+      "host_s": 6.54225504497299,
+      "line": "[DESKBAR] launcher Editor / Notepad OK"
+    },
+    {
+      "host_s": 6.562662029988132,
+      "line": "[DESKBAR] launcher Web / Globe OK"
+    },
+    {
+      "host_s": 6.593231417995412,
+      "line": "[DESKBAR] launcher Paint / Mspaint OK"
+    },
+    {
+      "host_s": 6.625524619972566,
+      "line": "[DESKBAR] launcher Calc / Calculator OK"
+    },
+    {
+      "host_s": 6.646047253976576,
+      "line": "[DESKBAR] launcher Shell / MsDos OK"
+    },
+    {
+      "host_s": 6.67804725698079,
+      "line": "[DESKBAR] launcher MidAmp / MediaAudio OK"
+    },
+    {
+      "host_s": 6.698860366974259,
+      "line": "[DESKBAR] launcher Image / Camera OK"
+    },
+    {
+      "host_s": 6.729313359974185,
+      "line": "[DESKBAR] launcher Processes / Taskman100 OK"
+    },
+    {
+      "host_s": 6.759979446971556,
+      "line": "[DESKBAR] launcher Config / Settings OK"
+    },
+    {
+      "host_s": 6.790590368997073,
+      "line": "[DESKBAR] icon 1/8 InfoBubble begin"
+    },
+    {
+      "host_s": 6.810884682985488,
+      "line": "[DESKBAR] icon 1 InfoBubble OK"
+    },
+    {
+      "host_s": 6.841630136972526,
+      "line": "[DESKBAR] icon 2/8 Runonce106 begin"
+    },
+    {
+      "host_s": 6.86204699697555,
+      "line": "[DESKBAR] icon 2 Runonce106 OK"
+    },
+    {
+      "host_s": 6.893237123993458,
+      "line": "[DESKBAR] icon 3/8 Computer begin"
+    },
+    {
+      "host_s": 6.924267837981461,
+      "line": "[DESKBAR] icon 3 Computer OK"
+    },
+    {
+      "host_s": 6.954856462980388,
+      "line": "[DESKBAR] icon 4/8 FolderExe begin"
+    },
+    {
+      "host_s": 6.985386354994262,
+      "line": "[DESKBAR] icon 4 FolderExe OK"
+    },
+    {
+      "host_s": 7.01589687098749,
+      "line": "[DESKBAR] icon 5/8 FileText begin"
+    },
+    {
+      "host_s": 7.0464987859886605,
+      "line": "[DESKBAR] icon 5 FileText OK"
+    },
+    {
+      "host_s": 7.077822195977205,
+      "line": "[DESKBAR] icon 6/8 Folder begin"
+    },
+    {
+      "host_s": 7.109321590978652,
+      "line": "[DESKBAR] icon 6 Folder OK"
+    },
+    {
+      "host_s": 7.139876741974149,
+      "line": "[DESKBAR] icon 7/8 Settings begin"
+    },
+    {
+      "host_s": 7.1708986519952305,
+      "line": "[DESKBAR] icon 7 Settings OK"
+    },
+    {
+      "host_s": 7.201363573985873,
+      "line": "[DESKBAR] icon 8/8 PowerOff begin"
+    },
+    {
+      "host_s": 7.231888797978172,
+      "line": "[DESKBAR] icon 8 PowerOff OK"
+    },
+    {
+      "host_s": 7.263096890994348,
+      "line": "[DESKBAR] icon Folder begin"
+    },
+    {
+      "host_s": 7.29410943298717,
+      "line": "[DESKBAR] icon Folder OK"
+    },
+    {
+      "host_s": 7.314626125997165,
+      "line": "[DESKBAR] icon Appwiz1500 begin"
+    },
+    {
+      "host_s": 7.345061150990659,
+      "line": "[DESKBAR] icon Appwiz1500 OK"
+    },
+    {
+      "host_s": 7.375606823974522,
+      "line": "[DESKBAR] icon FileText begin"
+    },
+    {
+      "host_s": 7.406477688986342,
+      "line": "[DESKBAR] icon FileText OK"
+    },
+    {
+      "host_s": 7.437509857991245,
+      "line": "[DESKBAR] embedded in Vision desktop layer"
+    },
+    {
+      "host_s": 7.45787155997823,
+      "line": "[BKBOOT t=2078] VISION: SCREENSAVER"
+    },
+    {
+      "host_s": 7.539477471989812,
+      "line": "[BKBOOT t=2101] VISION: START SHELL"
+    },
+    {
+      "host_s": 7.549650663975626,
+      "line": "[BKBOOT t=2103] VISION: READY"
+    },
+    {
+      "host_s": 7.549653773981845,
+      "line": "[VISION] READY: motor, escritorio y compositor bajo Vis[BKBOOT t=2106] kernel_main: Vision READY"
+    },
+    {
+      "host_s": 7.5904934749996755,
+      "line": "[RAM:DESKTOP] installed_kib=1572351 managed_kib=1441664 used_ion"
+    },
+    {
+      "host_s": 7.652486608974868,
+      "line": "kib=18157 free_kib=1423506 unmanaged_kib=130686 heap_used_kib=18029 heap_free_kib=440594 vm_free_kib=982912"
+    },
+    {
+      "host_s": 7.683599721000064,
+      "line": "[SMP] escritorio listo; iniciando procesadores secundarios"
+    },
+    {
+      "host_s": 7.785918060981203,
+      "line": "[VISION:SAVER] Ring 3 worker starte[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000"
+    },
+    {
+      "host_s": 7.816848029993707,
+      "line": "[SMd"
+    },
+    {
+      "host_s": 7.8372423379914835,
+      "line": "P] iniciando CPU1 APIC=1..."
+    },
+    {
+      "host_s": 7.899373996973736,
+      "line": "[SMP] CPU1 online"
+    },
+    {
+      "host_s": 7.9399208309769165,
+      "line": "[SMP] 2/2 CPU(s) online; timer LAPIC=208286 cuentas/tick"
+    },
+    {
+      "host_s": 7.992070949985646,
+      "line": "[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (123 slots libres)"
+    },
+    {
+      "host_s": 8.032630514993798,
+      "line": "[SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI"
+    },
+    {
+      "host_s": 8.063156976975733,
+      "line": "[BKBOOT] VISION ONLINE pid=4"
+    },
+    {
+      "host_s": 8.104128816979937,
+      "line": "[WINE:BOOT] deferred until Windows program launch"
+    },
+    {
+      "host_s": 8.134884162980597,
+      "line": "[BKBOOT t=2279] DISABLE SPLASH / ENTER GUI"
+    },
+    {
+      "host_s": 8.135114483971847,
+      "line": "[BKBOOT] DESKTOP RELEASED"
+    },
+    {
+      "host_s": 8.166452699981164,
+      "line": "[VISION:ENGINE] compositor y ventanas CPL=3"
+    },
+    {
+      "host_s": 8.196908357000211,
+      "line": "[BKBOOT] QUEUE STARTUP SOUND"
+    },
+    {
+      "host_s": 11.19887963598012,
+      "line": "[GATE:STAGE2] START /WINEGATE/bin/render-bench.ELF"
+    },
+    {
+      "host_s": 11.421088983974187,
+      "line": "_XSERVTransTransNoListen: unable to find transport: tcp"
+    },
+    {
+      "host_s": 11.445508420991246,
+      "line": "[LINUX:MKDIR] fail pid=8 fs=64 free_kib=200076 path=/tmp/.X11-unix vfs=none"
+    },
+    {
+      "host_s": 11.489537758985534,
+      "line": "_XSERVTransmkdir: ERROR: Cannot create /tmp/.X11-unix"
+    },
+    {
+      "host_s": 11.511613605980529,
+      "line": "_XSERVTransSocketUNIXCreateListener: mkdir(/tmp/.X11-unix) failed, errno = 5"
+    },
+    {
+      "host_s": 11.543560707999859,
+      "line": "_XSERVTransMakeAllCOTSServerListeners: failed to create listener for unix"
+    },
+    {
+      "host_s": 11.864246986981016,
+      "line": "[RENDER-BENCH] BEGIN alpha=0 frames=80 size=800x600"
+    },
+    {
+      "host_s": 12.953905821981607,
+      "line": "[RENDER-BENCH] END alpha=0 us=1050000"
+    },
+    {
+      "host_s": 13.273068949987646,
+      "line": "[RAM:IDLE] installed_kib=1572351 managed_kib=1441664 used_kib=43991 free_kib=1397672 unmanaged_kib=130686 heap_used_kib=29667 heap_free_kib=428956 vm_free_kib=968716"
+    },
+    {
+      "host_s": 13.324900621984852,
+      "line": "[RENDER-BENCH] HASH alpha=0 value=b4a29ac2"
+    },
+    {
+      "host_s": 13.468323643988697,
+      "line": "[RENDER-BENCH] BEGIN alpha=1 frames=80 size=800x600"
+    },
+    {
+      "host_s": 14.669920704996912,
+      "line": "[RENDER-BENCH] END alpha=1 us=1166667"
+    },
+    {
+      "host_s": 14.971082298987312,
+      "line": "[RENDER-BENCH] HASH alpha=1 value=e1e9a4b3"
+    },
+    {
+      "host_s": 15.034611942974152,
+      "line": "[RENDER-BENCH] PASS"
+    },
+    {
+      "host_s": 15.07637471097405,
+      "line": "[GATE:STAGE2] RESULT /WINEGATE/bin/render-bench.ELF status=0"
+    }
+  ]
+}

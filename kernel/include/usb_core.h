@@ -3,7 +3,7 @@
 
 #include "types.h"
 
-#define BK_USB_CORE_ABI_VERSION 1U
+#define BK_USB_CORE_ABI_VERSION 2U
 #define BK_USB_MAX_INTERFACES   8U
 #define BK_USB_MAX_ENDPOINTS    8U
 #define BK_USB_MAX_EXTRA        96U
@@ -25,7 +25,8 @@
 
 typedef enum {
     USB_SPEED_LOW = 1,
-    USB_SPEED_FULL = 2
+    USB_SPEED_FULL = 2,
+    USB_SPEED_HIGH = 3
 } usb_speed_t;
 
 typedef struct usb_endpoint {
@@ -50,6 +51,7 @@ typedef struct usb_interface {
     const void *owner;
 } usb_interface_t;
 
+struct usb_host_ops;
 typedef struct usb_device {
     uint32_t core_abi;
     uint32_t id;
@@ -71,7 +73,19 @@ typedef struct usb_device {
     uint8_t depth;
     bool connected;
     void *hcd_private;
+    const struct usb_host_ops *host_ops;
 } usb_device_t;
+
+/* Kernel HCD bridge. Null host_ops selects the established UHCI transport. */
+typedef struct usb_host_ops {
+    bool (*control)(usb_device_t *, uint8_t, uint8_t, uint16_t, uint16_t, void *, uint16_t);
+    bool (*endpoint)(usb_device_t *, usb_endpoint_t *, void *, uint32_t, uint32_t *, uint32_t);
+} usb_host_ops_t;
+usb_device_t *usb_host_publish(void *host, const usb_host_ops_t *ops,
+                               uint8_t address, uint8_t root_port,
+                               usb_speed_t speed, const uint8_t *descriptor,
+                               const uint8_t *config, uint16_t config_length);
+void usb_host_disconnect(usb_device_t *device);
 
 typedef struct usb_class_driver {
     uint32_t abi_version;
@@ -92,6 +106,7 @@ usb_endpoint_t *usb_interface_endpoint(usb_interface_t *interface,
 bool usb_control_transfer(usb_device_t *device, uint8_t request_type,
                           uint8_t request, uint16_t value, uint16_t index,
                           void *data, uint16_t length);
+/* Bulk OUT accepts length=0/data=NULL for an explicit terminating packet. */
 bool usb_endpoint_transfer(usb_device_t *device, usb_endpoint_t *endpoint,
                            void *data, uint32_t length,
                            uint32_t *actual_length,

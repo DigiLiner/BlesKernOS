@@ -1,0 +1,1266 @@
+{
+  "command": [
+    "qemu-system-i386",
+    "-accel",
+    "kvm",
+    "-cpu",
+    "pentium3",
+    "-smp",
+    "2",
+    "-m",
+    "1536",
+    "-drive",
+    "file=/tmp/blesk-wine-diagnosis-20261013/run3/test.img,format=raw,if=ide",
+    "-vga",
+    "vmware",
+    "-display",
+    "none",
+    "-serial",
+    "file:/tmp/blesk-wine-diagnosis-20261013/run3/serial.log",
+    "-qmp",
+    "unix:/tmp/blesk-wine-diagnosis-20261013/run3/qmp.sock,server=on,wait=off",
+    "-no-reboot",
+    "-no-shutdown"
+  ],
+  "duration_host_s": 67.81254268501652,
+  "first_white_host_s": null,
+  "events": [
+    {
+      "host_s": 2.981582561013056,
+      "line": "[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP"
+    },
+    {
+      "host_s": 3.0211159470200073,
+      "line": "[MM] E820: entradas=7 util=1572351 KiB top=1572736 KiB"
+    },
+    {
+      "host_s": 3.054112546000397,
+      "line": "  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000"
+    },
+    {
+      "host_s": 3.054112546000397,
+      "line": "  [MM] RAM usable: 1536 MB"
+    },
+    {
+      "host_s": 3.0642954900104087,
+      "line": "  [MM] Heap dinamico: 0x2000000 - 0x1ffe0000 (491392 KB)"
+    },
+    {
+      "host_s": 3.074481938005192,
+      "line": "  [MM] VM frames: 0x1ffe0000 - 0x5ffe0000 (1048576 KiB, 262144 paginas)"
+    },
+    {
+      "host_s": 3.0846654119959567,
+      "line": "  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)"
+    },
+    {
+      "host_s": 3.0950882170000114,
+      "line": "  [MM] Vista PE fija: 0x400000 - 0x2000000"
+    },
+    {
+      "host_s": 3.105282074015122,
+      "line": "[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2000000-0x1ffe0000"
+    },
+    {
+      "host_s": 3.1256234040192794,
+      "line": "[COMPAT] perfil=normal RAM_top=1572736 KiB heap=491392 KiB tareas=128 CPU=fam6/mod7 GUI=30FPS TIMER=100Hz"
+    },
+    {
+      "host_s": 3.1256234040192794,
+      "line": "[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0"
+    },
+    {
+      "host_s": 3.138112042011926,
+      "line": "[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado"
+    },
+    {
+      "host_s": 3.148298431013245,
+      "line": "[GFX:EARLY] BIOS LFB 800x600x32 pitch=3200 fb=0xfd000000"
+    },
+    {
+      "host_s": 3.148298431013245,
+      "line": "[BKBOOT t=0] STARTING KERNEL"
+    },
+    {
+      "host_s": 4.635845700016944,
+      "line": "[BKBOOT t=0] MEMORY MANAGER"
+    },
+    {
+      "host_s": 4.635845700016944,
+      "line": "[TASK] FPU context=FXSAVE SSE=1"
+    },
+    {
+      "host_s": 4.635845700016944,
+      "line": "[BKBOOT t=0] TASK SYSTEM"
+    },
+    {
+      "host_s": 4.635845700016944,
+      "line": "[BKBOOT t=0] INTERRUPTS READY"
+    },
+    {
+      "host_s": 4.635845700016944,
+      "line": "[BKBOOT t=0] INPUT DEVICES"
+    },
+    {
+      "host_s": 4.635845700016944,
+      "line": "  [PCI] 6 dispositivos detectados"
+    },
+    {
+      "host_s": 4.635845700016944,
+      "line": "  [LPT] LPT1 base=0x0378 status=0xD9 listo"
+    },
+    {
+      "host_s": 5.724111459014239,
+      "line": "  [ATA] ata0: 1572864 sectores de 512 bytes"
+    },
+    {
+      "host_s": 5.724111459014239,
+      "line": "  [ATA] ata0: read burst=16 sectores"
+    },
+    {
+      "host_s": 5.724111459014239,
+      "line": "  [ATA] ata0: PIO read width=32 bits"
+    },
+    {
+      "host_s": 5.724111459014239,
+      "line": "[ATA:PROBE] io=0x1f0 slave=1 ausente (status=0x0)"
+    },
+    {
+      "host_s": 5.724111459014239,
+      "line": "  [ATAPI] cd0: unidad detectada sin medio listo"
+    },
+    {
+      "host_s": 5.724111459014239,
+      "line": "[ATA:PROBE] io=0x170 slave=1 ausente (status=0x0)"
+    },
+    {
+      "host_s": 6.332924727001227,
+      "line": "  [ATA] canales IDE normalizados despues del probe"
+    },
+    {
+      "host_s": 6.332924727001227,
+      "line": "  [ATA] ata0: QEMU PIIX DMA read/write enabled"
+    },
+    {
+      "host_s": 6.823123095993651,
+      "line": "[BKBOOT t=301] STORAGE DRIVERS"
+    },
+    {
+      "host_s": 6.823123095993651,
+      "line": "[BKBOOT t=302] MOUNTING FILESYSTEM"
+    },
+    {
+      "host_s": 6.823123095993651,
+      "line": "[BKBOOT t=302] F8: RECOVERY MODE (2 SEC)"
+    },
+    {
+      "host_s": 6.823123095993651,
+      "line": "[BOOT] Pulse F8 para entrar a recovery sin Vision ni servicios"
+    },
+    {
+      "host_s": 10.875949951005168,
+      "line": "[VFS] entrando a vfs_mount_default"
+    },
+    {
+      "host_s": 10.875949951005168,
+      "line": "[VFS] block_count=2"
+    },
+    {
+      "host_s": 10.875949951005168,
+      "line": "[FAT] entrando a fat_mount_default"
+    },
+    {
+      "host_s": 10.875949951005168,
+      "line": "[FAT] dispositivos registrados: 2"
+    },
+    {
+      "host_s": 11.350268272013636,
+      "line": "[FAT] dev[0]=ata0 tipo=1 sectores=1572864"
+    },
+    {
+      "host_s": 11.350268272013636,
+      "line": "[FAT] dev[1]=cd0 tipo=3 sectores=0"
+    },
+    {
+      "host_s": 11.350268272013636,
+      "line": "Intentando montar ata0..."
+    },
+    {
+      "host_s": 11.350268272013636,
+      "line": "fat_set_active(ata0)"
+    },
+    {
+      "host_s": 11.350268272013636,
+      "line": "No es particion, buscando ata0"
+    },
+    {
+      "host_s": 11.360503710020566,
+      "line": "Dispositivo encontrado"
+    },
+    {
+      "host_s": 14.170741039997665,
+      "line": "[BFS4:CACHE] slots=2048 bytes=8429568"
+    },
+    {
+      "host_s": 14.383120070997393,
+      "line": "fat_try_mount_device OK"
+    },
+    {
+      "host_s": 14.383120070997393,
+      "line": "fat_set_active OK"
+    },
+    {
+      "host_s": 14.41363682501833,
+      "line": "Montado ata0 OK"
+    },
+    {
+      "host_s": 14.44411652101553,
+      "line": "[VFS] /TEMP listo"
+    },
+    {
+      "host_s": 15.430284208996454,
+      "line": "[RING3] no se pudo cargar autoprueba: no se pudo leer el programa"
+    },
+    {
+      "host_s": 15.430284208996454,
+      "line": "[DVR] Buscando modulos en /SYSTEM/DRIVERS"
+    },
+    {
+      "host_s": 17.231136968999635,
+      "line": "[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 17.231136968999635,
+      "line": "[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 17.231136968999635,
+      "line": "[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2"
+    },
+    {
+      "host_s": 17.60679266101215,
+      "line": "[ATIR128:TRACE] PCI scan count=6 target=1002:4C46"
+    },
+    {
+      "host_s": 17.60679266101215,
+      "line": "[ATIR128:TRACE] PCI target no utilizable"
+    },
+    {
+      "host_s": 17.60679266101215,
+      "line": "[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado"
+    },
+    {
+      "host_s": 17.60679266101215,
+      "line": "[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 17.648276769003132,
+      "line": "[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp"
+    },
+    {
+      "host_s": 17.690463422011817,
+      "line": "[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)"
+    },
+    {
+      "host_s": 17.73420642100973,
+      "line": "[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)"
+    },
+    {
+      "host_s": 17.981109259999357,
+      "line": "[INTELGMA.DVR] Intel GMA 915/945/965 no detectada"
+    },
+    {
+      "host_s": 17.981109259999357,
+      "line": "[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 17.981109259999357,
+      "line": "[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)"
+    },
+    {
+      "host_s": 18.002278300002217,
+      "line": "[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 18.03278243500972,
+      "line": "  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado"
+    },
+    {
+      "host_s": 18.063269850012148,
+      "line": "[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)"
+    },
+    {
+      "host_s": 18.09442645899253,
+      "line": "  [MOUSE] PS/2 id=0 packet=3"
+    },
+    {
+      "host_s": 18.12490882902057,
+      "line": "[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)"
+    },
+    {
+      "host_s": 18.16711378400214,
+      "line": "[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 18.603112673998112,
+      "line": "  [SND] PC speaker activo, SB16 no detectada"
+    },
+    {
+      "host_s": 18.603112673998112,
+      "line": "[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)"
+    },
+    {
+      "host_s": 18.603112673998112,
+      "line": "  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)"
+    },
+    {
+      "host_s": 18.603112673998112,
+      "line": "[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)"
+    },
+    {
+      "host_s": 18.67527816799702,
+      "line": "[DVR] /SYSTEM/DRIVERS/USBCLASS.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 19.277571501996135,
+      "line": "[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)"
+    },
+    {
+      "host_s": 19.277571501996135,
+      "line": "[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado"
+    },
+    {
+      "host_s": 19.277571501996135,
+      "line": "[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo"
+    },
+    {
+      "host_s": 19.815164379018825,
+      "line": "[GFX:TRACE] REGISTER request ops=0x2cfc0e0 abi=2 size=100 name_ptr=0x2cfc086 priority=200 caps=0x4ff"
+    },
+    {
+      "host_s": 19.815164379018825,
+      "line": "[GFX:TRACE] REGISTER SELECT name=vmware_svga priority=200 previous=(ninguno) previous_priority=0"
+    },
+    {
+      "host_s": 20.613006291008787,
+      "line": "[DVR] vmware_svga: cargado (/SYSTEM/DRIVERS/VMWARESVGA.DVR)"
+    },
+    {
+      "host_s": 20.613006291008787,
+      "line": ".[SVGA3D.DVR] extension 3D registrada; activacion por capacidades"
+    },
+    {
+      "host_s": 20.613006291008787,
+      "line": "[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)"
+    },
+    {
+      "host_s": 20.613006291008787,
+      "line": "[DVR] 10 modulo(s) cargado(s)"
+    },
+    {
+      "host_s": 21.277862709015608,
+      "line": "[GFX:TRACE] INIT boot_magic=0x31495547 registered=vmware_svga ops=0x2cfc0e0"
+    },
+    {
+      "host_s": 21.277862709015608,
+      "line": "[GFX:TRACE] ACTIVATE call name=vmware_svga preferred=800x600"
+    },
+    {
+      "host_s": 21.672937480994733,
+      "line": "[SVGA:MODE] begin 800x600 active=0 generation=1"
+    },
+    {
+      "host_s": 21.672937480994733,
+      "line": "[SVGA:MODE] OK 800x600x32 pitch=3200 fb=0xfd000000 generation=2"
+    },
+    {
+      "host_s": 21.672937480994733,
+      "line": "[SVGA.DVR] SVGA3D preflight guest=0x20001 rb=0x0 memregs=0 reserved=4 modern=0"
+    },
+    {
+      "host_s": 21.672937480994733,
+      "line": "[SVGA.DVR] VMware SVGA-II ID=0x90000002 IO=0xc050 FB=0xfd000000 FIFO=0xfe000000"
+    },
+    {
+      "host_s": 21.782118734001415,
+      "line": "[SVGA.DVR] 800x600x32 pitch=3200 caps=0x3 fifo=0x0 GMR=fallback"
+    },
+    {
+      "host_s": 22.374129850009922,
+      "line": "[GFX:TRACE] ACTIVATE OK name=vmware_svga mode=800x600x32 pitch=3200 fb=0xfd000000"
+    },
+    {
+      "host_s": 22.75553002700326,
+      "line": "[GFXRES] boot icons 9/9 precargados"
+    },
+    {
+      "host_s": 22.75553002700326,
+      "line": "[BKBOOT t=1917] LOADING PRINT SERVICE"
+    },
+    {
+      "host_s": 22.75553002700326,
+      "line": "[PRINT] spooler ini[PRINT] PrintSpool Riciado en segundo plano, pid=4"
+    },
+    {
+      "host_s": 22.85953296799562,
+      "line": "ng 3 li[BKBOOT t=1941] STARTING VISION"
+    },
+    {
+      "host_s": 22.86979158601025,
+      "line": "sto"
+    },
+    {
+      "host_s": 23.37360418701428,
+      "line": "[BKBOOT t=1974] VISION: LOADING ELF"
+    },
+    {
+      "host_s": 23.39533235001727,
+      "line": "[VISION] servicio lanzado pid=5"
+    },
+    {
+      "host_s": 23.613120688009076,
+      "line": "[BKBOOT t=2006] VISION: ENTER RING3"
+    },
+    {
+      "host_s": 23.613120688009076,
+      "line": "[VISION] ownership grafico adquirido pid=5"
+    },
+    {
+      "host_s": 23.62333832200966,
+      "line": "[BKBOOT t=2019] VISION: GRAPHICS ENGINE"
+    },
+    {
+      "host_s": 23.644520397007,
+      "line": "[BKBOOT t=2021] PREPARING DESKTOP"
+    },
+    {
+      "host_s": 23.675771819020156,
+      "line": "[BKBOOT t=2024] VISION: ENGINE READY"
+    },
+    {
+      "host_s": 23.696148763992824,
+      "line": "[BKBOOT t=2025] VISION: DESKTOP"
+    },
+    {
+      "host_s": 23.70643367001321,
+      "line": "[BKBOOT t=2027] LOADING DESKTOP ICONS"
+    },
+    {
+      "host_s": 23.70643367001321,
+      "line": "[BKBOOT t=2027] ICONPAK preload begin"
+    },
+    {
+      "host_s": 23.70643367001321,
+      "line": "[BKBOOT t=2027] LOADING ICON CACHE"
+    },
+    {
+      "host_s": 23.737023955996847,
+      "line": "[BKBOOT t=2030] ICONPAK preload end"
+    },
+    {
+      "host_s": 23.747344920004252,
+      "line": "[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2"
+    },
+    {
+      "host_s": 23.78882215701742,
+      "line": "[BKBOOT t=2035] DESKMANAGER read desktop config"
+    },
+    {
+      "host_s": 23.78882215701742,
+      "line": "[BKBOOT t=2035] DESKMANAGER desktop config loaded"
+    },
+    {
+      "host_s": 23.78882215701742,
+      "line": "[BKBOOT t=2036] VISION: DESKBAR"
+    },
+    {
+      "host_s": 23.79906379399472,
+      "line": "[DESKBAR] alloc state bytes=17116"
+    },
+    {
+      "host_s": 23.839844383997843,
+      "line": "[DESKBAR] reset state"
+    },
+    {
+      "host_s": 23.871975337009644,
+      "line": "[DESKBAR] load clock preferences"
+    },
+    {
+      "host_s": 24.13178826699732,
+      "line": "[DESKBAR] load React95 launcher icons"
+    },
+    {
+      "host_s": 24.13178826699732,
+      "line": "[DESKBAR] launcher Files / WindowsExplorer OK"
+    },
+    {
+      "host_s": 24.13178826699732,
+      "line": "[DESKBAR] launcher Editor / Notepad OK"
+    },
+    {
+      "host_s": 24.13178826699732,
+      "line": "[DESKBAR] launcher Web / Globe OK"
+    },
+    {
+      "host_s": 24.13178826699732,
+      "line": "[DESKBAR] launcher Paint / Mspaint OK"
+    },
+    {
+      "host_s": 24.1629319509957,
+      "line": "[DESKBAR] launcher Calc / Calculator OK"
+    },
+    {
+      "host_s": 24.20369132401538,
+      "line": "[DESKBAR] launcher Shell / MsDos OK"
+    },
+    {
+      "host_s": 24.245429058006266,
+      "line": "[DESKBAR] launcher MidAmp / MediaAudio OK"
+    },
+    {
+      "host_s": 24.287281594995875,
+      "line": "[DESKBAR] launcher Image / Camera OK"
+    },
+    {
+      "host_s": 24.317980969994096,
+      "line": "[DESKBAR] launcher Processes / Taskman100 OK"
+    },
+    {
+      "host_s": 24.35958302000654,
+      "line": "[DESKBAR] launcher Config / Settings OK"
+    },
+    {
+      "host_s": 24.401452710997546,
+      "line": "[DESKBAR] icon 1/8 InfoBubble begin"
+    },
+    {
+      "host_s": 24.681889622006565,
+      "line": "[DESKBAR] icon 1 InfoBubble OK"
+    },
+    {
+      "host_s": 24.681889622006565,
+      "line": "[DESKBAR] icon 2/8 Runonce106 begin"
+    },
+    {
+      "host_s": 24.681889622006565,
+      "line": "[DESKBAR] icon 2 Runonce106 OK"
+    },
+    {
+      "host_s": 24.681889622006565,
+      "line": "[DESKBAR] icon 3/8 Computer begin"
+    },
+    {
+      "host_s": 24.681889622006565,
+      "line": "[DESKBAR] icon 3 Computer OK"
+    },
+    {
+      "host_s": 24.681889622006565,
+      "line": "[DESKBAR] icon 4/8 FolderExe begin"
+    },
+    {
+      "host_s": 24.681889622006565,
+      "line": "[DESKBAR] icon 4 FolderExe OK"
+    },
+    {
+      "host_s": 24.692134473996703,
+      "line": "[DESKBAR] icon 5/8 FileText begin"
+    },
+    {
+      "host_s": 24.72279421100393,
+      "line": "[DESKBAR] icon 5 FileText OK"
+    },
+    {
+      "host_s": 24.753434476006078,
+      "line": "[DESKBAR] icon 6/8 Folder begin"
+    },
+    {
+      "host_s": 24.784047118009767,
+      "line": "[DESKBAR] icon 6 Folder OK"
+    },
+    {
+      "host_s": 24.815366185008315,
+      "line": "[DESKBAR] icon 7/8 Settings begin"
+    },
+    {
+      "host_s": 24.856115934002446,
+      "line": "[DESKBAR] icon 7 Settings OK"
+    },
+    {
+      "host_s": 24.886916740011657,
+      "line": "[DESKBAR] icon 8/8 PowerOff begin"
+    },
+    {
+      "host_s": 24.917713691014796,
+      "line": "[DESKBAR] icon 8 PowerOff OK"
+    },
+    {
+      "host_s": 25.24670461099595,
+      "line": "[DESKBAR] icon Folder begin"
+    },
+    {
+      "host_s": 25.24670461099595,
+      "line": "[DESKBAR] icon Folder OK"
+    },
+    {
+      "host_s": 25.24670461099595,
+      "line": "[DESKBAR] icon Appwiz1500 begin"
+    },
+    {
+      "host_s": 25.24670461099595,
+      "line": "[DESKBAR] icon Appwiz1500 OK"
+    },
+    {
+      "host_s": 25.24670461099595,
+      "line": "[DESKBAR] icon FileText begin"
+    },
+    {
+      "host_s": 25.24670461099595,
+      "line": "[DESKBAR] icon FileText OK"
+    },
+    {
+      "host_s": 25.24670461099595,
+      "line": "[DESKBAR] embedded in Vision desktop layer"
+    },
+    {
+      "host_s": 25.24670461099595,
+      "line": "[BKBOOT t=2179] VISION: SCREENSAVER"
+    },
+    {
+      "host_s": 25.308112016005907,
+      "line": "[BKBOOT t=2187] VISION: START SHELL"
+    },
+    {
+      "host_s": 25.31830997799989,
+      "line": "[BKBOOT t=2188] VISION: READY"
+    },
+    {
+      "host_s": 25.329547366010956,
+      "line": "[VISION] READY: motor, escritorio y compositor bajo Vision"
+    },
+    {
+      "host_s": 25.37212139100302,
+      "line": "[BKBOOT t=2193] kernel_main: Vision READY"
+    },
+    {
+      "host_s": 25.623111879016506,
+      "line": "[RAM:DESKTOP] installed_kib=1572351 managed_kib=1441664 used_kib=19266 free_kib=1422397 unmanaged_kib=130686 heap_used_kib=19138 heap_free_kib=439485 vm_free_kib=982912"
+    },
+    {
+      "host_s": 25.633303420996526,
+      "line": "[S[MP] escritorio listo; iniciando procesadores secundarios"
+    },
+    {
+      "host_s": 25.66554365400225,
+      "line": "VISION:SAVER] Ring 3 worker started"
+    },
+    {
+      "host_s": 25.798554608016275,
+      "line": "[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000"
+    },
+    {
+      "host_s": 25.82942100899527,
+      "line": "[SMP] iniciando CPU1 APIC=1..."
+    },
+    {
+      "host_s": 25.902515660010977,
+      "line": "[SMP] CPU1 online"
+    },
+    {
+      "host_s": 26.599932253011502,
+      "line": "[SMP] 2/2 CPU(s) online; timer LAPIC=451887 cuentas/tick"
+    },
+    {
+      "host_s": 26.599932253011502,
+      "line": "[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (122 slots libres)"
+    },
+    {
+      "host_s": 26.599932253011502,
+      "line": "[SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI"
+    },
+    {
+      "host_s": 26.599932253011502,
+      "line": "[BKBOOT] VISION ONLINE pid=5"
+    },
+    {
+      "host_s": 26.837864658009494,
+      "line": "[WINE:BOOT] deferred until Windows program launch"
+    },
+    {
+      "host_s": 26.837864658009494,
+      "line": "[BKBOOT t=2323] DISABLE SPLASH / ENTER GUI"
+    },
+    {
+      "host_s": 26.837864658009494,
+      "line": "[BKBOOT] DESKTOP RELEASED"
+    },
+    {
+      "host_s": 26.837864658009494,
+      "line": "[BKBOOT] QUEUE STARTUP SOUND"
+    },
+    {
+      "host_s": 26.837864658009494,
+      "line": "[VISION:ENGINE] compositor y ventanas CPL=3"
+    },
+    {
+      "host_s": 29.783535018999828,
+      "line": "[GATE:STAGE2] START /WINEGATE/bin/wine-launch.ELF"
+    },
+    {
+      "host_s": 30.059127208020072,
+      "line": "[WINE:DESKTOP] rootless start /SYSTEM/WINE/windows/system32/notepad.exe"
+    },
+    {
+      "host_s": 30.487780321011087,
+      "line": "_XSERVTransTransNoListen: unable to find transport: tcp"
+    },
+    {
+      "host_s": 31.08106888300972,
+      "line": "[WINE:DESKTOP] TinyX rootless ready on :18 pid=9"
+    },
+    {
+      "host_s": 31.139139020000584,
+      "line": "[WINE:TIME] x-ready ms=1050"
+    },
+    {
+      "host_s": 32.12786264199531,
+      "line": "[WINE:STAGE] PREFIX exclusive lock acquired"
+    },
+    {
+      "host_s": 32.12786264199531,
+      "line": "[WINE:STAGE] PREFIX ready marker=1"
+    },
+    {
+      "host_s": 32.12786264199531,
+      "line": "[WINE:STAGE] THEME ready marker=1"
+    },
+    {
+      "host_s": 32.6972402370011,
+      "line": "[WINE:TIME] prefix-ready ms=1740 delta_ms=690"
+    },
+    {
+      "host_s": 32.6972402370011,
+      "line": "[WINE:TIME] theme-ready ms=1740 delta_ms=0"
+    },
+    {
+      "host_s": 32.6972402370011,
+      "line": "[WINE:STAGE] TARGET begin path=/SYSTEM/WINE/windows/system32/notepad.exe kind=exe"
+    },
+    {
+      "host_s": 33.22654961599619,
+      "line": "[WINE:TIME] target-begin ms=1740"
+    },
+    {
+      "host_s": 33.87592799201957,
+      "line": "[RAM:IDLE] installed_kib=1572351 managed_kib=1441664 used_kib=32251 free_kib=1409412 unmanaged_kib=130686 heap_used_kib=26379 heap_free_kib=432244 vm_free_kib=977168"
+    },
+    {
+      "host_s": 33.87592799201957,
+      "line": "[WINE:STAGE] TARGET spawned pid=11"
+    },
+    {
+      "host_s": 33.87592799201957,
+      "line": "[WINE:TIME] target-spawned ms=3590 delta_ms=1850"
+    },
+    {
+      "host_s": 58.68101033900166,
+      "line": "[PAGING] aviso: shootdown TLB incompleto gen=23881 pid=0 mask=0x1"
+    }
+  ],
+  "clock_samples": [
+    {
+      "host_mid_s": 183064.66125357948,
+      "query_ms": 6.515200977446511,
+      "ticks": 0
+    },
+    {
+      "host_mid_s": 183065.16099454398,
+      "query_ms": 1.5543300251010805,
+      "ticks": 0
+    },
+    {
+      "host_mid_s": 183065.7513400075,
+      "query_ms": 166.61058698082343,
+      "ticks": 0
+    },
+    {
+      "host_mid_s": 183066.206522765,
+      "query_ms": 72.76844399166293,
+      "ticks": 0
+    },
+    {
+      "host_mid_s": 183066.6799708585,
+      "query_ms": 3.122892987448722,
+      "ticks": 0
+    },
+    {
+      "host_mid_s": 183067.186730468,
+      "query_ms": 2.814231993397698,
+      "ticks": 0
+    },
+    {
+      "host_mid_s": 183068.674710038,
+      "query_ms": 3.6566680064424872,
+      "ticks": 120
+    },
+    {
+      "host_mid_s": 183069.24986857502,
+      "query_ms": 150.39135797997005,
+      "ticks": 171
+    },
+    {
+      "host_mid_s": 183069.762257441,
+      "query_ms": 2.228630008175969,
+      "ticks": 229
+    },
+    {
+      "host_mid_s": 183070.372072677,
+      "query_ms": 4.270232020644471,
+      "ticks": 288
+    },
+    {
+      "host_mid_s": 183070.871234846,
+      "query_ms": 1.8568259838502854,
+      "ticks": 340
+    },
+    {
+      "host_mid_s": 183071.38022129599,
+      "query_ms": 3.2773120037745684,
+      "ticks": 391
+    },
+    {
+      "host_mid_s": 183072.331050009,
+      "query_ms": 530.2054380008485,
+      "ticks": 507
+    },
+    {
+      "host_mid_s": 183074.9561278205,
+      "query_ms": 86.31247899029404,
+      "ticks": 752
+    },
+    {
+      "host_mid_s": 183075.420522661,
+      "query_ms": 5.341121985111386,
+      "ticks": 792
+    },
+    {
+      "host_mid_s": 183075.927246953,
+      "query_ms": 1.9969040004070848,
+      "ticks": 846
+    },
+    {
+      "host_mid_s": 183077.6523404125,
+      "query_ms": 84.05563500127755,
+      "ticks": 1013
+    },
+    {
+      "host_mid_s": 183078.20944654598,
+      "query_ms": 3.3754519827198237,
+      "ticks": 1073
+    },
+    {
+      "host_mid_s": 183078.937749588,
+      "query_ms": 452.48166800593026,
+      "ticks": 1107
+    },
+    {
+      "host_mid_s": 183079.46972126752,
+      "query_ms": 4.808814992429689,
+      "ticks": 1200
+    },
+    {
+      "host_mid_s": 183080.659977616,
+      "query_ms": 11.531944008311257,
+      "ticks": 1319
+    },
+    {
+      "host_mid_s": 183081.2689655665,
+      "query_ms": 1.6222330159507692,
+      "ticks": 1376
+    },
+    {
+      "host_mid_s": 183081.7724550505,
+      "query_ms": 2.449997002258897,
+      "ticks": 1430
+    },
+    {
+      "host_mid_s": 183082.2813525265,
+      "query_ms": 4.267859010724351,
+      "ticks": 1481
+    },
+    {
+      "host_mid_s": 183082.79072269052,
+      "query_ms": 3.496793011436239,
+      "ticks": 1532
+    },
+    {
+      "host_mid_s": 183083.31957775948,
+      "query_ms": 9.953654982382432,
+      "ticks": 1585
+    },
+    {
+      "host_mid_s": 183083.8542287425,
+      "query_ms": 4.065532993990928,
+      "ticks": 1635
+    },
+    {
+      "host_mid_s": 183084.65326519398,
+      "query_ms": 6.452675996115431,
+      "ticks": 1715
+    },
+    {
+      "host_mid_s": 183085.317031882,
+      "query_ms": 4.312851990107447,
+      "ticks": 1785
+    },
+    {
+      "host_mid_s": 183085.82189506252,
+      "query_ms": 5.501499021193013,
+      "ticks": 1835
+    },
+    {
+      "host_mid_s": 183086.413343554,
+      "query_ms": 4.351380019215867,
+      "ticks": 1894
+    },
+    {
+      "host_mid_s": 183086.92725784198,
+      "query_ms": 4.858600004808977,
+      "ticks": 1943
+    },
+    {
+      "host_mid_s": 183087.43844013748,
+      "query_ms": 12.17368702054955,
+      "ticks": 1996
+    },
+    {
+      "host_mid_s": 183087.9425938535,
+      "query_ms": 4.133479000302032,
+      "ticks": 2047
+    },
+    {
+      "host_mid_s": 183088.4501861635,
+      "query_ms": 3.114886989351362,
+      "ticks": 2096
+    },
+    {
+      "host_mid_s": 183088.955605278,
+      "query_ms": 1.7603239975869656,
+      "ticks": 2148
+    },
+    {
+      "host_mid_s": 183089.4631037495,
+      "query_ms": 6.112713017500937,
+      "ticks": 2198
+    },
+    {
+      "host_mid_s": 183089.96686834452,
+      "query_ms": 9.025139006553218,
+      "ticks": 2250
+    },
+    {
+      "host_mid_s": 183090.63971002703,
+      "query_ms": 5.489881994435564,
+      "ticks": 2314
+    },
+    {
+      "host_mid_s": 183091.144107165,
+      "query_ms": 3.6840680113527924,
+      "ticks": 2368
+    },
+    {
+      "host_mid_s": 183091.647439709,
+      "query_ms": 1.9002819899469614,
+      "ticks": 2418
+    },
+    {
+      "host_mid_s": 183092.152490256,
+      "query_ms": 2.0539179968181998,
+      "ticks": 2468
+    },
+    {
+      "host_mid_s": 183092.6541827225,
+      "query_ms": 2.171637024730444,
+      "ticks": 2519
+    },
+    {
+      "host_mid_s": 183093.15711900598,
+      "query_ms": 2.191456005675718,
+      "ticks": 2569
+    },
+    {
+      "host_mid_s": 183093.6644817675,
+      "query_ms": 2.7801029791589826,
+      "ticks": 2620
+    },
+    {
+      "host_mid_s": 183094.1728276395,
+      "query_ms": 7.462383015081286,
+      "ticks": 2670
+    },
+    {
+      "host_mid_s": 183094.6732363245,
+      "query_ms": 1.6532230074517429,
+      "ticks": 2720
+    },
+    {
+      "host_mid_s": 183095.1798908205,
+      "query_ms": 7.2144269943237305,
+      "ticks": 2771
+    },
+    {
+      "host_mid_s": 183095.68258789048,
+      "query_ms": 4.214087006403133,
+      "ticks": 2821
+    },
+    {
+      "host_mid_s": 183096.19123433548,
+      "query_ms": 8.368817012524232,
+      "ticks": 2833
+    },
+    {
+      "host_mid_s": 183096.735581215,
+      "query_ms": 2.4990740057546645,
+      "ticks": 2833
+    },
+    {
+      "host_mid_s": 183097.26726773148,
+      "query_ms": 6.419812998501584,
+      "ticks": 2979
+    },
+    {
+      "host_mid_s": 183097.91590049,
+      "query_ms": 5.202941974857822,
+      "ticks": 3045
+    },
+    {
+      "host_mid_s": 183098.419071988,
+      "query_ms": 1.7710680258460343,
+      "ticks": 3092
+    },
+    {
+      "host_mid_s": 183098.92797321652,
+      "query_ms": 15.464557014638558,
+      "ticks": 3146
+    },
+    {
+      "host_mid_s": 183099.4301936605,
+      "query_ms": 12.696827005129308,
+      "ticks": 3197
+    },
+    {
+      "host_mid_s": 183099.965806563,
+      "query_ms": 3.73714801389724,
+      "ticks": 3250
+    },
+    {
+      "host_mid_s": 183100.715596357,
+      "query_ms": 6.130825990112498,
+      "ticks": 3318
+    },
+    {
+      "host_mid_s": 183101.222377422,
+      "query_ms": 2.244159986730665,
+      "ticks": 3375
+    },
+    {
+      "host_mid_s": 183101.72334412351,
+      "query_ms": 2.1907129848841578,
+      "ticks": 3426
+    },
+    {
+      "host_mid_s": 183102.2272720185,
+      "query_ms": 2.3591669742017984,
+      "ticks": 3476
+    },
+    {
+      "host_mid_s": 183102.7327453555,
+      "query_ms": 1.7238410073332489,
+      "ticks": 3526
+    },
+    {
+      "host_mid_s": 183103.2676973675,
+      "query_ms": 3.1375570106320083,
+      "ticks": 3580
+    },
+    {
+      "host_mid_s": 183103.7752715215,
+      "query_ms": 3.3651029807515442,
+      "ticks": 3630
+    },
+    {
+      "host_mid_s": 183104.2861732185,
+      "query_ms": 3.922388976207003,
+      "ticks": 3682
+    },
+    {
+      "host_mid_s": 183107.046775293,
+      "query_ms": 6.049055984476581,
+      "ticks": 3958
+    },
+    {
+      "host_mid_s": 183107.5542427525,
+      "query_ms": 2.94875301187858,
+      "ticks": 4009
+    },
+    {
+      "host_mid_s": 183108.1018813165,
+      "query_ms": 80.48646102542989,
+      "ticks": 4067
+    },
+    {
+      "host_mid_s": 183108.5648964325,
+      "query_ms": 2.6884950057137758,
+      "ticks": 4110
+    },
+    {
+      "host_mid_s": 183109.07228782598,
+      "query_ms": 6.902984023327008,
+      "ticks": 4161
+    },
+    {
+      "host_mid_s": 183109.695597944,
+      "query_ms": 114.23182400176302,
+      "ticks": 4214
+    },
+    {
+      "host_mid_s": 183110.14427499252,
+      "query_ms": 5.1517469983082265,
+      "ticks": 4268
+    },
+    {
+      "host_mid_s": 183110.64939557452,
+      "query_ms": 2.15551900328137,
+      "ticks": 4318
+    },
+    {
+      "host_mid_s": 183111.1560597805,
+      "query_ms": 7.560066995210946,
+      "ticks": 4369
+    },
+    {
+      "host_mid_s": 183111.661071896,
+      "query_ms": 7.322605990339071,
+      "ticks": 4419
+    },
+    {
+      "host_mid_s": 183112.293973547,
+      "query_ms": 181.2361900229007,
+      "ticks": 4492
+    },
+    {
+      "host_mid_s": 183112.73725605552,
+      "query_ms": 51.111187000060454,
+      "ticks": 4529
+    },
+    {
+      "host_mid_s": 183113.215133872,
+      "query_ms": 1.6530940192751586,
+      "ticks": 4575
+    },
+    {
+      "host_mid_s": 183113.72323827748,
+      "query_ms": 1.5997530135791749,
+      "ticks": 4626
+    },
+    {
+      "host_mid_s": 183114.4955748595,
+      "query_ms": 189.20089898165315,
+      "ticks": 4711
+    },
+    {
+      "host_mid_s": 183114.9135543825,
+      "query_ms": 4.154371010372415,
+      "ticks": 4745
+    },
+    {
+      "host_mid_s": 183116.118884378,
+      "query_ms": 62.96423400635831,
+      "ticks": 4858
+    },
+    {
+      "host_mid_s": 183116.5911366815,
+      "query_ms": 3.5787069937214255,
+      "ticks": 4912
+    },
+    {
+      "host_mid_s": 183117.0940378465,
+      "query_ms": 5.003717000363395,
+      "ticks": 4963
+    },
+    {
+      "host_mid_s": 183119.0271703675,
+      "query_ms": 114.87905500689521,
+      "ticks": 5151
+    },
+    {
+      "host_mid_s": 183119.57861358352,
+      "query_ms": 64.99713301309384,
+      "ticks": 5203
+    },
+    {
+      "host_mid_s": 183120.35878794448,
+      "query_ms": 2.0242749887984246,
+      "ticks": 5289
+    },
+    {
+      "host_mid_s": 183120.865718509,
+      "query_ms": 1.6437039885204285,
+      "ticks": 5340
+    },
+    {
+      "host_mid_s": 183121.3662105655,
+      "query_ms": 1.672810991294682,
+      "ticks": 5390
+    },
+    {
+      "host_mid_s": 183121.8728335335,
+      "query_ms": 3.086804994381964,
+      "ticks": 5441
+    },
+    {
+      "host_mid_s": 183122.38053062948,
+      "query_ms": 2.073838986689225,
+      "ticks": 5491
+    },
+    {
+      "host_mid_s": 183122.890386044,
+      "query_ms": 2.4138940207194537,
+      "ticks": 5542
+    },
+    {
+      "host_mid_s": 183124.2444964175,
+      "query_ms": 107.6607329887338,
+      "ticks": 5683
+    },
+    {
+      "host_mid_s": 183124.699486401,
+      "query_ms": 2.8100580093450844,
+      "ticks": 5723
+    },
+    {
+      "host_mid_s": 183125.2068334445,
+      "query_ms": 2.8320630080997944,
+      "ticks": 5774
+    },
+    {
+      "host_mid_s": 183125.79323852801,
+      "query_ms": 170.42536198277958,
+      "ticks": 5841
+    },
+    {
+      "host_mid_s": 183126.31571243348,
+      "query_ms": 157.82923498773016,
+      "ticks": 5893
+    },
+    {
+      "host_mid_s": 183127.7872771225,
+      "query_ms": 224.25681300228462,
+      "ticks": 6025
+    },
+    {
+      "host_mid_s": 183128.223768075,
+      "query_ms": 81.70915400842205,
+      "ticks": 6069
+    }
+  ]
+}

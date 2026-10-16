@@ -1,0 +1,59 @@
+make: 'build/system/services/vision.o' is up to date.
+/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/ports/wine/tests/futex.c: In function ‘main’:
+/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/ports/wine/tests/futex.c:35:5: warning: this ‘while’ clause does not guard... [-Wmisleading-indentation]
+   35 |     while(!atomic_load(&ready)) sched_yield();nanosleep(&delay,NULL);
+      |     ^~~~~
+/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/ports/wine/tests/futex.c:35:47: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘while’
+   35 |     while(!atomic_load(&ready)) sched_yield();nanosleep(&delay,NULL);
+      |                                               ^~~~~~~~~
+ld: warning: build/isr_stubs.o: missing .note.GNU-stack section implies executable stack
+ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+patched /tmp/bk-wine-perf-20261014/ipc-after/test.img: kernel 837676 bytes
+/SYSTEM/SERVICES/VISION.BEX 255436 bytes; mode 0o100644
+/WINEGATE/bin/futex-suite.ELF 15244 bytes; mode 0o100755
+/WINEGATE/bin/case01 15244 bytes; mode 0o100755
+/WINEGATE/bin/ipc-latency.ELF 15608 bytes; mode 0o100755
+/WINEGATE/bin/futex-latency.ELF 15548 bytes; mode 0o100755
+/WINEGATE/bin/futex.ELF 15548 bytes; mode 0o100755
+/WINEGATE/bin/futex-mapping.ELF 15524 bytes; mode 0o100755
+/WINEGATE/bin/futex-stress.ELF 15804 bytes; mode 0o100755
+/WINEGATE/bin/ipc.ELF 20192 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/SCREENSV.INI 23 bytes; mode 0o100644
+{'host_s': 16.899126281990902, 'line': '[FUTEX-LATENCY] run=0 rounds=1000 us=30000 waits=1018,1018 wakes=1018,1018'}
+{'host_s': 16.960100288008107, 'line': '[FUTEX-LATENCY] run=1 rounds=1000 us=20000 waits=1018,1019 wakes=1019,1018'}
+{'host_s': 17.032506235002074, 'line': '[FUTEX-LATENCY] run=2 rounds=1000 us=20000 waits=1018,1018 wakes=1018,1018'}
+{'host_s': 17.064493234007386, 'line': '[FUTEX-LATENCY] PASS'}
+{'host_s': 17.382480388012482, 'line': '[FUTEX] espera real, timeout, WAKE, clear_child_tid, EINTR PASS'}
+{'host_s': 18.01973542800988, 'line': '[FUTEX-MAPPING] private aliases stay separate; wake survives file COW without PRIVATE flag PASS'}
+{'host_s': 18.16222964398912, 'line': '[FUTEX[-RASMT:RIEDSLSE]]  sitnasrttailnlge d8_ ktihbr=ea1d5s7,2 3m5ute1x emsa,n abarrigeerds_ kainbd= 1c4o4n1d6i6t4ion waits '}
+{'host_s': 18.636449812998762, 'line': '[FUTEX-STRESS] PASS counter=144000 rounds=1500 threads=8'}
+{'host_s': 20.08278456600965, 'line': '[FUTEX-SUITE] PASS'}
+[
+  {
+    "run": 0,
+    "rounds": 1000,
+    "us": 30000,
+    "waits_main": 1018,
+    "waits_peer": 1018,
+    "wakes_main": 1018,
+    "wakes_peer": 1018
+  },
+  {
+    "run": 1,
+    "rounds": 1000,
+    "us": 20000,
+    "waits_main": 1018,
+    "waits_peer": 1019,
+    "wakes_main": 1019,
+    "wakes_peer": 1018
+  },
+  {
+    "run": 2,
+    "rounds": 1000,
+    "us": 20000,
+    "waits_main": 1018,
+    "waits_peer": 1018,
+    "wakes_main": 1018,
+    "wakes_peer": 1018
+  }
+]

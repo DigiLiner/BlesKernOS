@@ -1,0 +1,38 @@
+{
+  "result": "FAIL",
+  "host_seconds": 41.93029094199301,
+  "command": [
+    "qemu-system-i386",
+    "-accel",
+    "kvm",
+    "-cpu",
+    "host",
+    "-smp",
+    "2",
+    "-m",
+    "1536",
+    "-drive",
+    "file=/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine-games32/glx-semantics-before/test.img,format=raw,if=ide",
+    "-vga",
+    "none",
+    "-device",
+    "virtio-vga-gl",
+    "-display",
+    "egl-headless,rendernode=/dev/dri/renderD128",
+    "-serial",
+    "file:/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine-games32/glx-semantics-before/serial.log",
+    "-no-reboot",
+    "-no-shutdown"
+  ],
+  "pe_sha256": "05d88b337edbab7e520a57cb69faac3fbc0e23be4b0756cd53706e0a8a948c34",
+  "checks": [
+    "[GLX-PROBE] front=ff0000 held=ff0000 swap=0000ff",
+    "[GLX-PROBE] hidden front copied=1 pixel=00ff00",
+    "[GLX-PROBE] resized current drawable copied=1 corner=ffff00",
+    "[GLX-PROBE] remapped front=ff00ff",
+    "[GLX-PROBE] retained drawable=0,0,255",
+    "[GLX-PROBE] independent read=0,255,0",
+    "[GLX-PROBE] second context=0,0,0",
+    "[GLX-PROBE] FAILED"
+  ]
+}

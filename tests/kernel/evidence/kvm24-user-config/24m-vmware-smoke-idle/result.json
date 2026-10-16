@@ -1,0 +1,30 @@
+{
+  "ram_mib": 24,
+  "backend": "vmware",
+  "desktop_started": true,
+  "completed": true,
+  "smoke_pass": true,
+  "memory": {
+    "DESKTOP": {
+      "installed_kib": 24063,
+      "managed_kib": 20352,
+      "used_kib": 11008,
+      "free_kib": 9343,
+      "unmanaged_kib": 3711,
+      "heap_used_kib": 11004,
+      "heap_free_kib": 8323,
+      "vm_free_kib": 1020
+    },
+    "IDLE": {
+      "installed_kib": 24063,
+      "managed_kib": 20352,
+      "used_kib": 16386,
+      "free_kib": 3965,
+      "unmanaged_kib": 3711,
+      "heap_used_kib": 16382,
+      "heap_free_kib": 2945,
+      "vm_free_kib": 1020
+    }
+  },
+  "depths": []
+}

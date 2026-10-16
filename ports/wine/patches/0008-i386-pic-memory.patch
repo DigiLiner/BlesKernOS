@@ -1,0 +1,65 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -1019,9 +1019,9 @@
+     AC_DEFINE(_GNU_SOURCE,1,[Define to 1 to enable GNU extensions on Linux])
+     if test $HOST_ARCH = i386
+     then
+-        DLLFLAGS="$DLLFLAGS -fno-PIC"
+-        LDDLLFLAGS="-fno-PIC"
+-        WINE_TRY_CFLAGS([-fno-PIC -Wl,-z,notext],[LDDLLFLAGS="$LDDLLFLAGS -Wl,-z,notext"])
++        DLLFLAGS="$DLLFLAGS -fPIC"
++        LDDLLFLAGS="-fPIC"
++        WINE_TRY_CFLAGS([-fPIC -Wl,-z,notext],[LDDLLFLAGS="$LDDLLFLAGS -Wl,-z,notext"])
+     else
+         DLLFLAGS="$DLLFLAGS -fPIC"
+         LDDLLFLAGS="-fPIC"
+--- a/configure
++++ b/configure
+@@ -12016,25 +12016,25 @@
+ 
+     if test $HOST_ARCH = i386
+     then
+-        DLLFLAGS="$DLLFLAGS -fno-PIC"
+-        LDDLLFLAGS="-fno-PIC"
+-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports -fno-PIC -Wl,-z,notext" >&5
+-printf %s "checking whether the compiler supports -fno-PIC -Wl,-z,notext... " >&6; }
+-if test ${ac_cv_cflags__fno_PIC__Wl__z_notext+y}
++        DLLFLAGS="$DLLFLAGS -fPIC"
++        LDDLLFLAGS="-fPIC"
++        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports -fPIC -Wl,-z,notext" >&5
++printf %s "checking whether the compiler supports -fPIC -Wl,-z,notext... " >&6; }
++if test ${ac_cv_cflags__fPIC__Wl__z_notext+y}
+ then :
+   printf %s "(cached) " >&6
+ else case e in #(
+   e) ac_wine_try_cflags_saved=$CFLAGS
+-CFLAGS="$CFLAGS -fno-PIC -Wl,-z,notext"
++CFLAGS="$CFLAGS -fPIC -Wl,-z,notext"
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ int main(int argc, char **argv) { return 0; }
+ _ACEOF
+ if ac_fn_c_try_link "$LINENO"
+ then :
+-  ac_cv_cflags__fno_PIC__Wl__z_notext=yes
+-else case e in #(
+-  e) ac_cv_cflags__fno_PIC__Wl__z_notext=no ;;
++  ac_cv_cflags__fPIC__Wl__z_notext=yes
++else case e in #(
++  e) ac_cv_cflags__fPIC__Wl__z_notext=no ;;
+ esac
+ fi
+ rm -f core conftest.err conftest.$ac_objext conftest.beam \
+@@ -12042,9 +12042,9 @@
+ CFLAGS=$ac_wine_try_cflags_saved ;;
+ esac
+ fi
+-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_cflags__fno_PIC__Wl__z_notext" >&5
+-printf "%s\n" "$ac_cv_cflags__fno_PIC__Wl__z_notext" >&6; }
+-if test "x$ac_cv_cflags__fno_PIC__Wl__z_notext" = xyes
++{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_cflags__fPIC__Wl__z_notext" >&5
++printf "%s\n" "$ac_cv_cflags__fPIC__Wl__z_notext" >&6; }
++if test "x$ac_cv_cflags__fPIC__Wl__z_notext" = xyes
+ then :
+   LDDLLFLAGS="$LDDLLFLAGS -Wl,-z,notext"
+ fi

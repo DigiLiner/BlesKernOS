@@ -1,0 +1,2 @@
+PASS borrowed spaces receive shootdowns; stale CR3 reloads; concurrent edits remain unacknowledged
+PASS actual pager PTE rollback, acknowledged revocation, late-AP publication and PROT_NONE

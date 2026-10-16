@@ -1,0 +1,149 @@
+{
+  "date": "2026-10-13",
+  "host_tests_passed": 22,
+  "host_tests_total": 22,
+  "build_exit_code": 0,
+  "artifacts": {
+    "build/kernel.bin": {
+      "sha256": "018f28042a78177a8182e5478a6e288761bb64d34fa089dd4a87df41d4ab2de5",
+      "bytes": 825388
+    },
+    "build/stage2.bin": {
+      "sha256": "90e29e655dbe4ba01369a31bcda3a259521592f667b9918bbfcbbdc8d9288d58",
+      "bytes": 4096
+    },
+    "kernel/mm/pager.c": {
+      "sha256": "70617e443fe3a0c1897397168f664f1f22ce15c04e047c29ec3e81bcb6923ffe",
+      "bytes": 33885
+    },
+    "tests/kernel/test_pager_ranges.py": {
+      "sha256": "35c7c5960e8f9060ad57d5e39c7ad3676bdf0fd44b48de0c45bff892aa1548da",
+      "bytes": 5077
+    },
+    "tests/kernel/test_block_writes.py": {
+      "sha256": "982dc18ac39c913ba6739534bbc1709f65b9c65c0d28d538afad718ea3a6861a",
+      "bytes": 3976
+    },
+    "tests/kernel/run_ram_smoke.py": {
+      "sha256": "1220bb5466205c2a9b6a1546fb8e46326976de399f46d0b67433dbd4d2044d25",
+      "bytes": 11641
+    }
+  },
+  "guest": [
+    {
+      "path": "tests/kernel/evidence/audit-2026-10-13/guest-final/64m-std-smoke/result.json",
+      "exit_code": 0,
+      "result": {
+        "ram_mib": 64,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "wine_boot_started": false,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 65023,
+            "managed_kib": 61312,
+            "used_kib": 11135,
+            "free_kib": 50176,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 11007,
+            "heap_free_kib": 34976,
+            "vm_free_kib": 15200
+          },
+          "IDLE": {
+            "installed_kib": 65023,
+            "managed_kib": 61312,
+            "used_kib": 15468,
+            "free_kib": 45843,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 15340,
+            "heap_free_kib": 30643,
+            "vm_free_kib": 15200
+          }
+        },
+        "depths": [
+          8,
+          16,
+          24,
+          32
+        ]
+      }
+    },
+    {
+      "path": "tests/kernel/evidence/audit-2026-10-13/guest-final/1024m-std-smoke/result.json",
+      "exit_code": 0,
+      "result": {
+        "ram_mib": 1024,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "wine_boot_started": false,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 1048063,
+            "managed_kib": 917376,
+            "used_kib": 21335,
+            "free_kib": 896040,
+            "unmanaged_kib": 130686,
+            "heap_used_kib": 21207,
+            "heap_free_kib": 199944,
+            "vm_free_kib": 696096
+          },
+          "IDLE": {
+            "installed_kib": 1048063,
+            "managed_kib": 917376,
+            "used_kib": 25804,
+            "free_kib": 891571,
+            "unmanaged_kib": 130686,
+            "heap_used_kib": 25676,
+            "heap_free_kib": 195475,
+            "vm_free_kib": 696096
+          }
+        },
+        "depths": [
+          8,
+          16,
+          24,
+          32
+        ]
+      }
+    },
+    {
+      "path": "tests/kernel/evidence/audit-2026-10-13/guest-final/32m-std-smoke-swap-on/result.json",
+      "exit_code": 0,
+      "result": {
+        "ram_mib": 32,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "wine_boot_started": false,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 9386,
+            "free_kib": 19157,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 9126,
+            "heap_free_kib": 17369,
+            "vm_free_kib": 1788
+          },
+          "IDLE": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 13762,
+            "free_kib": 14781,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 13502,
+            "heap_free_kib": 12993,
+            "vm_free_kib": 1788
+          }
+        },
+        "depths": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "result": "FAIL",
+  "host_seconds": 206.6692179509846,
+  "command": [
+    "qemu-system-i386",
+    "-accel",
+    "kvm",
+    "-cpu",
+    "host",
+    "-smp",
+    "2",
+    "-m",
+    "1536",
+    "-drive",
+    "file=/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine-games32/baseline/test.img,format=raw,if=ide",
+    "-vga",
+    "none",
+    "-device",
+    "virtio-vga-gl",
+    "-display",
+    "egl-headless,rendernode=/dev/dri/renderD128",
+    "-serial",
+    "file:/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine-games32/baseline/serial.log",
+    "-no-reboot",
+    "-no-shutdown"
+  ],
+  "pe_sha256": "48418031830e5da85914d1988a92e85a02785928bf962c06be6bc52062d5bd2a",
+  "checks": [
+    "[GAMES32] pointer-bits=32",
+    "[COMPAT:GL] version=1.2 Mesa 3.5 renderer=BlesKernOS GFX3D",
+    "[COMPAT:GL] PASS triangle-depth pixel=0,255,0 error=0"
+  ]
+}

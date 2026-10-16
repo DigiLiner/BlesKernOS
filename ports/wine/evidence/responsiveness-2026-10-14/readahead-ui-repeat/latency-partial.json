@@ -1,0 +1,23 @@
+[
+  {
+    "key_to_glyph_ms": 123.49920798442326,
+    "injection_ms": 2.686227991944179,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 255.91904699103907,
+    "injection_ms": 1.3834709825459868,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 76.80857100058347,
+    "injection_ms": 1.4713889977429062,
+    "native_route_ms": null,
+    "tinyx_consume_ms": null,
+    "stream_publish_ms": null
+  }
+]

@@ -1,0 +1,1464 @@
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -Dwin32_storage_resolve=win32_storage_module_resolve -c kernel/win32/cfb.c -o build/storage-module/cfb.o
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -Dwin32_storage_resolve=win32_storage_module_resolve -c kernel/win32/storage.c -o build/storage-module/storage.o
+gcc -march=pentium3 -mtune=pentium3 -m32 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections -Oz -I. -Ikernel -Iprograms -Ilibs/tinygl -Ilibs/src -Dwin32_storage_resolve=win32_storage_module_resolve -c kernel/win32/storage_io.c -o build/storage-module/storage_io.o
+python3 ports/wine/graphics/build-gallium.py --package 
+[AR]   Unificando compatibilidad Win32 en WINE.A...
+rm -f build/system/libs/wine/WINE.A
+ar rcs build/system/libs/wine/WINE.A build/kernel/ne_loader.o build/kernel/pe_loader.o build/kernel/win32/advapi32.o build/kernel/win32/com_bridge.o build/kernel/win32/com_memory.o build/kernel/win32/comctl32.o build/kernel/win32/comdlg32.o build/kernel/win32/dxcompat.o build/kernel/win32/exception.o build/kernel/win32/gdi32.o build/kernel/win32/imm32.o build/kernel/win32/kernel32.o build/kernel/win32/legacy_compat.o build/kernel/win32/lz32.o build/kernel/win32/msvcrt.o build/kernel/win32/ntdll.o build/kernel/win32/ole32.o build/kernel/win32/oleaut32.o build/kernel/win32/process.o build/kernel/win32/process_handle.o build/kernel/win32/profile.o build/kernel/win32/resources.o build/kernel/win32/riched20.o build/kernel/win32/rpcrt4.o build/kernel/win32/safearray.o build/kernel/win32/shell32.o build/kernel/win32/shlwapi.o build/kernel/win32/storage_loader.o build/kernel/win32/sync.o build/kernel/win32/thread.o build/kernel/win32/user32.o build/kernel/win32/version.o build/kernel/win32/vm.o build/kernel/win32/win32.o build/kernel/win32/win95_compat.o build/kernel/win32/wine_crt_jump.o build/kernel/win32/wine_library.o build/kernel/win32/wine_stage5.o build/kernel/win32/wine_stage6.o build/kernel/win32/wine_stage7.o build/kernel/win32/wine_stage8.o build/kernel/win32/wine_stage9.o build/kernel/win32/wininet.o build/kernel/win32/winmm.o build/kernel/win32/winsock.o build/kernel/win32/winspool.o build/kernel/win32/winzip70_compat.o build/kernel/win32/wzinet32.o
+[OK]   WINE.A: 1104936 bytes
+ld -m elf_i386 -r build/storage-module/cfb.o build/storage-module/storage.o build/storage-module/storage_io.o -o build/system/libs/wine/OLESTG.DVR
+[LD]   Linkeando kernel...
+ld -m elf_i386 -T kernel/linker.ld --gc-sections build/entry.o build/isr_stubs.o build/api_call.o build/kernel/ap_trampoline.o build/kernel/kernel.o build/kernel/installer.o build/kernel/floppy_installer.o build/kernel/bkl_setup.o build/kernel/setup_boot.o build/kernel/vga.o build/kernel/recovery_console.o build/kernel/paging.o build/kernel/usercopy.o build/kernel/memory.o build/kernel/compat_mode.o build/kernel/gdt.o build/kernel/task.o build/kernel/scheduler_smp.o build/kernel/smp.o build/kernel/smp_watchdog.o build/kernel/klock.o build/kernel/kernel_domains.o build/kernel/perfmon.o build/kernel/syscall.o build/kernel/api.o build/kernel/graphics_resources.o build/kernel/language.o build/kernel/public_api.o build/kernel/clipboard.o build/kernel/file_dialog.o build/kernel/usermode.o build/kernel/pic.o build/kernel/idt.o build/kernel/panic.o build/kernel/elf_loader.o build/kernel/bex_loader.o build/kernel/about_dialog.o build/kernel/sound_file.o build/kernel/system_sounds.o build/kernel/startup_sound.o build/kernel/driver_loader.o build/kernel/network.o build/kernel/bootsplash.o build/gui/gfx.o build/gui/font.o build/gui/windows.o build/gui/widget.o build/gui/desktop.o build/gui/compositor.o build/gui/gpu_compositor.o build/gui/event.o build/gui/gui.o build/gui/image.o build/gui/svg.o build/gui/jpeg.o build/programs/shell.o build/system/desktop/vision_bridge.o build/system/services/screensaverd.o build/programs/launcher.o build/kernel/drivers/core/block.o build/kernel/drivers/platform/lpt.o build/kernel/drivers/storage/floppy.o build/kernel/drivers/storage/usb_storage.o build/kernel/drivers/usb/usb_uhci.o build/kernel/drivers/core/vfs.o build/kernel/drivers/core/pci.o build/kernel/drivers/core/gfx.o build/kernel/drivers/core/gfx3d.o build/kernel/drivers/core/sdr.o build/kernel/drivers/core/rage128_engine.o build/kernel/drivers/graphics/svga_transport.o build/kernel/drivers/graphics/vga.o build/kernel/drivers/graphics/vesa_core.o build/kernel/drivers/input/mouse_core.o build/kernel/drivers/storage/ata.o build/kernel/drivers/storage/ahci.o build/kernel/drivers/core/pit.o build/kernel/drivers/audio/sound_core.o build/kernel/drivers/platform/rtc_core.o build/kernel/drivers/input/keyboard.o build/kernel/drivers/storage/iso9660_core.o build/kernel/drivers/storage/iso9660.o build/kernel/drivers/storage/fat.o build/kernel/drivers/storage/bfs.o build/kernel/drivers/storage/bfs4.o build/system/desktop/vision_image_compat.o --whole-archive build/system/libs/wine/WINE.A --no-whole-archive build/system/libs/libc/libc.a -o build/kernel.elf
+ld: warning: build/isr_stubs.o: missing .note.GNU-stack section implies executable stack
+ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+[OBJCOPY] Extrayendo binario...
+objcopy -O binary build/kernel.elf build/kernel.bin
+[OK]   Kernel: 1187364 bytes
+[NASM] Ensamblando Stage 2...
+[NASM] Kernel real: 2320 sectores, checksum 122332936
+[OK]   Stage 2: 4096 bytes
+patching file src/gallium/frontends/osmesa/osmesa.c
+Collecting meson==1.12.1
+  Using cached meson-1.12.1-py3-none-any.whl.metadata (1.7 kB)
+Collecting mako==1.4.3
+  Using cached mako-1.4.3-py3-none-any.whl.metadata (2.9 kB)
+Collecting MarkupSafe==3.0.4
+  Using cached markupsafe-3.0.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+Collecting pyyaml==6.0.3
+  Using cached pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+Collecting packaging==26.3
+  Using cached packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Using cached meson-1.12.1-py3-none-any.whl (1.1 MB)
+Using cached mako-1.4.3-py3-none-any.whl (80 kB)
+Using cached markupsafe-3.0.4-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+Using cached pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+Using cached packaging-26.3-py3-none-any.whl (129 kB)
+Installing collected packages: pyyaml, packaging, meson, MarkupSafe, mako
+Successfully installed MarkupSafe-3.0.4 mako-1.4.3 meson-1.12.1 packaging-26.3 pyyaml-6.0.3
+The Meson build system
+Version: 1.12.1
+Source dir: /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/mesa-24.3.4
+Build dir: /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/build
+Build type: cross build
+Project name: mesa
+Project version: 24.3.4
+C compiler for the host machine: gcc -m32 (gcc 13.3.0 "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0")
+C linker for the host machine: gcc -m32 ld.bfd 2.42
+C++ compiler for the host machine: g++ -m32 (gcc 13.3.0 "g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0")
+C++ linker for the host machine: g++ -m32 ld.bfd 2.42
+C compiler for the build machine: cc (gcc 13.3.0 "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0")
+C linker for the build machine: cc ld.bfd 2.42
+C++ compiler for the build machine: c++ (gcc 13.3.0 "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0")
+C++ linker for the build machine: c++ ld.bfd 2.42
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Host machine cpu family: x86
+Host machine cpu: pentium3
+Target machine cpu family: x86
+Target machine cpu: pentium3
+Checking for size of "void*" : 4 
+Checking if "-mtls-dialect=gnu2" runs: YES
+Dependency libglvnd for host machine skipped: feature glvnd disabled
+Dependency vdpau for host machine skipped: feature gallium-vdpau disabled
+Program glslangValidator found: NO
+Dependency libva for host machine skipped: feature gallium-va disabled
+Program python3 found: YES (/usr/bin/python3)
+Fetching value of define "ETIME" : 62 
+Compiler for C supports arguments -gsplit-dwarf: YES 
+Compiler for C supports link arguments -Wl,--gdb-index: NO 
+Checking for function "bswap32" : YES 
+Checking for function "bswap64" : YES 
+Checking for function "clz" : YES 
+Checking for function "clzll" : YES 
+Checking for function "ctz" : YES 
+Checking for function "expect" : YES 
+Checking for function "ffs" : YES 
+Checking for function "ffsll" : YES 
+Checking for function "popcount" : YES 
+Checking for function "popcountll" : YES 
+Checking for function "unreachable" : YES 
+Checking for function "types_compatible_p" : YES 
+Compiler for C supports function attribute const: YES 
+Compiler for C supports function attribute flatten: YES 
+Compiler for C supports function attribute malloc: YES 
+Compiler for C supports function attribute pure: YES 
+Compiler for C supports function attribute unused: YES 
+Compiler for C supports function attribute warn_unused_result: YES 
+Compiler for C supports function attribute weak: YES 
+Compiler for C supports function attribute format: YES 
+Compiler for C supports function attribute packed: YES 
+Compiler for C supports function attribute returns_nonnull: YES 
+Compiler for C supports function attribute alias: YES 
+Compiler for C supports function attribute noreturn: YES 
+Compiler for C supports function attribute optimize: YES 
+Compiler for C supports function attribute visibility:hidden: YES 
+Checking if "__uint128_t" compiles: NO 
+Checking for function "reallocarray" : YES 
+Checking for function "fmemopen" : YES 
+Checking if "gc-sections" links: YES 
+Compiler for C supports arguments -Werror=implicit-function-declaration: YES 
+Compiler for C supports arguments -Werror=missing-prototypes: YES 
+Compiler for C supports arguments -Werror=return-type: YES 
+Compiler for C supports arguments -Werror=empty-body: YES 
+Compiler for C supports arguments -Werror=incompatible-pointer-types: YES 
+Compiler for C supports arguments -Werror=int-conversion: YES 
+Compiler for C supports arguments -Wimplicit-fallthrough: YES 
+Compiler for C supports arguments -Wmisleading-indentation: YES 
+Compiler for C supports arguments -Wno-missing-field-initializers: YES 
+Compiler for C supports arguments -Wno-format-truncation: YES 
+Compiler for C supports arguments -Wno-nonnull-compare: YES 
+Compiler for C supports arguments -fno-math-errno: YES 
+Compiler for C supports arguments -fno-trapping-math: YES 
+Compiler for C supports arguments -Qunused-arguments: NO 
+Compiler for C supports arguments -fno-common: YES 
+Compiler for C supports arguments -Wno-unknown-pragmas: YES 
+Compiler for C supports arguments -Wno-microsoft-enum-value: NO 
+Compiler for C supports arguments -Wno-unused-function: YES 
+Compiler for C supports arguments -Werror=format: YES 
+Compiler for C supports arguments -Wformat-security: YES 
+Compiler for C supports arguments -Werror=thread-safety: NO 
+Compiler for C supports arguments -ffunction-sections: YES 
+Compiler for C supports arguments -fdata-sections: YES 
+Compiler for C supports arguments -Wno-unused-variable: YES 
+Compiler for C supports arguments -Wno-unused-but-set-variable: YES 
+Compiler for C supports arguments /wd4189: NO 
+Compiler for C++ supports arguments -Werror=return-type: YES 
+Compiler for C++ supports arguments -Werror=empty-body: YES 
+Compiler for C++ supports arguments -Wmisleading-indentation: YES 
+Compiler for C++ supports arguments -Wno-non-virtual-dtor: YES 
+Compiler for C++ supports arguments -Wno-missing-field-initializers: YES 
+Compiler for C++ supports arguments -Wno-format-truncation: YES 
+Compiler for C++ supports arguments -fno-math-errno: YES 
+Compiler for C++ supports arguments -fno-trapping-math: YES 
+Compiler for C++ supports arguments -Qunused-arguments: NO 
+Compiler for C++ supports arguments -flifetime-dse=1: YES 
+Compiler for C++ supports arguments -Wno-unknown-pragmas: YES 
+Compiler for C++ supports arguments -Wno-microsoft-enum-value: NO 
+Compiler for C++ supports arguments -Werror=format: YES 
+Compiler for C++ supports arguments -Wformat-security: YES 
+Compiler for C++ supports arguments -ffunction-sections: YES 
+Compiler for C++ supports arguments -fdata-sections: YES 
+Compiler for C++ supports arguments -Wno-unused-variable: YES 
+Compiler for C++ supports arguments -Wno-unused-but-set-variable: YES 
+Compiler for C++ supports arguments /wd4189: NO 
+Compiler for C supports arguments -Wno-override-init: YES 
+Compiler for C supports arguments -Wno-initializer-overrides: NO 
+Compiler for C supports arguments -Werror=pointer-arith: YES 
+Compiler for C supports arguments -Werror=vla: YES 
+Compiler for C supports arguments -Werror=gnu-empty-initializer: NO 
+Compiler for C++ supports arguments -Werror=pointer-arith: YES 
+Compiler for C++ supports arguments -Werror=vla: YES 
+Compiler for C++ supports arguments -Werror=gnu-empty-initializer: NO 
+Checking for function "__builtin_ia32_clflushopt" : YES 
+Checking if "GCC atomic builtins" compiles: YES 
+Checking if "GCC atomic builtins required -latomic" links: YES 
+Checking if "GCC 64bit atomics" with dependency  links: YES 
+Library ws2_32 found: NO
+Header "sys/sysmacros.h" has symbol "major" : YES 
+Header "sys/sysmacros.h" has symbol "minor" : YES 
+Header "sys/sysmacros.h" has symbol "makedev" : YES 
+Header "sys/mkdev.h" has symbol "major" : NO 
+Check usable header "sched.h" : YES 
+Checking for function "sched_getaffinity" : YES 
+Check usable header "xlocale.h" : NO 
+Check usable header "linux/futex.h" : YES 
+Check usable header "endian.h" : YES 
+Check usable header "dlfcn.h" : YES 
+Check usable header "sys/shm.h" : YES 
+Check usable header "cet.h" : YES 
+Check usable header "pthread_np.h" : NO 
+Check usable header "sys/inotify.h" : YES 
+Check usable header "linux/udmabuf.h" : YES 
+Checking for function "strtof" : YES 
+Checking for function "mkostemp" : YES 
+Checking for function "memfd_create" : YES 
+Checking for function "random_r" : YES 
+Checking for function "flock" : YES 
+Checking for function "strtok_r" : YES 
+Checking for function "getrandom" : YES 
+Checking for function "qsort_s" : NO 
+Checking for function "posix_fallocate" : YES 
+Checking for function "secure_getenv" : YES 
+Checking if "GNU qsort_r" links: YES 
+Header "time.h" has symbol "struct timespec" : YES 
+Checking for function "thrd_create" : YES 
+Header "errno.h" has symbol "program_invocation_name" : YES 
+Header "math.h" has symbol "issignaling" : YES 
+Checking for function "posix_memalign" : YES 
+Checking whether type "struct dirent" has member "d_type" : YES 
+Checking if "strtod has locale support" links: YES 
+Checking if "Bsymbolic" links: YES 
+Checking if "version-script" links: YES 
+Checking if "dynamic-list" links: YES 
+Compiler for C supports link arguments -Wl,--build-id=sha1: YES 
+Checking for function "dlopen" : YES 
+Checking for function "dladdr" with dependency : YES 
+Checking for function "dl_iterate_phdr" : YES 
+Checking for function "clock_gettime" : YES 
+Found pkg-config: YES (/usr/bin/pkg-config) 1.8.1
+Run-time dependency zlib found: YES 1.3
+Found CMake: NO
+Run-time dependency libzstd found: NO  (tried pkg-config and cmake)
+Run-time dependency threads found: YES
+Checking for function "pthread_setaffinity_np" with dependency threads: YES 
+Run-time dependency expat found: NO  (tried pkg-config and cmake)
+Looking for a fallback subproject for the dependency expat
+Downloading expat source from https://github.com/libexpat/libexpat/releases/download/R_2_5_0/expat-2.5.0.tar.xz
+Downloading expat patch from https://wrapdb.mesonbuild.com/v2/expat_2.5.0-3/get_patch
+
+Executing subproject expat for machine: host 
+
+expat| Project name: expat
+expat| Project version: 2.5.0
+expat| C compiler for the host machine: gcc -m32 (gcc 13.3.0 "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0")
+expat| C linker for the host machine: gcc -m32 ld.bfd 2.42
+expat| C compiler for the build machine: cc (gcc 13.3.0 "cc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0")
+expat| C linker for the build machine: cc ld.bfd 2.42
+expat| Run-time dependency libbsd-overlay found: NO  (tried pkg-config and cmake)
+expat| Checking for function "arc4random_buf" with dependency libbsd-overlay: YES
+expat| Checking for function "arc4random" with dependency libbsd-overlay: YES
+expat| Has header "dlfcn.h" : YES
+expat| Has header "fcntl.h" : YES
+expat| Has header "inttypes.h" : YES
+expat| Has header "memory.h" : YES
+expat| Has header "stdint.h" : YES
+expat| Has header "stdlib.h" : YES
+expat| Has header "strings.h" : YES
+expat| Has header "string.h" : YES
+expat| Has header "sys/stat.h" : YES
+expat| Has header "sys/types.h" : YES
+expat| Has header "unistd.h" : YES
+expat| Has header "stdlib.h" : YES (cached)
+expat| Has header "stdarg.h" : YES
+expat| Has header "string.h" : YES (cached)
+expat| Has header "float.h" : YES
+expat| Checking for function "getpagesize" : YES
+expat| Checking for function "mmap" : YES
+expat| Checking for function "getrandom" : YES (cached)
+expat| Header "sys/types.h" has symbol "off_t" : YES
+expat| Header "sys/types.h" has symbol "size_t" : YES
+expat| Header "sys/syscall.h" has symbol "SYS_getrandom" : YES
+expat| Configuring expat_config.h using configuration
+expat| Compiler for C supports arguments -fno-strict-aliasing: YES
+expat| Configuring libexpat.def using configuration
+expat| Found pkg-config: YES (/usr/bin/pkg-config) 1.8.1
+expat| Build targets in project: 1
+expat| Subproject expat finished.
+
+Dependency expat for host machine from subproject subprojects/expat-2.5.0 found: YES 2.5.0
+Library m found: YES
+Run-time dependency libdrm found: NO  (tried pkg-config and cmake)
+Run-time dependency libudev found: NO  (tried pkg-config and cmake)
+Run-time dependency spirv-tools found: NO  (tried pkg-config and cmake)
+Run-time dependency lua54 found: NO  (tried pkg-config and cmake)
+Run-time dependency lua5.4 found: NO  (tried pkg-config and cmake)
+Run-time dependency lua-5.4 found: NO  (tried pkg-config and cmake)
+Run-time dependency lua53 found: NO  (tried pkg-config and cmake)
+Run-time dependency lua5.3 found: NO  (tried pkg-config and cmake)
+Run-time dependency lua-5.3 found: NO  (tried pkg-config and cmake)
+Run-time dependency lua found: NO  (tried pkg-config and cmake)
+Run-time dependency libelf found: NO  (tried pkg-config and cmake)
+Library elf found: NO
+Dependency valgrind for host machine skipped: feature valgrind disabled
+Program bison found: YES (/usr/bin/bison)
+Program bison found: YES 3.8.2 3.8.2 (/usr/bin/bison)
+Program flex found: YES (/usr/bin/flex)
+Dependency libunwind for host machine skipped: feature libunwind disabled
+Library sensors skipped: feature lmsensors disabled
+Program nm found: YES (/usr/bin/nm)
+Program symbols-check.py found: YES (/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/venv/bin/python3 /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/mesa-24.3.4/bin/symbols-check.py)
+Program install_megadrivers.py found: YES (/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/venv/bin/python3 /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/mesa-24.3.4/bin/install_megadrivers.py)
+Compiler for C supports arguments -Wno-misleading-indentation: YES 
+Program decode.py found: YES (/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/mesa-24.3.4/src/compiler/isaspec/decode.py)
+Program encode.py found: YES (/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/mesa-24.3.4/src/compiler/isaspec/encode.py)
+Program sphinx-build skipped: feature html-docs disabled
+Build targets in project: 116
+NOTICE: Future-deprecated features used:
+ * 1.12.0: {'"shared_library" keyword argument "name_prefix" of type list'}
+
+mesa 24.3.4
+
+  Directories
+    prefix                       : /usr/local
+    libdir                       : lib
+    includedir                   : include
+
+  Common C and C++ arguments
+    c_cpp_args                   : -mtls-dialect=gnu2
+                                   -msse2
+                                   -mfpmath=sse
+                                   -mstackrealign
+
+  OpenGL
+    OpenGL                       : YES
+    ES1                          : NO
+    ES2                          : NO
+    Shared glapi                 : NO
+    GLVND                        : NO
+
+  DRI
+    Platform                     : drm
+    Driver dir                   : /usr/local/lib/dri
+
+  GLX
+    Enabled                      : NO
+    Provider                     : None
+
+  EGL
+    Enabled                      : NO
+
+  GBM
+    Enabled                      : NO
+
+  Vulkan
+    Drivers                      : NO
+
+  Video
+    Codecs                       : NO
+    APIs                         : NO
+
+  LLVM
+    Enabled                      : NO
+
+  Gallium
+    Enabled                      : YES
+    Drivers                      : virgl
+    Platforms                    :
+    Frontends                    : mesa
+    Off-screen rendering (OSMesa): libbkvirgl
+    HUD lm-sensors               : NO
+
+  Perfetto
+    Enabled                      : NO
+
+  Teflon (TensorFlow Lite delegate)
+    Enabled                      : NO
+
+  Subprojects (for host machine)
+    expat                        : YES
+
+  User defined options
+    Cross files                  : /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/cross.ini
+    build-tests                  : false
+    buildtype                    : release
+    egl                          : disabled
+    gallium-drivers              : virgl
+    gallium-va                   : disabled
+    gallium-vdpau                : disabled
+    gallium-xa                   : disabled
+    gbm                          : disabled
+    gles1                        : disabled
+    gles2                        : disabled
+    glx                          : disabled
+    libunwind                    : disabled
+    llvm                         : disabled
+    lmsensors                    : disabled
+    osmesa                       : true
+    platforms                    : 
+    shared-glapi                 : disabled
+    valgrind                     : disabled
+    video-codecs                 : 
+    vulkan-drivers               : 
+
+Found ninja-1.11.1 at /usr/bin/ninja
+ninja: Entering directory `/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/build'
+[1/891] Compiling C object subprojects/expat-2.5.0/libexpat.so.1.8.10.p/lib_xmlrole.c.o
+[2/891] Compiling C object subprojects/expat-2.5.0/libexpat.so.1.8.10.p/lib_xmlparse.c.o
+[3/891] Compiling C object src/c11/impl/libmesa_util_c11.a.p/time.c.o
+[4/891] Compiling C object subprojects/expat-2.5.0/libexpat.so.1.8.10.p/lib_xmltok.c.o
+[5/891] Linking target subprojects/expat-2.5.0/libexpat.so.1.8.10
+[6/891] Generating symbol file subprojects/expat-2.5.0/libexpat.so.1.8.10.p/libexpat.so.1.8.10.symbols
+[7/891] Compiling C object src/c11/impl/libmesa_util_c11.a.p/threads_posix.c.o
+[8/891] Linking static target src/c11/impl/libmesa_util_c11.a
+[9/891] Compiling C object src/util/blake3/libblake3.a.p/blake3.c.o
+[10/891] Compiling C object src/util/blake3/libblake3.a.p/blake3_portable.c.o
+[11/891] Generating src/util/driconf_static.h with a custom command
+[12/891] Compiling C object src/util/blake3/libblake3.a.p/blake3_dispatch.c.o
+[13/891] Linking static target src/util/blake3/libblake3.a
+[14/891] Generating src/util/format/u_format_gen.h with a custom command (wrapped by meson to capture output)
+[15/891] Generating src/util/format/u_format_pack.h with a custom command (wrapped by meson to capture output)
+[16/891] Generating src/util/format/u_format_table.c with a custom command (wrapped by meson to capture output)
+[17/891] Compiling C object src/util/libmesa_util_sse41.a.p/streaming-load-memcpy.c.o
+[18/891] Linking static target src/util/libmesa_util_sse41.a
+[19/891] Generating src/util/format_srgb with a custom command (wrapped by meson to capture output)
+[20/891] Compiling C object src/util/libmesa_util.a.p/meson-generated_.._format_srgb.c.o
+[21/891] Compiling C object src/util/libmesa_util.a.p/anon_file.c.o
+[22/891] Compiling C object src/util/libmesa_util.a.p/bitscan.c.o
+[23/891] Compiling C object src/util/libmesa_util.a.p/blob.c.o
+[24/891] Compiling C object src/util/libmesa_util.a.p/build_id.c.o
+[25/891] Compiling C object src/util/libmesa_util.a.p/cnd_monotonic.c.o
+[26/891] Compiling C object src/util/libmesa_util.a.p/compress.c.o
+[27/891] Compiling C object src/util/libmesa_util.a.p/thread_sched.c.o
+[28/891] Compiling C object src/util/libmesa_util.a.p/crc32.c.o
+[29/891] Compiling C object src/util/libmesa_util.a.p/dag.c.o
+[30/891] Compiling C object src/util/libmesa_util.a.p/disk_cache.c.o
+[31/891] Compiling C object src/util/libmesa_util.a.p/disk_cache_os.c.o
+../mesa-24.3.4/src/util/disk_cache_os.c: In function ‘disk_cache_touch_cache_user_marker’:
+../mesa-24.3.4/src/util/disk_cache_os.c:1058:4: warning: ignoring return value of ‘asprintf’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1058 |    asprintf(&marker_path, "%s/marker", path);
+      |    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../mesa-24.3.4/src/util/disk_cache_os.c: In function ‘delete_dir’:
+../mesa-24.3.4/src/util/disk_cache_os.c:1206:7: warning: ignoring return value of ‘asprintf’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1206 |       asprintf(&entry_path, "%s/%s", path, p->d_name);
+      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[32/891] Compiling C object src/util/libmesa_util.a.p/double.c.o
+[33/891] Compiling C object src/util/libmesa_util.a.p/fast_idiv_by_const.c.o
+[34/891] Compiling C object src/util/libmesa_util.a.p/fossilize_db.c.o
+[35/891] Compiling C object src/util/libmesa_util.a.p/futex.c.o
+[36/891] Compiling C object src/util/libmesa_util.a.p/half_float.c.o
+[37/891] Compiling C object src/util/libmesa_util.a.p/hash_table.c.o
+[38/891] Compiling C object src/util/libmesa_util.a.p/helpers.c.o
+[39/891] Compiling C object src/util/libmesa_util.a.p/u_idalloc.c.o
+[40/891] Compiling C object src/util/libmesa_util.a.p/log.c.o
+[41/891] Compiling C object src/util/libmesa_util.a.p/memstream.c.o
+[42/891] Compiling C object src/util/libmesa_util.a.p/mesa-sha1.c.o
+[43/891] Compiling C object src/util/libmesa_util.a.p/mesa-blake3.c.o
+[44/891] Compiling C object src/util/libmesa_util.a.p/os_time.c.o
+[45/891] Compiling C object src/util/libmesa_util.a.p/os_file.c.o
+[46/891] Compiling C object src/util/libmesa_util.a.p/os_memory_fd.c.o
+[47/891] Compiling C object src/util/libmesa_util.a.p/os_misc.c.o
+[48/891] Compiling C object src/util/libmesa_util.a.p/os_socket.c.o
+[49/891] Compiling C object src/util/libmesa_util.a.p/perf_u_trace.c.o
+[50/891] Compiling C object src/util/libmesa_util.a.p/u_process.c.o
+[51/891] Compiling C++ object src/util/libmesa_util.a.p/u_qsort.cpp.o
+[52/891] Compiling C object src/util/libmesa_util.a.p/rwlock.c.o
+[53/891] Compiling C object src/util/libmesa_util.a.p/sha1_sha1.c.o
+[54/891] Compiling C object src/util/libmesa_util.a.p/ralloc.c.o
+[55/891] Compiling C object src/util/libmesa_util.a.p/rand_xor.c.o
+[56/891] Compiling C object src/util/libmesa_util.a.p/rb_tree.c.o
+[57/891] Compiling C object src/util/libmesa_util.a.p/register_allocate.c.o
+[58/891] Compiling C object src/util/libmesa_util.a.p/rgtc.c.o
+[59/891] Compiling C object src/util/libmesa_util.a.p/set.c.o
+[60/891] Compiling C object src/util/libmesa_util.a.p/simple_mtx.c.o
+[61/891] Compiling C object src/util/libmesa_util.a.p/slab.c.o
+[62/891] Compiling C object src/util/libmesa_util.a.p/softfloat.c.o
+[63/891] Compiling C object src/util/libmesa_util.a.p/sparse_array.c.o
+[64/891] Compiling C object src/util/libmesa_util.a.p/string_buffer.c.o
+[65/891] Compiling C object src/util/libmesa_util.a.p/strtod.c.o
+[66/891] Compiling C++ object src/util/libmesa_util.a.p/texcompress_astc_luts.cpp.o
+[67/891] Compiling C++ object src/util/libmesa_util.a.p/texcompress_astc_luts_wrap.cpp.o
+[68/891] Compiling C object src/util/libmesa_util.a.p/u_atomic.c.o
+[69/891] Compiling C object src/util/libmesa_util.a.p/u_call_once.c.o
+[70/891] Compiling C object src/util/libmesa_util.a.p/u_dl.c.o
+[71/891] Compiling C object src/util/libmesa_util.a.p/u_dynarray.c.o
+[72/891] Compiling C object src/util/libmesa_util.a.p/u_hash_table.c.o
+[73/891] Compiling C object src/util/libmesa_util.a.p/u_queue.c.o
+[74/891] Compiling C object src/util/libmesa_util.a.p/u_thread.c.o
+[75/891] Compiling C object src/util/libmesa_util.a.p/u_vector.c.o
+[76/891] Compiling C object src/util/libmesa_util.a.p/u_math.c.o
+[77/891] Compiling C object src/util/libmesa_util.a.p/u_mm.c.o
+[78/891] Compiling C object src/util/libmesa_util.a.p/u_debug.c.o
+[79/891] Compiling C object src/util/libmesa_util.a.p/u_debug_memory.c.o
+[80/891] Compiling C object src/util/libmesa_util.a.p/u_cpu_detect.c.o
+[81/891] Compiling C object src/util/libmesa_util.a.p/u_printf.c.o
+[82/891] Compiling C object src/util/libmesa_util.a.p/u_worklist.c.o
+[83/891] Compiling C object src/util/libmesa_util.a.p/vl_zscan_data.c.o
+[84/891] Compiling C object src/util/libmesa_util.a.p/vma.c.o
+[85/891] Compiling C object src/util/libmesa_util.a.p/mesa_cache_db.c.o
+[86/891] Compiling C object src/util/libmesa_util.a.p/mesa_cache_db_multipart.c.o
+[87/891] Compiling C object src/util/libmesa_util.a.p/format_u_format.c.o
+[88/891] Compiling C object src/util/libmesa_util.a.p/format_u_format_bptc.c.o
+[89/891] Compiling C object src/util/libmesa_util.a.p/format_u_format_etc.c.o
+[90/891] Compiling C object src/util/libmesa_util.a.p/format_u_format_fxt1.c.o
+[91/891] Compiling C object src/util/libmesa_util.a.p/format_u_format_latc.c.o
+[92/891] Compiling C object src/util/libmesa_util.a.p/format_u_format_other.c.o
+[93/891] Compiling C object src/util/libmesa_util.a.p/format_u_format_rgtc.c.o
+[94/891] Compiling C object src/util/libmesa_util.a.p/format_u_format_s3tc.c.o
+[95/891] Compiling C object src/util/libmesa_util.a.p/format_u_format_tests.c.o
+[96/891] Compiling C object src/util/libmesa_util.a.p/format_u_format_unpack_neon.c.o
+[97/891] Compiling C object src/util/libmesa_util.a.p/format_u_format_yuv.c.o
+[98/891] Compiling C object src/util/libmesa_util.a.p/meson-generated_.._format_u_format_table.c.o
+[99/891] Compiling C object src/util/libmesa_util.a.p/u_debug_stack.c.o
+[100/891] Compiling C object src/util/libmesa_util.a.p/u_debug_symbol.c.o
+[101/891] Compiling C object src/util/libmesa_util.a.p/format_u_format_zs.c.o
+[102/891] Compiling C object src/util/libxmlconfig.a.p/xmlconfig.c.o
+[103/891] Linking static target src/util/libxmlconfig.a
+[104/891] Linking static target src/util/libmesa_util.a
+[105/891] Generating src/git_sha1.h with a custom command
+[106/891] Generating src/mapi/glapi/gen/glapi_mapi_tmp.h with a custom command (wrapped by meson to capture output)
+/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/build/../mesa-24.3.4/src/mapi/mapi_abi.py:47: SyntaxWarning: invalid escape sequence '\w'
+  '^(?P<type>[\w\s*]+?)(?P<name>\w+)(\[(?P<array>\d+)\])?$')
+
+[107/891] Generating src/mapi/glapi/gen/glprocs.h with a custom command (wrapped by meson to capture output)
+[108/891] Generating src/mapi/glapi/gen/glapitable.h with a custom command (wrapped by meson to capture output)
+[109/891] Generating src/mapi/glapi/gen/enums.c with a custom command (wrapped by meson to capture output)
+/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/build/../mesa-24.3.4/src/mapi/glapi/gen/gl_enums.py:64: SyntaxWarning: invalid escape sequence '\c'
+  print("""
+
+[110/891] Generating src/mapi/glapi/gen/glapitemp.h with a custom command (wrapped by meson to capture output)
+[111/891] Generating src/mapi/glapi/gen/api_exec_init.c with a custom command (wrapped by meson to capture output)
+/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/build/../mesa-24.3.4/src/mapi/glapi/gen/api_exec_init.py:43: SyntaxWarning: invalid escape sequence '\p'
+  header = """/**
+
+[112/891] Generating src/mapi/glapi/gen/api_save_init.h with a custom command (wrapped by meson to capture output)
+[113/891] Generating src/mapi/glapi/gen/api_exec_decl.h with a custom command (wrapped by meson to capture output)
+[114/891] Generating src/mapi/glapi/gen/api_save.h with a custom command (wrapped by meson to capture output)
+[115/891] Generating src/mapi/glapi/gen/api_beginend_init.h with a custom command (wrapped by meson to capture output)
+[116/891] Generating src/mapi/glapi/gen/api_hw_select_init.h with a custom command (wrapped by meson to capture output)
+[117/891] Generating src/mapi/glapi/gen/unmarshal_table.c with a custom command (wrapped by meson to capture output)
+[118/891] Generating src/mapi/glapi/gen/marshal_generated0.c with a custom command (wrapped by meson to capture output)
+[119/891] Generating src/mapi/glapi/gen/marshal_generated1.c with a custom command (wrapped by meson to capture output)
+[120/891] Generating src/mapi/glapi/gen/marshal_generated3.c with a custom command (wrapped by meson to capture output)
+[121/891] Generating src/mapi/glapi/gen/marshal_generated2.c with a custom command (wrapped by meson to capture output)
+[122/891] Generating src/mapi/glapi/gen/marshal_generated5.c with a custom command (wrapped by meson to capture output)
+[123/891] Generating src/mapi/glapi/gen/marshal_generated4.c with a custom command (wrapped by meson to capture output)
+[124/891] Generating src/mapi/glapi/gen/marshal_generated7.c with a custom command (wrapped by meson to capture output)
+[125/891] Generating src/mapi/glapi/gen/marshal_generated6.c with a custom command (wrapped by meson to capture output)
+[126/891] Compiling C object src/mapi/glapi/libglapi_static.a.p/.._u_current.c.o
+[127/891] Compiling C object src/mapi/glapi/libglapi_static.a.p/glapi_dispatch.c.o
+[128/891] Generating src/mapi/glapi/gen/glapi_x86.S with a custom command (wrapped by meson to capture output)
+[129/891] Compiling C object src/mapi/glapi/libglapi_static.a.p/glapi_entrypoint.c.o
+[130/891] Compiling C object src/mapi/glapi/libglapi_static.a.p/meson-generated_.._gen_glapi_x86.S.o
+[131/891] Compiling C object src/mapi/glapi/libglapi_static.a.p/glapi_getproc.c.o
+[132/891] Compiling C object src/mapi/glapi/libglapi_static.a.p/glapi.c.o
+[133/891] Generating src/compiler/builtin_types.h with a custom command
+[134/891] Generating src/compiler/builtin_types.c with a custom command
+[135/891] Generating src/compiler/ir_expression_operation.h with a custom command (wrapped by meson to capture output)
+[136/891] Compiling C object src/compiler/libcompiler.a.p/meson-generated_.._builtin_types.c.o
+[137/891] Compiling C object src/mapi/glapi/libglapi_static.a.p/glapi_nop.c.o
+[138/891] Linking static target src/mapi/glapi/libglapi_static.a
+[139/891] Compiling C object src/compiler/libcompiler.a.p/shader_enums.c.o
+[140/891] Compiling C object src/compiler/libcompiler.a.p/glsl_types.c.o
+[141/891] Linking static target src/compiler/libcompiler.a
+[142/891] Generating src/compiler/nir/nir_builder_opcodes.h with a custom command (wrapped by meson to capture output)
+[143/891] Generating src/compiler/nir/nir_constant_expressions.c with a custom command (wrapped by meson to capture output)
+[144/891] Generating src/compiler/nir/nir_opcodes.h with a custom command (wrapped by meson to capture output)
+[145/891] Generating src/compiler/nir/nir_opcodes.c with a custom command (wrapped by meson to capture output)
+[146/891] Generating src/compiler/nir/nir_intrinsics.h with a custom command
+[147/891] Generating src/compiler/nir/nir_intrinsics_indices.h with a custom command
+[148/891] Generating src/compiler/nir/nir_intrinsic.c with a custom command
+[149/891] Compiling C object src/compiler/nir/libnir.a.p/meson-generated_.._nir_opcodes.c.o
+[150/891] Generating src/compiler/nir/nir_opt_algebraic.c with a custom command
+[151/891] Compiling C object src/compiler/nir/libnir.a.p/meson-generated_.._nir_constant_expressions.c.o
+[152/891] Compiling C object src/compiler/nir/libnir.a.p/meson-generated_.._nir_intrinsics.c.o
+[153/891] Compiling C object src/compiler/nir/libnir.a.p/nir.c.o
+[154/891] Compiling C object src/compiler/nir/libnir.a.p/nir_builder.c.o
+[155/891] Compiling C object src/compiler/nir/libnir.a.p/nir_builtin_builder.c.o
+[156/891] Compiling C object src/compiler/nir/libnir.a.p/meson-generated_.._nir_opt_algebraic.c.o
+[157/891] Compiling C object src/compiler/nir/libnir.a.p/nir_clone.c.o
+[158/891] Compiling C object src/compiler/nir/libnir.a.p/nir_control_flow.c.o
+[159/891] Compiling C object src/compiler/nir/libnir.a.p/nir_deref.c.o
+[160/891] Compiling C object src/compiler/nir/libnir.a.p/nir_dominance.c.o
+[161/891] Compiling C object src/compiler/nir/libnir.a.p/nir_divergence_analysis.c.o
+[162/891] Compiling C object src/compiler/nir/libnir.a.p/nir_format_convert.c.o
+[163/891] Compiling C object src/compiler/nir/libnir.a.p/nir_from_ssa.c.o
+[164/891] Compiling C object src/compiler/nir/libnir.a.p/nir_functions.c.o
+[165/891] Compiling C object src/compiler/nir/libnir.a.p/nir_gather_info.c.o
+[166/891] Compiling C object src/compiler/nir/libnir.a.p/nir_gather_tcs_info.c.o
+[167/891] Compiling C object src/compiler/nir/libnir.a.p/nir_gather_types.c.o
+[168/891] Compiling C object src/compiler/nir/libnir.a.p/nir_gather_xfb_info.c.o
+[169/891] Compiling C object src/compiler/nir/libnir.a.p/nir_group_loads.c.o
+[170/891] Compiling C object src/compiler/nir/libnir.a.p/nir_gs_count_vertices.c.o
+[171/891] Compiling C object src/compiler/nir/libnir.a.p/nir_inline_uniforms.c.o
+[172/891] Compiling C object src/compiler/nir/libnir.a.p/nir_instr_set.c.o
+[173/891] Compiling C object src/compiler/nir/libnir.a.p/nir_legacy.c.o
+[174/891] Compiling C object src/compiler/nir/libnir.a.p/nir_liveness.c.o
+[175/891] Compiling C object src/compiler/nir/libnir.a.p/nir_linking_helpers.c.o
+[176/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_alu.c.o
+[177/891] Compiling C object src/compiler/nir/libnir.a.p/nir_loop_analyze.c.o
+[178/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_alpha_test.c.o
+[179/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_amul.c.o
+[180/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_alu_width.c.o
+[181/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_atomics_to_ssbo.c.o
+[182/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_array_deref_of_vec.c.o
+[183/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_bitmap.c.o
+[184/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_bool_to_bitsize.c.o
+[185/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_bool_to_float.c.o
+[186/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_blend.c.o
+[187/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_bool_to_int32.c.o
+[188/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_cl_images.c.o
+[189/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_clamp_color_outputs.c.o
+[190/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_clip.c.o
+[191/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_clip_cull_distance_arrays.c.o
+[192/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_clip_halfz.c.o
+[193/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_clip_disable.c.o
+[194/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_const_arrays_to_uniforms.c.o
+[195/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_continue_constructs.c.o
+[196/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_variable_initializers.c.o
+[197/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_discard_if.c.o
+[198/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_convert_alu_types.c.o
+[199/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_drawpixels.c.o
+[200/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_double_ops.c.o
+[201/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_flatshade.c.o
+[202/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_fb_read.c.o
+[203/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_flrp.c.o
+[204/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_fp16_conv.c.o
+[205/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_fragcoord_wtrans.c.o
+[206/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_frag_coord_to_pixel_coord.c.o
+[207/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_fragcolor.c.o
+[208/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_global_vars_to_local.c.o
+[209/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_frexp.c.o
+[210/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_gs_intrinsics.c.o
+[211/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_helper_writes.c.o
+[212/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_goto_ifs.c.o
+[213/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_load_const_to_scalar.c.o
+[214/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_locals_to_regs.c.o
+[215/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_idiv.c.o
+[216/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_image.c.o
+[217/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_image_atomics_to_global.c.o
+[218/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_indirect_derefs.c.o
+[219/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_input_attachments.c.o
+[220/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_interpolation.c.o
+[221/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_int64.c.o
+[222/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_int_to_float.c.o
+[223/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_io_arrays_to_elements.c.o
+[224/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_io_to_temporaries.c.o
+[225/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_io_to_scalar.c.o
+[226/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_io_to_vector.c.o
+[227/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_is_helper_invocation.c.o
+[228/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_io.c.o
+[229/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_multiview.c.o
+[230/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_mediump.c.o
+[231/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_memcpy.c.o
+[232/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_memory_model.c.o
+[233/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_mem_access_bit_sizes.c.o
+[234/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_packing.c.o
+[235/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_non_uniform_access.c.o
+[236/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_passthrough_edgeflags.c.o
+[237/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_patch_vertices.c.o
+[238/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_phis_to_scalar.c.o
+[239/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_pntc_ytransform.c.o
+[240/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_point_size.c.o
+[241/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_point_size_mov.c.o
+[242/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_point_smooth.c.o
+[243/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_poly_line_smooth.c.o
+[244/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_reg_intrinsics_to_ssa.c.o
+[245/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_printf.c.o
+[246/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_readonly_images_to_tex.c.o
+[247/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_returns.c.o
+[248/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_samplers.c.o
+[249/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_robust_access.c.o
+[250/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_scratch.c.o
+[251/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_single_sampled.c.o
+[252/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_ssbo.c.o
+[253/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_shader_calls.c.o
+[254/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_system_values.c.o
+[255/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_task_shader.c.o
+[256/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_subgroups.c.o
+[257/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_terminate_to_demote.c.o
+[258/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_tex_shadow.c.o
+[259/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_tess_coord_z.c.o
+[260/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_texcoord_replace.c.o
+[261/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_texcoord_replace_late.c.o
+[262/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_tex.c.o
+[263/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_two_sided_color.c.o
+[264/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_undef_to_zero.c.o
+[265/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_var_copies.c.o
+[266/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_vars_to_ssa.c.o
+[267/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_vec3_to_vec4.c.o
+[268/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_vec_to_regs.c.o
+[269/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_view_index_to_device_index.c.o
+[270/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_viewport_transform.c.o
+[271/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_wpos_center.c.o
+[272/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_wrmasks.c.o
+[273/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_wpos_ytransform.c.o
+[274/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_bit_size.c.o
+[275/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_ubo_vec4.c.o
+[276/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_sysvals_to_varyings.c.o
+[277/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_uniforms_to_ubo.c.o
+[278/891] Compiling C object src/compiler/nir/libnir.a.p/nir_metadata.c.o
+[279/891] Compiling C object src/compiler/nir/libnir.a.p/nir_mod_analysis.c.o
+[280/891] Compiling C object src/compiler/nir/libnir.a.p/nir_move_vec_src_uses_to_dest.c.o
+[281/891] Compiling C object src/compiler/nir/libnir.a.p/nir_normalize_cubemap_coords.c.o
+[282/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_access.c.o
+[283/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_barriers.c.o
+[284/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_comparison_pre.c.o
+[285/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_combine_stores.c.o
+[286/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_conditional_discard.c.o
+[287/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_constant_folding.c.o
+[288/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_copy_propagate.c.o
+[289/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_cse.c.o
+[290/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_copy_prop_vars.c.o
+[291/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_dce.c.o
+[292/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_dead_cf.c.o
+[293/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_dead_write_vars.c.o
+[294/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_frag_coord_to_pixel_coord.c.o
+[295/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_fragdepth.c.o
+[296/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_find_array_copies.c.o
+[297/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_generate_bfi.c.o
+[298/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_gcm.c.o
+[299/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_idiv_const.c.o
+[300/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_intrinsics.c.o
+[301/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_if.c.o
+[302/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_large_constants.c.o
+[303/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_licm.c.o
+[304/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_loop.c.o
+[305/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_load_store_vectorize.c.o
+[306/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_memcpy.c.o
+[307/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_loop_unroll.c.o
+[308/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_move.c.o
+[309/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_move_discards_to_top.c.o
+[310/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_mqsad.c.o
+[311/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_non_uniform_access.c.o
+[312/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_offsets.c.o
+[313/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_peephole_select.c.o
+[314/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_phi_precision.c.o
+[315/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_preamble.c.o
+[316/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_ray_queries.c.o
+[317/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_reassociate_bfi.c.o
+[318/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_rematerialize_compares.c.o
+[319/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_remove_phis.c.o
+[320/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_shrink_stores.c.o
+[321/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_shrink_vectors.c.o
+../mesa-24.3.4/src/compiler/nir/nir_opt_shrink_vectors.c: In function ‘shrink_dest_to_read_mask’:
+../mesa-24.3.4/src/compiler/nir/nir_opt_shrink_vectors.c:139:36: warning: writing 1 byte into a region of size 0 [-Wstringop-overflow=]
+  139 |             swizzle[first_bit + i] = i;
+      |             ~~~~~~~~~~~~~~~~~~~~~~~^~~
+../mesa-24.3.4/src/compiler/nir/nir_opt_shrink_vectors.c:137:18: note: at offset 16 into destination object ‘swizzle’ of size 16
+  137 |          uint8_t swizzle[NIR_MAX_VEC_COMPONENTS] = { 0 };
+      |                  ^~~~~~~
+[322/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_sink.c.o
+[323/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_undef.c.o
+[324/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_uniform_atomics.c.o
+[325/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_uniform_subgroup.c.o
+[326/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_vectorize.c.o
+[327/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_vectorize_io.c.o
+[328/891] Compiling C object src/compiler/nir/libnir.a.p/nir_passthrough_gs.c.o
+[329/891] Compiling C object src/compiler/nir/libnir.a.p/nir_passthrough_tcs.c.o
+[330/891] Compiling C object src/compiler/nir/libnir.a.p/nir_phi_builder.c.o
+[331/891] Compiling C object src/compiler/nir/libnir.a.p/nir_opt_varyings.c.o
+[332/891] Compiling C object src/compiler/nir/libnir.a.p/nir_propagate_invariant.c.o
+[333/891] Compiling C object src/compiler/nir/libnir.a.p/nir_print.c.o
+[334/891] Compiling C object src/compiler/nir/libnir.a.p/nir_range_analysis.c.o
+[335/891] Compiling C object src/compiler/nir/libnir.a.p/nir_remove_dead_variables.c.o
+[336/891] Compiling C object src/compiler/nir/libnir.a.p/nir_remove_tex_shadow.c.o
+[337/891] Compiling C object src/compiler/nir/libnir.a.p/nir_repair_ssa.c.o
+[338/891] Compiling C object src/compiler/nir/libnir.a.p/nir_scale_fdiv.c.o
+[339/891] Compiling C object src/compiler/nir/libnir.a.p/nir_schedule.c.o
+[340/891] Compiling C object src/compiler/nir/libnir.a.p/nir_search.c.o
+[341/891] Compiling C object src/compiler/nir/libnir.a.p/nir_serialize.c.o
+[342/891] Compiling C object src/compiler/nir/libnir.a.p/nir_split_64bit_vec3_and_vec4.c.o
+[343/891] Compiling C object src/compiler/nir/libnir.a.p/nir_split_per_member_structs.c.o
+[344/891] Compiling C object src/compiler/nir/libnir.a.p/nir_split_var_copies.c.o
+[345/891] Compiling C object src/compiler/nir/libnir.a.p/nir_sweep.c.o
+[346/891] Compiling C object src/compiler/nir/libnir.a.p/nir_to_lcssa.c.o
+[347/891] Compiling C object src/compiler/nir/libnir.a.p/nir_split_vars.c.o
+[348/891] Compiling C object src/compiler/nir/libnir.a.p/nir_use_dominance.c.o
+[349/891] Compiling C object src/compiler/nir/libnir.a.p/nir_trivialize_registers.c.o
+[350/891] Compiling C object src/compiler/nir/libnir.a.p/nir_validate.c.o
+[351/891] Compiling C object src/compiler/nir/libnir.a.p/nir_worklist.c.o
+[352/891] Generating src/compiler/spirv/vtn_gather_types.c with a custom command
+[353/891] Compiling C object src/compiler/nir/libnir.a.p/nir_lower_atomics.c.o
+[354/891] Generating src/compiler/spirv/spirv_info with a custom command
+[355/891] Linking static target src/compiler/nir/libnir.a
+[356/891] Generating src/compiler/spirv/vtn_generator_ids.h with a custom command
+[357/891] Generating src/compiler/glsl/glcpp/glcpp-parse.[ch] with a custom command
+[358/891] Compiling C object src/compiler/spirv/libvtn.a.p/meson-generated_.._spirv_info.c.o
+[359/891] Compiling C object src/compiler/spirv/libvtn.a.p/meson-generated_.._vtn_gather_types.c.o
+[360/891] Compiling C object src/compiler/spirv/libvtn.a.p/gl_spirv.c.o
+[361/891] Compiling C object src/compiler/spirv/libvtn.a.p/vtn_alu.c.o
+[362/891] Compiling C object src/compiler/spirv/libvtn.a.p/vtn_amd.c.o
+[363/891] Compiling C object src/compiler/spirv/libvtn.a.p/vtn_cfg.c.o
+[364/891] Compiling C object src/compiler/spirv/libvtn.a.p/vtn_cmat.c.o
+[365/891] Compiling C object src/compiler/spirv/libvtn.a.p/vtn_debug.c.o
+[366/891] Compiling C object src/compiler/spirv/libvtn.a.p/vtn_glsl450.c.o
+[367/891] Compiling C object src/compiler/spirv/libvtn.a.p/spirv_to_nir.c.o
+[368/891] Compiling C object src/compiler/spirv/libvtn.a.p/vtn_structured_cfg.c.o
+[369/891] Compiling C object src/compiler/spirv/libvtn.a.p/vtn_opencl.c.o
+[370/891] Compiling C object src/compiler/spirv/libvtn.a.p/vtn_subgroup.c.o
+[371/891] Generating src/compiler/glsl/glcpp/glcpp-lex.c with a custom command
+[372/891] Compiling C object src/compiler/glsl/glcpp/libglcpp.a.p/meson-generated_.._glcpp-lex.c.o
+[373/891] Compiling C object src/compiler/spirv/libvtn.a.p/vtn_variables.c.o
+[374/891] Linking static target src/compiler/spirv/libvtn.a
+[375/891] Compiling C object src/compiler/glsl/glcpp/libglcpp.a.p/pp.c.o
+[376/891] Compiling C object src/compiler/glsl/glcpp/libglcpp.a.p/meson-generated_.._glcpp-parse.c.o
+[377/891] Linking static target src/compiler/glsl/glcpp/libglcpp.a
+[378/891] Generating src/compiler/glsl/glsl_lexer_cpp with a custom command
+[379/891] Generating src/compiler/glsl/glsl_parser with a custom command
+[380/891] Generating src/compiler/glsl/ir_expression_operation_constant.h with a custom command (wrapped by meson to capture output)
+[381/891] Generating src/compiler/glsl/ir_expression_operation_strings.h with a custom command (wrapped by meson to capture output)
+[382/891] Generating src/compiler/glsl/cross_platform_settings_piece_all.h with a custom command
+[383/891] Generating src/compiler/glsl/float64_glsl.h with a custom command
+[384/891] Generating src/compiler/glsl/bc1_glsl.h with a custom command
+[385/891] Generating src/compiler/glsl/bc4_glsl.h with a custom command
+[386/891] Generating src/compiler/glsl/etc2_rgba_stitch_glsl.h with a custom command
+[387/891] Generating src/mesa/program/mesa_lex with a custom command
+[388/891] Generating src/compiler/glsl/astc_glsl.h with a custom command
+[389/891] Generating src/mesa/program/program_parse_tab.[ch] with a custom command
+[390/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/meson-generated_.._glsl_parser.cpp.o
+[391/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ast_array_index.cpp.o
+[392/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ast_expr.cpp.o
+[393/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ast_function.cpp.o
+[394/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/meson-generated_.._glsl_lexer.cpp.o
+[395/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ast_to_hir.cpp.o
+[396/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ast_type.cpp.o
+[397/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/builtin_types.cpp.o
+[398/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/builtin_variables.cpp.o
+[399/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_detect_function_recursion.c.o
+[400/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_lower_atomics.c.o
+[401/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_lower_images.c.o
+[402/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_lower_blend_equation_advanced.c.o
+[403/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_lower_buffers.c.o
+[404/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_lower_discard_flow.c.o
+[405/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_lower_named_interface_blocks.c.o
+[406/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_lower_packed_varyings.c.o
+[407/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_lower_samplers.c.o
+[408/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/builtin_functions.cpp.o
+[409/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_lower_xfb_varying.c.o
+[410/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_lower_samplers_as_deref.c.o
+[411/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_link_atomics.c.o
+[412/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_link_functions.c.o
+[413/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_link_interface_blocks.c.o
+[414/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_link_uniform_initializers.c.o
+[415/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_link_uniform_blocks.c.o
+[416/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_link_uniforms.c.o
+[417/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_link_xfb.c.o
+[418/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_link_varyings.c.o
+[419/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_opt_dead_builtin_varyings.c.o
+[420/891] Compiling C object src/compiler/glsl/libglsl.a.p/gl_nir_linker.c.o
+[421/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/glsl_symbol_table.cpp.o
+[422/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/glsl_parser_extras.cpp.o
+[423/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/hir_field_selection.cpp.o
+[424/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_array_refcount.cpp.o
+[425/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_basic_block.cpp.o
+[426/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_builder.cpp.o
+[427/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_clone.cpp.o
+[428/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/glsl_to_nir.cpp.o
+[429/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir.cpp.o
+[430/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_equals.cpp.o
+[431/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_expression_flattening.cpp.o
+[432/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_function_detect_recursion.cpp.o
+[433/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_function.cpp.o
+[434/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_hierarchical_visitor.cpp.o
+[435/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_hv_accept.cpp.o
+[436/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_print_visitor.cpp.o
+[437/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_reader.cpp.o
+[438/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_rvalue_visitor.cpp.o
+[439/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_validate.cpp.o
+[440/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_variable_refcount.cpp.o
+[441/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/linker_util.cpp.o
+[442/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/lower_builtins.cpp.o
+[443/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/lower_instructions.cpp.o
+[444/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/lower_jumps.cpp.o
+[445/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/lower_mat_op_to_vec.cpp.o
+[446/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/ir_constant_expression.cpp.o
+[447/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/lower_packing_builtins.cpp.o
+[448/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/lower_subroutine.cpp.o
+[449/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/lower_vec_index_to_cond_assign.cpp.o
+[450/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/lower_vector_derefs.cpp.o
+[451/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/lower_precision.cpp.o
+[452/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/opt_algebraic.cpp.o
+[453/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/opt_dead_builtin_variables.cpp.o
+[454/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/opt_dead_code.cpp.o
+[455/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/opt_flatten_nested_if_blocks.cpp.o
+[456/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/opt_dead_code_local.cpp.o
+[457/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/opt_flip_matrices.cpp.o
+[458/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/opt_if_simplification.cpp.o
+[459/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/opt_function_inlining.cpp.o
+[460/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/opt_minmax.cpp.o
+[461/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/opt_rebalance_tree.cpp.o
+[462/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/opt_tree_grafting.cpp.o
+[463/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/propagate_invariance.cpp.o
+[464/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/string_to_uint_map.cpp.o
+[465/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/s_expression.cpp.o
+[466/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/shader_cache.cpp.o
+[467/891] Generating src/mesa/main/dispatch.h with a custom command (wrapped by meson to capture output)
+[468/891] Compiling C++ object src/compiler/glsl/libglsl.a.p/serialize.cpp.o
+[469/891] Linking static target src/compiler/glsl/libglsl.a
+[470/891] Generating src/mesa/main/marshal_generated.h with a custom command (wrapped by meson to capture output)
+[471/891] Generating src/mesa/format_fallback.c with a custom command
+[472/891] Generating src/mesa/get_hash.h with a custom command (wrapped by meson to capture output)
+[473/891] Generating src/mesa/format_info.h with a custom command (wrapped by meson to capture output)
+[474/891] Compiling C object src/mesa/libmesa_sse41.a.p/main_sse_minmax.c.o
+[475/891] Linking static target src/mesa/libmesa_sse41.a
+[476/891] Generating src/gallium/auxiliary/tr_util.[ch] with a custom command
+[477/891] Generating src/gallium/auxiliary/u_tracepoints.c with a custom command
+[478/891] Generating src/mesa/main/remap_helper.h with a custom command (wrapped by meson to capture output)
+[479/891] Generating src/gallium/auxiliary/u_tracepoints.h with a custom command
+[480/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._program_lex.yy.c.o
+[481/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._program_program_parse.tab.c.o
+[482/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._.._mapi_glapi_gen_enums.c.o
+[483/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._format_fallback.c.o
+[484/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._.._mapi_glapi_gen_unmarshal_table.c.o
+[485/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._.._mapi_glapi_gen_marshal_generated0.c.o
+[486/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._.._mapi_glapi_gen_marshal_generated1.c.o
+[487/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._.._mapi_glapi_gen_api_exec_init.c.o
+[488/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._.._mapi_glapi_gen_marshal_generated2.c.o
+[489/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._.._mapi_glapi_gen_marshal_generated3.c.o
+[490/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._.._mapi_glapi_gen_marshal_generated4.c.o
+[491/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._.._mapi_glapi_gen_marshal_generated5.c.o
+[492/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._.._mapi_glapi_gen_marshal_generated6.c.o
+[493/891] Compiling C object src/mesa/libmesa.a.p/main_accum.c.o
+[494/891] Compiling C object src/mesa/libmesa.a.p/meson-generated_.._.._mapi_glapi_gen_marshal_generated7.c.o
+[495/891] Compiling C object src/mesa/libmesa.a.p/main_arbprogram.c.o
+[496/891] Compiling C object src/mesa/libmesa.a.p/main_api_arrayelt.c.o
+[497/891] Compiling C object src/mesa/libmesa.a.p/main_arrayobj.c.o
+[498/891] Compiling C object src/mesa/libmesa.a.p/main_atifragshader.c.o
+[499/891] Compiling C object src/mesa/libmesa.a.p/main_barrier.c.o
+[500/891] Compiling C object src/mesa/libmesa.a.p/main_attrib.c.o
+[501/891] Compiling C object src/mesa/libmesa.a.p/main_bbox.c.o
+[502/891] Compiling C object src/mesa/libmesa.a.p/main_blend.c.o
+[503/891] Compiling C object src/mesa/libmesa.a.p/main_blit.c.o
+[504/891] Compiling C object src/mesa/libmesa.a.p/main_bufferobj.c.o
+[505/891] Compiling C object src/mesa/libmesa.a.p/main_buffers.c.o
+[506/891] Compiling C object src/mesa/libmesa.a.p/main_clear.c.o
+[507/891] Compiling C object src/mesa/libmesa.a.p/main_clip.c.o
+[508/891] Compiling C object src/mesa/libmesa.a.p/main_compute.c.o
+[509/891] Compiling C object src/mesa/libmesa.a.p/main_conservativeraster.c.o
+[510/891] Compiling C object src/mesa/libmesa.a.p/main_condrender.c.o
+[511/891] Compiling C object src/mesa/libmesa.a.p/main_context.c.o
+[512/891] Compiling C object src/mesa/libmesa.a.p/main_copyimage.c.o
+[513/891] Compiling C object src/mesa/libmesa.a.p/main_debug.c.o
+[514/891] Compiling C object src/mesa/libmesa.a.p/main_depth.c.o
+[515/891] Compiling C object src/mesa/libmesa.a.p/main_debug_output.c.o
+[516/891] Compiling C object src/mesa/libmesa.a.p/main_draw.c.o
+[517/891] Compiling C object src/mesa/libmesa.a.p/main_draw_validate.c.o
+[518/891] Compiling C object src/mesa/libmesa.a.p/main_drawpix.c.o
+[519/891] Compiling C object src/mesa/libmesa.a.p/main_drawtex.c.o
+[520/891] Compiling C object src/mesa/libmesa.a.p/main_enable.c.o
+[521/891] Compiling C object src/mesa/libmesa.a.p/main_errors.c.o
+[522/891] Compiling C object src/mesa/libmesa.a.p/main_es1_conversion.c.o
+[523/891] Compiling C object src/mesa/libmesa.a.p/main_eval.c.o
+[524/891] Compiling C object src/mesa/libmesa.a.p/main_extensions.c.o
+[525/891] Compiling C object src/mesa/libmesa.a.p/main_extensions_table.c.o
+[526/891] Compiling C object src/mesa/libmesa.a.p/main_externalobjects.c.o
+[527/891] Compiling C object src/mesa/libmesa.a.p/main_fbobject.c.o
+[528/891] Compiling C object src/mesa/libmesa.a.p/main_feedback.c.o
+[529/891] Compiling C object src/mesa/libmesa.a.p/main_ff_fragment_shader.c.o
+[530/891] Compiling C object src/mesa/libmesa.a.p/main_ffvertex_prog.c.o
+[531/891] Compiling C object src/mesa/libmesa.a.p/main_dlist.c.o
+[532/891] Compiling C object src/mesa/libmesa.a.p/main_fog.c.o
+[533/891] Compiling C object src/mesa/libmesa.a.p/main_formatquery.c.o
+[534/891] Compiling C object src/mesa/libmesa.a.p/main_formats.c.o
+[535/891] Compiling C object src/mesa/libmesa.a.p/main_framebuffer.c.o
+[536/891] Compiling C object src/mesa/libmesa.a.p/main_genmipmap.c.o
+[537/891] Compiling C object src/mesa/libmesa.a.p/main_get.c.o
+[538/891] Compiling C object src/mesa/libmesa.a.p/main_getstring.c.o
+[539/891] Compiling C object src/mesa/libmesa.a.p/main_glformats.c.o
+[540/891] Compiling C object src/mesa/libmesa.a.p/main_glspirv.c.o
+[541/891] Compiling C object src/mesa/libmesa.a.p/main_glthread.c.o
+[542/891] Compiling C object src/mesa/libmesa.a.p/main_glthread_bufferobj.c.o
+[543/891] Compiling C object src/mesa/libmesa.a.p/main_glthread_draw.c.o
+[544/891] Compiling C object src/mesa/libmesa.a.p/main_glthread_draw_unroll.c.o
+[545/891] Compiling C object src/mesa/libmesa.a.p/main_glthread_get.c.o
+[546/891] Compiling C object src/mesa/libmesa.a.p/main_glthread_list.c.o
+[547/891] Compiling C object src/mesa/libmesa.a.p/main_glthread_pixels.c.o
+[548/891] Compiling C object src/mesa/libmesa.a.p/main_glthread_shaderobj.c.o
+[549/891] Compiling C object src/mesa/libmesa.a.p/main_glthread_varray.c.o
+[550/891] Compiling C object src/mesa/libmesa.a.p/main_hash.c.o
+[551/891] Compiling C object src/mesa/libmesa.a.p/main_hint.c.o
+[552/891] Compiling C object src/mesa/libmesa.a.p/main_image.c.o
+[553/891] Compiling C object src/mesa/libmesa.a.p/main_light.c.o
+[554/891] Compiling C object src/mesa/libmesa.a.p/main_lines.c.o
+[555/891] Compiling C object src/mesa/libmesa.a.p/main_matrix.c.o
+[556/891] Compiling C object src/mesa/libmesa.a.p/main_mipmap.c.o
+[557/891] Compiling C object src/mesa/libmesa.a.p/main_multisample.c.o
+[558/891] Compiling C object src/mesa/libmesa.a.p/main_objectlabel.c.o
+[559/891] Compiling C object src/mesa/libmesa.a.p/main_pack.c.o
+[560/891] Compiling C object src/mesa/libmesa.a.p/main_pbo.c.o
+[561/891] Compiling C object src/mesa/libmesa.a.p/main_performance_monitor.c.o
+[562/891] Compiling C object src/mesa/libmesa.a.p/main_performance_query.c.o
+[563/891] Compiling C object src/mesa/libmesa.a.p/main_pipelineobj.c.o
+[564/891] Compiling C object src/mesa/libmesa.a.p/main_pixel.c.o
+[565/891] Compiling C object src/mesa/libmesa.a.p/main_pixelstore.c.o
+[566/891] Compiling C object src/mesa/libmesa.a.p/main_pixeltransfer.c.o
+[567/891] Compiling C object src/mesa/libmesa.a.p/main_format_utils.c.o
+[568/891] Compiling C object src/mesa/libmesa.a.p/main_points.c.o
+[569/891] Compiling C object src/mesa/libmesa.a.p/main_program_binary.c.o
+[570/891] Compiling C object src/mesa/libmesa.a.p/main_polygon.c.o
+[571/891] Compiling C object src/mesa/libmesa.a.p/main_program_resource.c.o
+[572/891] Compiling C object src/mesa/libmesa.a.p/main_querymatrix.c.o
+[573/891] Compiling C object src/mesa/libmesa.a.p/main_rastpos.c.o
+[574/891] Compiling C object src/mesa/libmesa.a.p/main_queryobj.c.o
+[575/891] Compiling C object src/mesa/libmesa.a.p/main_remap.c.o
+[576/891] Compiling C object src/mesa/libmesa.a.p/main_readpix.c.o
+[577/891] Compiling C object src/mesa/libmesa.a.p/main_renderbuffer.c.o
+[578/891] Compiling C object src/mesa/libmesa.a.p/main_robustness.c.o
+[579/891] Compiling C object src/mesa/libmesa.a.p/main_scissor.c.o
+[580/891] Compiling C object src/mesa/libmesa.a.p/main_samplerobj.c.o
+[581/891] Compiling C object src/mesa/libmesa.a.p/main_shaderapi.c.o
+[582/891] Compiling C++ object src/mesa/libmesa.a.p/main_shader_query.cpp.o
+[583/891] Compiling C object src/mesa/libmesa.a.p/main_shaderimage.c.o
+[584/891] Compiling C object src/mesa/libmesa.a.p/main_shared.c.o
+[585/891] Compiling C object src/mesa/libmesa.a.p/main_shaderobj.c.o
+[586/891] Compiling C object src/mesa/libmesa.a.p/main_spirv_capabilities.c.o
+[587/891] Compiling C object src/mesa/libmesa.a.p/main_spirv_extensions.c.o
+[588/891] Compiling C object src/mesa/libmesa.a.p/main_state.c.o
+[589/891] Compiling C object src/mesa/libmesa.a.p/main_stencil.c.o
+[590/891] Compiling C object src/mesa/libmesa.a.p/main_syncobj.c.o
+[591/891] Compiling C object src/mesa/libmesa.a.p/main_texcompress.c.o
+[592/891] Compiling C object src/mesa/libmesa.a.p/main_texcompress_bptc.c.o
+[593/891] Compiling C object src/mesa/libmesa.a.p/main_texcompress_cpal.c.o
+[594/891] Compiling C++ object src/mesa/libmesa.a.p/main_texcompress_astc.cpp.o
+[595/891] Compiling C object src/mesa/libmesa.a.p/main_texcompress_fxt1.c.o
+[596/891] Compiling C object src/mesa/libmesa.a.p/main_texcompress_rgtc.c.o
+[597/891] Compiling C object src/mesa/libmesa.a.p/main_texcompress_etc.c.o
+[598/891] Compiling C object src/mesa/libmesa.a.p/main_texcompress_s3tc.c.o
+[599/891] Compiling C object src/mesa/libmesa.a.p/main_texenv.c.o
+[600/891] Compiling C object src/mesa/libmesa.a.p/main_texgen.c.o
+[601/891] Compiling C object src/mesa/libmesa.a.p/main_texgetimage.c.o
+[602/891] Compiling C object src/mesa/libmesa.a.p/main_texobj.c.o
+[603/891] Compiling C object src/mesa/libmesa.a.p/main_teximage.c.o
+[604/891] Compiling C object src/mesa/libmesa.a.p/main_texstate.c.o
+[605/891] Compiling C object src/mesa/libmesa.a.p/main_texparam.c.o
+[606/891] Compiling C object src/mesa/libmesa.a.p/main_texstorage.c.o
+[607/891] Compiling C object src/mesa/libmesa.a.p/main_texstore.c.o
+[608/891] Compiling C object src/mesa/libmesa.a.p/main_texturebindless.c.o
+[609/891] Compiling C object src/mesa/libmesa.a.p/main_textureview.c.o
+[610/891] Compiling C object src/mesa/libmesa.a.p/main_transformfeedback.c.o
+[611/891] Compiling C++ object src/mesa/libmesa.a.p/main_uniform_query.cpp.o
+[612/891] Compiling C object src/mesa/libmesa.a.p/main_uniforms.c.o
+[613/891] Compiling C object src/mesa/libmesa.a.p/main_vdpau.c.o
+[614/891] Compiling C object src/mesa/libmesa.a.p/main_version.c.o
+[615/891] Compiling C object src/mesa/libmesa.a.p/main_varray.c.o
+[616/891] Compiling C object src/mesa/libmesa.a.p/main_viewport.c.o
+[617/891] Compiling C object src/mesa/libmesa.a.p/math_m_matrix.c.o
+[618/891] Compiling C object src/mesa/libmesa.a.p/math_m_eval.c.o
+[619/891] Compiling C object src/mesa/libmesa.a.p/program_arbprogparse.c.o
+[620/891] Compiling C object src/mesa/libmesa.a.p/program_prog_cache.c.o
+[621/891] Compiling C object src/mesa/libmesa.a.p/program_prog_instruction.c.o
+[622/891] Compiling C object src/mesa/libmesa.a.p/program_prog_parameter.c.o
+[623/891] Compiling C object src/mesa/libmesa.a.p/program_prog_parameter_layout.c.o
+[624/891] Compiling C object src/mesa/libmesa.a.p/program_prog_print.c.o
+[625/891] Compiling C object src/mesa/libmesa.a.p/program_prog_statevars.c.o
+[626/891] Compiling C object src/mesa/libmesa.a.p/program_program.c.o
+[627/891] Compiling C object src/mesa/libmesa.a.p/program_program_parse_extra.c.o
+[628/891] Compiling C object src/mesa/libmesa.a.p/program_symbol_table.c.o
+[629/891] Compiling C object src/mesa/libmesa.a.p/program_prog_to_nir.c.o
+[630/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atifs_to_nir.c.o
+[631/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_atomicbuf.c.o
+[632/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_blend.c.o
+[633/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_clip.c.o
+[634/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_constbuf.c.o
+[635/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_depth.c.o
+[636/891] Compiling C++ object src/mesa/libmesa.a.p/state_tracker_st_atom_array.cpp.o
+[637/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_framebuffer.c.o
+[638/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_image.c.o
+[639/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_msaa.c.o
+[640/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_pixeltransfer.c.o
+[641/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_rasterizer.c.o
+[642/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_sampler.c.o
+[643/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_scissor.c.o
+[644/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_stipple.c.o
+[645/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_shader.c.o
+[646/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_tess.c.o
+[647/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_storagebuf.c.o
+[648/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_texture.c.o
+[649/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_atom_viewport.c.o
+[650/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_cb_clear.c.o
+[651/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_cb_bitmap.c.o
+[652/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_cb_copyimage.c.o
+[653/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_cb_drawtex.c.o
+[654/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_cb_eglimage.c.o
+[655/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_cb_feedback.c.o
+[656/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_cb_flush.c.o
+[657/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_cb_drawpixels.c.o
+[658/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_cb_readpixels.c.o
+[659/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_cb_rasterpos.c.o
+[660/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_context.c.o
+[661/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_copytex.c.o
+[662/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_cb_texture.c.o
+[663/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_debug.c.o
+[664/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_draw.c.o
+[665/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_draw_feedback.c.o
+[666/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_extensions.c.o
+[667/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_format.c.o
+[668/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_gen_mipmap.c.o
+[669/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_draw_hw_select.c.o
+[670/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_interop.c.o
+[671/891] Compiling C++ object src/mesa/libmesa.a.p/state_tracker_st_glsl_to_nir.cpp.o
+[672/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_manager.c.o
+[673/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_nir_builtins.c.o
+[674/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_nir_lower_builtin.c.o
+[675/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_nir_lower_fog.c.o
+[676/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_nir_lower_tex_src_plane.c.o
+[677/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_nir_lower_position_invariant.c.o
+[678/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_pbo.c.o
+[679/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_program.c.o
+[680/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_sampler_view.c.o
+[681/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_pbo_compute.c.o
+[682/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_scissor.c.o
+[683/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_shader_cache.c.o
+[684/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_texcompress_compute.c.o
+[685/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_vdpau.c.o
+[686/891] Compiling C object src/mesa/libmesa.a.p/state_tracker_st_texture.c.o
+[687/891] Compiling C object src/mesa/libmesa.a.p/vbo_vbo_context.c.o
+[688/891] Compiling C object src/mesa/libmesa.a.p/vbo_vbo_exec.c.o
+[689/891] Compiling C object src/mesa/libmesa.a.p/vbo_vbo_exec_draw.c.o
+[690/891] Compiling C object src/mesa/libmesa.a.p/vbo_vbo_exec_eval.c.o
+[691/891] Compiling C object src/mesa/libmesa.a.p/vbo_vbo_minmax_index.c.o
+[692/891] Compiling C object src/mesa/libmesa.a.p/vbo_vbo_noop.c.o
+[693/891] Compiling C object src/mesa/libmesa.a.p/vbo_vbo_save.c.o
+[694/891] Compiling C object src/mesa/libmesa.a.p/vbo_vbo_exec_api.c.o
+[695/891] Compiling C object src/mesa/libmesa.a.p/vbo_vbo_save_draw.c.o
+[696/891] Compiling C object src/mesa/libmesa.a.p/vbo_vbo_save_api.c.o
+[697/891] Compiling C object src/mesa/libmesa.a.p/vbo_vbo_save_loopback.c.o
+[698/891] Generating src/gallium/auxiliary/u_indices_gen.c with a custom command
+[699/891] Generating src/gallium/auxiliary/u_unfilled_gen.c with a custom command
+[700/891] Linking static target src/mesa/libmesa.a
+[701/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/meson-generated_.._tr_util.c.o
+[702/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/meson-generated_.._u_tracepoints.c.o
+[703/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/meson-generated_.._u_unfilled_gen.c.o
+[704/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/cso_cache_cso_cache.c.o
+[705/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/cso_cache_cso_context.c.o
+[706/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/cso_cache_cso_hash.c.o
+[707/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_context.c.o
+[708/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_fs.c.o
+[709/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_gs.c.o
+[710/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_mesh.c.o
+[711/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_mesh_prim.c.o
+[712/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_aaline.c.o
+[713/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_aapoint.c.o
+[714/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe.c.o
+[715/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_clip.c.o
+[716/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_cull.c.o
+[717/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_flatshade.c.o
+[718/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_offset.c.o
+[719/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_pstipple.c.o
+[720/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_stipple.c.o
+[721/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_twoside.c.o
+[722/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_unfilled.c.o
+[723/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_user_cull.c.o
+[724/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_util.c.o
+[725/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_validate.c.o
+[726/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_vbuf.c.o
+[727/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_wide_line.c.o
+[728/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pipe_wide_point.c.o
+[729/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_prim_assembler.c.o
+[730/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pt.c.o
+[731/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pt_emit.c.o
+[732/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pt_fetch.c.o
+[733/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pt_fetch_shade_emit.c.o
+[734/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pt_fetch_shade_pipeline.c.o
+[735/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pt_mesh_pipeline.c.o
+[736/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/meson-generated_.._u_indices_gen.c.o
+[737/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pt_post_vs.c.o
+[738/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pt_so_emit.c.o
+[739/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pt_util.c.o
+[740/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_tess.c.o
+[741/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_vertex.c.o
+[742/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_vs.c.o
+[743/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_pt_vsplit.c.o
+[744/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_vs_exec.c.o
+[745/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/draw_draw_vs_variant.c.o
+[746/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/driver_ddebug_dd_context.c.o
+[747/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/driver_ddebug_dd_screen.c.o
+[748/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/driver_noop_noop_pipe.c.o
+[749/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/driver_ddebug_dd_draw.c.o
+[750/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/driver_noop_noop_state.c.o
+[751/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/driver_trace_tr_dump.c.o
+[752/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/driver_trace_tr_dump_state.c.o
+[753/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/driver_trace_tr_context.c.o
+[754/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/driver_trace_tr_screen.c.o
+[755/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/driver_trace_tr_texture.c.o
+[756/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/hud_font.c.o
+[757/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/driver_trace_tr_video.c.o
+[758/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/hud_hud_cpu.c.o
+[759/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/hud_hud_nic.c.o
+[760/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/hud_hud_cpufreq.c.o
+[761/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/hud_hud_diskstat.c.o
+[762/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/hud_hud_sensors_temp.c.o
+[763/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/hud_hud_context.c.o
+[764/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/hud_hud_driver_query.c.o
+[765/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/hud_hud_fps.c.o
+[766/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/indices_u_primconvert.c.o
+[767/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/pipebuffer_pb_buffer_fenced.c.o
+[768/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/pipebuffer_pb_bufmgr_cache.c.o
+[769/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/pipebuffer_pb_bufmgr_debug.c.o
+[770/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/pipebuffer_pb_bufmgr_mm.c.o
+[771/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/pipebuffer_pb_bufmgr_slab.c.o
+[772/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/pipebuffer_pb_slab.c.o
+[773/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/pipebuffer_pb_cache.c.o
+[774/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/postprocess_pp_celshade.c.o
+[775/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/pipebuffer_pb_validate.c.o
+[776/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/postprocess_pp_colors.c.o
+[777/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/postprocess_pp_init.c.o
+[778/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/postprocess_pp_program.c.o
+[779/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/postprocess_pp_mlaa.c.o
+[780/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/rtasm_rtasm_execmem.c.o
+[781/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/postprocess_pp_run.c.o
+[782/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_aa_point.c.o
+[783/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_build.c.o
+[784/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_dump.c.o
+[785/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_dynamic_indexing.c.o
+[786/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/rtasm_rtasm_x86sse.c.o
+[787/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_from_mesa.c.o
+[788/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_info.c.o
+[789/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_iterate.c.o
+[790/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_lowering.c.o
+[791/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_parse.c.o
+[792/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_point_sprite.c.o
+[793/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_sanity.c.o
+[794/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_scan.c.o
+[795/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_exec.c.o
+[796/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_strings.c.o
+[797/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_transform.c.o
+[798/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_two_side.c.o
+[799/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_text.c.o
+[800/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_util.c.o
+[801/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_vpos.c.o
+[802/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/translate_translate.c.o
+[803/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/translate_translate_cache.c.o
+[804/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/tgsi_tgsi_ureg.c.o
+[805/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/translate_translate_generic.c.o
+[806/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/translate_translate_sse.c.o
+[807/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_async_debug.c.o
+[808/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_bitmask.c.o
+[809/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_cache.c.o
+[810/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_compute.c.o
+[811/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_blitter.c.o
+[812/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_debug_flush.c.o
+[813/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_debug_image.c.o
+[814/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_debug_refcnt.c.o
+[815/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_debug_describe.c.o
+[816/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_draw.c.o
+[817/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_draw_quad.c.o
+[818/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_driconf.c.o
+[819/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_dump_defines.c.o
+[820/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_framebuffer.c.o
+[821/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_gen_mipmap.c.o
+[822/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_handle_table.c.o
+[823/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_dump_state.c.o
+[824/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_index_modify.c.o
+[825/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_helpers.c.o
+[826/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_live_shader_cache.c.o
+[827/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_log.c.o
+[828/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_prim.c.o
+[829/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_prim_restart.c.o
+[830/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_pstipple.c.o
+[831/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_resource.c.o
+[832/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_sample_positions.c.o
+[833/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_sampler.c.o
+[834/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_screen.c.o
+[835/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_split_draw.c.o
+[836/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_suballoc.c.o
+[837/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_surface.c.o
+[838/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_tests.c.o
+[839/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_simple_shaders.c.o
+[840/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_texture.c.o
+[841/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_transfer.c.o
+[842/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_tile.c.o
+[843/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_transfer_helper.c.o
+[844/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_trace_gallium.c.o
+[845/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_upload_mgr.c.o
+[846/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_vbuf.c.o
+[847/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_vertex_state_cache.c.o
+[848/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/util_u_threaded_context.c.o
+[849/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/nir_tgsi_to_nir.c.o
+[850/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/nir_nir_to_tgsi.c.o
+[851/891] Compiling C object src/gallium/auxiliary/libgallium.a.p/nir_nir_draw_helpers.c.o
+[852/891] Linking static target src/gallium/auxiliary/libgallium.a
+[853/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_codec.c.o
+[854/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_compositor.c.o
+[855/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_bicubic_filter.c.o
+[856/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_compositor_gfx.c.o
+[857/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_compositor_cs.c.o
+[858/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_csc.c.o
+[859/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_decoder.c.o
+[860/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_idct.c.o
+[861/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_matrix_filter.c.o
+[862/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_deint_filter.c.o
+[863/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_mc.c.o
+[864/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_median_filter.c.o
+[865/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_mpeg12_decoder.c.o
+[866/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_mpeg12_bitstream.c.o
+[867/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_vertex_buffers.c.o
+[868/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_video_buffer.c.o
+[869/891] Compiling C object src/gallium/winsys/sw/null/libws_null.a.p/null_sw_winsys.c.o
+[870/891] Linking static target src/gallium/winsys/sw/null/libws_null.a
+[871/891] Compiling C object src/gallium/auxiliary/libgalliumvl.a.p/vl_vl_zscan.c.o
+[872/891] Linking static target src/gallium/auxiliary/libgalliumvl.a
+[873/891] Compiling C object src/gallium/drivers/virgl/libvirgl.a.p/virgl_buffer.c.o
+[874/891] Compiling C object src/gallium/drivers/virgl/libvirgl.a.p/virgl_context.c.o
+[875/891] Compiling C object src/gallium/drivers/virgl/libvirgl.a.p/virgl_query.c.o
+[876/891] Compiling C object src/gallium/drivers/virgl/libvirgl.a.p/virgl_encode.c.o
+[877/891] Compiling C object src/gallium/drivers/virgl/libvirgl.a.p/virgl_resource.c.o
+[878/891] Compiling C object src/gallium/drivers/virgl/libvirgl.a.p/virgl_screen.c.o
+[879/891] Compiling C object src/gallium/drivers/virgl/libvirgl.a.p/virgl_staging_mgr.c.o
+[880/891] Compiling C object src/gallium/drivers/virgl/libvirgl.a.p/virgl_transfer_queue.c.o
+[881/891] Compiling C object src/gallium/drivers/virgl/libvirgl.a.p/virgl_streamout.c.o
+[882/891] Compiling C object src/gallium/drivers/virgl/libvirgl.a.p/virgl_texture.c.o
+[883/891] Compiling C object src/gallium/drivers/virgl/libvirgl.a.p/virgl_tgsi.c.o
+[884/891] Compiling C object src/gallium/frontends/osmesa/libosmesa_st.a.p/osmesa.c.o
+[885/891] Compiling C object src/gallium/drivers/virgl/libvirgl.a.p/virgl_video.c.o
+[886/891] Linking static target src/gallium/frontends/osmesa/libosmesa_st.a
+[887/891] Linking static target src/gallium/drivers/virgl/libvirgl.a
+[888/891] Generating src/gallium/targets/osmesa/osmesa.def with a custom command
+[889/891] Compiling C object src/gallium/targets/osmesa/libbkvirgl.so.8.0.0.p/osmesa_target.c.o
+[890/891] Compiling C object src/gallium/targets/osmesa/libbkvirgl.so.8.0.0.p/bles_virgl.c.o
+[891/891] Linking target src/gallium/targets/osmesa/libbkvirgl.so.8.0.0
+Installing src/gallium/targets/osmesa/libbkvirgl.so.8.0.0 to /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/install/usr/local/lib
+Installing /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/mesa-24.3.4/src/util/00-mesa-defaults.conf to /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/install/usr/local/share/drirc.d
+Installing symlink pointing to libbkvirgl.so.8.0.0 to /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/gallium/install/usr/local/lib/libbkvirgl.so.8
+/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine/graphics/libbkvirgl.so.8
+[ATA]  Creando imagen BFS4 ATA...
+BLES_FS=bfs4 BLES_EDITION=user python3 tools/build_fat32_ata.py build/bleskernos-normal-check.img build/programs/shelllauncher.o build/programs/filebrowser.o build/programs/texteditor.o build/programs/calculator.o build/programs/midamp.o build/programs/processmanager.o build/programs/calendar.o Desktop.INI assets/icons assets/gif/abount.gif Associations.INI 2569 build/system/services/screensaverd.o build/system/screensavers/ss_logo.o build/system/screensavers/ss_pipes.o "" build/boot_fat32.bin build/stage2.bin build/kernel.bin 2560 build/system/libs/tinygl/tinygl.a build/system/libs/libc/libc.a build/system/control/control_panel.o build/system/control/appearance.o build/system/control/display.o build/system/control/sound.o build/system/control/datetime.o build/system/control/mouse.o build/system/control/keyboard.o build/system/control/system.o build/system/control/device_manager.o build/system/control/internet.o build/system/control/modem.o build/system/control/language.o build/system/control/wine.o build/system/screensavers/ss_balls.o build/system/libs/mesa35/mesa35.a
+[BVIPAK] /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/icons_runtime/ICONS.PAK: 33 iconos, 278807 bytes
+Desktop INI size: 104 bytes
+Associations INI size: 1657 bytes
+Shell size: 10068 bytes
+About size: 7712 bytes
+Runbox size: 11288 bytes
+Filebrowser size: 58304 bytes
+Texteditor size: 14340 bytes
+Calculator size: 7056 bytes
+Midamp size: 27588 bytes
+Processmanager size: 14616 bytes
+Calendar size: 11252 bytes
+Paint size: 18876 bytes
+Imageviewer size: 16140 bytes
+ScanDisk size: 7860 bytes
+Wine PE launcher size: 1568 bytes
+NetSurf bootstrap frontend size: 893736 bytes
+Help Center size: 8364 bytes
+Find Files size: 9380 bytes
+Archive Manager size: 9976 bytes
+Disk Tools size: 12236 bytes
+Network Status size: 8892 bytes
+Clipboard Viewer size: 6544 bytes
+Performance Monitor size: 29252 bytes
+Ring 3 command help size: 18300 bytes
+Ring 3 command echo size: 13060 bytes
+Ring 3 command about size: 13140 bytes
+Ring 3 command uname size: 13184 bytes
+Ring 3 command hostname size: 13228 bytes
+Ring 3 command uptime size: 13240 bytes
+Ring 3 command date size: 13264 bytes
+Ring 3 command time size: 13264 bytes
+Ring 3 command shutdown size: 13168 bytes
+Ring 3 command reboot size: 13168 bytes
+Ring 3 command sleep size: 13252 bytes
+Ring 3 command bosrecovery size: 15368 bytes
+Ring 3 command fdisk size: 14424 bytes
+Ring 3 command format size: 13628 bytes
+Ring 3 command mount size: 13296 bytes
+Ring 3 command unmount size: 13140 bytes
+Ring 3 command label size: 13284 bytes
+Ring 3 command checkdisk size: 18308 bytes
+Ring 3 command fsinfo size: 14680 bytes
+Ring 3 command backup size: 19700 bytes
+Ring 3 command dir size: 13116 bytes
+Ring 3 command ls size: 13112 bytes
+Ring 3 command copy size: 13168 bytes
+Ring 3 command cp size: 13176 bytes
+Ring 3 command move size: 13240 bytes
+Ring 3 command delete size: 13176 bytes
+Ring 3 command rm size: 13424 bytes
+Ring 3 command mkdir size: 13720 bytes
+Ring 3 command rmdir size: 13176 bytes
+Ring 3 command rename size: 13216 bytes
+Ring 3 command touch size: 13192 bytes
+Ring 3 command tree size: 13120 bytes
+Ring 3 command find size: 13196 bytes
+Ring 3 command attrib size: 13136 bytes
+Ring 3 command chmod size: 13136 bytes
+Ring 3 command type size: 13164 bytes
+Ring 3 command more size: 13164 bytes
+Ring 3 command cat size: 13164 bytes
+Ring 3 command diff size: 13556 bytes
+Ring 3 command ps size: 12996 bytes
+Ring 3 command kill size: 13248 bytes
+Ring 3 command tasklist size: 13004 bytes
+Ring 3 command taskkill size: 13256 bytes
+Ring 3 command top size: 13188 bytes
+Ring 3 command nice size: 13132 bytes
+Ring 3 command pci size: 13000 bytes
+Ring 3 command usb size: 13000 bytes
+Ring 3 command lspci size: 13000 bytes
+Ring 3 command lsusb size: 13000 bytes
+Ring 3 command cpuinfo size: 13176 bytes
+Ring 3 command mem size: 13240 bytes
+Ring 3 command soundtest size: 13232 bytes
+Ring 3 command ipconfig size: 13140 bytes
+Ring 3 command ping size: 13132 bytes
+Ring 3 command netstat size: 13140 bytes
+Ring 3 command ftp size: 13132 bytes
+Ring 3 command wget size: 13132 bytes
+Ring 3 command curl size: 13132 bytes
+Ring 3 command compile size: 13208 bytes
+Ring 3 command link size: 13224 bytes
+Ring 3 command gcc size: 13476 bytes
+Ring 3 command cc size: 13372 bytes
+Ring 3 command ld size: 13224 bytes
+Ring 3 command as size: 13220 bytes
+Ring 3 command ar size: 13224 bytes
+Ring 3 command ranlib size: 13148 bytes
+Ring 3 command build size: 13260 bytes
+Ring 3 command nasm size: 13140 bytes
+Ring 3 command ndisasm size: 13148 bytes
+Ring 3 command make size: 13260 bytes
+Ring 3 command fatpack size: 13152 bytes
+Ring 3 command addr2line size: 13152 bytes
+Ring 3 command cxxfilt size: 13152 bytes
+Ring 3 command elfedit size: 13152 bytes
+Ring 3 command objcopy size: 13152 bytes
+Ring 3 command objdump size: 13152 bytes
+Ring 3 command readelf size: 13152 bytes
+Ring 3 command nm size: 13140 bytes
+Ring 3 command size size: 13144 bytes
+Ring 3 command strip size: 13144 bytes
+Ring 3 command hexdump size: 13168 bytes
+Ring 3 command strings size: 13152 bytes
+Ring 3 command calc size: 13600 bytes
+Ring 3 command hexedit size: 13608 bytes
+Ring 3 command compress size: 13660 bytes
+Ring 3 command extract size: 13780 bytes
+Ring 3 command checksum size: 13172 bytes
+Ring 3 command benchmark size: 13232 bytes
+Ring 3 command start size: 14252 bytes
+Language pack ESPANOL.LNG size: 38206 bytes
+Language pack ENGLISH.LNG size: 37124 bytes
+Language pack ITALIANO.LNG size: 38018 bytes
+Warning: No se pudo leer /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/system/desktop/deskbar.o: [Errno 2] No such file or directory: '/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/system/desktop/deskbar.o'
+Desktop manager core size: 43080 bytes
+Program launcher core size: 5460 bytes
+ICH-compatible AC97 driver size: 20124 bytes
+ESS Allegro/Maestro3 DSP driver size: 18940 bytes
+Sound Blaster 16 driver size: 73032 bytes
+CMOS RTC driver size: 2740 bytes
+ISO9660 driver size: 8684 bytes
+PS/2 mouse driver size: 7056 bytes
+VESA framebuffer driver size: 8092 bytes
+VMware SVGA-II 2D transport driver size: 26780 bytes
+VMware SVGA3D extension driver size: 30224 bytes
+3Com EtherLink XL driver size: 6644 bytes
+IPv4 network stack size: 29352 bytes
+Realtek RTL8139 driver size: 5248 bytes
+BearSSL TLS 1.2 provider size: 256192 bytes
+ScreenSaver daemon size: 7468 bytes
+Vision GUI service size: 102924 bytes
+PrintSpool daemon size: 22644 bytes
+ScreenSaver logo size: 4304 bytes
+ScreenSaver pipes size: 2256308 bytes
+ScreenSaver balls size: 2256816 bytes
+TinyGL library size: 210522 bytes
+Mesa 3.5 GFX3D/OSMesa library size: 2454584 bytes
+C library size: 32304 bytes
+Resident OLE structured storage provider size: 26684 bytes
+Unified Win95/98 compatibility library size: 1104936 bytes
+Control Panel size: 13876 bytes
+Appearance CPL size: 2299416 bytes
+Display CPL size: 2299412 bytes
+Sound CPL size: 11016 bytes
+Date and Time CPL size: 18708 bytes
+Mouse CPL size: 12628 bytes
+Keyboard CPL size: 5236 bytes
+System CPL size: 20064 bytes
+Device Manager CPL size: 125636 bytes
+Internet CPL size: 13872 bytes
+Modem CPL size: 9076 bytes
+Language CPL size: 5472 bytes
+Windows applications CPL size: 1088 bytes
+Resident driver ATIR128.DVR size: 38368 bytes
+Resident driver ATIR1283D.DVR size: 31372 bytes
+Resident driver INTELGMA.DVR size: 11768 bytes
+Resident driver USBCLASS.DVR size: 15716 bytes
+Resident driver VIRTIOGPU.DVR size: 60152 bytes
+Startup WAV size: 129622 bytes
+Window open sound size: 1674 bytes
+Window close sound size: 3402 bytes
+Window minimize sound size: 1386 bytes
+Window restore sound size: 1098 bytes
+Window resize sound size: 2538 bytes
+GUI button sound size: 1674 bytes
+GUI scroll sound size: 10320 bytes
+Shared graphics package size: 575119 bytes
+Midamp HDR size: 1115 bytes
+Midamp BTN size: 644 bytes
+Midamp BOT size: 1344 bytes
+About GIF size: 27173 bytes
+[ATA] Start icon: /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/assets/icons/BLESKERNOS.BMP -> /ICONS/BLESKERNOS.BMP
+[ATA] BFS4 image: build/bleskernos-normal-check.img (768 MiB)
+BFS4: build/bleskernos-normal-check.img files=5456 blocks=196096 free=74164
+BFS4 OK: 5456 entries, 74164 free blocks, clean
+[OK]   ATA: 805306368 bytes

@@ -1,0 +1,44 @@
+tests/kernel/evidence/audit-stage2-2026-10-13/guest-release/32m-std-smoke-swap-on/swap.img: 32 MiB, 8191 slots
+/SYSTEM/DRIVERS/PS2MOUSE.DVR 7140 bytes; mode 0o100644
+/SYSTEM/SERVICES/VISION.BEX 255152 bytes; mode 0o100644
+/SYSTEM/CONTROL/DISPLAY.CPL 2299376 bytes; mode 0o100644
+/SYSTEM/CONTROL/MOUSE.CPL 19952 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/FILE.BEX 59196 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/TEXTEDITOR.BEX 14372 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/PROCESSMANAGER.BEX 24176 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/SWAPTEST.ELF 8816 bytes; mode 0o100755
+/SYSTEM/PROGRAMS/GFXALLOC.ELF 8812 bytes; mode 0o100755
+/SYSTEM/PROGRAMS/RAMTEST.BEX 1760 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/STARTUP.INI 77 bytes; mode 0o100755
+{
+  "ram_mib": 32,
+  "backend": "std",
+  "desktop_started": true,
+  "completed": true,
+  "kernel_sha256": "deacc61b18976e37801d9582407c3dbdc91aef81f0a38202a1744207dd399159",
+  "wine_boot_started": false,
+  "smoke_pass": true,
+  "memory": {
+    "DESKTOP": {
+      "installed_kib": 32255,
+      "managed_kib": 28544,
+      "used_kib": 9386,
+      "free_kib": 19157,
+      "unmanaged_kib": 3711,
+      "heap_used_kib": 9126,
+      "heap_free_kib": 17369,
+      "vm_free_kib": 1788
+    },
+    "IDLE": {
+      "installed_kib": 32255,
+      "managed_kib": 28544,
+      "used_kib": 13762,
+      "free_kib": 14781,
+      "unmanaged_kib": 3711,
+      "heap_used_kib": 13502,
+      "heap_free_kib": 12993,
+      "vm_free_kib": 1788
+    }
+  },
+  "depths": []
+}

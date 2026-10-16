@@ -1,0 +1,32 @@
+{
+  "result": "PASS",
+  "runs": [
+    {
+      "run": 0,
+      "rounds": 1000,
+      "us": 3503334,
+      "waits_main": 1018,
+      "waits_peer": 1019,
+      "wakes_main": 1019,
+      "wakes_peer": 1018
+    },
+    {
+      "run": 1,
+      "rounds": 1000,
+      "us": 3333334,
+      "waits_main": 1019,
+      "waits_peer": 1019,
+      "wakes_main": 1019,
+      "wakes_peer": 1019
+    },
+    {
+      "run": 2,
+      "rounds": 1000,
+      "us": 4263333,
+      "waits_main": 1018,
+      "waits_peer": 1018,
+      "wakes_main": 1018,
+      "wakes_peer": 1018
+    }
+  ]
+}

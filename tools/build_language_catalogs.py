@@ -391,7 +391,7 @@ SOURCE_GLOBS = (
     "system/services/*.c", "system/commands/*.c", "gui/*.c",
     "programs/netsurf/*.c",
 )
-SOURCE_FILES = ("kernel/about_dialog.c", "kernel/file_dialog.c")
+SOURCE_FILES = ("kernel/ui/about_dialog.c", "kernel/ui/file_dialog.c")
 
 
 def fnv1a(text: str) -> int:

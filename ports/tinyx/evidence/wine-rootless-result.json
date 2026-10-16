@@ -1,0 +1,12 @@
+{
+  "application": "notepad.exe",
+  "guest": "BlesKernOS KVM, 2 vCPU, 1536 MiB, AHCI",
+  "source": "copy of previously validated Wine prefix; X11 top-level routed through native BLES_GFX_SURFACE_UPSERT",
+  "wine_prefix_ready": true,
+  "theme_regedit_exit": 0,
+  "window_visible": true,
+  "window_size": "approximately 510x375 including native Vision chrome on 800x600 display",
+  "native_titlebar_and_deskbar": true,
+  "evidence_image": "wine-rootless-notepad-native.png",
+  "limitations": "default image cold-prefix startup and .exe/.bat double-click not verified by this screenshot"
+}

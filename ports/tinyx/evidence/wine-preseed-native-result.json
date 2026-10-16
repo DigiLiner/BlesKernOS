@@ -1,0 +1,16 @@
+{
+  "builds": [
+    "make -j4 all",
+    "make -j4 EDITION=developer all"
+  ],
+  "test": "KVM first boot of a copy of the default user ATA image; kernel gate opened notepad.exe through bk_app_launch",
+  "prefix_ready_marker": true,
+  "theme_ready_marker": true,
+  "native_window": true,
+  "own_size": true,
+  "position_keeps_bottom_above_deskbar": true,
+  "nodrv_CreateWindow": false,
+  "screenshot": "wine-preseed-notepad-native.png",
+  "association_config": "/ASSOC.INI: EXE and BAT -> /SYSTEM/PROGRAMS/WINE.BEX",
+  "notes": "Notepad launch is slow, about two to three minutes in this test image. Stage 1 keyboard, mouse and multi-app validation is recorded separately."
+}

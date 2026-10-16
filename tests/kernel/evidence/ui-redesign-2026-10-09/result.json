@@ -1,0 +1,41 @@
+{
+  "status": "pass",
+  "host_tests": 9,
+  "qemu": [
+    "64 MiB / 1 CPU",
+    "256 MiB / 2 CPU"
+  ],
+  "visual_cpu_count": 4,
+  "image": "build/bleskernos-admin.img",
+  "payload_sha256": {
+    "/SYSTEM/PROGRAMS/PROCESSMANAGER.BEX": "8a244d9effa1db826f2725f821208aae15bcc320c8354e9004dc41bcb3823e6a",
+    "/SYSTEM/PROGRAMS/EVENT_VIEWER.BEX": "157fa1c5909ece6323e89537a4bf07915b2943695b183a875df44b568a9e8910",
+    "/SYSTEM/PROGRAMS/FILE.BEX": "afce1a06a4ffe1355097e616d002bde7dea3354575039386185b6d8c4fbd465d",
+    "/SYSTEM/SERVICES/VISION.BEX": "1b1b627de68726d44eda95de2550572f05da8055d64981c8421d257e7f1e80c8",
+    "/SYSTEM/SERVICES/PRINTSPL.BEX": "e640d79ca5b41671226ca3541202e967e259461b6d6d76f284b442c412aa4833",
+    "/SYSTEM/TESTS/NATIVE/RING3PROXY.BEX": "dd8071ec330cfa184554fb539a45044019542ca14efa87939127daf23ef28932",
+    "/SYSTEM/CONTROL/CONTROL.BEX": "92f54c8f436b611036274b68bd8e874a61b9f1816767baf51816140a01da23be",
+    "/SYSTEM/CONTROL/SYSTEM.CPL": "fbe65bcd004e7ace2c053899d31808e5fa7c2cf81749a404edaf42bd0afd0b6a",
+    "/SYSTEM/CONTROL/DEVMGR.CPL": "72a40d8eb62685abfbe9c28db056c6687c0673fbcd3a5b28be3fdc25c758a77c",
+    "/SYSTEM/SDK/INCLUDE/BLESKERNOS_API.H": "34fe938c98028c335917530fe3135c14a60bfc5f455601c31ef982c00f6f00e8",
+    "/SYSTEM/SDK/INCLUDE/BLESKERNOS_ADMIN.H": "828845bdbe8d53593f8335f2dab7bee3baa984c7001f571b6ef6dce483f83dbe",
+    "/SYSTEM/DOCS/ADMIN.TXT": "ddd24d2a5d0bf27871465f29ea66a35c58c289df0f04a85feb0892424418ac29"
+  },
+  "screenshots": [
+    "visual-desktop-arrange.png",
+    "visual-desktop.png",
+    "visual-event-errors.png",
+    "visual-event-file.png",
+    "visual-event-search-results.png",
+    "visual-event-search.png",
+    "visual-events-icon.png",
+    "visual-filtered-events.png",
+    "visual-performance.png",
+    "visual-process-menu.png",
+    "visual-processes.png",
+    "visual-service-menu.png",
+    "visual-services.png",
+    "visual-startup-menu.png",
+    "visual-startup.png"
+  ]
+}

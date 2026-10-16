@@ -1,0 +1,2 @@
+PASS production kstrncpy: early NUL, truncation, padding, zero length and destination redzones
+PASS production kstrncpy: early NUL, truncation, padding, zero length and destination redzones

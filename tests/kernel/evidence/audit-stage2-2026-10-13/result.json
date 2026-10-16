@@ -1,0 +1,290 @@
+{
+  "date": "2026-10-13",
+  "host": {
+    "passed": 24,
+    "total": 24,
+    "path": "tests/kernel/evidence/audit-stage2-2026-10-13/host-final-results.json"
+  },
+  "artifacts": {
+    "build/kernel.bin": {
+      "sha256": "deacc61b18976e37801d9582407c3dbdc91aef81f0a38202a1744207dd399159",
+      "bytes": 825388
+    },
+    "build/kernel.elf": {
+      "sha256": "b8b4b24620abaf34f2405ec712c7510b3472ed0581407133aeccf45be44e31eb",
+      "bytes": 937940
+    },
+    "build/stage2.bin": {
+      "sha256": "8474b5e2495fd9bc7674cb8508b67ece3fe6305ab31281d9e1f7f5145f39d363",
+      "bytes": 4096
+    },
+    "kernel/api/syscall.c": {
+      "sha256": "9140ccb69aed3a19c79c88557a05e587647275528b2108c7aead22cb0a77c5e0",
+      "bytes": 165756
+    },
+    "kernel/mm/paging.c": {
+      "sha256": "7d0b29c0261353972bc0491b523ea5713efb4b99f4cd16465ef0951a38a37b53",
+      "bytes": 61404
+    },
+    "tests/kernel/run_ram_smoke.py": {
+      "sha256": "77f765cb5e994cb41055ef796f48a6bc040f3601cfbd3da10dd86a75a9727866",
+      "bytes": 12524
+    },
+    "tests/kernel/test_vm_metadata.py": {
+      "sha256": "729afa40bc07f086cbaab7cda237822826196d13603bb576251ac463d5948915",
+      "bytes": 5157
+    },
+    "tests/kernel/test_tlb_generation_wrap.py": {
+      "sha256": "92a09744312f90d1c8307407846a98dbbde8f921f2bea8807d49d03c66d9ea4c",
+      "bytes": 2305
+    },
+    "tests/userland/vm_metadata_linux.c": {
+      "sha256": "5a9175078d51b8f68b8cbed22a131003fcbd526fa7bd4d3dde2860103819ff22",
+      "bytes": 2155
+    },
+    "tests/userland/vm_metadata_smoke.c": {
+      "sha256": "058d34ec5804a7dadc43278b931ed2eda016eeb3896ee5a3be72b3682d57bd6a",
+      "bytes": 958
+    },
+    "docs/kernel/AUDIT-1.0-2026-10-13.md": {
+      "sha256": "6af9f47db9593527573cb52dcd4ef618a7e8c5a3bd53a1ea0f541b6d21006d09",
+      "bytes": 11469
+    },
+    "docs/kernel/AUDIT-1.0-STAGE2-2026-10-13.md": {
+      "sha256": "4bc7d7bf8783cb618eb5c537df69b8298995a13a4adece1e43f774edd7a097fc",
+      "bytes": 10805
+    }
+  },
+  "guest": [
+    {
+      "path": "tests/kernel/evidence/audit-stage2-2026-10-13/guest-release/64m-std-smoke-vm/result.json",
+      "exit_code": 0,
+      "result": {
+        "ram_mib": 64,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "kernel_sha256": "deacc61b18976e37801d9582407c3dbdc91aef81f0a38202a1744207dd399159",
+        "wine_boot_started": false,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 65023,
+            "managed_kib": 61312,
+            "used_kib": 11135,
+            "free_kib": 50176,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 11007,
+            "heap_free_kib": 34976,
+            "vm_free_kib": 15200
+          },
+          "IDLE": {
+            "installed_kib": 65023,
+            "managed_kib": 61312,
+            "used_kib": 15466,
+            "free_kib": 45845,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 15338,
+            "heap_free_kib": 30645,
+            "vm_free_kib": 15200
+          }
+        },
+        "depths": []
+      }
+    },
+    {
+      "path": "tests/kernel/evidence/audit-stage2-2026-10-13/guest-release/1024m-std-smoke-vm/result.json",
+      "exit_code": 0,
+      "result": {
+        "ram_mib": 1024,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "kernel_sha256": "deacc61b18976e37801d9582407c3dbdc91aef81f0a38202a1744207dd399159",
+        "wine_boot_started": false,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 1048063,
+            "managed_kib": 917376,
+            "used_kib": 21335,
+            "free_kib": 896040,
+            "unmanaged_kib": 130686,
+            "heap_used_kib": 21207,
+            "heap_free_kib": 199944,
+            "vm_free_kib": 696096
+          },
+          "IDLE": {
+            "installed_kib": 1048063,
+            "managed_kib": 917376,
+            "used_kib": 25802,
+            "free_kib": 891573,
+            "unmanaged_kib": 130686,
+            "heap_used_kib": 25674,
+            "heap_free_kib": 195477,
+            "vm_free_kib": 696096
+          }
+        },
+        "depths": []
+      }
+    },
+    {
+      "path": "tests/kernel/evidence/audit-stage2-2026-10-13/guest-release/32m-std-smoke-swap-on/result.json",
+      "exit_code": 0,
+      "result": {
+        "ram_mib": 32,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "kernel_sha256": "deacc61b18976e37801d9582407c3dbdc91aef81f0a38202a1744207dd399159",
+        "wine_boot_started": false,
+        "smoke_pass": true,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 9386,
+            "free_kib": 19157,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 9126,
+            "heap_free_kib": 17369,
+            "vm_free_kib": 1788
+          },
+          "IDLE": {
+            "installed_kib": 32255,
+            "managed_kib": 28544,
+            "used_kib": 13762,
+            "free_kib": 14781,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 13502,
+            "heap_free_kib": 12993,
+            "vm_free_kib": 1788
+          }
+        },
+        "depths": []
+      }
+    }
+  ],
+  "negative_results": [
+    {
+      "path": "tests/kernel/evidence/audit-stage2-2026-10-13/guest/64m-std-smoke-vm/result.json",
+      "description": "Initial fixture used unsupported fork syscall 2",
+      "result": {
+        "ram_mib": 64,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": true,
+        "wine_boot_started": false,
+        "smoke_pass": false,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 65023,
+            "managed_kib": 61312,
+            "used_kib": 11135,
+            "free_kib": 50176,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 11007,
+            "heap_free_kib": 34976,
+            "vm_free_kib": 15200
+          },
+          "IDLE": {
+            "installed_kib": 65023,
+            "managed_kib": 61312,
+            "used_kib": 15466,
+            "free_kib": 45845,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 15338,
+            "heap_free_kib": 30645,
+            "vm_free_kib": 15200
+          }
+        },
+        "depths": []
+      }
+    },
+    {
+      "path": "tests/kernel/evidence/audit-stage2-2026-10-13/guest-final/16m-std-smoke/result.json",
+      "description": "OOM in Vision before fixture; intermediate kernel",
+      "result": {
+        "ram_mib": 16,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": false,
+        "wine_boot_started": false,
+        "smoke_pass": false,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 15871,
+            "managed_kib": 12160,
+            "used_kib": 9688,
+            "free_kib": 2471,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 9560,
+            "heap_free_kib": 1575,
+            "vm_free_kib": 896
+          },
+          "IDLE": {
+            "installed_kib": 15871,
+            "managed_kib": 12160,
+            "used_kib": 11124,
+            "free_kib": 1035,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 10996,
+            "heap_free_kib": 139,
+            "vm_free_kib": 896
+          }
+        },
+        "depths": []
+      },
+      "oom_count": 68,
+      "last_oom": [
+        "17152",
+        "0x121450",
+        "6"
+      ]
+    },
+    {
+      "path": "tests/kernel/evidence/audit-stage2-2026-10-13/guest-baseline/16m-std-smoke/result.json",
+      "description": "Pre-stage2 baseline, identical stage1 kernel",
+      "result": {
+        "ram_mib": 16,
+        "backend": "std",
+        "desktop_started": true,
+        "completed": false,
+        "kernel_sha256": "018f28042a78177a8182e5478a6e288761bb64d34fa089dd4a87df41d4ab2de5",
+        "wine_boot_started": false,
+        "smoke_pass": false,
+        "memory": {
+          "DESKTOP": {
+            "installed_kib": 15871,
+            "managed_kib": 12160,
+            "used_kib": 9688,
+            "free_kib": 2471,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 9560,
+            "heap_free_kib": 1575,
+            "vm_free_kib": 896
+          },
+          "IDLE": {
+            "installed_kib": 15871,
+            "managed_kib": 12160,
+            "used_kib": 11124,
+            "free_kib": 1035,
+            "unmanaged_kib": 3711,
+            "heap_used_kib": 10996,
+            "heap_free_kib": 139,
+            "vm_free_kib": 896
+          }
+        },
+        "depths": []
+      },
+      "oom_count": 62,
+      "last_oom": [
+        "17152",
+        "0x121450",
+        "6"
+      ]
+    }
+  ],
+  "baseline_kernel_sha256": "018f28042a78177a8182e5478a6e288761bb64d34fa089dd4a87df41d4ab2de5",
+  "references": "references.json"
+}

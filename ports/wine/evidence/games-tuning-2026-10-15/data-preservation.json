@@ -1,0 +1,61 @@
+{
+  "original": "build/bleskernos-wine-games32.img",
+  "candidate": "build/bleskernos-wine-tuned.img",
+  "unchanged_files": 6147,
+  "changed_files": [
+    {
+      "path": "/OPT/WINE/LIB/WINE/I386-UNIX/WINEX11.SO",
+      "before": "9f592f0df33d62474e156b11ad7758d0c35373e25bdf5c696f28f15d0a667698",
+      "after": "af81089589ea40c29604c0840da8bd3e0131d7dd2a1e30c60e8293a8237ff080"
+    },
+    {
+      "path": "/SYSTEM/DRIVERS/VIRTIOGPU.DVR",
+      "before": "5b3537c9f6d9956a8270c41803fed36fe51b9180611ffc3f36bc53cabb55e43c",
+      "after": "c3090c504b8ea1171c540afa6775f17a0444170c04288d997b2b216a27a27e9d"
+    },
+    {
+      "path": "/WINEGATE/BIN/WINE-LAUNCH",
+      "before": "d48dd20082f093b5443a24e4e73bf3f1a2b2db67d7d75cbd91adfccb2fff32fa",
+      "after": "09de14d75c2f9b9d554b1ad1dead16cad913822cb4750aae72a0666a578aae18"
+    },
+    {
+      "path": "/WINEGATE/BIN/WINE-LAUNCH.ELF",
+      "before": "d48dd20082f093b5443a24e4e73bf3f1a2b2db67d7d75cbd91adfccb2fff32fa",
+      "after": "09de14d75c2f9b9d554b1ad1dead16cad913822cb4750aae72a0666a578aae18"
+    },
+    {
+      "path": "/WINEGATE/BIN/XFBDEV",
+      "before": "bb12bcaf8414797d2ff726cf5e72800005ba2a6e71bcc3bb6950d8e7f566ea3c",
+      "after": "94014d33f6812b012a5540d3b8a80015b57ebfbcd75494d509cbdbcaf4beb765"
+    },
+    {
+      "path": "/WINEGATE/LIB/LIBBKVIRGL.SO.8",
+      "before": "d88df12b59f0c037a4304cca176e921e4e86c4720a0e79343d130287d62fe787",
+      "after": "041cf0276e1e5e28c7ffd7f3e0ee478411a4e45fbf9892a714f4d7c1334edabf"
+    },
+    {
+      "path": "/WINEGATE/LIB/LIBGL.SO.1",
+      "before": "81daf97ff08c4a88090bdecbbb8845ab31c969ec6e00c4bc8f5b8d3f61c31779",
+      "after": "d6c16afc096a2fb0d1a938ab4945371fb23c52d4a94514f0213e584a68bb9ff3"
+    },
+    {
+      "path": "/WINEGATE/PREFIX/system.reg",
+      "before": "8573c5e3b4c6fcb6353149dc021cbc3fec5afc990da64a08bfac345d61c4095d",
+      "after": "2fedc5126a3c8f5a70ae0f6d8e6adb08a09a22038e690806cba9fd78c2cf4291"
+    },
+    {
+      "path": "/WINEGATE/PREFIX/user.reg",
+      "before": "0c5ab09c36d65c1d97ca25577c2bbe3ce909de9822e29f050c0977dc96b25205",
+      "after": "5e41a1ea7bda07a34120f153fb8aa8d80f726c3a4fb053173e20119af24d12bb"
+    }
+  ],
+  "added_files": [
+    "/SYSTEM/WINE/Quake2/PLAY-GL.CMD",
+    "/SYSTEM/WINE/PROGRAM FILES/EA SPORTS/FIFA 2000/fifa2000.exe.safedisc-backup",
+    "/WINEGATE/PREFIX/system.reg.fifa2000-backup",
+    "/SYSTEM/WINE/PROGRAM FILES/EA SPORTS/FIFA 2000/fifa2000.exe"
+  ],
+  "bleskernos-wine-games32.img_sha256": "ff6e2ccfbe89f0ef57bc123735ae3e292452cf539898353053bd34755216fced",
+  "bleskernos-wine-tuned.img_sha256": "8e6de634b9101caaf46dc45654dd74245385a621a0bd48f8eba2db31130b111f",
+  "kernel_sha256": "3da8816b02adfa94803884ef9c0fc37a5cf28bce9827434b62ef1644184c45ce"
+}

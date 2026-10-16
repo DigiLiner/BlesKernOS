@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "references": [
+    {
+      "file": "eepro100.c",
+      "version": "v2.6.18",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/v2.6.18/drivers/net/eepro100.c",
+      "sha256": "b3fdbf171066c4f283a0dde92500858b3d808cc66caf455cfc62c4c3c41b9ff8",
+      "use": "22-byte i82558_config_cmd template copied into e100.c; driver logic original",
+      "upstream_license": "GPL-2.0-only"
+    },
+    {
+      "file": "cdc_ether.c",
+      "version": "v6.12",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/v6.12/drivers/net/usb/cdc_ether.c",
+      "sha256": "d81204c5d50d189fb1b9e5ccba28976e310217ed009ad8d4e64bd8fb096ba1a7",
+      "use": "studied descriptor union, Ethernet MAC string, alternate setting and packet filter; no source copied",
+      "upstream_license": "GPL-2.0-only"
+    },
+    {
+      "file": "ehci-q.c",
+      "version": "v6.12",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/v6.12/drivers/usb/host/ehci-q.c",
+      "sha256": "6b2a725c4efe5531b01ecd42c1da7fd0e604edb006c3627e3c605ceb70bd741d",
+      "use": "studied short control alternate links, asynchronous unlink and qTD ownership; no source copied",
+      "upstream_license": "GPL-2.0-only"
+    },
+    {
+      "file": "usblp.c",
+      "version": "v6.12",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/v6.12/drivers/usb/class/usblp.c",
+      "sha256": "ed782c0b80b711bb2c40f34854c9fe93af5ae81438901a6529b02fb97ea09447",
+      "use": "studied USB printer class and IEEE1284 identity handling; no source copied",
+      "upstream_license": "GPL-2.0-only"
+    },
+    {
+      "file": "vesafb.c",
+      "version": "v6.12",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/v6.12/drivers/video/fbdev/vesafb.c",
+      "sha256": "d003b4cec91271a4e37c7a96cdf7be3b756ae290e9509ead3d7b22c608a29767",
+      "use": "studied firmware framebuffer validation; no source copied",
+      "upstream_license": "GPL-2.0-only"
+    },
+    {
+      "file": "pci.ids",
+      "version": "2026.10.13",
+      "url": "https://raw.githubusercontent.com/pciutils/pciids/master/pci.ids",
+      "sha256": "9bb86a49349bbf9309987184fa8d9ad7f9f50beb58c5697a3821a3ad551f1a4f",
+      "use": "device identities/model labels compiled into BSD-licensed catalog; no PCI register programming",
+      "upstream_license": "BSD-3-Clause"
+    },
+    {
+      "file": "ohci.h",
+      "version": "v6.12",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/v6.12/drivers/usb/host/ohci.h",
+      "sha256": "d77851bd9d32c2e29fbeb1ca5f527856be82c0cb7642673e8f7157c577cf7900",
+      "use": "studied register/ED/TD/HCCA, ownership and periodic scheduling; no source copied",
+      "upstream_license": "GPL-1.0-or-later"
+    },
+    {
+      "file": "ohci-q.c",
+      "version": "v6.12",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/v6.12/drivers/usb/host/ohci-q.c",
+      "sha256": "ae72253915658e02f3f24b078b7850e5851d300632b049c8531d80109bb430cc",
+      "use": "studied register/ED/TD/HCCA, ownership and periodic scheduling; no source copied",
+      "upstream_license": "GPL-1.0-or-later"
+    },
+    {
+      "file": "ohci-hcd.c",
+      "version": "v6.12",
+      "url": "https://raw.githubusercontent.com/torvalds/linux/v6.12/drivers/usb/host/ohci-hcd.c",
+      "sha256": "0422f898f5968dce05c4f5eb43780b2e1025c4d71a53d983dfc3272b38dd8b5b",
+      "use": "studied register/ED/TD/HCCA, ownership and periodic scheduling; no source copied",
+      "upstream_license": "GPL-1.0-or-later"
+    }
+  ]
+}

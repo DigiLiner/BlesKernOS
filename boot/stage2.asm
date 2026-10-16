@@ -20,7 +20,13 @@ KERNEL_BOUNCE_ADDR equ 0x00010000 ; buffer BIOS temporal de 16 KiB
 %ifndef KERNEL_SECTORS
 %define KERNEL_SECTORS 1024     ; Sectores reservados para el kernel (512KB)
 %endif
+%ifndef KERNEL_CHECKSUM
+%define KERNEL_CHECKSUM 0       ; Suma de bytes, inyectada por Makefile
+%endif
 KERNEL_START_LBA equ 9          ; LBA donde empieza el kernel en disco (Stage2 ahora ocupa 8 sectores)
+%if KERNEL_SECTORS > 2560
+%error "kernel supera la reserva de 1280 KiB"
+%endif
 FLOPPY_TRACK_SPAN equ 36
 FLOPPY_SECTORS_PER_TRACK equ 18
 BOOTINFO_ADDR    equ 0x0700     ; Datos de video que stage2 pasa al kernel
@@ -356,6 +362,7 @@ load_kernel:
     mov dl, [boot_drive]
     mov word [kernel_remaining], KERNEL_SECTORS
     mov dword [kernel_destination], KERNEL_LOAD_ADDR
+    mov dword [kernel_checksum_actual], 0
     cmp dl, 0x80
     jb .load_chs
 
@@ -377,6 +384,8 @@ load_kernel:
 
 .chunk_size_ok:
     mov word [kernel_chunk_sectors], ax
+    mov byte [kernel_read_retries], 3
+.retry_lba:
     mov byte [kern_dap_size], 0x10
     ; El campo de sectores del DAP es entrada/salida y algunas BIOS lo ponen
     ; en cero incluso tras una lectura valida. La copia usa por separado
@@ -394,7 +403,19 @@ load_kernel:
     mov ds, ax
     mov es, ax
     popf
-    jc .error
+    jnc .lba_read_ok
+    dec byte [kernel_read_retries]
+    jz .error
+    xor ax, ax                    ; reset del disco antes de reintentar
+    mov dl, [boot_drive]
+    int 0x13
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    jmp .retry_lba
+
+.lba_read_ok:
+    call checksum_kernel_chunk
 
     call copy_kernel_chunk_high
     jc .error
@@ -409,6 +430,10 @@ load_kernel:
     jmp .next_chunk
 
 .done:
+%if KERNEL_CHECKSUM != 0
+    cmp dword [kernel_checksum_actual], KERNEL_CHECKSUM
+    jne .error
+%endif
     popa
     clc
     ret
@@ -437,19 +462,35 @@ load_kernel:
     mov ax, KERNEL_BOUNCE_ADDR >> 4
     mov es, ax
     xor bx, bx
+    mov byte [kernel_read_retries], 3
     mov ah, 0x02
     mov al, 0x01
     mov dl, [boot_drive]
+.retry_chs:
     int 0x13
     pushf
     xor ax, ax
     mov ds, ax
     mov es, ax
     popf
-    jc .error
+    jnc .chs_read_ok
+    dec byte [kernel_read_retries]
+    jz .error
+    xor ax, ax
+    mov dl, [boot_drive]
+    int 0x13
+    mov ax, KERNEL_BOUNCE_ADDR >> 4
+    mov es, ax
+    xor bx, bx
+    mov ah, 0x02
+    mov al, 0x01
+    jmp .retry_chs
+
+.chs_read_ok:
 
     mov word [kern_dap_sectors], 1
     mov word [kernel_chunk_sectors], 1
+    call checksum_kernel_chunk
     call copy_kernel_chunk_high
     jc .error
     add dword [kernel_destination], 512
@@ -460,6 +501,35 @@ load_kernel:
 .error:
     popa
     stc
+    ret
+
+; Suma los bytes del bloque que acaba de entregar la BIOS. Además de detectar
+; transferencias totalmente omitidas, descubre corrupción en cualquier bloque
+; del kernel antes de ejecutar código potencialmente inválido.
+checksum_kernel_chunk:
+    push ds
+    push eax
+    push ecx
+    push edx
+    push esi
+    mov ax, KERNEL_BOUNCE_ADDR >> 4
+    mov ds, ax
+    xor esi, esi
+    movzx ecx, word [cs:kernel_chunk_sectors]
+    shl ecx, 9
+    xor edx, edx
+    xor eax, eax
+.sum_byte:
+    mov al, [esi]
+    add edx, eax
+    inc esi
+    loop .sum_byte
+    add dword [cs:kernel_checksum_actual], edx
+    pop esi
+    pop edx
+    pop ecx
+    pop eax
+    pop ds
     ret
 
 ; Copia el bounce buffer a memoria extendida sin depender de INT 15h/AH=87h.
@@ -800,19 +870,25 @@ setup_vesa:
     ; 0.8 usa una geometria unica desde Stage2: 800x600. Probar varias
     ; profundidades, pero no arrancar primero a 640x480/1024x768 para que el
     ; kernel cambie el tamano de pantalla cuando la GUI ya esta naciendo.
+    ; En hardware con framebuffer moderno pedir true-color primero. El driver
+    ; Rage128 conserva deliberadamente la profundidad VBE para no reprogramar
+    ; LVDS/DDA a ciegas; arrancar en 8 bpp lo dejaba atrapado en 256 colores.
     mov word [vbe_search_width], 800
     mov word [vbe_search_height], 600
+    mov byte [vbe_search_bpp], 32
+    call find_vbe_mode_exact
+    test ax, ax
+    jnz .auto_found
+
+    ; Si la BIOS no ofrece 32 bpp, 8 bpp sigue siendo el fallback acelerable
+    ; por Rage128. Dejar 16 bpp como ultimo candidato porque el backend ATI
+    ; actual no anuncia aceleracion nativa a esa profundidad.
     mov byte [vbe_search_bpp], 8
     call find_vbe_mode_exact
     test ax, ax
     jnz .auto_found
 
     mov byte [vbe_search_bpp], 16
-    call find_vbe_mode_exact
-    test ax, ax
-    jnz .auto_found
-
-    mov byte [vbe_search_bpp], 32
     call find_vbe_mode_exact
     test ax, ax
     jnz .auto_found
@@ -1364,6 +1440,8 @@ boot_part_lba     dd 0
 kernel_remaining   dw 0
 kernel_chunk_sectors dw 0
 kernel_destination dd KERNEL_LOAD_ADDR
+kernel_checksum_actual dd 0
+kernel_read_retries db 0
 ; Mensajes
 msg_stage2_hello    db 0x0D, 0x0A, '  [Stage 2] BleskernOS cargando...', 0x0D, 0x0A, 0
 msg_detecting_ram   db '  > Detectando RAM (E820)...', 0x0D, 0x0A, 0
@@ -1418,9 +1496,9 @@ protected_mode_entry:
     mov gs, ax
     mov ss, ax
 
-    ; La BSS termina como máximo en 0x340000. Reservar 64 KiB inmediatamente
-    ; después libera 0.7 MiB para el heap del perfil recomendado de 8 MiB.
-    mov esp, 0x00350000
+    ; Reservar 64 KiB entre 0x3F0000 y 0x400000 para la pila del kernel.
+    ; BSS permanece por debajo de 0x3F0000; el minimo es 32 MiB.
+    mov esp, 0x00400000
     ; Saltar al kernel
     jmp KERNEL_LOAD_ADDR
 

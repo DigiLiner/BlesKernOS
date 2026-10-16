@@ -1,4 +1,5 @@
 #include "../../include/types.h"
+#include "../../../sdk/include/bleskernos_input.h"
 #include "../../include/keyboard.h"
 #include "../../include/pic.h"
 #include "../../include/vga.h"
@@ -104,34 +105,78 @@ static bool app_evt_pop(kbd_key_event_t *event) {
     return true;
 }
 
-static void kbd_wait_input(void) {
-    while (inb(KBD_STATUS_PORT) & 0x02) {
-        __asm__ volatile ("pause");
+#ifndef BLES_ARCH_ARM32_RPI3
+/* USB-only PCs may have no 8042 at all (status reads as 0xff). Never block
+ * boot indefinitely waiting for a legacy keyboard that does not exist. */
+static bool kbd_wait_input(void) {
+    for (uint32_t budget = 0; budget < 200000U; budget++) {
+        uint8_t status = inb(KBD_STATUS_PORT);
+        if (status == 0xffU) return false;
+        if (!(status & 0x02U)) return true;
+        __asm__ volatile("pause");
     }
+    return false;
 }
-
-static void kbd_wait_output(void) {
-    while (!(inb(KBD_STATUS_PORT) & 0x01)) {
-        __asm__ volatile ("pause");
+static bool kbd_wait_output(void) {
+    for (uint32_t budget = 0; budget < 200000U; budget++) {
+        uint8_t status = inb(KBD_STATUS_PORT);
+        if (status == 0xffU) return false;
+        if (status & 0x01U) return true;
+        __asm__ volatile("pause");
     }
+    return false;
 }
-
-static void kbd_flush(void) {
-    while (inb(KBD_STATUS_PORT) & 0x01) {
+static bool kbd_flush(void) {
+    for (uint32_t budget = 0; budget < 256U; budget++) {
+        uint8_t status = inb(KBD_STATUS_PORT);
+        if (status == 0xffU) return false;
+        if (!(status & 0x01U)) return true;
         (void)inb(KBD_DATA_PORT);
     }
+    return false;
+}
+static bool kbd_send_cmd(uint8_t cmd) {
+    for (unsigned attempt = 0; attempt < 3U; attempt++) {
+        if (!kbd_wait_input()) return false;
+        outb(KBD_DATA_PORT, cmd);
+        if (!kbd_wait_output()) return false;
+        uint8_t reply = inb(KBD_DATA_PORT);
+        if (reply == 0xfaU) return true;
+        if (reply != 0xfeU) return false;
+    }
+    return false;
 }
 
-static void kbd_send_cmd(uint8_t cmd) {
-    kbd_wait_input();
-    outb(KBD_DATA_PORT, cmd);
-    kbd_wait_output();
-    (void)inb(KBD_DATA_PORT);
-}
+#endif
 
 static char kbd_map_scancode(uint8_t scancode, bool shifted, bool caps_lock) {
     char c = 0;
 
+    if (bk_input_preference_get(BK_INPUT_LAYOUT)) {
+        /* Spanish physical layout, Latin-1 for ñ/Ñ. */
+        switch (scancode) {
+            case 0x03: return shifted ? '"' : '2';
+            case 0x04: return shifted ? 0xB7 : '3';
+            case 0x07: return shifted ? '&' : '6';
+            case 0x08: return shifted ? '/' : '7';
+            case 0x09: return shifted ? '(' : '8';
+            case 0x0A: return shifted ? ')' : '9';
+            case 0x0B: return shifted ? '=' : '0';
+            case 0x0C: return shifted ? '?' : '\'';
+            case 0x0D: return shifted ? 0xBF : 0xA1;
+            case 0x1A: return shifted ? '^' : '`';
+            case 0x1B: return shifted ? '*' : '+';
+            case 0x27: return (caps_lock!=shifted) ? (char)0xD1 : (char)0xF1;
+            case 0x28: return shifted ? '"' : '\'';
+            case 0x29: return shifted ? 0xAA : 0xBA;
+            case 0x2B: return shifted ? 0xC7 : 0xE7;
+            case 0x33: return shifted ? ';' : ',';
+            case 0x34: return shifted ? ':' : '.';
+            case 0x35: return shifted ? '_' : '-';
+            case 0x56: return shifted ? '>' : '<';
+            default: break;
+        }
+    }
     switch (scancode) {
         case 0x01: c = 0x1B; break; /* Esc */
         case 0x02: c = shifted ? '!' : '1'; break;
@@ -221,6 +266,8 @@ static void kbd_push_key_event(uint8_t scancode, bool pressed, bool extended) {
     if (extended) {
         switch (scancode) {
             case 0x1C: key = KEY_ENTER; break; /* keypad Enter */
+            case 0x1D: key = KEY_CTRL; break; /* right Ctrl */
+            case 0x38: key = KEY_ALT; break;  /* right Alt */
             case 0x48:
             case 0x75: key = KEY_UP; break;
             case 0x50:
@@ -229,6 +276,18 @@ static void kbd_push_key_event(uint8_t scancode, bool pressed, bool extended) {
             case 0x6B: key = KEY_LEFT; break;
             case 0x4D:
             case 0x74: key = KEY_RIGHT; break;
+            case 0x47:
+            case 0x6C: key = KEY_HOME; break;
+            case 0x4F:
+            case 0x69: key = KEY_END; break;
+            case 0x49:
+            case 0x7D: key = KEY_PGUP; break;
+            case 0x51:
+            case 0x7A: key = KEY_PGDN; break;
+            case 0x52:
+            case 0x70: key = KEY_INSERT; break;
+            case 0x53:
+            case 0x71: key = KEY_DELETE; break;
             default: break;
         }
     } else {
@@ -251,7 +310,11 @@ static void kbd_push_key_event(uint8_t scancode, bool pressed, bool extended) {
             case 0x57: key = KEY_F11; break;
             case 0x58: key = KEY_F12; break;
             default: {
-                char c = kbd_map_scancode(scancode, false, false);
+                /* El evento GUI debe llevar el mismo carácter traducido que
+                 * kbd_getchar: Shift y Caps Lock se aplican al presionar. */
+                char c = kbd_map_scancode(scancode,
+                    pressed ? mods.shift : false,
+                    pressed ? mods.caps_lock : false);
                 if (c != 0) key = (uint8_t)c;
                 break;
             }
@@ -261,6 +324,7 @@ static void kbd_push_key_event(uint8_t scancode, bool pressed, bool extended) {
     if (key != 0) evt_push(key, pressed);
 }
 
+#ifndef BLES_ARCH_ARM32_RPI3
 static void kbd_irq_handler(registers_t *regs UNUSED) {
     uint8_t status = inb(KBD_STATUS_PORT);
     uint8_t scancode;
@@ -349,6 +413,54 @@ static void kbd_irq_handler(registers_t *regs UNUSED) {
             }
             kbd_extended = false;
             return;
+        case 0x47:
+        case 0x6C:
+            if (kbd_extended) {
+                buf_push(KEY_HOME);
+                evt_push(KEY_HOME, true);
+            }
+            kbd_extended = false;
+            return;
+        case 0x4F:
+        case 0x69:
+            if (kbd_extended) {
+                buf_push(KEY_END);
+                evt_push(KEY_END, true);
+            }
+            kbd_extended = false;
+            return;
+        case 0x49:
+        case 0x7D:
+            if (kbd_extended) {
+                buf_push(KEY_PGUP);
+                evt_push(KEY_PGUP, true);
+            }
+            kbd_extended = false;
+            return;
+        case 0x51:
+        case 0x7A:
+            if (kbd_extended) {
+                buf_push(KEY_PGDN);
+                evt_push(KEY_PGDN, true);
+            }
+            kbd_extended = false;
+            return;
+        case 0x52:
+        case 0x70:
+            if (kbd_extended) {
+                buf_push(KEY_INSERT);
+                evt_push(KEY_INSERT, true);
+            }
+            kbd_extended = false;
+            return;
+        case 0x53:
+        case 0x71:
+            if (kbd_extended) {
+                buf_push(KEY_DELETE);
+                evt_push(KEY_DELETE, true);
+            }
+            kbd_extended = false;
+            return;
         default:
             if (scancode >= 0x80) {
                 kbd_extended = false;
@@ -367,11 +479,23 @@ static void kbd_irq_handler(registers_t *regs UNUSED) {
 
     kbd_extended = false;
 }
+#endif
 
 void kbd_init(void) {
-    kbd_flush();
-    kbd_send_cmd(0xF4);
+#ifdef BLES_ARCH_ARM32_RPI3
+    kbd_buf_head = kbd_buf_tail = 0U;
+    kbd_evt_head = kbd_evt_tail = 0U;
+    kbd_app_head = kbd_app_tail = 0U;
+    kbd_extended = false;
+    kbd_break = false;
+    mods = (kbd_modifiers_t){false, false, false, false, false};
+#else
+    if (!kbd_flush() || !kbd_send_cmd(0xF4)) {
+        kprintf("[KBD] PS/2 no responde; entrada USB HID disponible\n");
+        return;
+    }
     irq_install_handler(1, kbd_irq_handler);
+#endif
 }
 
 char kbd_getchar(void) {
@@ -383,7 +507,11 @@ char kbd_getchar(void) {
             return c;
         }
         sti();
+#ifdef BLES_ARCH_ARM32_RPI3
+        __asm__ volatile ("wfi");
+#else
         __asm__ volatile ("hlt");
+#endif
     }
 }
 
@@ -409,6 +537,17 @@ bool kbd_next_event(kbd_key_event_t *event) {
 bool kbd_next_app_event(kbd_key_event_t *event) {
     if (!event) return false;
     return app_evt_pop(event);
+}
+
+
+void kbd_inject_key(uint8_t key, bool pressed) {
+    if (key == KEY_NONE) return;
+    evt_push(key, pressed);
+    if (pressed && key < 0x80U) {
+        if ((key >= 0x20U && key <= 0x7EU) || key == KEY_ENTER ||
+            key == KEY_TAB || key == KEY_BACKSPACE || key == KEY_ESCAPE)
+            buf_push((char)key);
+    }
 }
 
 
@@ -438,7 +577,7 @@ static uint8_t kbd_hid_usage_to_key(uint16_t usage) {
         case 0x40U: return KEY_F7; case 0x41U: return KEY_F8;
         case 0x42U: return KEY_F9; case 0x43U: return KEY_F10;
         case 0x44U: return KEY_F11; case 0x45U: return KEY_F12;
-        case 0x49U: return KEY_HOME; /* Insert is not exposed yet. */
+        case 0x49U: return KEY_INSERT;
         case 0x4AU: return KEY_HOME;
         case 0x4BU: return KEY_PGUP;
         case 0x4CU: return KEY_DELETE;
@@ -463,6 +602,20 @@ static char kbd_hid_usage_to_char(uint16_t usage) {
         if ((mods.caps_lock && !shifted) || (!mods.caps_lock && shifted))
             c = (char)('A' + (c - 'a'));
         return c;
+    }
+    if (bk_input_preference_get(BK_INPUT_LAYOUT)) {
+        uint8_t scan=0;
+        if (usage>=0x1EU && usage<=0x27U) scan=(uint8_t)(usage-0x1EU+2U);
+        else switch (usage) {
+            case 0x2D:scan=0x0C;break;case 0x2E:scan=0x0D;break;
+            case 0x2F:scan=0x1A;break;case 0x30:scan=0x1B;break;
+            case 0x31:scan=0x2B;break;case 0x33:scan=0x27;break;
+            case 0x34:scan=0x28;break;case 0x35:scan=0x29;break;
+            case 0x36:scan=0x33;break;case 0x37:scan=0x34;break;
+            case 0x38:scan=0x35;break;case 0x64:scan=0x56;break;
+            default:break;
+        }
+        if (scan) return kbd_map_scancode(scan,shifted,mods.caps_lock);
     }
     if (usage >= 0x1EU && usage <= 0x27U) {
         static const char plain[] = "1234567890";
@@ -491,6 +644,7 @@ static char kbd_hid_usage_to_char(uint16_t usage) {
 
 void kbd_inject_hid_usage(uint16_t usage, bool pressed) {
     uint8_t key;
+    char translated = 0;
     if (usage == 0U || usage > 0xE7U) return;
     switch (usage) {
         case 0xE0U: case 0xE4U: mods.ctrl = pressed; break;
@@ -505,9 +659,10 @@ void kbd_inject_hid_usage(uint16_t usage, bool pressed) {
         default: break;
     }
     key = kbd_hid_usage_to_key(usage);
-    if (key != KEY_NONE) evt_push(key, pressed);
     if (pressed) {
-        char c = kbd_hid_usage_to_char(usage);
-        if (c) buf_push(c);
+        translated = kbd_hid_usage_to_char(usage);
+        if (translated) key = (uint8_t)translated;
     }
+    if (key != KEY_NONE) evt_push(key, pressed);
+    if (pressed && translated) buf_push(translated);
 }

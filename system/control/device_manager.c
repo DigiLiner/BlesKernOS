@@ -177,7 +177,7 @@ static bool devmgr_loaded_driver(const char *name) {
     bk_driver_info_t driver;
     if (!name) return false;
     for (uint32_t i = 0; i < bk_device_driver_count(); i++) {
-        if (bk_device_driver_info(i, &driver) &&
+        if (bk_device_driver_info(i, &driver) && driver.active &&
             bk_runtime_strcmp(driver.name, name) == 0) return true;
     }
     return false;
@@ -844,8 +844,25 @@ static const cpl_tab_spec_t g_devmgr_detail_tabs[] = {
     {"@H5561FD0B", 82},
     {"Driver", 72},
     {"Recursos", 82},
+    {"Eventos", 82},
 };
 
+static const char *devmgr_event_key(const char *driver) {
+    const char *name=driver;
+    for(const char *p=driver;*p;p++)if(*p=='/'||*p=='\\')name=p+1;
+    return devmgr_driver_filename(name,name);
+}
+static bool request_events;
+static char event_query[32];
+static bool devmgr_contains_ci(const char *value,const char *needle) {
+    if(!needle[0])return false;
+    for(;*value;value++) {
+        const char *a=value,*b=needle;
+        while(*a&&*b) {char x=*a,y=*b;if(x>='a'&&x<='z')x-=32;if(y>='a'&&y<='z')y-=32;if(x!=y)break;a++;b++;}
+        if(!*b)return true;
+    }
+    return false;
+}
 static void devmgr_detail_paint(gui_window_t *window UNUSED,
                                 gui_surface_t *s,
                                 void *context) {
@@ -860,11 +877,26 @@ static void devmgr_detail_paint(gui_window_t *window UNUSED,
     if (!d || !window || !s) return;
     c = bk_gui_window_content_rect_raw(window);
     page = devmgr_detail_page_rect(window);
-    cpl_draw_tabs(s, c, g_devmgr_detail_tabs, 3, d->active_tab, page, 12, 10);
+    cpl_draw_tabs(s, c, g_devmgr_detail_tabs, 4, d->active_tab, page, 12, 10);
     clip = (gui_rect_t){page.x + 12, page.y + 14, page.w - 24, page.h - 24};
     x = page.x + 16;
     y = page.y + 18;
 
+    if(d->active_tab==3) {
+        const char *key=devmgr_event_key(d->item.driver);
+        uint32_t found=0;
+        for(uint32_t i=0;i<bk_event_count()&&found<6;i++) {
+            bk_event_info_t e;
+            if(!bk_event_get(i,&e)||!devmgr_contains_ci(e.message,key))continue;
+            char row[240];snprintf(row,sizeof(row),"%us | %s",e.uptime_ms/1000,e.message);
+            cpl_draw_text_clipped(s,(gui_rect_t){x,y+(int)found*20,page.w-32,18},row,e.severity==BK_EVENT_ERROR?0x00900000:CPL_TEXT);found++;
+        }
+        if(!found)cpl_draw_text_clipped(s,clip,"No hay eventos recientes de este driver.",CPL_SHADOW);
+        gui_rect_t button={page.x+16,page.y+page.h-38,page.w-32,26};
+        cpl_draw_bevel(s,button,CPL_FACE,false);
+        cpl_draw_text_clipped(s,cpl_inset(button,6),"Abrir eventos relacionados",CPL_TEXT);
+        return;
+    }
     if (d->active_tab == 0) {
         if (d->icon)
             bk_app_draw_icon(s, x, y, d->icon,
@@ -985,9 +1017,15 @@ static bool devmgr_detail_event(gui_window_t *window,
     if (!d || !window || !event) return false;
     if (event->type != GUI_EVENT_MOUSE_DOWN) return false;
     c = bk_gui_window_content_rect_raw(window);
-    tab = cpl_hit_tab(c, g_devmgr_detail_tabs, 3, 12, 10,
+    tab = cpl_hit_tab(c, g_devmgr_detail_tabs, 4, 12, 10,
                       event->x, event->y);
-    if (tab < 0) return false;
+    if(tab<0) {
+        gui_rect_t page=devmgr_detail_page_rect(window),button={page.x+16,page.y+page.h-38,page.w-32,26};
+        if(d->active_tab==3 && bk_gui_rect_contains(button,event->x,event->y)) {
+            devmgr_copy(event_query,sizeof(event_query),devmgr_event_key(d->item.driver));request_events=true;return true;
+        }
+        return false;
+    }
     d->active_tab = tab;
     window->dirty = true;
     return true;
@@ -1209,6 +1247,7 @@ void bleskernos_program_main(gui_desktop_t *desktop) {
     bk_gui_request_paint();
 
     while (!bk_proc_exit_requested() && st->window->listed) {
+        if(request_events){request_events=false;char args[96];snprintf(args,sizeof(args),"--query %s",event_query);bk_app_launch("/SYSTEM/PROGRAMS/EVENT_VIEWER.BEX",args);}
         uint32_t now = bk_sys_uptime_ms();
         if ((int32_t)(now - st->next_refresh) >= 0) {
             devmgr_refresh(st);

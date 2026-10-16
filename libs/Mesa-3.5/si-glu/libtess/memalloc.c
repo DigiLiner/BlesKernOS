@@ -40,7 +40,7 @@
 */
 
 #include "memalloc.h"
-#include "string.h"
+#include "../../../../kernel/libc/include/string.h"
 
 int __gl_memInit( size_t maxFast )
 {

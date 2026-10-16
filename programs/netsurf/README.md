@@ -1,4 +1,4 @@
-# NetSurf 3.11 para BlesKernOS — etapa 16: layout estructural
+# NetSurf 3.11 para BlesKernOS — etapa 29: interfaz clásica, páginas locales y carga
 
 Esta etapa amplía el frontend construido con Hubbub, libwapcaplet y libcss para
 que páginas HTML estáticas con formularios y CSS clásico se parezcan mucho más
@@ -229,3 +229,131 @@ una cola global de fetches, límites por host, curl-multi y una low-level cache
 con caducidad y revalidación HTTP. En este port los `@import` y las imágenes
 descubiertas dentro del CSS aún se procesan en serie, y la caché dura solamente
 lo que dura el proceso.
+
+## Etapa 28: fuentes nativas y coste del texto
+
+Las rutinas de memoria y cadenas (`memcpy`, `memmove`, `strlen`, comparaciones
+y búsquedas) se enlazan dentro del navegador. Hubbub y libcss dejan de cruzar
+`int 0x80` por cada copia o comparación de sus propios buffers; la asignación
+de memoria continúa usando los servicios del OS.
+
+El texto web usa los packs de `/SYSTEM/FONTS`, con la misma fuente para medir,
+partir líneas y dibujar. Se respetan los nombres instalados de `font-family`
+y sus listas de alternativas; serif, sans-serif y monospace eligen DejaVu por
+defecto. Arial/Helvetica, Times y Courier tienen alternativas locales. No se
+requieren descargas de fuentes. Si no hay packs instalados se usa el bitmap.
+
+La display list conserva UTF-8; los cortes y el espaciado cuentan caracteres,
+no bytes. El repertorio depende del pack instalado: esto no añade shaping ni
+Unicode completo ni descarga de `@font-face`. Hay cobertura suavizada,
+negrita y cursiva sintéticas, `letter-spacing` y `word-spacing`. El tamaño del
+texto web admite 8–72 px y la altura normal usa las métricas de la fuente.
+
+Las palabras contiguas con el mismo estilo y enlace se agrupan por línea en
+una sola entrada de dibujo; los espacios dejan de consumir entradas separadas.
+El ancho del bloque agrupado vuelve a medirse con la fuente real.
+
+El layout mide una palabra completa primero y sólo busca prefijos cuando no
+cabe. La API entrega avances de caracteres en lote con precisión de 1/64 px;
+una caché de 1024 glifos permite medir después dentro del propio navegador.
+Una segunda caché acotada de 256 mediciones reutiliza palabras repetidas; no se
+vuelven a medir todos sus prefijos en cada layout. El espaciado se dibuja en
+una sola llamada nativa. Los textos de controles se recortan por carácter con
+el mismo medidor y sin eliminar bytes de un carácter UTF-8.
+
+El progreso invalida como máximo cada 100 ms y el resize espera 120 ms a que
+se estabilice el ancho antes de reconstruir las cajas. La carga inicial de un
+tamaño de fuente puede leer y descomprimir su strike; después lo conserva la
+caché del sistema. La red conserva sus límites y tiempos de espera existentes.
+
+Requiere kernel/API **38**, por la nueva función `bk_font_draw_text_styled`.
+Reconstruir `make netsurf build/stage2.bin` y regenerar la imagen de arranque;
+compilar sólo el navegador no actualiza un kernel antiguo.
+
+Validación:
+
+```sh
+python3 tests/netsurf/test_text.py
+python3 tests/netsurf/test_string.py
+python3 tests/fonts/test_real_fonts.py
+python3 tests/netsurf/run_browser_smoke.py
+```
+
+La última prueba arranca una copia temporal de la imagen con QEMU/KVM y usa
+un servidor HTTP local para comprobar las familias, UTF-8 y el scroll del
+navegador completo. Guarda capturas y tiempos en `/tmp/blesk-netsurf-smoke`.
+
+
+## Etapa 29: navegación clásica y ajuste al área visible
+
+La ventana tiene dos barras con biseles, separadores y botones compactos
+de iconos, sin rótulos; la dirección, el título del documento y el estado ocupan filas
+estables. La interfaz usa el texto normal del OS; las fuentes web quedan
+reservadas al contenido de las páginas. Los controles HTML tienen bordes con relieve y alturas medidas con
+su fuente. Los anchos automáticos de cajas inline usan texto visible, fuentes
+calculadas y padding; los menús ocultos ya no ensanchan sus contenedores.
+
+El viewport CSS usa el ancho **y la altura del área de página**, descontando
+las barras y el scroll. Cambiar la altura también reconstruye el layout. Se
+invalidan los estilos calculados y las hojas compatibles al cambiar el viewport
+para volver a evaluar `vh`, `vw`, `calc()` y consultas de medios. Se corrigen
+los ejes `vh`/`vw` intercambiados en libcss y el redondeo prematuro de unidades
+de viewport; `vi`, `vb`, `vmin` y `vmax` conservan también su precisión.
+
+`Archivo > Configuracion...` (también Opciones en la barra) permite guardar la
+página de inicio, espera de red y presupuesto de recursos secundarios entre
+2 y 30 segundos, y activar imágenes, CSS y cookies. Los cambios se aplican en
+la siguiente carga. Se guardan en `/SYSTEM/USER/CONFIG/NETSURF.INI`, por encima
+de los valores de `INTERNET.INI`; no modifican las preferencias globales del OS.
+
+`Archivo > Abrir pagina local...`, el botón Abrir y Ctrl+O usan el selector
+nativo. También se admite `file:///SYSTEM/USER/pagina.htm` o una ruta absoluta
+en la dirección. Se resuelven enlaces, CSS e imágenes relativos al archivo.
+Se decodifican rutas con `%20` y se rechazan escapes NUL o hosts `file://host`.
+Una página de red no puede cargar recursos `file://` mediante este backend.
+
+La pila TCP actualiza su ventana anunciada cuando el lector libera al menos
+la mitad del búfer de recepción. Antes podía quedar anunciada una ventana
+cero aunque BearSSL ya hubiera consumido los bytes, y el servidor sólo
+continuaba al enviar sondas de persistencia. No aumenta el búfer ni elimina
+la contrapresión. Requiere instalar también `NETSTACK.DVR` reconstruido
+(`make build/system/drivers/NETSTACK.DVR`).
+En QEMU/KVM con un CPU, Google pasó de 28,9 s a 4,5 s en carga inicial y de
+21,5 s a 2,0 s al recargar; la red de la recarga pasó de 20,2 s a 120 ms.
+Son mediciones de estas ejecuciones; dependen de red, servidor y cachés.
+
+Las peticiones GET negocian gzip. El búfer de descompresión del documento
+principal crece de 80 a 512 KiB, manteniendo los buffers pequeños de recursos.
+Si falla la descompresión de un GET se reintenta una vez con `identity`; las
+peticiones POST no se repiten por esta causa. Se probó el descompresor real del
+OS con streams stored/fixed/dynamic y una respuesta gzip de Google.
+
+CSS e imágenes comparten un presupuesto de pared (12 segundos por defecto),
+con hasta 8 segundos por intercambio, limitado además al presupuesto restante.
+El DNS/TLS del OS conserva tiempos por operación, así que no es un corte duro
+a nivel de socket. Las métricas `[NETSURF][PERF]` incluyen gzip y viewport.
+
+Requiere kernel/API **39**, que añade `bk_net_http_exchange_quiet`. El navegador
+presenta sus errores y recursos fallidos en su propia UI, sin avisos modales
+por cada descarga secundaria. El intercambio anterior conserva sus avisos.
+Esto no incorpora JavaScript ni completa el layout moderno de NetSurf; las
+páginas con CSS avanzado pueden seguir necesitando ajustes.
+
+Validación adicional:
+
+```sh
+python3 tests/kernel/test_tcp_receive_window.py
+python3 tests/netsurf/test_local_urls.py
+python3 tests/netsurf/test_gzip.py
+python3 tests/netsurf/test_network_api.py
+python3 tests/netsurf/test_viewport_units.py
+python3 tests/netsurf/run_browser_smoke.py --local --ui
+python3 tests/netsurf/run_browser_smoke.py --large --chunked
+python3 tests/netsurf/run_browser_smoke.py --slow
+python3 tests/netsurf/run_browser_smoke.py --url https://www.google.com/
+```
+
+La prueba UI comprueba persistencia, selector local y resize: un bloque de
+25vh debe crecer al aumentar la altura de ventana, además de cambiar de ancho.
+La prueba de recursos lentos retrasa una hoja 5 segundos con presupuesto de
+2 segundos; comprueba que se complete la página y siga funcionando el scroll.

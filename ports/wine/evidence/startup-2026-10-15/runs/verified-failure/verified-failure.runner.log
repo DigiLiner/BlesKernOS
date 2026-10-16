@@ -1,0 +1,8 @@
+make: 'build/system/drivers/PS2MOUSE.DVR' is up to date.
+/SYSTEM/DRIVERS/PS2MOUSE.DVR 7140 bytes; mode 0o100644
+/WINEGATE/bin/wine-phase4.ELF 48100 bytes; mode 0o100755
+/SYSTEM/SERVICES/VISION.BEX 255380 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/WINEUITEST.BEX 3516 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/STARTUP.INI 89 bytes; mode 0o100644
+/SYSTEM/USER/CONFIG/SCREENSV.INI 56 bytes; mode 0o100644
+{"result": "PASS", "launch_failure": true, "busy_seen": true, "busy_cleared": true, "exit_code": 53}

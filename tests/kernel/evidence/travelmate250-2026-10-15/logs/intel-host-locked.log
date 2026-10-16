@@ -1,0 +1,2 @@
+PASS production Gen2 MMIO chunking, surface bounds/exhaustion/reuse, color/depth pitches, command headers and reject-before-submit; hardware rasterization remains untested
+PASS production Gen2 MMIO chunking, surface bounds/exhaustion/reuse, color/depth pitches, command headers and reject-before-submit; hardware rasterization remains untested

@@ -1,0 +1,93 @@
+{
+  "stage": "Etapa 2 - Compatibilidad de escritorio",
+  "date": "2026-10-01",
+  "platform": {
+    "qemu": "KVM",
+    "cpu": "pentium3",
+    "vcpus": 2,
+    "ram_mib": 1536,
+    "disk": "AHCI FAT32",
+    "display": "TinyX 760x536 bajo Vision",
+    "wine": "11.0"
+  },
+  "tinyx_extensions": {
+    "RENDER": true,
+    "SHAPE": true,
+    "XFIXES": true,
+    "RANDR": true,
+    "XInputExtension": false
+  },
+  "putty_0_85_i386": {
+    "sha256": "4c70267ca03a00ea761ec358498b990a7221decb36eace9b7dbe6a751be0fb3b",
+    "configuration_window_mapped": true,
+    "seconds_after_map": 120,
+    "launcher_exit_code": 0,
+    "session_save_verified": false,
+    "ssh_connection_verified": false,
+    "serial_log": "/home/lucas/tinyx-stage2-putty/serial.log"
+  },
+  "seven_zip_9_20_i386": {
+    "installer_exe_sha256": "1e2f2a8fb52d3972b9b65b8ad1bebb66965c47a2994f89b3d652c31e6f6e4c3c",
+    "installer_finished_screen": true,
+    "installer_process_exit_code": 0,
+    "installed_files": ["7zFM.exe", "7z.exe", "7z.dll"],
+    "registry_path_and_uninstall_entry": true,
+    "file_manager_seconds_after_map": 120,
+    "file_manager_launcher_exit_code": 0,
+    "zip_opened": true,
+    "archive_seconds_after_map": 240,
+    "archive_launcher_exit_code": 0,
+    "extracted_file": {
+      "path": "/STAGE2.TXT",
+      "bytes": 24,
+      "sha256": "6d01d064a804d24a763d9b500810c8b0779c6e2b97e961d1f5a3de8fd57e67f6"
+    },
+    "installer_serial_log": "/home/lucas/tinyx-stage2-7zip/serial-detached.log",
+    "file_manager_serial_log": "/home/lucas/tinyx-stage2-7zip/serial-fm.log",
+    "archive_serial_log": "/home/lucas/tinyx-stage2-7zip/serial-archive.log"
+  },
+  "irfanview_4_62_i386": {
+    "installer_sha256": "37cdb372c4b6053356eca2c40aa44f4fb8cd30681c28cda54e80601d6c7b565a",
+    "installer_success_screen": true,
+    "installed_executable": "C:\\Program Files\\IrfanView\\i_view32.exe",
+    "uninstall_registry_entry": true,
+    "installer_process_exit_code": 96,
+    "installer_exit_note": "Closed with Alt+F4 because Finish was below the visible TinyX area",
+    "viewer_window_mapped": true,
+    "viewer_seconds_after_map": 180,
+    "viewer_launcher_exit_code": 0,
+    "png_opened_via_file_dialog": true,
+    "png_dimensions": "320x200",
+    "png_sha256": "5312891e0f6abc97a494642ac80efba9ab2bbc53afd5654e3a575fbf3b753995",
+    "png_argument_opened_automatically": false,
+    "installer_serial_log": "/home/lucas/tinyx-stage2-irfanview/serial.log",
+    "viewer_serial_log": "/home/lucas/tinyx-stage2-irfanview/serial-viewer.log"
+  },
+  "msi_7zip_9_20_i386": {
+    "sha256": "fe4807b4698ec89f82de7d85d32deaa4c772fc871537e31fb0fccf4473455cb8",
+    "window_mapped": true,
+    "license_accepted": true,
+    "install_files_started": true,
+    "baseline": {
+      "result": "failed and rolled back",
+      "msi_error": "compressed file wasn't installed (_7zFM.exe)",
+      "installer_error_code": 1603,
+      "process_exit_code_mod_256": 67,
+      "serial_log": "/home/lucas/tinyx-stage2-7zip/serial-msi.log"
+    },
+    "root_cause": "SetFileTime reached unimplemented Linux i386 utimensat and the MSI cabinet close callback did not mark extracted files installed",
+    "fix": "Linux i386 utimensat/utimensat_time64 with FAT access and modification date updates",
+    "after_fix": {
+      "installer_finished_screen": true,
+      "installer_process_exit_code": 0,
+      "launcher_exit_code": 0,
+      "installed_files": ["7zFM.exe", "7-zip.dll", "7z.exe", "7z.dll", "Lang"],
+      "file_timestamps_persisted": true,
+      "registry_entries_persisted": true,
+      "file_manager_seconds_after_map_on_next_boot": 120,
+      "file_manager_launcher_exit_code": 0,
+      "file_manager_serial_log": "/home/lucas/tinyx-stage2-7zip/serial-msi-fm.log",
+      "serial_log": "/home/lucas/tinyx-stage2-7zip/serial-msi-utimens-fit.log"
+    }
+  }
+}

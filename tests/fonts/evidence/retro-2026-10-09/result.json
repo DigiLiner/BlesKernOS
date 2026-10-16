@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-09",
+  "new_families": [
+    "Helvetica Bold Bitmap",
+    "Courier Bitmap",
+    "Times Bitmap"
+  ],
+  "total_families": 23,
+  "source": "Adobe/DEC X11 75dpi original BDF strikes; 8,10,12,14,18,24 px; other sizes use nearest-neighbour scaling",
+  "historical_scope": "Bitmap designs copyright 1984–1989 and 1994. Distribution includes later Unicode extensions.",
+  "native_antialiasing": false,
+  "existing_grayscale_packs": "binary threshold >=128, direct opaque color write",
+  "tests": {
+    "ASan_UBSan_native_renderer_23x65_and_binary_pixels": "PASS",
+    "BFN_codec_catalog_hashes_binary_bitmap_payloads": "PASS",
+    "BFS4_install_preserves_user_data": "PASS",
+    "normal_user_build": "PASS",
+    "normal_image_font_and_Vision_payloads": "PASS"
+  },
+  "guest": {
+    "qemu": "KVM, 2 CPUs, 2048 MiB, virtio-vga without GL",
+    "visual_checks": [
+      "START replaces logo in front panel, centered in Helvetica Bold Bitmap",
+      "START opens original menu",
+      "Font shows 23 families",
+      "Helvetica Bold Bitmap preview at native 24px and scaled 25px",
+      "dropdown names and previews have crisp edges"
+    ]
+  },
+  "production_image_modified": false,
+  "production_image_sha256": "7b0394201d4d0b10f5079c908651d84cfec9c59ccf22734db891d19b9e1616ea"
+}

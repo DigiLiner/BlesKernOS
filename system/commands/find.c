@@ -1,5 +1,3 @@
 #include "common.h"
-
-static int run(int argc,char **argv){ if(argc<2)return command_error("find","@H34C48CC1"); command_find(argc>2?argv[2]:".",argv[1]); return 0; }
-
+static int run(int argc,char **argv){return command_filetool(argc,argv);}
 BK_COMMAND_MAIN(run)

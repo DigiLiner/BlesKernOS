@@ -267,10 +267,10 @@ static inline css_fixed css_unit__px_per_unit(
 				viewport_width);
 
 	case CSS_UNIT_VH:
-		return FDIV(viewport_width, F_100);
+		return FDIV(viewport_height, F_100);
 
 	case CSS_UNIT_VW:
-		return FDIV(viewport_height, F_100);
+		return FDIV(viewport_width, F_100);
 
 	default:
 		return 0;
@@ -321,6 +321,13 @@ css_fixed css_unit_len2css_px(
 			ctx->viewport_width,
 			unit,
 			ctx->pw);
+
+	/* Viewport units are fractional pixels (1vh at 287px is 2.87px).
+	 * Rounding each unit before multiplication makes 100vh 300px. */
+	if (unit == CSS_UNIT_VH || unit == CSS_UNIT_VW ||
+	    unit == CSS_UNIT_VMIN || unit == CSS_UNIT_VMAX ||
+	    unit == CSS_UNIT_VI || unit == CSS_UNIT_VB)
+		return FMUL(length, px_per_unit);
 
 	/* Ensure we round px_per_unit to the nearest whole number of pixels:
 	 * the use of FIXTOINT() below will truncate. */

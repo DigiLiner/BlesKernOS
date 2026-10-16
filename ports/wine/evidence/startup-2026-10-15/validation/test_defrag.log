@@ -1,0 +1,9 @@
+/tmp/bk-defrag-f3t4570i/test.c: In function ‘bfs4_entry’:
+/tmp/bk-defrag-f3t4570i/test.c:51:59: warning: ‘__builtin_strncpy’ output may be truncated copying 12 bytes from a string of length 127 [-Wstringop-truncation]
+   51 | char *kstrncpy(char *d, const char *s, size_t n) { return strncpy(d, s, n); }
+      |                                                           ^
+/tmp/bk-defrag-f3t4570i/test.c: In function ‘bfs4_defrag_step_impl’:
+/tmp/bk-defrag-f3t4570i/test.c:51:59: warning: ‘__builtin_strncpy’ output may be truncated copying 127 bytes from a string of length 127 [-Wstringop-truncation]
+/tmp/bk-defrag-f3t4570i/test.c: In function ‘bfs4_rename’:
+/tmp/bk-defrag-f3t4570i/test.c:51:59: warning: ‘__builtin_strncpy’ output may be truncated copying 127 bytes from a string of length 127 [-Wstringop-truncation]
+PASS real BFS4 defrag, bounded copies, read-only analysis, owner isolation, cancellation, concurrent writes/metadata, I/O and verification failures, remount and uncertain publication

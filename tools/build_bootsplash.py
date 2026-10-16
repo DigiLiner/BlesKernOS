@@ -2,7 +2,7 @@
 """
 build_bootsplash.py v5
 
-Genera kernel/bootsplash.c hardcodeando assets/boot/splashlogo.bmp.
+Genera kernel/ui/bootsplash.c hardcodeando assets/boot/splashlogo.bmp.
 
 """
 
@@ -90,6 +90,7 @@ HEADER_TEXT = r"""#ifndef BOOTSPLASH_H
 void bootsplash_show(const char *status, uint8_t progress);
 void bootsplash_pulse(void);
 void bootsplash_disable(void);
+bool bootsplash_active(void);
 
 #endif
 """
@@ -118,6 +119,8 @@ C_TEMPLATE = r"""/*
 __ARRAY__
 
 static bool g_enabled = false;
+/* bootsplash_disable() es definitivo: despues el framebuffer pertenece al GUI. */
+static volatile bool g_retired = false;
 static bool g_drawn_once = false;
 static uint32_t g_pulse_frame = 0;
 static int g_logo_x = 0;
@@ -310,6 +313,9 @@ static void fade_up(const char *status) {
 void bootsplash_show(const char *status, uint8_t progress) {
     (void)progress;
 
+    if (g_retired)
+        return;
+
     if (!gfx_get_info() || gfx_get_info()->mode == GFX_MODE_TEXT)
         return;
 
@@ -345,7 +351,7 @@ static bool pulse_time_ready(void) {
 }
 
 void bootsplash_pulse(void) {
-    if (!g_enabled || !g_drawn_once)
+    if (g_retired || !g_enabled || !g_drawn_once)
         return;
 
     if (!pulse_time_ready())
@@ -355,8 +361,11 @@ void bootsplash_pulse(void) {
     draw_bar_blocks();
 }
 
+bool bootsplash_active(void) { return !g_retired; }
+
 void bootsplash_disable(void) {
     g_enabled = false;
+    g_retired = true;
 }
 """
 
@@ -381,7 +390,7 @@ def main() -> None:
     if len(sys.argv) >= 3:
         c_path = Path(sys.argv[2])
     else:
-        c_path = script_dir / "../kernel/bootsplash.c"
+        c_path = script_dir / "../kernel/ui/bootsplash.c"
 
     if len(sys.argv) >= 4:
         h_path = Path(sys.argv[3])

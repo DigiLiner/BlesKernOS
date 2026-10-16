@@ -1,0 +1,5 @@
+{
+  "kernel/linux/i386_futex.inc": "365fa8a56b809257daeb06eec4757123e2b04570d482c7c3021f5f01d203c04a",
+  "build/kernel.bin": "9f7be7cb4ba457b951f58df8eae5d6a2337ae252bfeef9effd83e9e9172e2b96",
+  "ports/wine/tests/directory-notify-launch.c": "742afff584ca4d7971e0ba8b6acbb4aa148dff88e77c4fd856bf94efee174152"
+}

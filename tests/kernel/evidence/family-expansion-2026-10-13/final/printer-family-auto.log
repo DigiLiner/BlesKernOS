@@ -1,0 +1,37 @@
+/SYSTEM/PROGRAMS/GFXALLOC.ELF 8812 bytes; mode 0o100755
+/SYSTEM/PROGRAMS/RAMTEST.BEX 2232 bytes; mode 0o100755
+/SYSTEM/DRIVERS/PRINTFAKE.DVR 2276 bytes; mode 0o100755
+/SYSTEM/PRINTERS/FAMAUTO.BPD 71 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/STARTUP.INI 77 bytes; mode 0o100755
+{
+  "ram_mib": 64,
+  "backend": "std",
+  "desktop_started": true,
+  "completed": true,
+  "kernel_sha256": null,
+  "wine_boot_started": false,
+  "smoke_pass": true,
+  "memory": {
+    "DESKTOP": {
+      "installed_kib": 65023,
+      "managed_kib": 61312,
+      "used_kib": 11399,
+      "free_kib": 49912,
+      "unmanaged_kib": 3711,
+      "heap_used_kib": 11271,
+      "heap_free_kib": 34712,
+      "vm_free_kib": 15200
+    },
+    "IDLE": {
+      "installed_kib": 65023,
+      "managed_kib": 61312,
+      "used_kib": 15777,
+      "free_kib": 45534,
+      "unmanaged_kib": 3711,
+      "heap_used_kib": 15649,
+      "heap_free_kib": 30334,
+      "vm_free_kib": 15200
+    }
+  },
+  "depths": []
+}

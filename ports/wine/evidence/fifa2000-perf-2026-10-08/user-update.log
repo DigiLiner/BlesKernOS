@@ -1,0 +1,50 @@
+python3 tools/update_user_image.py --image build/bleskernos-ata-user.img
+BFS4 OK: 5648 entries, 70341 free blocks, dirty
+/SYSTEM/SERVICES/VISION.BEX 102924 bytes; mode 0o100644
+/SYSTEM/PROGRAMS/FILE.BEX 58304 bytes; mode 0o100644
+/WINEGATE/BIN/wine-launch 43936 bytes; mode 0o100644
+/WINEGATE/BIN/wine-launch.ELF 43936 bytes; mode 0o100644
+/SYSTEM/DRIVERS/ISO9660.DVR 8684 bytes; mode 0o100644
+/SYSTEM/DRIVERS/VIRTIOGPU.DVR 60152 bytes; mode 0o100644
+/SYSTEM/DRIVERS/AC97.DVR 20124 bytes; mode 0o100644
+/SYSTEM/CONTROL/CONTROL.BEX 13876 bytes; mode 0o100644
+/SYSTEM/CONTROL/APPEAR.CPL 2299416 bytes; mode 0o100644
+/SYSTEM/CONTROL/DISPLAY.CPL 2299412 bytes; mode 0o100644
+/SYSTEM/CONTROL/SOUND.CPL 11016 bytes; mode 0o100644
+/SYSTEM/CONTROL/DATETIME.CPL 18708 bytes; mode 0o100644
+/SYSTEM/CONTROL/MOUSE.CPL 12628 bytes; mode 0o100644
+/SYSTEM/CONTROL/KEYBOARD.CPL 5236 bytes; mode 0o100644
+/SYSTEM/CONTROL/SYSTEM.CPL 20064 bytes; mode 0o100644
+/SYSTEM/CONTROL/DEVMGR.CPL 125636 bytes; mode 0o100644
+/SYSTEM/CONTROL/INTERNET.CPL 13872 bytes; mode 0o100644
+/SYSTEM/CONTROL/MODEM.CPL 9076 bytes; mode 0o100644
+/SYSTEM/CONTROL/LANGUAGE.CPL 5472 bytes; mode 0o100644
+/SYSTEM/CONTROL/WINE.CPL 1088 bytes; mode 0o100644
+/WINEGATE/bin/XFBDEV 814164 bytes; mode 0o100644
+/WINEGATE/lib/libGL.so.1 30464 bytes; mode 0o100644
+/WINEGATE/lib/libbkmesa.so.1 2000620 bytes; mode 0o100644
+/WINEGATE/lib/libbkvirgl.so.8 15729676 bytes; mode 0o100755
+/WINEGATE/lib/libstdc++.so.6 2603236 bytes; mode 0o100755
+/WINEGATE/lib/libgcc_s.so.1 222888 bytes; mode 0o100644
+/WINEGATE/lib/libexpat.so.1 173468 bytes; mode 0o100644
+/WINEGATE/lib/libz.so.1 108000 bytes; mode 0o100644
+/DOCS/WINE/MESA-GALLIUM-LICENSE.rst 5578643 bytes; mode 0o100755
+/DOCS/WINE/libstdc++6-COPYRIGHT 69004 bytes; mode 0o100755
+/DOCS/WINE/libgcc-s1-COPYRIGHT 69004 bytes; mode 0o100644
+/DOCS/WINE/libexpat1-COPYRIGHT 1756 bytes; mode 0o100644
+/DOCS/WINE/zlib1g-COPYRIGHT 2927 bytes; mode 0o100644
+/DOCS/WINE/GALLIUM-RUNTIME-GPL-3 35149 bytes; mode 0o100755
+/DOCS/WINE/GALLIUM-RUNTIME-LGPL-3 7652 bytes; mode 0o100755
+/DOCS/WINE/GALLIUM-RUNTIME-LGPL-2.1 26530 bytes; mode 0o100755
+/DOCS/WINE/GALLIUM-RUNTIME-GPL-2 18092 bytes; mode 0o100755
+/OPT/WINE/lib/wine/i386-unix/wineoss.so 91272 bytes; mode 0o100644
+/OPT/WINE/lib/wine/i386-unix/wineoss.drv.so 85064 bytes; mode 0o100644
+/OPT/WINE/lib/wine/i386-unix/winex11.so 508788 bytes; mode 0o100644
+/OPT/WINE/lib/wine/i386-unix/mountmgr.so 21972 bytes; mode 0o100644
+/OPT/WINE/lib/wine/i386-unix/mountmgr.sys.so 138576 bytes; mode 0o100644
+/OPT/WINE/lib/wine/i386-windows/wineoss.drv 1536 bytes; mode 0o100644
+/SYSTEM/WINE/WINDOWS/SYSTEM32/wineoss.drv 1536 bytes; mode 0o100644
+/DOCS/WINE/OSS-GPL-COPYING 18526 bytes; mode 0o100644
+/WINEGATE/prefix/user.reg 57522 bytes; mode 0o100644
+BFS4 OK: 5648 entries, 70341 free blocks, dirty
+Updated boot, shell, controls and Wine graphics/audio; user files preserved: /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/bleskernos-ata-user.img

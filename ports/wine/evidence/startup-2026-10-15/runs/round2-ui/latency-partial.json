@@ -1,0 +1,79 @@
+[
+  {
+    "key_to_glyph_ms": 159.34862502035685,
+    "injection_ms": 1.7690710083115846,
+    "native_route_ms": 28.22234301129356,
+    "tinyx_consume_ms": 28.22234301129356,
+    "stream_publish_ms": 142.67478202236816
+  },
+  {
+    "key_to_glyph_ms": 238.81987101049162,
+    "injection_ms": 7.071892992826179,
+    "native_route_ms": 11.886054009664804,
+    "tinyx_consume_ms": 69.55418200232089,
+    "stream_publish_ms": 223.96813999512233
+  },
+  {
+    "key_to_glyph_ms": 277.14719498180784,
+    "injection_ms": 1.5243339876178652,
+    "native_route_ms": 6.982481980230659,
+    "tinyx_consume_ms": 33.49454500130378,
+    "stream_publish_ms": 230.59201700380072
+  },
+  {
+    "key_to_glyph_ms": 219.25120099331252,
+    "injection_ms": 3.3543000172358006,
+    "native_route_ms": 27.677741018123925,
+    "tinyx_consume_ms": 150.06520901806653,
+    "stream_publish_ms": 192.9720040061511
+  },
+  {
+    "key_to_glyph_ms": 187.91915499605238,
+    "injection_ms": 2.1534989937208593,
+    "native_route_ms": 39.23418399062939,
+    "tinyx_consume_ms": 103.32480701617897,
+    "stream_publish_ms": 167.4140059913043
+  },
+  {
+    "key_to_glyph_ms": 263.57227299013175,
+    "injection_ms": 2.66281800577417,
+    "native_route_ms": 78.93903699005023,
+    "tinyx_consume_ms": 78.93903699005023,
+    "stream_publish_ms": 214.11627100314945
+  },
+  {
+    "key_to_glyph_ms": 237.26110201096162,
+    "injection_ms": 2.750483021372929,
+    "native_route_ms": 92.25048401276581,
+    "tinyx_consume_ms": 92.25048401276581,
+    "stream_publish_ms": 225.88584700133651
+  },
+  {
+    "key_to_glyph_ms": 240.8598120091483,
+    "injection_ms": 2.0190800132695585,
+    "native_route_ms": 5.444100999739021,
+    "tinyx_consume_ms": 36.52846100158058,
+    "stream_publish_ms": 216.38646800420247
+  },
+  {
+    "key_to_glyph_ms": 231.3971749972552,
+    "injection_ms": 1.723663997836411,
+    "native_route_ms": 93.93480999278836,
+    "tinyx_consume_ms": 93.93480999278836,
+    "stream_publish_ms": 212.80780699453317
+  },
+  {
+    "key_to_glyph_ms": 142.81856498564593,
+    "injection_ms": 1.5165880031418055,
+    "native_route_ms": 47.62357199797407,
+    "tinyx_consume_ms": 47.62357199797407,
+    "stream_publish_ms": null
+  },
+  {
+    "key_to_glyph_ms": 167.39281101035886,
+    "injection_ms": 1.5527800132986158,
+    "native_route_ms": 28.95232499577105,
+    "tinyx_consume_ms": 28.95232499577105,
+    "stream_publish_ms": 153.36721000494435
+  }
+]

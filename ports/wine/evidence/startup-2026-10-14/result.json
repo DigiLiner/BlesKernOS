@@ -1,0 +1,101 @@
+{
+  "path_lookup": {
+    "path-before": {
+      "samples": [
+        {
+          "sample": 0,
+          "calls": 3000,
+          "us": 383334,
+          "size": 60928
+        },
+        {
+          "sample": 1,
+          "calls": 3000,
+          "us": 500000,
+          "size": 60928
+        },
+        {
+          "sample": 2,
+          "calls": 3000,
+          "us": 466666,
+          "size": 60928
+        }
+      ],
+      "median_us": 466666
+    },
+    "path-after": {
+      "samples": [
+        {
+          "sample": 0,
+          "calls": 3000,
+          "us": 260000,
+          "size": 60928
+        },
+        {
+          "sample": 1,
+          "calls": 3000,
+          "us": 280000,
+          "size": 60928
+        },
+        {
+          "sample": 2,
+          "calls": 3000,
+          "us": 316667,
+          "size": 60928
+        }
+      ],
+      "median_us": 280000
+    }
+  },
+  "startup_speedup_established": false,
+  "first_window_ms": {
+    "cursor_reference": 39613,
+    "rejected_events": 47110,
+    "page_copy": 48756
+  },
+  "cursor_seen_and_cleared": true,
+  "ui_functional": {
+    "result": "PASS",
+    "ram_mib": 1536,
+    "smp": 2,
+    "vga": "vmware",
+    "notepad": {
+      "handle": 63235296,
+      "bounds": [
+        36,
+        70,
+        511,
+        376
+      ],
+      "title": "notepad.exe",
+      "visible": true,
+      "listed": true,
+      "owner": 8,
+      "controller": 7
+    },
+    "notepad_after_restart": {
+      "handle": 63235296,
+      "bounds": [
+        36,
+        70,
+        511,
+        376
+      ],
+      "title": "notepad.exe",
+      "visible": true,
+      "listed": true,
+      "owner": 8,
+      "controller": 7
+    },
+    "keyboard_clipboard_before_after": true,
+    "compositor_cpl3": true
+  },
+  "failure": {
+    "result": "PASS",
+    "launch_failure": true,
+    "busy_seen": true,
+    "busy_cleared": true,
+    "exit_code": 53
+  },
+  "image": "build/bleskernos-wine-startup.img"
+}

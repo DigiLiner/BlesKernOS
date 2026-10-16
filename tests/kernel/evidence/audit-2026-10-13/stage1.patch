@@ -1,0 +1,216 @@
+--- a/kernel/mm/pager.c
++++ b/kernel/mm/pager.c
+@@ -451,15 +451,19 @@
+     uint32_t first=address&~4095U,end=address+length;
+     bool guarded=file_guard(pid,first,end-first);
+     kmutex_lock(&lock);
+-    uint32_t va;
+-    for(va=first;va<end;va+=4096U) {
+-        pager_page_t *p=find(pid,va);
+-        if(!p)continue;
+-        if(!load(pid,va,p,write))break;
+-        __sync_add_and_fetch(&p->pins,1U);
+-        if(va>0xffffffffU-4096U)break;
+-    }
+-    bool ok=va>=end;
++    uint32_t va=first,last=(end-1U)&~4095U;
++    bool ok=false;
++    for(;;) {
++        pager_page_t *p=find(pid,va);
++        if(p) {
++            if(!load(pid,va,p,write))break;
++            __sync_add_and_fetch(&p->pins,1U);
++        }
++        /* Finish before advancing past the final 32-bit page. Otherwise a
++         * successful load there is reported as failure and its pin leaks. */
++        if(va==last){ok=true;break;}
++        va+=4096U;
++    }
+     if(!ok)for(uint32_t undo=first;undo<va;undo+=4096U) {
+         pager_page_t *p=find(pid,undo);if(p)__sync_sub_and_fetch(&p->pins,1U);
+     }
+@@ -490,6 +494,12 @@
+ }
+ 
+ bool pager_unmap(uint32_t pid,uint32_t address,uint32_t length) {
++    /* Match paging_process_unmap's range contract before revoking PTEs or
++     * touching pager metadata. Its later rejection must have no side effects. */
++    if(!pid || !length || (address&4095U) ||
++       address+length<address || length>0xffffffffU-4095U ||
++       address+length>0xffffffffU-4095U)return false;
++    length=(length+4095U)&~4095U;
+     pid=paging_process_owner(pid);
+     bool guarded=file_guard(pid,address,length);
+     kmutex_lock(&lock);
+--- a/tests/kernel/test_block_writes.py
++++ b/tests/kernel/test_block_writes.py
+@@ -27,6 +27,10 @@
+ static void bootsplash_pulse(void){}
+ static uint64_t perfmon_scope_begin(void){return 0;}
+ static void perfmon_block_complete(uint32_t t,bool w,uint32_t c,bool r,uint64_t s){(void)t;(void)w;(void)c;(void)r;(void)s;}
++static bool volume_busy;
++static unsigned forgotten;
++static bool vfs_volume_busy(const char *name){assert(name);return volume_busy;}
++static void vfs_forget_volume(const char *name){assert(name);forgotten++;}
+ '''+source+r'''
+ static unsigned durable,temporary,last_lba;static bool fail;
+ static bool read_cb(block_device_t *d,uint32_t l,uint8_t n,void *b){(void)d;(void)l;(void)n;(void)b;return true;}
+@@ -41,7 +45,13 @@
+  part->read_only=true;assert(!block_write(part,0,1,page));assert(!block_write_volatile(part,0,1,page));part->read_only=false;
+  part->base_lba=0xfffffffeU;assert(!block_write_volatile(part,1,8,page));assert(!block_write(part,2,1,page));
+  fail=true;assert(!block_write(disk,0,1,page));assert(!block_write_volatile(disk,0,1,page));
+- assert(!block_write_volatile(0,0,1,page));assert(!block_write(disk,0,0,page));block_init();assert(block_count()==0);
++ assert(!block_write_volatile(0,0,1,page));assert(!block_write(disk,0,0,page));
++ assert(block_unregister("ata0") && forgotten==1 && !block_get("ata0"));
++ assert(!block_write(disk,0,1,page));
++ volume_busy=true;assert(!block_register("ata0",BLOCK_DEVICE_ATA,1000,0,read_cb));
++ volume_busy=false;assert(block_register("ata0",BLOCK_DEVICE_ATA,1000,0,read_cb));
++ assert(block_get("ata0")==disk);
++ block_init();assert(block_count()==0);
+  puts("PASS filesystem durability routing, volatile fallback, partition translation, bounds, read-only protection and I/O errors");}
+ '''
+ with tempfile.TemporaryDirectory(prefix='bk-block-') as directory:
+--- a/tests/kernel/run_ram_smoke.py
++++ b/tests/kernel/run_ram_smoke.py
+@@ -123,7 +123,13 @@
+  # that boot reached the operating desktop, without treating a torn log as a
+  # successful guest operation.
+  desktop_started='DESKTOP RELEASED' in log or ('compositor y ventanas CPL=3' in log and '[RAM:IDLE]' in log)
++ # A deferred-start diagnostic is emitted even when Wine never starts.
++ # Keep rejecting every other boot marker, including unknown messages.
++ wine_boot_started=any('[WINE:BOOT]' in line and
++                       line.strip()!='[WINE:BOOT] deferred until Windows program launch'
++                       for line in log.splitlines())
+  result={'ram_mib':a.ram,'backend':a.vga,'desktop_started':desktop_started,'completed':done,
++         'wine_boot_started':wine_boot_started,
+          'smoke_pass':(f'[{marker}] DONE result=PASS' in log) if a.smoke else None,
+          'memory':{},'depths':[int(n) for n in re.findall(r'RAMTEST:DEPTH\] bpp=(\d+) result=PASS',log)]}
+  for stage,values in re.findall(r'\[RAM:(DESKTOP|IDLE)\] ([^\n]+)',log):
+@@ -141,7 +147,7 @@
+   injected=re.findall(r'VISION:FAULTTEST\] injecting UD2 while holding frame locks pid=(\d+)',log)
+   faults=re.findall(r'\[TASK\] excepcion Ring 3 int=(\d+) error=\w+ eip=\w+ pid=(\d+)',log)
+   assert len(injected)==1 and faults==[('6',injected[0])], 'Unexpected or missing server exception'
+- assert '[WINE:BOOT]' not in log,'Wine started at boot'
++ assert not wine_boot_started,'Wine started at boot'
+  assert 'PAGE FAULT' not in log and '[PANIC]' not in log,'Kernel fault'
+ finally:
+  if proc.poll() is None:proc.terminate();proc.wait(timeout=10)
+--- /dev/null
++++ b/tests/kernel/test_pager_ranges.py
+@@ -0,0 +1,116 @@
++#!/usr/bin/env python3
++"""Execute production pager range operations with observable PTE/pin mocks."""
++from pathlib import Path
++import subprocess
++import argparse
++import tempfile
++
++root = Path(__file__).resolve().parents[2]
++parser = argparse.ArgumentParser(description=__doc__)
++parser.add_argument('--source', type=Path, default=root / 'kernel/mm/pager.c')
++parser.add_argument('cases', nargs='*', choices=['pin', 'unmap', 'gap'])
++args = parser.parse_args()
++source = args.source.read_text()
++pin = source[source.index('bool pager_pin('):source.index('bool pager_pin_word(')]
++unpin = source[source.index('void pager_unpin('):source.index('void pager_destroy(')]
++code = r'''
++#include <stdint.h>
++#include <stdbool.h>
++#include <stddef.h>
++#include <string.h>
++#include <assert.h>
++#include <stdio.h>
++typedef struct {uint32_t frame,slot,pins,source_frame;bool alive;} pager_page_t;
++typedef struct pager_region {struct pager_region *next;uint32_t count;pager_page_t *pages;} pager_region_t;
++static pager_region_t *regions;
++static pager_page_t pages[3];
++static uint32_t base, fail_at, mutations, loads, guards;
++static bool expect_high;
++static int lock;
++#define kmemset memset
++static uint32_t paging_process_owner(uint32_t pid) {return pid;}
++static bool file_guard(uint32_t pid,uint32_t a,uint32_t n) {(void)pid;(void)a;(void)n;guards++;return false;}
++static void file_unguard(bool g) {(void)g;}
++static void kmutex_lock(int *l) {(void)l;}
++static void kmutex_unlock(int *l) {(void)l;}
++static pager_page_t *find(uint32_t pid,uint32_t a) {
++    (void)pid;
++    if(expect_high)assert(a==0xfffff000U); /* no wrap into unrelated low VAs */
++    return a>=base && (a-base)/4096U<3U?&pages[(a-base)/4096U]:NULL;
++}
++static bool load(uint32_t pid,uint32_t a,pager_page_t *p,bool w) {
++    (void)pid;(void)p;(void)w;loads++;return a!=fail_at;
++}
++static bool paging_pager_replace(uint32_t p,uint32_t a,uint32_t f,bool present) {
++    (void)p;(void)a;(void)f;(void)present;mutations++;return true;
++}
++static bool paging_pager_replace_cow(uint32_t p,uint32_t a,uint32_t f,bool present,bool cow) {
++    (void)p;(void)a;(void)f;(void)present;(void)cow;mutations++;return true;
++}
++static bool paging_process_unmap(uint32_t p,uint32_t a,uint32_t n) {
++    (void)p;
++    return n && !(a&4095U) && a+n>=a &&
++        n<=0xffffffffU-4095U && a+n<=0xffffffffU-4095U;
++}
++static void mm_vm_frame_free(uint32_t f,uint32_t n) {(void)f;(void)n;}
++static void swap_slot_free(uint32_t s) {(void)s;}
++static void region_forget(pager_region_t *r) {(void)r;}
++static void region_free(pager_region_t *r) {(void)r;}
++''' + pin + unpin + r'''
++int main(int argc,char **argv) {
++    assert(argc==2);
++    fail_at=0xdeadbeefU;
++    if(!strcmp(argv[1],"pin")) {
++        base=0xffffd000U;
++        assert(pager_pin(1,0xfffff000U,1,false));
++        assert(pages[2].pins==1);
++        pager_unpin(1,0xfffff000U,1);
++        assert(!pages[2].pins);
++        assert(pager_pin(1,0xfffffffeU,1,true));
++        pager_unpin(1,0xfffffffeU,1);
++        assert(!pages[2].pins);
++        assert(!pager_pin(1,0xffffffffU,2,false));
++        assert(!pages[2].pins);
++        assert(pager_pin(1,0,0,false));
++        base=0x10000U;fail_at=base+4096U;
++        assert(!pager_pin(1,base,8192,false));
++        assert(!pages[0].pins && !pages[1].pins);
++        fail_at=0xdeadbeefU;
++        assert(pager_pin(1,base+4095U,4098U,true));
++        assert(pages[0].pins==1 && pages[1].pins==1 && pages[2].pins==1);
++        pager_unpin(1,base+4095U,4098U);
++        assert(!pages[0].pins && !pages[1].pins && !pages[2].pins);
++    } else if(!strcmp(argv[1],"gap")) {
++        base=0x10000U;expect_high=true;
++        assert(pager_pin(1,0xfffff000U,1,false));
++        assert(!loads); /* user_access_ok subsequently rejects this gap */
++    } else {
++        base=0x10000U;pages[0].frame=0x80000U;pages[0].alive=true;
++        assert(!pager_unmap(1,base+1,4096));
++        assert(!mutations && !guards && pages[0].frame==0x80000U);
++        assert(!pager_unmap(1,base,0));
++        assert(!pager_unmap(1,0xfffff000U,8192));
++        assert(!pager_unmap(1,0xfffff000U,1));
++        assert(!pager_unmap(1,base,0xffffffffU));
++        assert(!mutations && !guards);
++        pages[0].pins=1;
++        assert(!pager_unmap(1,base,4096));
++        assert(!mutations && pages[0].frame==0x80000U);
++        pages[0].pins=0;
++        assert(pager_unmap(1,base,4096));
++        assert(mutations==1 && !pages[0].alive && !pages[0].frame);
++        mutations=0;pages[0].alive=pages[1].alive=true;
++        pages[0].frame=0x80000U;pages[1].frame=0x81000U;
++        assert(pager_unmap(1,base,4097));
++        assert(mutations==2 && !pages[0].alive && !pages[1].alive);
++    }
++    puts("PASS production pager range, pin balance and mutation checks");
++}
++'''
++with tempfile.TemporaryDirectory(prefix='bk-pager-ranges-') as directory:
++    c = Path(directory) / 'test.c'
++    binary = Path(directory) / 'test'
++    c.write_text(code)
++    subprocess.run(['gcc', '-O2', '-Wall', '-Werror', str(c), '-o', str(binary)], check=True)
++    for case in args.cases or ['pin', 'unmap', 'gap']:
++        subprocess.run([str(binary), case], check=True)

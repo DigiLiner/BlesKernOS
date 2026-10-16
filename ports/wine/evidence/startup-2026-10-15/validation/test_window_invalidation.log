@@ -1,0 +1,1 @@
+PASS invalidation survives completion of an older async frame; streaming/synchronous windows keep their completion semantics

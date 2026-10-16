@@ -1,0 +1,10 @@
+{
+  "normal": "build/bleskernos-ata-user.img",
+  "usb": "build/bleskernos-usb-user.img",
+  "master_volume": 30,
+  "kernel_sha256": "3f8dff00c40b6d5cda7f1d2732ded2da38145cfa2ecf9e4e2298e5a9a50d5f92",
+  "ati_sha256": "c13c299f67b78679c6e5647275d9f8a0cf63bc1567ec22609c749e05d42993c9",
+  "usb_matches_partition": true,
+  "boot_payloads_verified": true,
+  "physical_ati_validation": "pending"
+}

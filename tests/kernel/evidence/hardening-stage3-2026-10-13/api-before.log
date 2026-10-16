@@ -1,0 +1,1 @@
+{"diagnostic":"native API boundary","unsafe_write_observed":true,"token_bounds_checked":true,"environment":"controlled host mocks, not hardware exploit"}

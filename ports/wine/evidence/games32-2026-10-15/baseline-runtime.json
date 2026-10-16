@@ -1,0 +1,22 @@
+{
+  "libGL.so.1": {
+    "sha256": "2e23ff5f1189b00323297be10d38e37890ee78acd6c8d30e895ae93802954442",
+    "needed": [
+      "libX11.so.6",
+      "libc.so.6",
+      "ld-linux.so.2"
+    ]
+  },
+  "libbkvirgl.so.8": {
+    "sha256": "79290a3074428de3b3b86153c929f2c7e6085e56406d3fa1ccfc158b738650dd",
+    "needed": [
+      "libz.so.1",
+      "libdrm.so.2",
+      "libexpat.so.1",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ]
+  }
+}

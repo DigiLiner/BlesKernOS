@@ -1,0 +1,910 @@
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=1572351 KiB top=1572736 KiB
+  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000
+  [MM] RAM usable: 1536 MB
+  [MM] Heap dinamico: 0x2000000 - 0x1ffe0000 (491392 KB)
+  [MM] VM frames: 0x1ffe0000 - 0x5ffe0000 (1048576 KiB, 262144 paginas)
+  [MM] Win32 fixed-image hole: 0x30000000 - 0x34000000 (65536 KiB reservados)
+  [MM] Vista PE fija: 0x400000 - 0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2000000-0x1ffe0000
+[COMPAT] perfil=normal RAM_top=1572736 KiB heap=491392 KiB tareas=128 CPU=fam6/mod122 GUI=60FPS TIMER=300Hz
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:EARLY] BIOS LFB 800x600x32 pitch=3200 fb=0xfd000000
+[BKBOOT t=0] STARTING KERNEL
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 5 dispositivos detectados
+  [LPT] no se detectaron puertos paralelos
+  [ATA] ata0: 1572864 sectores de 512 bytes
+  [ATA] ata0: read burst=16 sectores
+  [ATA] ata0: PIO read width=32 bits
+[ATA:PROBE] io=0x1f0 slave=1 ausente (status=0x0)
+[ATA:PROBE] io=0x170 slave=0 ausente (status=0x0)
+[ATA:PROBE] io=0x170 slave=1 ausente (status=0x0)
+  [ATA] canales IDE normalizados despues del probe
+  [ATA] ata0: QEMU PIIX DMA read/write enabled
+[BKBOOT t=174] STORAGE DRIVERS
+[BKBOOT t=174] MOUNTING FILESYSTEM
+[BKBOOT t=175] F8: RECOVERY MODE (2 SEC)
+[BOOT] Pulse F8 para entrar a recovery sin Vision ni servicios
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=1
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 1
+[FAT] dev[0]=ata0 tipo=1 sectores=1572864
+Intentando montar ata0...
+fat_set_active(ata0)
+No es particion, buscando ata0
+Dispositivo encontrado
+[BFS4:CACHE] slots=2048 bytes=8429568
+fat_try_mount_device OK
+fat_set_active OK
+Montado ata0 OK
+[VFS] /TEMP listo
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/AC97.DVR: ERROR: init del driver fallo
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=5 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[INTELGMA.DVR] Intel GMA 915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[DVR] /SYSTEM/DRIVERS/RTL8139.DVR: ERROR: init del driver fallo
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+[DVR] /SYSTEM/DRIVERS/USBCLASS.DVR: ERROR: init del driver fallo
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado
+[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo
+[GFX:TRACE] REGISTER request ops=0x2cfc0e0 abi=2 size=100 name_ptr=0x2cfc086 priority=200 caps=0x4ff
+[GFX:TRACE] REGISTER SELECT name=vmware_svga priority=200 previous=(ninguno) previous_priority=0
+[DVR] vmware_svga: cargado (/SYSTEM/DRIVERS/VMWARESVGA.DVR)
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 10 modulo(s) cargado(s)
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=vmware_svga ops=0x2cfc0e0
+[GFX:TRACE] ACTIVATE call name=vmware_svga preferred=800x600
+[SVGA:MODE] begin 800x600 active=0 generation=1
+[SVGA:MODE] OK 800x600x32 pitch=3200 fb=0xfd000000 generation=2
+[SVGA.DVR] SVGA3D preflight guest=0x20001 rb=0x0 memregs=0 reserved=4 modern=0
+[SVGA.DVR] VMware SVGA-II ID=0x90000002 IO=0xc010 FB=0xfd000000 FIFO=0xfe000000
+[SVGA.DVR] 800x600x32 pitch=3200 caps=0x3 fifo=0x0 GMR=fallback
+[GFX:TRACE] ACTIVATE OK name=vmware_svga mode=800x600x32 pitch=3200 fb=0xfd000000
+[GFXRES] boot icons 9/9 precargados
+[BKBOOT t=1344] LOADING PRINT SERVICE
+[PRINT] spooler iniciado en segundo plan[PRINT] PrintSpool Ring 3 listo
+o, pid=3
+[BKBOOT t=1373] STARTING VISION
+[BKBOOT t=1376] VISION: LOADING ELF
+[VISION] servicio lanzado pid=4
+[BKBOOT t=1395] VISION: ENTER RING3
+[VISION] ownership grafico adquirido pid=4
+[BKBOOT t=1405] VISION: GRAPHICS ENGINE
+[BKBOOT t=1410] PREPARING DESKTOP
+[BKBOOT t=1411] VISION: ENGINE READY
+[BKBOOT t=1413] VISION: DESKTOP
+[BKBOOT t=1415] LOADING DESKTOP ICONS
+[BKBOOT t=1416] ICONPAK preload begin
+[BKBOOT t=1416] LOADING ICON CACHE
+[BKBOOT t=1419] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPERS/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[BKBOOT t=1428] DESKMANAGER read desktop config
+[BKBOOT t=1428] DESKMANAGER desktop config loaded
+[BKBOOT t=1429] VISION: DESKBAR
+[DESKBAR] alloc state bytes=17116
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+.[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[BKBOOT t=1746] VISION: SCREENSAVER
+[BKBOOT t=1763] VISION: START SHELL
+[BKBOOT t=1764] VISION: READY
+[VISION] READY: motor, escritorio y compositor bajo [BKBOOT t=1767] kernel_main: Vision READY
+[RAM:DESKTOP] installed_kib=1572351 managed_kib=1441664 used_kib=18157 free_kib=1423506 unmanaged_kib=130686V heap_used_kib=18029 heap_free_kib=440594 vm_free_kib=982912
+[SMP] escritorio listo; iniciando procesadores secundarios
+ision
+[SMP] topologia detectada: 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000
+[SMP[] iniciando CPU1 APIC=1...
+VISION:SAVER] Ring 3 worker started
+[SMP] CPU1 online
+[SMP] 2/2 CPU(s) online; timer LAPIC=257567 cuentas/tick
+[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (123 slots libres)
+[SMP] scheduler por runqueue activo en 2 CPU(s); work stealing + IPI
+[BKBOOT] VISION ONLINE pid=4
+[WINE:BOOT] deferred until Windows program launch
+[BKBOOT t=1912] DISABLE SPLASH / ENTER GUI
+[BKBOOT] DESKTOP RELEASED
+[BKBOOT] QUEUE STARTUP SOUND
+[VISION:ENGINE] compositor y ventanas CPL=3
+[WINEUITEST] Notepad launch=1
+[WINE:DESKTOP] rootless start /SYSTEM/WINE/WINDOWS/SYSTEM32/NOTEPAD.EXE
+_XSERVTransTransNoListen: unable to find transport: tcp
+[WINE:DESKTOP] TinyX rootless ready on :17 pid=8
+[WINE:TIME] x-ready ms=266
+[WINE:STAGE] PREFIX exclusive lock acquired
+[WINE:STAGE] PREFIX ready marker=1
+[WINE:STAGE] THEME ready marker=1
+[WINE:TIME] prefix-ready ms=436 delta_ms=170
+[WINE:TIME] theme-ready ms=506 delta_ms=70
+[WINE:STAGE] TARGET begin path=/SYSTEM/WINE/WINDOWS/SYSTEM32/NOTEPAD.EXE kind=exe
+[WINE:TIME] target-begin ms=536
+[WINE:STAGE] TARGET spawned pid=10
+[WINE:TIME] target-spawned ms=636 delta_ms=100
+[RAM:IDLE] installed_kib=1572351 managed_kib=1441664 used_kib=35812 free_kib=1405851 unmanaged_kib=130686 heap_used_kib=27844 heap_free_kib=430779 vm_free_kib=975072
+[VFS:CWD] resolve FAIL full=/tmp/.wine-0/server-0-1c inner=/tmp/.wine-0/server-0-1c device=ata0
+ 12.686:0024:trace:process:NtCreateUserProcess L"\\??\\C:\\windows\\system32\\wineboot.exe" image L"C:\\windows\\system32\\wineboot.exe" cmdline L"\"C:\\windows\\system32\\wineboot.exe\" --init" parent (nil) machine 0
+ 13.013:0024:trace:process:NtCreateUserProcess L"\\??\\C:\\windows\\system32\\wineboot.exe" pid 0028 tid 002c handles 0x14/0x18
+ 13.106:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x00000025,0x7f20fc90,0x00000030,(nil))
+ 13.906:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000001a,0x7f20f94c,0x00000004,(nil))
+ 13.933:002c:trace:process:GetEnvironmentVariableW (L"WINEUNIXCP" 7F20F704 85)
+ 14.213:002c:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 00000000 0)
+ 14.213:002c:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 7F234BB8 18)
+ 14.293:002c:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 00000000 0)
+ 14.293:002c:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 7F234BB8 18)
+ 14.380:002c:trace:process:set_entry_point setting FT_Thunk at 60BB2784 to 00000000
+ 14.423:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x00000007,0x7f20fc64,0x00000004,(nil))
+ 14.440:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000001a,0x7f20ef7c,0x00000004,(nil))
+ 14.440:002c:fixme:ntdll:init_logical_proc_info Failed to get logical processor information, status 0xc0000002.
+ 14.700:002c:err:winediag:getaddrinfo Failed to resolve your host name IP
+ 14.816:002c:trace:process:CreateProcessInternalW app (null) cmdline L"C:\\windows\\system32\\winemenubuilder.exe -a -r"
+ 14.816:002c:trace:process:find_exe_file looking for L"C:\\windows\\system32\\winemenubuilder.exe" in L"C:\\windows\\system32;.;C:\\windows\\system32;C:\\windows\\system;C:\\windows;C:\\windows\\system32;C:\\windows;C:\\windows\\system32\\wbem;C:\\windows\\system32\\WindowsPowershell\\v1.0"
+ 14.870:002c:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\winemenubuilder.exe" image L"C:\\WINDOWS\\SYSTEM32\\winemenubuilder.exe" cmdline L"C:\\windows\\system32\\winemenubuilder.exe -a -r" parent (nil) machine 0
+ 15.266:002c:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\winemenubuilder.exe" pid 0030 tid 0034 handles 0x44/0x48
+ 15.273:002c:trace:process:CreateProcessInternalW started process pid 0030 tid 0034
+ 15.276:002c:trace:process:CreateProcessInternalW app L"C:\\windows\\system32\\services.exe" cmdline (null)
+ 15.293:002c:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\SERVICES.EXE" image L"C:\\WINDOWS\\SYSTEM32\\SERVICES.EXE" cmdline L"\"C:\\windows\\system32\\services.exe\"" parent (nil) machine 0
+ 15.303:0034:trace:process:NtQueryInformationProcess (0xffffffff,0x00000025,0x7f20fc90,0x00000030,(nil))
+ 15.563:002c:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\SERVICES.EXE" pid 0038 tid 003c handles 0x3c/0x40
+ 15.576:002c:trace:process:CreateProcessInternalW started process pid 0038 tid 003c
+ 15.600:003c:trace:process:NtQueryInformationProcess (0xffffffff,0x00000025,0x7f20fc90,0x00000030,(nil))
+ 16.503:003c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000001a,0x7f20f94c,0x00000004,(nil))
+ 16.516:003c:trace:process:GetEnvironmentVariableW (L"WINEUNIXCP" 7F20F704 85)
+ 16.793:0034:trace:process:NtQueryInformationProcess (0xffffffff,0x0000001a,0x7f20f94c,0x00000004,(nil))
+ 16.800:0034:trace:process:GetEnvironmentVariableW (L"WINEUNIXCP" 7F20F704 85)
+ 16.816:003c:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 00000000 0)
+ 16.816:003c:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 7F2343F8 18)
+ 16.836:003c:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 00000000 0)
+ 16.836:003c:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 7F2343F8 18)
+ 16.846:0034:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 00000000 0)
+ 16.846:0034:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 7F237D10 18)
+ 16.866:003c:trace:process:set_entry_point setting FT_Thunk at 60BAA784 to 00000000
+ 16.870:0034:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 00000000 0)
+ 16.870:0034:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 7F237D10 18)
+ 16.893:003c:trace:process:NtQueryInformationProcess (0xffffffff,0x00000007,0x7f20fc64,0x00000004,(nil))
+ 16.906:0034:trace:process:set_entry_point setting FT_Thunk at 60BB4784 to 00000000
+ 16.910:003c:trace:service:scmdatabase_load_services Loading service L"BITS"
+ 16.913:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k netsvcs" 00000000 0)
+ 16.913:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k netsvcs" 7F237270 43)
+ 16.963:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\svchost.exe -k netsvcs"
+ 16.963:003c:trace:service:load_service_config Group                = (null)
+ 16.963:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 16.970:003c:trace:service:load_service_config Display name         = L"BITS Service"
+ 16.970:003c:trace:service:load_service_config Service dependencies : (none)
+ 16.970:003c:trace:service:load_service_config Group dependencies   : (none)
+ 16.980:003c:trace:service:scmdatabase_load_services Loading service L"Dnscache"
+ 17.096:003c:trace:service:load_service_config Image path           = (null)
+ 17.096:003c:trace:service:load_service_config Group                = (null)
+ 17.096:003c:trace:service:load_service_config Service account name = (null)
+ 17.096:003c:trace:service:load_service_config Display name         = (null)
+ 17.096:003c:trace:service:load_service_config Service dependencies : (none)
+ 17.096:003c:trace:service:load_service_config Group dependencies   : (none)
+ 17.116:003c:trace:service:scmdatabase_load_services Even the service type not set for service L"Dnscache" - skipping
+ 17.130:003c:trace:service:scmdatabase_load_services Loading service L"Eventlog"
+ 17.143:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted" 00000000 0)
+ 17.143:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted" 7F2373F0 65)
+ 17.336:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted"
+ 17.336:003c:trace:service:load_service_config Group                = (null)
+ 17.340:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 17.340:003c:trace:service:load_service_config Display name         = L"Event Log"
+ 17.340:003c:trace:service:load_service_config Service dependencies : (none)
+ 17.340:003c:trace:service:load_service_config Group dependencies   : (none)
+ 17.350:003c:trace:service:scmdatabase_load_services Loading service L"FontCache"
+ 17.356:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k netsvcs" 00000000 0)
+ 17.356:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k netsvcs" 7F2382D0 43)
+ 17.450:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\svchost.exe -k netsvcs"
+ 17.450:003c:trace:service:load_service_config Group                = (null)
+ 17.453:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 17.453:003c:trace:service:load_service_config Display name         = L"Windows Font Cache Service"
+ 17.453:003c:trace:service:load_service_config Service dependencies : (none)
+ 17.453:003c:trace:service:load_service_config Group dependencies   : (none)
+ 17.470:003c:trace:service:scmdatabase_load_services Loading service L"FontCache3.0.0.0"
+ 17.483:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\Microsoft.Net\\Framework\\v3.0\\wpf\\presentationfontcache.exe" 00000000 0)
+ 17.483:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\Microsoft.Net\\Framework\\v3.0\\wpf\\presentationfontcache.exe" 7F238C30 70)
+ 17.510:003c:trace:service:load_service_config Image path           = L"C:\\windows\\Microsoft.Net\\Framework\\v3.0\\wpf\\presentationfontcache.exe"
+ 17.510:003c:trace:service:load_service_config Group                = (null)
+ 17.516:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 17.516:003c:trace:service:load_service_config Display name         = L"Windows Presentation Foundation Font Cache 3.0.0.0"
+ 17.516:003c:trace:service:load_service_config Service dependencies : (none)
+ 17.516:003c:trace:service:load_service_config Group dependencies   : (none)
+ 17.530:003c:trace:service:scmdatabase_load_services Loading service L"HTTP"
+ 17.540:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\http.sys" 00000000 0)
+ 17.540:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\http.sys" 7F239218 37)
+ 17.550:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\drivers\\http.sys"
+ 17.550:003c:trace:service:load_service_config Group                = (null)
+ 17.550:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 17.550:003c:trace:service:load_service_config Display name         = L"HTTP"
+ 17.550:003c:trace:service:load_service_config Service dependencies : (none)
+ 17.550:003c:trace:service:load_service_config Group dependencies   : (none)
+ 17.563:003c:trace:service:scmdatabase_load_services Loading service L"LanmanServer"
+ 17.566:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k netsvcs" 00000000 0)
+ 17.566:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k netsvcs" 7F239360 43)
+ 17.583:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\svchost.exe -k netsvcs"
+ 17.583:003c:trace:service:load_service_config Group                = (null)
+ 17.583:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 17.593:003c:trace:service:load_service_config Display name         = L"Lanman Server"
+ 17.593:003c:trace:service:load_service_config Service dependencies : (none)
+ 17.593:003c:trace:service:load_service_config Group dependencies   : (none)
+ 17.603:003c:trace:service:scmdatabase_load_services Loading service L"MountMgr"
+ 17.606:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\mountmgr.sys" 00000000 0)
+ 17.606:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\mountmgr.sys" 7F239450 41)
+ 17.633:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\drivers\\mountmgr.sys"
+ 17.633:003c:trace:service:load_service_config Group                = L"System Bus Extender"
+ 17.633:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 17.633:003c:trace:service:load_service_config Display name         = L"Mount Manager"
+ 17.643:003c:trace:service:load_service_config Service dependencies : (none)
+ 17.643:003c:trace:service:load_service_config Group dependencies   : (none)
+ 17.656:003c:trace:service:scmdatabase_load_services Loading service L"MSIServer"
+ 17.660:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\msiexec.exe /V" 00000000 0)
+ 17.660:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\msiexec.exe /V" 7F236418 35)
+ 17.670:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\msiexec.exe /V"
+ 17.670:003c:trace:service:load_service_config Group                = (null)
+ 17.673:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 17.673:003c:trace:service:load_service_config Display name         = L"MSIServer"
+ 17.673:003c:trace:service:load_service_config Service dependencies : (none)
+ 17.673:003c:trace:service:load_service_config Group dependencies   : (none)
+ 17.683:003c:trace:service:scmdatabase_load_services Loading service L"NDIS"
+ 17.686:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\ndis.sys" 00000000 0)
+ 17.686:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\ndis.sys" 7F239300 37)
+ 17.696:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\drivers\\ndis.sys"
+ 17.696:003c:trace:service:load_service_config Group                = L"System Bus Extender"
+ 17.696:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 17.703:003c:trace:service:load_service_config Display name         = L"NDIS"
+ 17.703:003c:trace:service:load_service_config Service dependencies : (none)
+ 17.703:003c:trace:service:load_service_config Group dependencies   : (none)
+ 17.720:003c:trace:service:scmdatabase_load_services Loading service L"nsiproxy"
+ 17.720:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\nsiproxy.sys" 00000000 0)
+ 17.720:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\nsiproxy.sys" 7F2396C0 41)
+ 17.730:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\drivers\\nsiproxy.sys"
+ 17.730:003c:trace:service:load_service_config Group                = L"System Bus Extender"
+ 17.730:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 17.736:003c:trace:service:load_service_config Display name         = L"NSI Proxy"
+ 17.736:003c:trace:service:load_service_config Service dependencies : (none)
+ 17.736:003c:trace:service:load_service_config Group dependencies   : (none)
+ 17.753:003c:trace:service:scmdatabase_load_services Loading service L"PlugPlay"
+ 17.760:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\plugplay.exe" 00000000 0)
+ 17.760:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\plugplay.exe" 7F236468 33)
+ 17.773:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\plugplay.exe"
+ 17.773:003c:trace:service:load_service_config Group                = (null)
+ 17.773:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 17.773:003c:trace:service:load_service_config Display name         = L"Plug and Play Service"
+ 17.783:003c:trace:service:load_service_config Service dependencies : (none)
+ 17.783:003c:trace:service:load_service_config Group dependencies   : (none)
+ 17.790:003c:trace:service:scmdatabase_load_services Loading service L"RpcSs"
+ 17.806:0034:trace:process:GetEnvironmentVariableW (L"oanocache" 00000000 0)
+ 17.806:0034:trace:process:NtQueryInformationProcess (0xffffffff,0x00000007,0x7f20fc64,0x00000004,(nil))
+ 17.820:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\rpcss.exe" 00000000 0)
+ 17.820:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\rpcss.exe" 7F2364B8 30)
+ 17.830:0034:trace:process:GetEnvironmentVariableW (L"WINEUSERNAME" 7F20EF48 260)
+ 17.833:0034:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20f81c,0x00000004,(nil))
+ 17.836:0034:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20f81c,0x00000004,(nil))
+ 17.843:0034:trace:process:NtCreateUserProcess L"\\??\\C:\\windows\\system32\\explorer.exe" image L"C:\\windows\\system32\\explorer.exe" cmdline L"\"C:\\windows\\system32\\explorer.exe\" /desktop" parent (nil) machine 0
+ 17.853:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\rpcss.exe"
+ 17.853:003c:trace:service:load_service_config Group                = (null)
+ 17.853:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 17.853:003c:trace:service:load_service_config Display name         = L"Remote Procedure Call (RPC)"
+ 17.853:003c:trace:service:load_service_config Service dependencies : (none)
+ 17.853:003c:trace:service:load_service_config Group dependencies   : (none)
+ 17.870:003c:trace:service:scmdatabase_load_services Loading service L"scardsvr"
+ 17.876:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k netsvcs" 00000000 0)
+ 17.876:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k netsvcs" 7F239930 43)
+ 18.326:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\svchost.exe -k netsvcs"
+ 18.326:003c:trace:service:load_service_config Group                = (null)
+ 18.326:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 18.326:003c:trace:service:load_service_config Display name         = L"Smart card server"
+ 18.326:003c:trace:service:load_service_config Service dependencies : (none)
+ 18.326:003c:trace:service:load_service_config Group dependencies   : (none)
+ 18.353:003c:trace:service:scmdatabase_load_services Loading service L"Schedule"
+ 18.386:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k netsvcs" 00000000 0)
+ 18.386:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k netsvcs" 7F239E18 43)
+ 18.436:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\svchost.exe -k netsvcs"
+ 18.436:003c:trace:service:load_service_config Group                = (null)
+ 18.440:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 18.440:003c:trace:service:load_service_config Display name         = L"Task Scheduler"
+ 18.440:003c:trace:service:load_service_config Service dependencies : (none)
+ 18.440:003c:trace:service:load_service_config Group dependencies   : (none)
+ 18.460:003c:trace:service:scmdatabase_load_services Loading service L"Spooler"
+ 18.466:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\spoolsv.exe" 00000000 0)
+ 18.466:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\spoolsv.exe" 7F236558 32)
+ 18.493:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\spoolsv.exe"
+ 18.493:003c:trace:service:load_service_config Group                = L"SpoolerGroup"
+ 18.493:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 18.500:003c:trace:service:load_service_config Display name         = L"Print Spooler"
+ 18.500:003c:trace:service:load_service_config Service dependencies : (none)
+ 18.500:003c:trace:service:load_service_config Group dependencies   : (none)
+ 18.516:003c:trace:service:scmdatabase_load_services Loading service L"StiSvc"
+ 18.520:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k imgsvc" 00000000 0)
+ 18.520:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k imgsvc" 7F234F08 42)
+ 18.610:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\svchost.exe -k imgsvc"
+ 18.610:003c:trace:service:load_service_config Group                = (null)
+ 18.610:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 18.610:003c:trace:service:load_service_config Display name         = L"WIA Service"
+ 18.610:003c:trace:service:load_service_config Service dependencies : (none)
+ 18.610:003c:trace:service:load_service_config Group dependencies   : (none)
+ 18.626:003c:trace:service:scmdatabase_load_services Loading service L"Tcpip"
+ 18.630:0034:trace:process:NtCreateUserProcess L"\\??\\C:\\windows\\system32\\explorer.exe" pid 0040 tid 0044 handles 0x78/0x7c
+ 18.640:003c:trace:service:load_service_config Image path           = (null)
+ 18.640:003c:trace:service:load_service_config Group                = (null)
+ 18.640:003c:trace:service:load_service_config Service account name = (null)
+ 18.640:003c:trace:service:load_service_config Display name         = (null)
+ 18.646:003c:trace:service:load_service_config Service dependencies : (none)
+ 18.646:003c:trace:service:load_service_config Group dependencies   : (none)
+ 18.653:003c:trace:service:scmdatabase_load_services Even the service type not set for service L"Tcpip" - skipping
+ 18.656:003c:trace:service:scmdatabase_load_services Loading service L"Tcpip6"
+ 18.663:0044:trace:process:NtQueryInformationProcess (0xffffffff,0x00000025,0x7f20fc90,0x00000030,(nil))
+ 18.663:003c:trace:service:load_service_config Image path           = (null)
+ 18.663:003c:trace:service:load_service_config Group                = (null)
+ 18.663:003c:trace:service:load_service_config Service account name = (null)
+ 18.663:003c:trace:service:load_service_config Display name         = (null)
+ 18.663:003c:trace:service:load_service_config Service dependencies : (none)
+ 18.663:003c:trace:service:load_service_config Group dependencies   : (none)
+ 18.676:003c:trace:service:scmdatabase_load_services Even the service type not set for service L"Tcpip6" - skipping
+ 18.686:003c:trace:service:scmdatabase_load_services Loading service L"TermService"
+ 18.690:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\termsv.exe" 00000000 0)
+ 18.690:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\termsv.exe" 7F2365A8 31)
+ 18.740:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\termsv.exe"
+ 18.740:003c:trace:service:load_service_config Group                = (null)
+ 18.740:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 18.740:003c:trace:service:load_service_config Display name         = L"Terminal Services"
+ 18.740:003c:trace:service:load_service_config Service dependencies : (none)
+ 18.753:003c:trace:service:load_service_config Group dependencies   : (none)
+ 18.756:003c:trace:service:scmdatabase_load_services Loading service L"VxD"
+ 18.856:003c:trace:service:load_service_config Image path           = (null)
+ 18.856:003c:trace:service:load_service_config Group                = (null)
+ 18.856:003c:trace:service:load_service_config Service account name = (null)
+ 18.856:003c:trace:service:load_service_config Display name         = (null)
+ 18.856:003c:trace:service:load_service_config Service dependencies : (none)
+ 18.856:003c:trace:service:load_service_config Group dependencies   : (none)
+ 18.873:003c:trace:service:scmdatabase_load_services Even the service type not set for service L"VxD" - skipping
+ 18.876:003c:trace:service:scmdatabase_load_services Loading service L"winebth"
+ 18.883:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winebth.sys" 00000000 0)
+ 18.883:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winebth.sys" 7F2391C0 40)
+ 18.900:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\drivers\\winebth.sys"
+ 18.900:003c:trace:service:load_service_config Group                = L"WinePlugPlay"
+ 18.900:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 18.900:003c:trace:service:load_service_config Display name         = L"Wine Bluetooth bus"
+ 18.900:003c:trace:service:load_service_config Service dependencies : (none)
+ 18.900:003c:trace:service:load_service_config Group dependencies   : (none)
+ 18.916:003c:trace:service:scmdatabase_load_services Loading service L"winebus"
+ 18.920:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winebus.sys" 00000000 0)
+ 18.920:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winebus.sys" 7F234F68 40)
+ 18.970:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\drivers\\winebus.sys"
+ 18.970:003c:trace:service:load_service_config Group                = L"WinePlugPlay"
+ 18.970:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 18.970:003c:trace:service:load_service_config Display name         = L"Wine HID bus"
+ 18.970:003c:trace:service:load_service_config Service dependencies : (none)
+ 18.970:003c:trace:service:load_service_config Group dependencies   : (none)
+ 18.990:003c:trace:service:scmdatabase_load_services Loading service L"winehid"
+ 18.993:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winehid.sys" 00000000 0)
+ 18.993:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winehid.sys" 7F234FC0 40)
+ 19.046:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\drivers\\winehid.sys"
+ 19.046:003c:trace:service:load_service_config Group                = L"WinePlugPlay"
+ 19.046:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 19.046:003c:trace:service:load_service_config Display name         = L"Wine HID"
+ 19.056:003c:trace:service:load_service_config Service dependencies : (none)
+ 19.056:003c:trace:service:load_service_config Group dependencies   : (none)
+ 19.063:003c:trace:service:scmdatabase_load_services Loading service L"Winmgmt"
+ 19.070:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\winmgmt.exe" 00000000 0)
+ 19.070:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\winmgmt.exe" 7F2365F8 32)
+ 19.100:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\winmgmt.exe"
+ 19.100:003c:trace:service:load_service_config Group                = (null)
+ 19.100:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 19.100:003c:trace:service:load_service_config Display name         = L"Windows Management Instrumentation Service"
+ 19.116:003c:trace:service:load_service_config Service dependencies : (none)
+ 19.116:003c:trace:service:load_service_config Group dependencies   : (none)
+ 19.190:003c:trace:service:scmdatabase_load_services Loading service L"Winsock"
+ 19.203:003c:trace:service:load_service_config Image path           = (null)
+ 19.203:003c:trace:service:load_service_config Group                = (null)
+ 19.203:003c:trace:service:load_service_config Service account name = (null)
+ 19.203:003c:trace:service:load_service_config Display name         = (null)
+ 19.203:003c:trace:service:load_service_config Service dependencies : (none)
+ 19.203:003c:trace:service:load_service_config Group dependencies   : (none)
+ 19.236:003c:trace:service:scmdatabase_load_services Even the service type not set for service L"Winsock" - skipping
+ 19.250:003c:trace:service:scmdatabase_load_services Loading service L"Winsock2"
+ 19.316:003c:trace:service:load_service_config Image path           = (null)
+ 19.316:003c:trace:service:load_service_config Group                = (null)
+ 19.316:003c:trace:service:load_service_config Service account name = (null)
+ 19.316:003c:trace:service:load_service_config Display name         = (null)
+ 19.316:003c:trace:service:load_service_config Service dependencies : (none)
+ 19.340:003c:trace:service:load_service_config Group dependencies   : (none)
+ 19.353:003c:trace:service:scmdatabase_load_services Even the service type not set for service L"Winsock2" - skipping
+ 19.363:003c:trace:service:scmdatabase_load_services Loading service L"wuauserv"
+ 19.366:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\wuauserv.exe" 00000000 0)
+ 19.366:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\wuauserv.exe" 7F236648 33)
+ 19.400:003c:trace:service:load_service_config Image path           = L"C:\\windows\\system32\\wuauserv.exe"
+ 19.400:003c:trace:service:load_service_config Group                = (null)
+ 19.400:003c:trace:service:load_service_config Service account name = L"LocalSystem"
+ 19.400:003c:trace:service:load_service_config Display name         = L"Automatic Updates"
+ 19.400:003c:trace:service:load_service_config Service dependencies : (none)
+ 19.400:003c:trace:service:load_service_config Group dependencies   : (none)
+ 19.483:0044:trace:process:NtQueryInformationProcess (0xffffffff,0x0000001a,0x7f20f94c,0x00000004,(nil))
+ 19.486:0044:trace:process:GetEnvironmentVariableW (L"WINEUNIXCP" 7F20F704 85)
+ 19.513:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\mountmgr.sys" 00000000 0)
+ 19.513:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\mountmgr.sys" 7F23E268 41)
+ 19.523:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\winedevice.exe" 00000000 0)
+ 19.523:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\winedevice.exe" 7F236698 35)
+ 19.533:003c:trace:process:GetEnvironmentVariableW (L"SystemRoot" 7F1FF552 32767)
+ 19.533:003c:trace:process:GetEnvironmentVariableW (L"SystemDrive" 7F1FF552 32767)
+ 19.553:0044:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 00000000 0)
+ 19.553:0044:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 7F234BE0 18)
+ 19.573:0044:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 00000000 0)
+ 19.573:0044:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 7F234BE0 18)
+ 19.590:0044:trace:process:set_entry_point setting FT_Thunk at 60BB9784 to 00000000
+ 19.636:003c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000001a,0x7f1ff22c,0x00000004,(nil))
+ 19.700:003c:trace:process:GetEnvironmentVariableW (L"WINEUSERNAME" 7F7317E0 257)
+ 19.920:003c:trace:process:GetEnvironmentVariableW (L"WINEBOOTSTRAPMODE" 7F20F5E8 16)
+ 19.923:003c:trace:process:CreateProcessInternalW app (null) cmdline L"C:\\windows\\system32\\winedevice.exe"
+ 19.923:003c:trace:process:find_exe_file looking for L"C:\\windows\\system32\\winedevice.exe" in L"C:\\WINDOWS\\SYSTEM32;.;C:\\windows\\system32;C:\\windows\\system;C:\\windows;C:\\windows\\system32;C:\\windows;C:\\windows\\system32\\wbem;C:\\windows\\system32\\WindowsPowershell\\v1.0"
+ 19.946:003c:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\winedevice.exe" image L"C:\\WINDOWS\\SYSTEM32\\winedevice.exe" cmdline L"C:\\windows\\system32\\winedevice.exe" parent (nil) machine 0
+ 20.316:0044:trace:process:NtQueryInformationProcess (0xffffffff,0x00000007,0x7f20fc64,0x00000004,(nil))
+ 20.553:003c:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\winedevice.exe" pid 004c tid 0050 handles 0xe4/0xe8
+ 20.563:003c:trace:process:CreateProcessInternalW started process pid 004c tid 0050
+ 20.566:003c:trace:service:process_send_start_message 7F23B5B8 L"Winedevice1" 7F20F938 1
+ 20.616:0050:trace:process:NtQueryInformationProcess (0xffffffff,0x00000025,0x7f20fc90,0x00000030,(nil))
+ 20.793:0044:err:vulkan:vulkan_init_once Wine was built without Vulkan support.
+ 21.030:0050:trace:process:NtQueryInformationProcess (0xffffffff,0x0000001a,0x7f20f94c,0x00000004,(nil))
+ 21.040:0050:trace:process:GetEnvironmentVariableW (L"WINEUNIXCP" 7F20F704 85)
+ 21.056:0050:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 00000000 0)
+ 21.056:0050:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 7F233A90 18)
+ 21.080:0050:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 00000000 0)
+ 21.080:0050:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 7F233A90 18)
+ 21.096:0050:trace:process:set_entry_point setting FT_Thunk at 60B9B784 to 00000000
+ 21.110:0050:trace:process:NtQueryInformationProcess (0xffffffff,0x00000007,0x7f20fc64,0x00000004,(nil))
+ 21.116:0050:trace:service:StartServiceCtrlDispatcherW 7F20FEF0
+ 21.116:0050:trace:service:OpenSCManagerW (null) (null) 0x1
+ 21.196:0058:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 21.213:0050:trace:service:service_run_main_thread Starting 1 services running as process 76
+ 21.263:005c:trace:service:OpenServiceW 7F237DC8 L"Winedevice1" 0x8000
+ 21.280:0058:trace:service:svcctl_OpenServiceW (L"Winedevice1", 0x8000)
+ 21.286:005c:trace:service:OpenServiceW 7F237DC8 L"Winedevice1" 0xc0000000
+ 21.293:0058:trace:service:svcctl_OpenServiceW (L"Winedevice1", 0xc0000000)
+ 21.316:005c:trace:service:service_handle_control L"winedevice" control 0 data 7F238DB8 data_size 66
+ 21.323:0060:trace:service:service_thread 7F236998
+ 21.326:0060:trace:service:OpenSCManagerW (null) (null) 0x1
+ 21.336:0058:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 21.360:0060:trace:service:RegisterServiceCtrlHandlerExW L"winedevice" 60A4B7E0 7F239A40
+ 21.360:0060:trace:service:SetServiceStatus 7F2387A8 0x30 0x4 0x5 0 0 0 0
+ 21.373:0058:trace:service:svcctl_SetServiceStatus (00402FF0, 00401A6C)
+ 21.380:003c:trace:service:service_start returning 0
+ 21.383:003c:trace:service:process_send_start_message 7F23B5B8 L"MountMgr" 00000000 0
+ 21.403:005c:trace:service:service_handle_control L"winedevice" control 2147483648 data 7F238EC2 data_size 18
+ 21.403:005c:trace:service:OpenSCManagerW (null) (null) 0x1
+ 21.413:0060:trace:process:NtQueryInformationProcess (0x48,0x00000000,0x7f23af58,0x00000018,(nil))
+ 21.416:0060:trace:process:NtQueryInformationProcess (0x48,0x0000001a,0x7fb8f7ac,0x00000004,(nil))
+ 21.430:0058:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 21.446:005c:trace:service:OpenServiceW 7F238808 L"MountMgr" 0x8001
+ 21.456:0058:trace:service:svcctl_OpenServiceW (L"MountMgr", 0x8001)
+ 21.470:005c:trace:service:CloseServiceHandle 7F238808
+ 21.476:0058:trace:service:svcctl_CloseServiceHandle (&00404EF8)
+ 21.496:005c:trace:service:QueryServiceConfigW 7F238838 00000000 0 7F98FDB4
+ 21.523:0058:trace:service:svcctl_QueryServiceConfigW (004030B0)
+ 21.533:005c:trace:service:QueryServiceConfigW 7F238838 7F23D940 212 7F98FDB4
+ 21.560:0058:trace:service:svcctl_QueryServiceConfigW (004030B0)
+ 21.583:005c:trace:service:QueryServiceConfigW Image path           = L"C:\\windows\\system32\\drivers\\mountmgr.sys"
+ 21.583:005c:trace:service:QueryServiceConfigW Group                = L"System Bus Extender"
+ 21.583:005c:trace:service:QueryServiceConfigW Dependencies         = L""
+ 21.596:005c:trace:service:QueryServiceConfigW Service account name = L"LocalSystem"
+ 21.596:005c:trace:service:QueryServiceConfigW Display name         = L"Mount Manager"
+ 21.596:005c:trace:service:SetServiceStatus 7F238838 0x30 0x2 0 0 0 0 0x2710
+ 21.616:0058:trace:service:svcctl_SetServiceStatus (00403110, 00401A6C)
+ 21.630:005c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\mountmgr.sys" 00000000 0)
+ 21.630:005c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\mountmgr.sys" 7F23DA88 41)
+ 21.926:005c:trace:service:SetServiceStatus 7F238838 0x30 0x4 0x5 0 0 0 0
+ 21.933:0044:trace:process:GetEnvironmentVariableW (L"WINEUSERNAME" 7F20E108 260)
+ 21.936:0044:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20e9dc,0x00000004,(nil))
+ 21.936:0044:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20e9dc,0x00000004,(nil))
+ 21.946:0058:trace:service:svcctl_SetServiceStatus (00403110, 00401A6C)
+ 22.023:003c:trace:service:service_start returning 0
+ 22.023:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\plugplay.exe" 00000000 0)
+ 22.023:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\plugplay.exe" 7F236698 33)
+ 22.036:003c:trace:process:CreateProcessInternalW app (null) cmdline L"C:\\windows\\system32\\plugplay.exe"
+ 22.036:003c:trace:process:find_exe_file looking for L"C:\\windows\\system32\\plugplay.exe" in L"C:\\WINDOWS\\SYSTEM32;.;C:\\windows\\system32;C:\\windows\\system;C:\\windows;C:\\windows\\system32;C:\\windows;C:\\windows\\system32\\wbem;C:\\windows\\system32\\WindowsPowershell\\v1.0"
+ 22.100:003c:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\PLUGPLAY.EXE" image L"C:\\WINDOWS\\SYSTEM32\\PLUGPLAY.EXE" cmdline L"C:\\windows\\system32\\plugplay.exe" parent (nil) machine 0
+ 22.710:0044:trace:process:GetEnvironmentVariableW (L"oanocache" 00000000 0)
+ 22.770:0044:trace:service:OpenSCManagerW (null) (null) 0
+ 22.773:003c:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\PLUGPLAY.EXE" pid 0078 tid 007c handles 0x100/0x104
+ 22.780:003c:trace:process:CreateProcessInternalW started process pid 0078 tid 007c
+ 22.786:003c:trace:service:process_send_start_message 7F23B588 L"PlugPlay" 00000000 0
+ 22.796:007c:trace:process:NtQueryInformationProcess (0xffffffff,0x00000025,0x7f20fc90,0x00000030,(nil))
+ 22.806:0058:trace:service:svcctl_OpenSCManagerW ((null), (null), 0)
+ 22.813:0044:trace:service:OpenServiceW 007204C0 L"RpcSs" 0x14
+ 22.840:0058:trace:service:svcctl_OpenServiceW (L"RpcSs", 0x14)
+ 22.850:0044:trace:service:StartServiceW 007204F0 0 00000000
+ 22.946:0058:trace:service:svcctl_StartServiceW (00403170, 0, 00000000)
+ 23.366:007c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000001a,0x7f20f94c,0x00000004,(nil))
+ 23.376:007c:trace:process:GetEnvironmentVariableW (L"WINEUNIXCP" 7F20F704 85)
+ 23.396:007c:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 00000000 0)
+ 23.396:007c:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 7F234158 18)
+ 23.416:007c:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 00000000 0)
+ 23.416:007c:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 7F234158 18)
+ 23.433:007c:trace:process:set_entry_point setting FT_Thunk at 60B9B784 to 00000000
+ 23.886:007c:trace:process:NtQueryInformationProcess (0xffffffff,0x00000007,0x7f20fc64,0x00000004,(nil))
+ 23.890:007c:trace:service:StartServiceCtrlDispatcherW 60A4C154
+ 23.890:007c:trace:service:OpenSCManagerW (null) (null) 0x1
+ 23.913:008c:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 23.926:007c:trace:service:service_run_main_thread Starting 1 services running as process 120
+ 23.930:0090:trace:service:OpenServiceW 7F2399D8 L"PlugPlay" 0x8000
+ 23.933:008c:trace:service:svcctl_OpenServiceW (L"PlugPlay", 0x8000)
+ 23.940:0090:trace:service:OpenServiceW 7F2399D8 L"PlugPlay" 0xc0000000
+ 23.943:008c:trace:service:svcctl_OpenServiceW (L"PlugPlay", 0xc0000000)
+ 23.950:0090:trace:service:service_handle_control L"PlugPlay" control 0 data 7F239FA2 data_size 20
+ 23.963:0094:trace:service:service_thread 7F2375F8
+ 23.973:0094:trace:service:RegisterServiceCtrlHandlerExW L"PlugPlay" 60A4B310 00000000
+ 23.973:0094:trace:service:SetServiceStatus 7F239FF0 0x30 0x4 0x5 0 0 0 0x2710
+ 23.983:008c:trace:service:svcctl_SetServiceStatus (0040C6E8, 0040B0CC)
+ 23.986:003c:trace:service:service_start returning 0
+ 23.986:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted" 00000000 0)
+ 23.986:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted" 7F23A430 65)
+ 23.996:003c:trace:process:CreateProcessInternalW app (null) cmdline L"C:\\windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted"
+ 23.996:003c:trace:process:find_exe_file looking for L"C:\\windows\\system32\\svchost.exe" in L"C:\\WINDOWS\\SYSTEM32;.;C:\\windows\\system32;C:\\windows\\system;C:\\windows;C:\\windows\\system32;C:\\windows;C:\\windows\\system32\\wbem;C:\\windows\\system32\\WindowsPowershell\\v1.0"
+ 24.023:003c:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\SVCHOST.EXE" image L"C:\\WINDOWS\\SYSTEM32\\SVCHOST.EXE" cmdline L"C:\\windows\\system32\\svchost.exe -k LocalServiceNetworkRestricted" parent (nil) machine 0
+ 24.610:003c:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\SVCHOST.EXE" pid 009c tid 00a0 handles 0x124/0x128
+ 24.613:003c:trace:process:CreateProcessInternalW started process pid 009c tid 00a0
+ 24.623:003c:trace:service:process_send_start_message 7F23B5E8 L"Eventlog" 00000000 0
+ 24.630:00a0:trace:process:NtQueryInformationProcess (0xffffffff,0x00000025,0x7f20fc90,0x00000030,(nil))
+ 24.850:00a0:trace:process:NtQueryInformationProcess (0xffffffff,0x0000001a,0x7f20f94c,0x00000004,(nil))
+ 24.853:00a0:trace:process:GetEnvironmentVariableW (L"WINEUNIXCP" 7F20F704 85)
+ 24.870:00a0:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 00000000 0)
+ 24.870:00a0:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 7F233638 18)
+ 24.890:00a0:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 00000000 0)
+ 24.890:00a0:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 7F233668 18)
+ 24.906:00a0:trace:process:set_entry_point setting FT_Thunk at 60B9C784 to 00000000
+ 24.913:00a0:trace:process:NtQueryInformationProcess (0xffffffff,0x00000007,0x7f20fc64,0x00000004,(nil))
+ 24.916:00a0:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\wevtsvc.dll" 00000000 0)
+ 24.916:00a0:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\wevtsvc.dll" 7F2361C8 32)
+ 24.943:00a0:trace:service:StartServiceCtrlDispatcherW 7F2343C0
+ 24.943:00a0:trace:service:OpenSCManagerW (null) (null) 0x1
+ 25.016:008c:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 25.026:00a0:trace:service:service_run_main_thread Starting 1 services running as process 156
+ 25.033:00a8:trace:service:OpenServiceW 7F237C38 L"Eventlog" 0x8000
+ 25.036:008c:trace:service:svcctl_OpenServiceW (L"Eventlog", 0x8000)
+ 25.043:00a8:trace:service:OpenServiceW 7F237C38 L"Eventlog" 0xc0000000
+ 25.043:008c:trace:service:svcctl_OpenServiceW (L"Eventlog", 0xc0000000)
+ 25.050:00a8:trace:service:service_handle_control L"EventLog" control 0 data 7F238A0A data_size 20
+ 25.056:00ac:trace:service:service_thread 7F236100
+ 25.063:00ac:trace:service:RegisterServiceCtrlHandlerExW L"EventLog" 60E5D2D0 60F9D280
+ 25.063:00ac:trace:service:SetServiceStatus 7F238A58 0x30 0x4 0x5 0 0 0 0
+ 25.076:008c:trace:service:svcctl_SetServiceStatus (0040C7D8, 004117AC)
+ 25.083:003c:trace:service:service_start returning 0
+ 25.083:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\nsiproxy.sys" 00000000 0)
+ 25.083:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\nsiproxy.sys" 7F23E268 41)
+ 25.093:003c:trace:service:process_send_start_message 7F23B5B8 L"nsiproxy" 00000000 0
+ 25.096:005c:trace:service:service_handle_control L"winedevice" control 2147483648 data 008007D2 data_size 18
+ 25.096:005c:trace:service:OpenSCManagerW (null) (null) 0x1
+ 25.110:008c:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 25.113:005c:trace:service:OpenServiceW 7F238808 L"nsiproxy" 0x8001
+ 25.116:008c:trace:service:svcctl_OpenServiceW (L"nsiproxy", 0x8001)
+ 25.126:005c:trace:service:CloseServiceHandle 7F238808
+ 25.130:008c:trace:service:svcctl_CloseServiceHandle (&0040E5F0)
+ 25.133:005c:trace:service:QueryServiceConfigW 7F238928 00000000 0 7F98FDB4
+ 25.140:008c:trace:service:svcctl_QueryServiceConfigW (0040C868)
+ 25.146:005c:trace:service:QueryServiceConfigW 7F238928 7F23FC60 204 7F98FDB4
+ 25.150:008c:trace:service:svcctl_QueryServiceConfigW (0040C868)
+ 25.156:005c:trace:service:QueryServiceConfigW Image path           = L"C:\\windows\\system32\\drivers\\nsiproxy.sys"
+ 25.156:005c:trace:service:QueryServiceConfigW Group                = L"System Bus Extender"
+ 25.156:005c:trace:service:QueryServiceConfigW Dependencies         = L""
+ 25.156:005c:trace:service:QueryServiceConfigW Service account name = L"LocalSystem"
+ 25.156:005c:trace:service:QueryServiceConfigW Display name         = L"NSI Proxy"
+ 25.156:005c:trace:service:SetServiceStatus 7F238928 0x30 0x2 0 0 0 0 0x2710
+ 25.176:008c:trace:service:svcctl_SetServiceStatus (0040C8C8, 00401A6C)
+ 25.180:005c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\nsiproxy.sys" 00000000 0)
+ 25.180:005c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\nsiproxy.sys" 7F23DF40 41)
+ 25.220:00b0:err:nsi:poll_events netlink socket creation failed, errno 97.
+ 25.236:005c:trace:service:SetServiceStatus 7F238928 0x30 0x4 0x5 0 0 0 0
+ 25.246:008c:trace:service:svcctl_SetServiceStatus (0040C8C8, 00401A6C)
+ 25.250:003c:trace:service:service_start returning 0
+ 25.250:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\ndis.sys" 00000000 0)
+ 25.250:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\ndis.sys" 7F23E268 37)
+ 25.260:003c:trace:service:process_send_start_message 7F23B5B8 L"NDIS" 00000000 0
+ 25.270:005c:trace:service:service_handle_control L"winedevice" control 2147483648 data 008007D2 data_size 10
+ 25.270:005c:trace:service:OpenSCManagerW (null) (null) 0x1
+ 25.290:008c:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 25.293:005c:trace:service:OpenServiceW 7F238808 L"NDIS" 0x8001
+ 25.303:008c:trace:service:svcctl_OpenServiceW (L"NDIS", 0x8001)
+ 25.313:005c:trace:service:CloseServiceHandle 7F238808
+ 25.323:008c:trace:service:svcctl_CloseServiceHandle (&0040E5F0)
+ 25.326:005c:trace:service:QueryServiceConfigW 7F2389E8 00000000 0 7F98FDB4
+ 25.350:008c:trace:service:svcctl_QueryServiceConfigW (0040C868)
+ 25.360:005c:trace:service:QueryServiceConfigW 7F2389E8 00800BB0 186 7F98FDB4
+ 25.366:008c:trace:service:svcctl_QueryServiceConfigW (0040C868)
+ 25.373:005c:trace:service:QueryServiceConfigW Image path           = L"C:\\windows\\system32\\drivers\\ndis.sys"
+ 25.373:005c:trace:service:QueryServiceConfigW Group                = L"System Bus Extender"
+ 25.373:005c:trace:service:QueryServiceConfigW Dependencies         = L""
+ 25.373:005c:trace:service:QueryServiceConfigW Service account name = L"LocalSystem"
+ 25.373:005c:trace:service:QueryServiceConfigW Display name         = L"NDIS"
+ 25.373:005c:trace:service:SetServiceStatus 7F2389E8 0x30 0x2 0 0 0 0 0x2710
+ 25.393:008c:trace:service:svcctl_SetServiceStatus (0040C928, 00401A6C)
+ 25.400:005c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\ndis.sys" 00000000 0)
+ 25.400:005c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\ndis.sys" 7F23DF40 37)
+ 25.560:005c:trace:service:SetServiceStatus 7F2389E8 0x30 0x4 0x5 0 0 0 0
+ 25.566:008c:trace:service:svcctl_SetServiceStatus (0040C928, 00401A6C)
+ 25.573:003c:trace:service:service_start returning 0
+ 25.573:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winebus.sys" 00000000 0)
+ 25.573:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winebus.sys" 7F23E268 40)
+ 25.593:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\winedevice.exe" 00000000 0)
+ 25.593:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\winedevice.exe" 7F236698 35)
+ 25.600:003c:trace:process:CreateProcessInternalW app (null) cmdline L"C:\\windows\\system32\\winedevice.exe"
+ 25.600:003c:trace:process:find_exe_file looking for L"C:\\windows\\system32\\winedevice.exe" in L"C:\\WINDOWS\\SYSTEM32;.;C:\\windows\\system32;C:\\windows\\system;C:\\windows;C:\\windows\\system32;C:\\windows;C:\\windows\\system32\\wbem;C:\\windows\\system32\\WindowsPowershell\\v1.0"
+ 25.630:003c:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\winedevice.exe" image L"C:\\WINDOWS\\SYSTEM32\\winedevice.exe" cmdline L"C:\\windows\\system32\\winedevice.exe" parent (nil) machine 0
+ 26.236:003c:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\winedevice.exe" pid 00b4 tid 00b8 handles 0x144/0x148
+ 26.240:003c:trace:process:CreateProcessInternalW started process pid 00b4 tid 00b8
+ 26.246:003c:trace:service:process_send_start_message 0040F9E0 L"Winedevice2" 7F20F938 1
+ 26.253:00b8:trace:process:NtQueryInformationProcess (0xffffffff,0x00000025,0x7f20fc90,0x00000030,(nil))
+ 26.500:00b8:trace:process:NtQueryInformationProcess (0xffffffff,0x0000001a,0x7f20f94c,0x00000004,(nil))
+ 26.506:00b8:trace:process:GetEnvironmentVariableW (L"WINEUNIXCP" 7F20F704 85)
+ 26.506:00b8:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 00000000 0)
+ 26.506:00b8:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 7F233A90 18)
+ 26.530:00b8:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 00000000 0)
+ 26.530:00b8:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 7F233A90 18)
+ 26.546:00b8:trace:process:set_entry_point setting FT_Thunk at 60B9B784 to 00000000
+ 26.550:00b8:trace:process:NtQueryInformationProcess (0xffffffff,0x00000007,0x7f20fc64,0x00000004,(nil))
+ 26.556:00b8:trace:service:StartServiceCtrlDispatcherW 7F20FEF0
+ 26.556:00b8:trace:service:OpenSCManagerW (null) (null) 0x1
+ 26.616:008c:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 26.623:00b8:trace:service:service_run_main_thread Starting 1 services running as process 180
+ 26.636:00c0:trace:service:OpenServiceW 7F237DC8 L"Winedevice2" 0x8000
+ 26.640:008c:trace:service:svcctl_OpenServiceW (L"Winedevice2", 0x8000)
+ 26.643:00c0:trace:service:OpenServiceW 7F237DC8 L"Winedevice2" 0xc0000000
+ 26.646:008c:trace:service:svcctl_OpenServiceW (L"Winedevice2", 0xc0000000)
+ 26.650:00c0:trace:service:service_handle_control L"winedevice" control 0 data 7F2372D0 data_size 52
+ 26.663:00c4:trace:service:service_thread 7F236998
+ 26.670:00c4:trace:service:OpenSCManagerW (null) (null) 0x1
+ 26.673:008c:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 26.676:00c4:trace:service:RegisterServiceCtrlHandlerExW L"winedevice" 60A4B7E0 7F239250
+ 26.676:00c4:trace:service:SetServiceStatus 7F2387A8 0x30 0x4 0x5 0 0 0 0
+ 26.686:008c:trace:service:svcctl_SetServiceStatus (0040C988, 0041506C)
+ 26.690:003c:trace:service:service_start returning 0
+ 26.693:003c:trace:service:process_send_start_message 0040F9E0 L"winebus" 00000000 0
+ 26.700:00c4:trace:process:NtQueryInformationProcess (0x50,0x00000000,0x7f23b8b0,0x00000018,(nil))
+ 26.703:00c4:trace:process:NtQueryInformationProcess (0x50,0x0000001a,0x7fb8f7ac,0x00000004,(nil))
+ 26.710:00c0:trace:service:service_handle_control L"winedevice" control 2147483648 data 7F238EA2 data_size 16
+ 26.710:00c0:trace:service:OpenSCManagerW (null) (null) 0x1
+ 26.720:008c:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 26.730:00c0:trace:service:OpenServiceW 7F238808 L"winebus" 0x8001
+ 26.736:008c:trace:service:svcctl_OpenServiceW (L"winebus", 0x8001)
+ 26.740:00c0:trace:service:CloseServiceHandle 7F238808
+ 26.743:008c:trace:service:svcctl_CloseServiceHandle (&0040E630)
+ 26.746:00c0:trace:service:QueryServiceConfigW 7F238838 00000000 0 7F98FDB4
+ 26.750:008c:trace:service:svcctl_QueryServiceConfigW (0040CA48)
+ 26.753:00c0:trace:service:QueryServiceConfigW 7F238838 7F23D928 194 7F98FDB4
+ 26.756:008c:trace:service:svcctl_QueryServiceConfigW (0040CA48)
+ 26.760:00c0:trace:service:QueryServiceConfigW Image path           = L"C:\\windows\\system32\\drivers\\winebus.sys"
+ 26.760:00c0:trace:service:QueryServiceConfigW Group                = L"WinePlugPlay"
+ 26.760:00c0:trace:service:QueryServiceConfigW Dependencies         = L""
+ 26.760:00c0:trace:service:QueryServiceConfigW Service account name = L"LocalSystem"
+ 26.760:00c0:trace:service:QueryServiceConfigW Display name         = L"Wine HID bus"
+ 26.760:00c0:trace:service:SetServiceStatus 7F238838 0x30 0x2 0 0 0 0 0x2710
+ 26.776:008c:trace:service:svcctl_SetServiceStatus (0040CAA8, 0041506C)
+ 26.783:00c0:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winebus.sys" 00000000 0)
+ 26.783:00c0:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winebus.sys" 7F23DA10 40)
+ 26.876:00c0:trace:service:OpenSCManagerW (null) (null) 0x1
+ 26.883:008c:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 26.886:00c0:trace:service:OpenServiceW 7F2389B8 L"winebus" 0x8001
+ 26.890:008c:trace:service:svcctl_OpenServiceW (L"winebus", 0x8001)
+ 26.896:00c0:trace:service:CloseServiceHandle 7F2389B8
+ 26.900:008c:trace:service:svcctl_CloseServiceHandle (&0040E630)
+ 26.906:00c0:trace:service:QueryServiceConfigW 7F2389E8 00000000 0 7F98F3F4
+ 26.910:008c:trace:service:svcctl_QueryServiceConfigW (0040CA48)
+ 26.913:00c0:trace:service:QueryServiceConfigW 7F2389E8 7F23F708 194 7F98F3F4
+ 26.916:008c:trace:service:svcctl_QueryServiceConfigW (0040CA48)
+ 26.920:00c0:trace:service:QueryServiceConfigW Image path           = L"C:\\windows\\system32\\drivers\\winebus.sys"
+ 26.920:00c0:trace:service:QueryServiceConfigW Group                = L"WinePlugPlay"
+ 26.920:00c0:trace:service:QueryServiceConfigW Dependencies         = L""
+ 26.920:00c0:trace:service:QueryServiceConfigW Service account name = L"LocalSystem"
+ 26.920:00c0:trace:service:QueryServiceConfigW Display name         = L"Wine HID bus"
+ 26.920:00c0:trace:service:CloseServiceHandle 7F2389E8
+ 26.940:008c:trace:service:svcctl_CloseServiceHandle (&0040CB08)
+ 27.013:00c8:trace:service:OpenSCManagerW (null) (null) 0x1
+ 27.026:008c:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 27.030:00c8:trace:service:OpenServiceW 7F23D360 L"winehid" 0x8001
+ 27.036:008c:trace:service:svcctl_OpenServiceW (L"winehid", 0x8001)
+ 27.040:00c0:trace:service:SetServiceStatus 7F238838 0x30 0x4 0x5 0 0 0 0
+ 27.056:00c8:trace:service:CloseServiceHandle 7F23D360
+ 27.063:008c:trace:service:svcctl_CloseServiceHandle (&0040E630)
+ 27.070:00c8:trace:service:QueryServiceConfigW 7F23D390 00000000 0 7FD8F744
+ 27.073:008c:trace:service:svcctl_QueryServiceConfigW (0040CA48)
+ 27.076:008c:trace:service:svcctl_SetServiceStatus (0040CAA8, 00417D74)
+ 27.080:00c8:trace:service:QueryServiceConfigW 7F23D390 7F23E250 186 7FD8F744
+ 27.086:008c:trace:service:svcctl_QueryServiceConfigW (0040CA48)
+ 27.090:003c:trace:service:service_start returning 0
+ 27.090:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winebth.sys" 00000000 0)
+ 27.090:003c:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winebth.sys" 7F23E268 40)
+ 27.100:003c:trace:service:process_send_start_message 0040F9E0 L"winebth" 00000000 0
+ 27.106:00c8:trace:service:QueryServiceConfigW Image path           = L"C:\\windows\\system32\\drivers\\winehid.sys"
+ 27.106:00c8:trace:service:QueryServiceConfigW Group                = L"WinePlugPlay"
+ 27.106:00c8:trace:service:QueryServiceConfigW Dependencies         = L""
+ 27.106:00c8:trace:service:QueryServiceConfigW Service account name = L"LocalSystem"
+ 27.106:00c8:trace:service:QueryServiceConfigW Display name         = L"Wine HID"
+ 27.106:00c8:trace:service:SetServiceStatus 7F23D390 0x30 0x2 0 0 0 0 0x2710
+ 27.120:00c0:trace:service:service_handle_control L"winedevice" control 2147483648 data 7F23F36A data_size 16
+ 27.120:00c0:trace:service:OpenSCManagerW (null) (null) 0x1
+ 27.133:008c:trace:service:svcctl_SetServiceStatus (0040CB08, 0041506C)
+ 27.140:008c:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 27.143:00c8:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winehid.sys" 00000000 0)
+ 27.143:00c8:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winehid.sys" 7F23DEB0 40)
+ 27.153:00c0:trace:service:OpenServiceW 7F238808 L"winebth" 0x8001
+ 27.166:008c:trace:service:svcctl_OpenServiceW (L"winebth", 0x8001)
+ 27.176:00c0:trace:service:CloseServiceHandle 7F238808
+ 27.186:008c:trace:service:svcctl_CloseServiceHandle (&0040E630)
+ 27.220:00c0:trace:service:QueryServiceConfigW 7F238898 00000000 0 7F98FDB4
+ 27.290:008c:trace:service:svcctl_QueryServiceConfigW (0040CA48)
+ 27.313:00c0:trace:service:QueryServiceConfigW 7F238898 004026F0 206 7F98FDB4
+ 27.353:008c:trace:service:svcctl_QueryServiceConfigW (004192D0)
+ 27.360:00c0:trace:service:QueryServiceConfigW Image path           = L"C:\\windows\\system32\\drivers\\winebth.sys"
+ 27.360:00c0:trace:service:QueryServiceConfigW Group                = L"WinePlugPlay"
+ 27.360:00c0:trace:service:QueryServiceConfigW Dependencies         = L""
+ 27.360:00c0:trace:service:QueryServiceConfigW Service account name = L"LocalSystem"
+ 27.360:00c0:trace:service:QueryServiceConfigW Display name         = L"Wine Bluetooth bus"
+ 27.360:00c0:trace:service:SetServiceStatus 7F238898 0x30 0x2 0 0 0 0 0x2710
+ 27.396:008c:trace:service:svcctl_SetServiceStatus (0040CB68, 00417D74)
+ 27.420:00c0:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winebth.sys" 00000000 0)
+ 27.420:00c0:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\drivers\\winebth.sys" 00403F80 40)
+ 27.850:00c0:err:ntoskrnl:ZwLoadDriver failed to create driver L"\\Registry\\Machine\\System\\CurrentControlSet\\Services\\winebth": c00000e5
+ 27.850:00c0:trace:service:SetServiceStatus 7F238898 0x30 0x1 0 0 0 0 0
+ 27.866:008c:trace:service:svcctl_SetServiceStatus (0040CB68, 00417D74)
+ 27.870:00c0:trace:service:CloseServiceHandle 7F238898
+ 27.873:008c:trace:service:svcctl_CloseServiceHandle (&0040CB68)
+ 27.880:003c:trace:service:service_start returning 1359
+ 27.880:003c:fixme:service:scmdatabase_autostart_services Auto-start service L"winebth" failed to start: 1359
+ 27.883:0058:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\rpcss.exe" 00000000 0)
+ 27.883:0058:trace:process:ExpandEnvironmentStringsW (L"C:\\windows\\system32\\rpcss.exe" 004054A0 30)
+ 27.893:0058:trace:process:CreateProcessInternalW app (null) cmdline L"C:\\windows\\system32\\rpcss.exe"
+ 27.893:0058:trace:process:find_exe_file looking for L"C:\\windows\\system32\\rpcss.exe" in L"C:\\WINDOWS\\SYSTEM32;.;C:\\windows\\system32;C:\\windows\\system;C:\\windows;C:\\windows\\system32;C:\\windows;C:\\windows\\system32\\wbem;C:\\windows\\system32\\WindowsPowershell\\v1.0"
+ 27.940:0058:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\RPCSS.EXE" image L"C:\\WINDOWS\\SYSTEM32\\RPCSS.EXE" cmdline L"C:\\windows\\system32\\rpcss.exe" parent (nil) machine 0
+ 27.956:00c8:trace:service:SetServiceStatus 7F23D390 0x30 0x4 0x5 0 0 0 0
+ 28.226:008c:trace:service:svcctl_SetServiceStatus (0040CB08, 00417D74)
+ 28.853:00c8:trace:service:OpenSCManagerW (null) (null) 0x1
+ 28.896:008c:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 28.966:00c8:trace:service:OpenServiceW 7F23D420 L"winehid" 0x8001
+ 28.976:0058:trace:process:NtCreateUserProcess L"\\??\\C:\\WINDOWS\\SYSTEM32\\RPCSS.EXE" pid 00dc tid 00e4 handles 0x16c/0xd8
+ 28.980:0058:trace:process:CreateProcessInternalW started process pid 00dc tid 00e4
+ 28.986:008c:trace:service:svcctl_OpenServiceW (L"winehid", 0x8001)
+ 28.993:0058:trace:service:process_send_start_message 004031A0 L"RpcSs" 00000000 0
+ 29.030:00c8:trace:service:CloseServiceHandle 7F23D420
+ 29.040:008c:trace:service:svcctl_CloseServiceHandle (&0040E630)
+ 29.070:00e4:trace:process:NtQueryInformationProcess (0xffffffff,0x00000025,0x7f20fc90,0x00000030,(nil))
+ 29.073:00c8:trace:service:QueryServiceConfigW 7F23D450 00000000 0 7FD8F744
+ 29.080:008c:trace:service:svcctl_QueryServiceConfigW (004192D0)
+ 29.143:00c8:trace:service:QueryServiceConfigW 7F23D450 004041F8 186 7FD8F744
+ 29.180:008c:trace:service:svcctl_QueryServiceConfigW (004192D0)
+ 29.226:00c8:trace:service:QueryServiceConfigW Image path           = L"C:\\windows\\system32\\drivers\\winehid.sys"
+ 29.226:00c8:trace:service:QueryServiceConfigW Group                = L"WinePlugPlay"
+ 29.230:00c8:trace:service:QueryServiceConfigW Dependencies         = L""
+ 29.230:00c8:trace:service:QueryServiceConfigW Service account name = L"LocalSystem"
+ 29.230:00c8:trace:service:QueryServiceConfigW Display name         = L"Wine HID"
+ 29.230:00c8:trace:service:CloseServiceHandle 7F23D450
+ 29.340:008c:trace:service:svcctl_CloseServiceHandle (&00419330)
+ 30.030:00e4:trace:process:NtQueryInformationProcess (0xffffffff,0x0000001a,0x7f20f94c,0x00000004,(nil))
+ 30.056:00e4:trace:process:GetEnvironmentVariableW (L"WINEUNIXCP" 7F20F704 85)
+ 30.066:002c:trace:process:GetEnvironmentVariableW (L"WINEUSERNAME" 7F20E168 260)
+ 30.076:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20ea3c,0x00000004,(nil))
+ 30.076:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20ea3c,0x00000004,(nil))
+ 30.340:00e4:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 00000000 0)
+ 30.340:00e4:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 7F2338E8 18)
+ 30.376:002c:trace:process:GetEnvironmentVariableW (L"WINEUSERNAME" 7F20E898 260)
+ 30.380:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20ea3c,0x00000004,(nil))
+ 30.380:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20ea3c,0x00000004,(nil))
+ 30.393:002c:trace:process:GetEnvironmentVariableW (L"WINEUSERNAME" 7F20F6F0 260)
+ 30.406:002c:trace:process:GetEnvironmentVariableW (L"WINEUSERNAME" 7F20E168 260)
+ 30.413:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20ea3c,0x00000004,(nil))
+ 30.413:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20ea3c,0x00000004,(nil))
+ 30.426:00e4:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 00000000 0)
+ 30.426:00e4:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 7F233918 18)
+ 30.466:00e4:trace:process:set_entry_point setting FT_Thunk at 60B9E784 to 00000000
+ 30.546:00e4:trace:process:NtQueryInformationProcess (0xffffffff,0x00000007,0x7f20fc64,0x00000004,(nil))
+ 30.586:00e4:trace:service:StartServiceCtrlDispatcherW 60A4E410
+ 30.586:00e4:trace:service:OpenSCManagerW (null) (null) 0x1
+ 30.753:008c:trace:service:svcctl_OpenSCManagerW ((null), (null), 1)
+ 30.780:00e4:trace:service:service_run_main_thread Starting 1 services running as process 220
+ 30.800:00fc:trace:service:OpenServiceW 7F235DB0 L"RpcSs" 0x8000
+ 30.816:008c:trace:service:svcctl_OpenServiceW (L"RpcSs", 0x8000)
+ 30.923:00fc:trace:service:OpenServiceW 7F235DB0 L"RpcSs" 0xc0000000
+ 30.956:008c:trace:service:svcctl_OpenServiceW (L"RpcSs", 0xc0000000)
+ 30.966:00fc:trace:service:service_handle_control L"RpcSs" control 0 data 7F236ED4 data_size 14
+ 30.983:0100:trace:service:service_thread 7F2366B0
+ 31.090:0100:trace:service:RegisterServiceCtrlHandlerExW L"RpcSs" 60A4CF20 00000000
+ 31.090:0100:trace:service:SetServiceStatus 7F236F28 0x30 0x4 0x5 0 0 0 0x2710
+ 31.113:008c:trace:service:svcctl_SetServiceStatus (00419330, 0041CFAC)
+ 31.120:0058:trace:service:service_start returning 0
+ 31.133:0044:trace:service:QueryServiceStatusEx 007204F0 0 7F20F02C 36 7F20F028
+ 31.250:0044:trace:service:CloseServiceHandle 007204F0
+ 31.280:0058:trace:service:svcctl_CloseServiceHandle (&00403170)
+ 31.293:0044:trace:service:CloseServiceHandle 007204C0
+ 31.310:008c:trace:service:svcctl_CloseServiceHandle (&00404EF8)
+ 32.163:002c:trace:process:GetEnvironmentVariableW (L"WINEUSERNAME" 7F20D708 260)
+ 32.170:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20dfdc,0x00000004,(nil))
+ 32.173:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20dfdc,0x00000004,(nil))
+ 32.183:002c:trace:process:GetEnvironmentVariableW (L"WINEUSERNAME" 7F20D708 260)
+ 32.193:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20dfdc,0x00000004,(nil))
+ 32.193:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20dfdc,0x00000004,(nil))
+ 32.203:002c:trace:process:GetEnvironmentVariableW (L"WINEUSERNAME" 7F20D708 260)
+ 32.210:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20dfdc,0x00000004,(nil))
+ 32.210:002c:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20dfdc,0x00000004,(nil))
+ 32.506:0024:trace:process:NtQueryInformationProcess (0xffffffff,0x00000025,0x7f20fc90,0x00000030,(nil))
+ 34.570:0024:trace:process:NtQueryInformationProcess (0xffffffff,0x0000001a,0x7f20f94c,0x00000004,(nil))
+ 34.583:0024:trace:process:GetEnvironmentVariableW (L"WINEUNIXCP" 7F20F704 85)
+ 34.813:0024:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 00000000 0)
+ 34.813:0024:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 7F234BA8 18)
+ 34.873:0024:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 00000000 0)
+ 34.873:0024:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 7F234BA8 18)
+ 34.940:0024:trace:process:set_entry_point setting FT_Thunk at 60BB3784 to 00000000
+ 35.916:0024:trace:process:GetEnvironmentVariableW (L"oanocache" 00000000 0)
+ 36.040:0024:trace:process:NtQueryInformationProcess (0xffffffff,0x00000007,0x7f20fc64,0x00000004,(nil))
+ 36.066:0024:trace:process:NtCreateUserProcess L"\\??\\C:\\windows\\system32\\explorer.exe" image L"C:\\windows\\system32\\explorer.exe" cmdline L"\"C:\\windows\\system32\\explorer.exe\" /desktop" parent (nil) machine 0
+ 38.443:0024:trace:process:NtCreateUserProcess L"\\??\\C:\\windows\\system32\\explorer.exe" pid 0114 tid 0118 handles 0x70/0x74
+ 38.520:0118:trace:process:NtQueryInformationProcess (0xffffffff,0x00000025,0x7f20fc90,0x00000030,(nil))
+ 39.376:0118:trace:process:NtQueryInformationProcess (0xffffffff,0x0000001a,0x7f20f94c,0x00000004,(nil))
+ 39.393:0118:trace:process:GetEnvironmentVariableW (L"WINEUNIXCP" 7F20F704 85)
+ 39.670:0118:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 00000000 0)
+ 39.670:0118:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19584" 7F234B98 18)
+ 39.743:0118:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 00000000 0)
+ 39.743:0118:trace:process:ExpandEnvironmentStringsW (L"@tzres.dll,-19585" 7F234B98 18)
+ 39.823:0118:trace:process:set_entry_point setting FT_Thunk at 60BB9784 to 00000000
+ 40.786:0118:trace:process:NtQueryInformationProcess (0xffffffff,0x00000007,0x7f20fc64,0x00000004,(nil))
+ 47.313:0118:trace:process:GetEnvironmentVariableW (L"WINEUSERNAME" 7F20E108 260)
+ 47.326:0118:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20e9dc,0x00000004,(nil))
+ 47.326:0118:trace:process:NtQueryInformationProcess (0xffffffff,0x0000000c,0x7f20e9dc,0x00000004,(nil))
+ 47.790:0118:trace:process:GetEnvironmentVariableW (L"oanocache" 00000000 0)
+[WINE:TIME] first-surface ms=38683 title=notepad.exe
+[WINE:PERF] ready total_ms=38683 x_ms=266 prefix_ms=436 theme_ms=506 target_begin_ms=536 spawn_ms=636 spawn_to_surface_ms=38047
+[WINE:VM-PERF] phase=spawn-to-surface mmap=3962 file=2912 cached=2912 hits=64 misses=2 fallback=0 file_io_kib=1300 file_io_ms=0
+[WINE:CACHE-PERF] phase=first-surface cache_entries=101 cache_bytes=10416128 cache_evictions=1353 vfs_handles_peak=59 vfs_handles=53 cache_writeback_fds=0

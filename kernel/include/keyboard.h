@@ -36,6 +36,7 @@
 #define KEY_SHIFT       0x98
 #define KEY_CTRL        0x99
 #define KEY_ALT         0x9A
+#define KEY_INSERT      0x9B
 
 typedef struct {
     uint8_t key;
@@ -60,5 +61,6 @@ bool kbd_next_app_event(kbd_key_event_t *event);
 /* Injection path used by USB HID class drivers. Usage IDs are from the
  * Keyboard/Keypad usage page (0x07). */
 void kbd_inject_hid_usage(uint16_t usage, bool pressed);
+void kbd_inject_key(uint8_t key, bool pressed);
 
 #endif

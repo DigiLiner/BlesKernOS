@@ -1,0 +1,44 @@
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA FAIL
+[BKBOOT t=0] STARTING KERNEL
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=6 util=65023 KiB top=65408 KiB
+  [MM] RAM usable: 65023 KB
+  [MM] Heap dinamico: 0x2400000 - 0x37e0000 (20352 KB)
+  [MM] VM frames: 0x37e0000 - 0x3fe0000 (8192 KiB, 2048 paginas)
+  [MM] Vista PE fija: 0x400000 - 0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2400000-0x37e0000
+[COMPAT] perfil=normal RAM_top=65408 KiB heap=20352 KiB tareas=32 CPU=fam6/mod6 GUI=30FPS TIMER=100Hz
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 6 dispositivos detectados
+  [LPT] LPT1 base=0x0378 status=0xD9 listo
+  [ATA] ata0: 1572864 sectores de 512 bytes
+  [ATA] ata0: read burst=16 sectores
+  [ATA] ata0: PIO read width=32 bits
+  [ATAPI] cd0: unidad detectada sin medio listo
+  [ATA] canales IDE normalizados despues del probe
+[BKBOOT t=3] STORAGE DRIVERS
+[BKBOOT t=3] MOUNTING FILESYSTEM
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=2
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 2
+[FAT] dev[0]=ata0 tipo=1 sectores=1572864
+[FAT] dev[1]=cd0 tipo=3 sectores=0
+Intentando montar ata0...
+fat_set_active(ata0)
+No es particion, buscando ata0
+Dispositivo encontrado
+fat_try_mount_device OK
+fat_set_active OK
+Montado ata0 OK
+[VFS] /TEMP listo
+[BKBOOT t=57] DISABLE SPLASH / ENTER GUI
+[RECOVERY] consola solicitada. Use help, mem y reboot.
+BlesKernOS Terminal 1.1 - escriba 'help' para obtener ayuda
+bles@bleskernos:/> 

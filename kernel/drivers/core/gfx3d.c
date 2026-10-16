@@ -1,3 +1,4 @@
+#include "../../include/perfmon.h"
 #include "../../include/gfx3d_driver.h"
 #include "../../include/memory.h"
 #include "../../include/task.h"
@@ -10,6 +11,12 @@ static uint32_t g_driver_count;
 static const gfx3d_driver_ops_t *g_active;
 static gfx3d_info_t g_info;
 static kmutex_t g_gfx3d_call_lock = KMUTEX_INITIALIZER;
+/* Bounded ownership records survive a graphical server crash. Entries are
+ * committed while the driver call lock is held and drained by the reaper. */
+#define GFX3D_OWNED_SURFACES 256U
+static struct {gfx3d_surface_handle_t handle;uint32_t pid;}
+    g_owned_surfaces[GFX3D_OWNED_SURFACES];
+
 
 /* Mode switches and 3D command submission share driver-owned surfaces. The
  * lock is local to GFX3D: filesystem, networking and CPU rendering continue
@@ -33,6 +40,7 @@ static bool gfx3d_try_activate(void) {
             return true;
         }
         if (g_active->reset) g_active->reset();
+        kmemset(g_owned_surfaces,0,sizeof(g_owned_surfaces));
         g_active = NULL;
         kmemset(&g_info, 0, sizeof(g_info));
     }
@@ -56,7 +64,7 @@ bool gfx3d_register_driver(const gfx3d_driver_ops_t *ops) {
     bool result = false;
     gfx3d_call_lock();
     if (!ops || ops->abi_version != BK_GFX3D_DRIVER_ABI_VERSION ||
-        ops->descriptor_size != sizeof(*ops) || !ops->name ||
+        ops->descriptor_size < __builtin_offsetof(gfx3d_driver_ops_t, surface_upload_mip) || !ops->name ||
         !ops->probe || !ops->surface_create || !ops->surface_destroy ||
         !ops->surface_upload || !ops->surface_present ||
         !ops->draw_triangles || !ops->selftest ||
@@ -121,7 +129,23 @@ bool gfx3d_surface_create(const gfx3d_surface_desc_t *desc,
     if (handle_out) *handle_out = GFX3D_SURFACE_INVALID;
     gfx3d_call_lock();
     result = desc && handle_out && gfx3d_try_activate() &&
+             (!(desc->flags & (15U << 8U)) ||
+              ((g_info.capabilities & GFX3D_CAP_TEXTURE_MIPMAPS) &&
+               g_active->descriptor_size >= sizeof(*g_active) &&
+               g_active->surface_upload_mip)) &&
              g_active->surface_create(desc, handle_out);
+    if (result && task_current_process_id()) {
+        uint32_t slot;
+        for(slot=0;slot<GFX3D_OWNED_SURFACES;slot++)
+            if(!g_owned_surfaces[slot].handle)break;
+        if(slot==GFX3D_OWNED_SURFACES) {
+            (void)g_active->surface_destroy(*handle_out);
+            *handle_out=GFX3D_SURFACE_INVALID;result=false;
+        } else {
+            g_owned_surfaces[slot].handle=*handle_out;
+            g_owned_surfaces[slot].pid=task_current_process_id();
+        }
+    }
     gfx3d_call_unlock();
     return result;
 }
@@ -131,6 +155,8 @@ bool gfx3d_surface_destroy(gfx3d_surface_handle_t handle) {
     gfx3d_call_lock();
     result = handle && gfx3d_try_activate() &&
              g_active->surface_destroy(handle);
+    if(result)for(uint32_t i=0;i<GFX3D_OWNED_SURFACES;i++)
+        if(g_owned_surfaces[i].handle==handle)g_owned_surfaces[i].handle=0U;
     gfx3d_call_unlock();
     return result;
 }
@@ -138,11 +164,13 @@ bool gfx3d_surface_destroy(gfx3d_surface_handle_t handle) {
 bool gfx3d_surface_upload(gfx3d_surface_handle_t handle,
                           const uint32_t *pixels, uint32_t source_pitch,
                           const gfx_rect_t *rect) {
+    uint64_t started = perfmon_scope_begin();
     bool result;
     gfx3d_call_lock();
     result = handle && pixels && gfx3d_try_activate() &&
              g_active->surface_upload(handle, pixels, source_pitch, rect);
     gfx3d_call_unlock();
+    perfmon_scope_end(PERF_SCOPE_3D_UPLOAD, started);
     return result;
 }
 
@@ -152,6 +180,7 @@ bool gfx3d_surface_upload_region(gfx3d_surface_handle_t handle,
                                  uint32_t destination_x,
                                  uint32_t destination_y,
                                  uint32_t width, uint32_t height) {
+    uint64_t started = perfmon_scope_begin();
     bool result;
     gfx_rect_t destination;
     gfx3d_call_lock();
@@ -170,12 +199,14 @@ bool gfx3d_surface_upload_region(gfx3d_surface_handle_t handle,
         result = false;
     }
     gfx3d_call_unlock();
+    perfmon_scope_end(PERF_SCOPE_3D_UPLOAD, started);
     return result;
 }
 
 bool gfx3d_surface_download(gfx3d_surface_handle_t handle,
                             uint32_t *pixels, uint32_t destination_pitch,
                             const gfx_rect_t *rect) {
+    uint64_t started = perfmon_scope_begin();
     bool result;
     gfx3d_call_lock();
     result = handle && pixels && gfx3d_try_activate() &&
@@ -183,6 +214,7 @@ bool gfx3d_surface_download(gfx3d_surface_handle_t handle,
              g_active->surface_download(handle, pixels, destination_pitch,
                                         rect);
     gfx3d_call_unlock();
+    perfmon_scope_end(PERF_SCOPE_3D_READBACK, started);
     return result;
 }
 
@@ -226,24 +258,28 @@ bool gfx3d_surface_present(gfx3d_surface_handle_t handle,
 bool gfx3d_depth_upload(gfx3d_surface_handle_t target,
                         const uint16_t *depth, uint32_t source_pitch,
                         const gfx_rect_t *rect) {
+    uint64_t started = perfmon_scope_begin();
     bool result;
     gfx3d_call_lock();
     result = target && depth && source_pitch && gfx3d_try_activate() &&
              g_active->depth_upload &&
              g_active->depth_upload(target, depth, source_pitch, rect);
     gfx3d_call_unlock();
+    perfmon_scope_end(PERF_SCOPE_3D_UPLOAD, started);
     return result;
 }
 
 bool gfx3d_depth_download(gfx3d_surface_handle_t target,
                           uint16_t *depth, uint32_t destination_pitch,
                           const gfx_rect_t *rect) {
+    uint64_t started = perfmon_scope_begin();
     bool result;
     gfx3d_call_lock();
     result = target && depth && destination_pitch && gfx3d_try_activate() &&
              g_active->depth_download &&
              g_active->depth_download(target, depth, destination_pitch, rect);
     gfx3d_call_unlock();
+    perfmon_scope_end(PERF_SCOPE_3D_READBACK, started);
     return result;
 }
 
@@ -257,11 +293,27 @@ bool gfx3d_begin(gfx3d_surface_handle_t target, uint32_t clear_color,
     return result;
 }
 
+bool gfx3d_surface_upload_mip(gfx3d_surface_handle_t handle, uint32_t level,
+                              const uint32_t *pixels, uint32_t source_pitch) {
+    uint64_t started = perfmon_scope_begin();
+    bool result;
+    gfx3d_call_lock();
+    result = handle && pixels && source_pitch && gfx3d_try_activate() &&
+        (g_info.capabilities & GFX3D_CAP_TEXTURE_MIPMAPS) &&
+        g_active->descriptor_size >= sizeof(*g_active) &&
+        g_active->surface_upload_mip &&
+        g_active->surface_upload_mip(handle, level, pixels, source_pitch);
+    gfx3d_call_unlock();
+    perfmon_scope_end(PERF_SCOPE_3D_UPLOAD, started);
+    return result;
+}
+
 bool gfx3d_draw_triangles(gfx3d_surface_handle_t target,
                           gfx3d_surface_handle_t texture,
                           const gfx3d_vertex_t *vertices,
                           uint32_t vertex_count, uint32_t flags,
                           uint32_t *fence_out) {
+    uint64_t started = perfmon_scope_begin();
     bool result;
     if (fence_out) *fence_out = 0U;
     gfx3d_call_lock();
@@ -270,16 +322,19 @@ bool gfx3d_draw_triangles(gfx3d_surface_handle_t target,
              g_active->draw_triangles(target, texture, vertices, vertex_count,
                                       flags, fence_out);
     gfx3d_call_unlock();
+    perfmon_scope_end(PERF_SCOPE_3D_DRAW, started);
     return result;
 }
 
 bool gfx3d_end(gfx3d_surface_handle_t target, uint32_t *fence_out) {
+    uint64_t started = perfmon_scope_begin();
     bool result;
     if (fence_out) *fence_out = 0U;
     gfx3d_call_lock();
     result = target && gfx3d_try_activate() && g_active->end &&
              g_active->end(target, fence_out);
     gfx3d_call_unlock();
+    perfmon_scope_end(PERF_SCOPE_3D_END, started);
     return result;
 }
 
@@ -305,6 +360,30 @@ void gfx3d_reset(void) {
     gfx3d_call_lock();
     if (g_active && g_active->reset) g_active->reset();
     g_active = NULL;
+    kmemset(g_owned_surfaces,0,sizeof(g_owned_surfaces));
     kmemset(&g_info, 0, sizeof(g_info));
+    gfx3d_call_unlock();
+}
+
+bool gfx3d_virgl(bles_virgl_t *request, void *data) {
+    bool result;
+    gfx3d_call_lock();
+    result = request && request->abi == BLES_VIRGL_ABI && gfx3d_try_activate()
+        && g_active->descriptor_size >= sizeof(*g_active) && g_active->virgl
+        && g_active->virgl(request, data);
+    gfx3d_call_unlock();
+    return result;
+}
+
+void gfx3d_process_cleanup(uint32_t pid) {
+    if(!pid)return;
+    gfx3d_call_lock();
+    for(uint32_t i=0;i<GFX3D_OWNED_SURFACES;i++) {
+        if(g_owned_surfaces[i].handle && g_owned_surfaces[i].pid==pid) {
+            if(g_active && g_active->surface_destroy)
+                (void)g_active->surface_destroy(g_owned_surfaces[i].handle);
+            g_owned_surfaces[i].handle=0U;
+        }
+    }
     gfx3d_call_unlock();
 }

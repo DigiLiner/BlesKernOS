@@ -1,0 +1,40 @@
+{
+  "kernel_sha256": "0f2b8595daf2e8c995735419411bdaa395b8fcda247b4ade271120ade168b019",
+  "cases": {
+    "original16": {
+      "log": "tests/kernel/evidence/user-kvm-pentium3-16/boot.log",
+      "heap_oom_errors": 29,
+      "desktop_released": true,
+      "cpu1_online": true,
+      "idle_smoke_pass": false,
+      "kernel_fault": false
+    },
+    "patched16": {
+      "log": "tests/kernel/evidence/kvm16-user-fixed/16m-vmware-smoke-idle/boot.log",
+      "heap_oom_errors": 25,
+      "desktop_released": true,
+      "cpu1_online": true,
+      "idle_smoke_pass": false,
+      "kernel_fault": false
+    },
+    "patched16_nodefaults": {
+      "log": "tests/kernel/evidence/kvm16-svga-fixed-audio/16m-vmware-smoke-idle/boot.log",
+      "heap_oom_errors": 16,
+      "desktop_released": true,
+      "cpu1_online": true,
+      "idle_smoke_pass": true,
+      "kernel_fault": false
+    },
+    "patched24": {
+      "log": "tests/kernel/evidence/kvm24-user-config/24m-vmware-smoke-idle/boot.log",
+      "heap_oom_errors": 0,
+      "desktop_released": true,
+      "cpu1_online": true,
+      "idle_smoke_pass": true,
+      "kernel_fault": false
+    }
+  },
+  "fix": "Low RAM boot falls back to 32-bit hardware scanout at 640x480 when VMware refuses 8-bit mode; Vision retains 8-bit software output",
+  "recommended_full_device_ram_mib": 24,
+  "image_updated": true
+}

@@ -1,19 +1,29 @@
 #!/usr/bin/env python3
 import os
+import atexit
 import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
+from build_print_sources import build_print_source_archive
+from build_family_sources import build_family_source_archive
+from license_notices import write_notices
 from build_fat_floppy import bk_iconpak_try_prepare
+import bfs4
+from wine_display_defaults import display_defaults
+from wine_app_defaults import app_defaults
+from wine_desktop_defaults import desktop_defaults
+from wine_theme_defaults import theme_defaults
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT_DIR = SCRIPT_DIR.parent
-ATA_SIZE_KB = 64 * 1024
+ATA_SIZE_KB = 768 * 1024
 SECTOR_SIZE = 512
 FAT32_CODE_OFFSET = 90
+BFS_STAGING = None
 
 
 def run(cmd):
@@ -48,11 +58,75 @@ def is_wallpaper_file(path):
 
 
 def mmd(image, path):
+    if BFS_STAGING is not None:
+        # Match mtools/BFS case-insensitive lookup on the host's staging FS.
+        (BFS_STAGING / path.removeprefix("::/").upper()).mkdir(parents=True, exist_ok=True)
+        return
     run(["mmd", "-i", image, path])
 
 
 def mcopy(image, src, dst):
+    if BFS_STAGING is not None:
+        target = BFS_STAGING / dst.removeprefix("::/").upper()
+        if dst.endswith("/"):
+            target = target / Path(src).name.upper()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(src, target)
+        return
     run(["mcopy", "-o", "-i", image, src, dst])
+
+
+def mcopy_tree(image, source_root, destination_root, exclude=()):
+    source_root = Path(source_root)
+    excluded = tuple(Path(item) for item in exclude)
+
+    def skipped(path):
+        relative = path.relative_to(source_root)
+        return any(relative == item or item in relative.parents
+                   for item in excluded)
+
+    mmd(image, destination_root)
+    for directory in sorted(path for path in source_root.rglob("*")
+                            if path.is_dir() and not skipped(path)):
+        relative = directory.relative_to(source_root).as_posix().upper()
+        mmd(image, f"{destination_root}/{relative}")
+    for source in sorted(path for path in source_root.rglob("*")
+                         if path.is_file() and not skipped(path)):
+        relative = source.relative_to(source_root).as_posix().upper()
+        mcopy(image, source, f"{destination_root}/{relative}")
+
+
+def find_bleskernos_start_icon(icons_path):
+    """Find the optional Start logo in the common source-tree locations.
+
+    The normal icon-directory copy already handles it when it lives in the
+    configured icons directory.  The explicit lookup also covers projects
+    where the file was dropped into a top-level icons/ directory, which was a
+    common manual workflow before the CDE Deskbar used the asset.
+    """
+    candidates = []
+    if icons_path:
+        candidates.append(Path(icons_path) / "BLESKERNOS.BMP")
+    candidates.extend((
+        ROOT_DIR / "assets" / "icons" / "BLESKERNOS.BMP",
+        ROOT_DIR / "icons" / "BLESKERNOS.BMP",
+        ROOT_DIR / "BLESKERNOS.BMP",
+    ))
+    seen = set()
+    for candidate in candidates:
+        key = str(candidate.resolve(strict=False))
+        if key in seen:
+            continue
+        seen.add(key)
+        if candidate.is_file():
+            return candidate
+        parent = candidate.parent
+        if parent.is_dir():
+            wanted = candidate.name.upper()
+            for child in parent.iterdir():
+                if child.is_file() and child.name.upper() == wanted:
+                    return child
+    return None
 
 
 def patch_boot_sector(image, boot_sector, sector):
@@ -106,6 +180,7 @@ def zero_sector_range(image, first_sector, sector_count):
 
 
 def main():
+    global BFS_STAGING
     bk_iconpak_try_prepare(sys.argv)
 
     edition = os.environ.get("BLES_EDITION", "user").strip().lower()
@@ -113,6 +188,7 @@ def main():
         print("BLES_EDITION debe ser user o developer", file=sys.stderr)
         return 2
     developer = edition == "developer"
+    image_size_kb = ATA_SIZE_KB
 
     if len(sys.argv) < 2:
         print(
@@ -156,9 +232,9 @@ def main():
     tinygl_path = sys.argv[22] if len(sys.argv) > 22 else None
     libc_path = sys.argv[23] if len(sys.argv) > 23 else None
     control_paths = [sys.argv[i] if len(sys.argv) > i else None
-                     for i in range(24, 36)]
-    ss_balls_path = sys.argv[36] if len(sys.argv) > 36 else None
-    mesa35_path = sys.argv[37] if len(sys.argv) > 37 else None
+                     for i in range(24, 37)]
+    ss_balls_path = sys.argv[37] if len(sys.argv) > 37 else None
+    mesa35_path = sys.argv[38] if len(sys.argv) > 38 else None
     stage2_sectors = 8
     stage2_lba = 1
     kernel_lba = 9
@@ -170,19 +246,27 @@ def main():
     image.parent.mkdir(parents=True, exist_ok=True)
     if image.exists():
         image.unlink()
-    run([
-        "mkfs.fat", "-C", "-F", "32", "-n", "BLESKERNOS",
-        "-R", str(reserved_sectors), "-b", str(backup_boot_sector),
-        image, str(ATA_SIZE_KB),
-    ])
-
-    fsinfo = read_sector(image, 1)
-    write_sector(image, fsinfo_sector, fsinfo)
-    write_sector(image, backup_fsinfo_sector, fsinfo)
-    set_fat32_info_sectors(image, fsinfo_sector, backup_boot_sector)
+    bfs_build = os.environ.get("BLES_FS", "bfs4").lower() != "fat32"
+    if bfs_build:
+        stage = tempfile.TemporaryDirectory(prefix="bleskernos-bfs4-")
+        atexit.register(stage.cleanup)
+        BFS_STAGING = Path(stage.name)
+        with image.open("wb") as handle:
+            handle.truncate(image_size_kb * 1024)
+    else:
+        run([
+            "mkfs.fat", "-C", "-F", "32", "-n", "BLESKERNOS",
+            "-R", str(reserved_sectors), "-b", str(backup_boot_sector),
+            image, str(image_size_kb),
+        ])
+        fsinfo = read_sector(image, 1)
+        write_sector(image, fsinfo_sector, fsinfo)
+        write_sector(image, backup_fsinfo_sector, fsinfo)
+        set_fat32_info_sectors(image, fsinfo_sector, backup_boot_sector)
 
     if boot_sector_path and stage2_path and kernel_path:
-        zero_sector_range(image, stage2_lba, fsinfo_sector - stage2_lba)
+        if not bfs_build:
+            zero_sector_range(image, stage2_lba, fsinfo_sector - stage2_lba)
         write_raw_sector_data(
             image, stage2_lba, stage2_path.read_bytes(), stage2_sectors,
             "stage2",
@@ -191,66 +275,82 @@ def main():
             image, kernel_lba, kernel_path.read_bytes(), kernel_reserved_sectors,
             "kernel",
         )
-        patch_boot_sector(image, boot_sector_path, 0)
-        patch_boot_sector(image, boot_sector_path, backup_boot_sector)
+        if bfs_build:
+            write_sector(image, 0, boot_sector_path.read_bytes())
+        else:
+            patch_boot_sector(image, boot_sector_path, 0)
+            patch_boot_sector(image, boot_sector_path, backup_boot_sector)
 
     mmd(image, "::/DOCS")
     mmd(image, "::/MISC")
+    mmd(image, "::/LIB")
     # BLES_WINE_TEMP_SFX_FIX_20260723: Win9x installers expect this
     # directory to exist before querying TEMP/TMP or calling _lcreat.
     mmd(image, "::/TEMP")
     mmd(image, "::/ICONS")
     mmd(image, "::/SYSTEM")
     mmd(image, "::/SYSTEM/PROGRAMS")
+    mmd(image, "::/SYSTEM/FONTS")
     mmd(image, "::/SYSTEM/COMMANDS")
     mmd(image, "::/SYSTEM/CORE")
-    mmd(image, "::/SYSTEM/WIN32")
+    # Wine's Windows-visible C: lives on the normal BFS volume.  The Wine
+    # runtime and registry stay private under /OPT/WINE and /WINEGATE, while
+    # applications installed by the user are ordinary files under /SYSTEM/WINE.
+    mmd(image, "::/SYSTEM/WINE")
     mmd(image, "::/SYSTEM/USER")
     mmd(image, "::/SYSTEM/USER/CONFIG")
     mmd(image, "::/SYSTEM/LENG")
     mmd(image, "::/SYSTEM/LIBS")
+    mmd(image, "::/SYSTEM/LIBS/POSIX")
     mmd(image, "::/SYSTEM/LIBS/TINYGL")
     mmd(image, "::/SYSTEM/LIBS/MESA35")
     mmd(image, "::/SYSTEM/LIBS/LIBC")
-    mmd(image, "::/SYSTEM/LIBS/WINE")
-    mmd(image, "::/SYSTEM/LIBS/WIN32")
     mmd(image, "::/SYSTEM/SERVICES")
     mmd(image, "::/SYSTEM/SCREENS")
     mmd(image, "::/SYSTEM/CONTROL")
     mmd(image, "::/SYSTEM/DRIVERS")
     mmd(image, "::/SYSTEM/PRINTERS")
+    mmd(image, "::/SYSTEM/FIRMWARE")
     mmd(image, "::/SYSTEM/SOUNDS")
     mmd(image, "::/SYSTEM/WALLPAPR")
     mmd(image, "::/SYSTEM/CURSORS")
+    mmd(image, "::/SYSTEM/SDK")
+    mmd(image, "::/SYSTEM/SDK/INCLUDE")
+    mmd(image, "::/SYSTEM/SDK/LIB")
+    mmd(image, "::/SYSTEM/SDK/EXAMPLES")
+    mmd(image, "::/SYSTEM/SDK/EXAMPLES/HELLO")
+    mmd(image, "::/SYSTEM/DEVEL")
+    mmd(image, "::/SYSTEM/DESKTOP")
+    mmd(image, "::/SYSTEM/TRASH")
     if developer:
-        mmd(image, "::/SYSTEM/SDK")
-        mmd(image, "::/SYSTEM/SDK/INCLUDE")
-        mmd(image, "::/SYSTEM/SDK/LIB")
+        mmd(image, "::/SYSTEM/SOURCE")
         mmd(image, "::/SYSTEM/TESTS")
         mmd(image, "::/SYSTEM/TESTS/NATIVE")
-        mmd(image, "::/SYSTEM/TESTS/WIN32")
+        mmd(image, "::/SYSTEM/TESTS/NATIVE/LIB")
 
     with tempfile.TemporaryDirectory(prefix="bleskernos-ata-") as tmp:
         tmpdir = Path(tmp)
 
         edition_title = "Developer" if developer else "User"
         root_readme = (
-            f"BlesKernOS 0.8 - {edition_title} Edition\r\n"
+            f"BlesKernOS 0.9 - {edition_title} Edition\r\n"
             "Apps: /SYSTEM/PROGRAMS\r\n"
             "Commands: /SYSTEM/COMMANDS\r\n"
             "Core: /SYSTEM/CORE\r\n"
-            "Win32 runtime: /SYSTEM/WIN32\r\n"
+            "Windows runtime: /OPT/WINE (Wine 11)\r\n"
+            "Native SDK: /SYSTEM/SDK\r\n"
+            "Build toolchain: /SYSTEM/DEVEL\r\n"
         )
         if developer:
             root_readme += (
                 "Developer tests: /SYSTEM/TESTS\r\n"
-                "Native SDK: /SYSTEM/SDK\r\n"
+                "OS sources: /SYSTEM/SOURCE\r\n"
             )
         text_files = {
             "::/README.TXT": root_readme.encode("ascii"),
             "::/SYSTEM/EDITION.TXT": (edition + "\r\n").encode("ascii"),
             "::/DOCS/README.TXT": (
-                f"BlesKernOS 0.8 {edition_title} Edition.\r\n"
+                f"BlesKernOS 0.9 {edition_title} Edition.\r\n"
                 "Este disco ATA usa FAT32.\r\n"
                 "Abra Help Center para tareas comunes y diagnostico.\r\n"
             ).encode("ascii"),
@@ -264,6 +364,12 @@ def main():
             "::/SYSTEM/USER/CONFIG/SOUND.INI": (
                 b"[SOUND]\r\nStartupEnabled=1\r\n"
                 b"StartupSound=/SYSTEM/SOUNDS/START.WAV\r\n"
+                b"SystemEventsEnabled=1\r\n"
+                b"MasterVolume=30\r\n"
+                b"WindowOpen=1\r\nWindowClose=1\r\n"
+                b"WindowMinimize=1\r\nWindowRestore=1\r\n"
+                b"WindowResize=1\r\n"
+                b"Button=1\r\nScroll=1\r\n"
             ),
             "::/SYSTEM/USER/CONFIG/PRINTER.INI": (
                 b"[PRINT]\r\nDefault=PSFILE\r\n"
@@ -276,21 +382,20 @@ def main():
                 b"port=COM1\r\nbaud=57600\r\nprefix=ATDT\r\n"
                 b"tone=1\r\nspeaker=1\r\n"
             ),
-            "::/SYSTEM/LIBS/WIN32/README.TXT": (
-                b"DLLs Win32 opcionales para aplicaciones comerciales.\r\n"
-                b"Coloque MFC42.DLL, MSVCP60.DLL y dependencias compatibles\r\n"
-                b"en system/win32-libs antes de construir la imagen ATA.\r\n"
-            ),
         }
-        if developer:
-            text_files["::/SYSTEM/SDK/README.TXT"] = (
-                b"BlesKernOS native SDK\r\n"
-                b"INCLUDE/BLESAPI.H: public API 25\r\n"
-                b"INCLUDE/BLESPRNT.H: abstract printing API\r\n"
-                b"INCLUDE/BLESK.H: syscall compatibility header\r\n"
-                b"LIB/LIBBLESK.A: native syscall and printing library\r\n"
-                b"Build ET_REL i386 objects and use only bk_* symbols.\r\n"
-            )
+        text_files["::/SYSTEM/SDK/README.TXT"] = (
+            b"BlesKernOS native SDK\r\n"
+            b"INCLUDE/BLESKERNOS_API.H: public API 36\r\n"
+            b"LIB/LIBBLESK.A: native syscall and printing library\r\n"
+            b"LIB/LIBPOSIX.A: POSIX libc, pthreads, mmap and IPv4 sockets\r\n"
+            b"LIB/LIBSDL2.A: SDL2-compatible software graphics layer\r\n"
+            b"LIB/LIBM.A: portable floating-point math library\r\n"
+            b"Tools: gcc cc ld as ar ranlib objcopy objdump readelf nm size strip\r\n"
+            b"       addr2line cxxfilt elfedit strings nasm ndisasm make fatpack build\r\n"
+            b"Use: build SOURCE.C PROGRAM.BEX\r\n"
+            b"Makefiles: make -f MAKEFILE [TARGET]\r\n"
+            b"FAT32 images: fatpack --help\r\n"
+        )
 
         if desktop_path:
             desktop = load(desktop_path, "Desktop INI")
@@ -316,7 +421,12 @@ def main():
             src = write_payload(tmpdir, f"text{index}.tmp", data)
             mcopy(image, src, dst)
 
+        for source in sorted((ROOT_DIR / "assets" / "fonts").glob("*.BFN")):
+            mcopy(image, source, f"::/SYSTEM/FONTS/{source.name}")
+        mcopy(image, ROOT_DIR / "assets/fonts/LICENSE.txt", "::/SYSTEM/FONTS/LICENSE.TXT")
+
         native_programs = [
+            ("font.o", ROOT_DIR / "build/programs/font.o", "Font viewer"),
             ("shell.o", shell_path, "Shell"),
             ("about.o", ROOT_DIR / "build" / "programs" / "about.o", "About"),
             ("runbox.o", ROOT_DIR / "build" / "programs" / "runbox.o", "Runbox"),
@@ -328,7 +438,7 @@ def main():
             ("calendar.o", calendar_path, "Calendar"),
             ("paint.o", ROOT_DIR / "build" / "programs" / "paint.o", "Paint"),
             ("imageviewer.o", ROOT_DIR / "build" / "programs" / "imageviewer.o", "Imageviewer"),
-            ("games.o", ROOT_DIR / "build" / "programs" / "games.o", "Games"),
+            ("viewer.o", ROOT_DIR / "build/programs/viewer.o", "Viewer"),
             ("scandisk.o", ROOT_DIR / "build" / "programs" / "scandisk.o", "ScanDisk"),
             ("wine.o", ROOT_DIR / "build" / "programs" / "wine.o", "Wine PE launcher"),
             ("netsurf.o", ROOT_DIR / "build" / "programs" / "netsurf.o", "NetSurf bootstrap frontend"),
@@ -338,6 +448,8 @@ def main():
             ("disk_tools.o", ROOT_DIR / "build" / "programs" / "disk_tools.o", "Disk Tools"),
             ("network_status.o", ROOT_DIR / "build" / "programs" / "network_status.o", "Network Status"),
             ("clipboard_viewer.o", ROOT_DIR / "build" / "programs" / "clipboard_viewer.o", "Clipboard Viewer"),
+            ("defrag.o", ROOT_DIR / "build" / "programs" / "defrag.o", "Desfragmentador de disco"),
+            ("event_viewer.o", ROOT_DIR / "build" / "programs" / "event_viewer.o", "Event Viewer"),
             ("performance_monitor.o", ROOT_DIR / "build" / "programs" / "performance_monitor.o", "Performance Monitor"),
         ]
         if developer:
@@ -345,28 +457,13 @@ def main():
                 ("gears.o", ROOT_DIR / "build" / "programs" / "gears.o", "TinyGL Gears demo"),
                 ("apitest.o", ROOT_DIR / "build" / "programs" / "apitest.o", "APITest"),
                 ("phase2.o", ROOT_DIR / "build" / "programs" / "phase2.o", "Phase II syscall test"),
+                ("posix_test.o", ROOT_DIR / "build" / "programs" / "posix_test.o", "POSIX syscall/libc test"),
+                ("linux_abi_test.o", ROOT_DIR / "build" / "programs" / "linux_abi_test.o", "Linux i386 ABI test"),
+                ("sdl_demo.o", ROOT_DIR / "build" / "programs" / "sdl_demo.o", "SDL2/POSIX graphics demo"),
                 ("ring3proxy.o", ROOT_DIR / "build" / "programs" / "ring3proxy.o", "Ring 3 API proxy self-test"),
                 ("print_test.o", ROOT_DIR / "build" / "programs" / "print_test.o", "Printing subsystem test"),
             ])
-        win32_programs = [
-            ("HELLO.EXE", ROOT_DIR / "build" / "win32" / "HELLO.EXE", "Win32 HELLO.EXE"),
-            ("NOTEPAD.EXE", ROOT_DIR / "build" / "win32" / "NOTEPAD.EXE", "Win32 NOTEPAD.EXE"),
-            ("MSGBOX.EXE", ROOT_DIR / "build" / "win32" / "MSGBOX.EXE", "Win32 MSGBOX.EXE"),
-            ("DYNLOAD.EXE", ROOT_DIR / "build" / "win32" / "DYNLOAD.EXE", "Win32 DYNLOAD.EXE"),
-            ("DLLTEST.EXE", ROOT_DIR / "build" / "win32" / "DLLTEST.EXE", "Win32 DLLTEST.EXE"),
-            ("TLSTEST.EXE", ROOT_DIR / "build" / "win32" / "TLSTEST.EXE", "Win32 TLSTEST.EXE"),
-            ("THREADTEST.EXE", ROOT_DIR / "build" / "win32" / "THREADTEST.EXE", "Win32 THREADTEST.EXE"),
-            ("SYNCTEST.EXE", ROOT_DIR / "build" / "win32" / "SYNCTEST.EXE", "Win32 SYNCTEST.EXE"),
-            ("RESOURCETEST.EXE", ROOT_DIR / "build" / "win32" / "RESOURCETEST.EXE", "Win32 RESOURCETEST.EXE"),
-            ("MENUTEST.EXE", ROOT_DIR / "build" / "win32" / "MENUTEST.EXE", "Win32 MENUTEST.EXE"),
-            ("DIALOGTEST.EXE", ROOT_DIR / "build" / "win32" / "DIALOGTEST.EXE", "Win32 DIALOGTEST.EXE"),
-            ("SEHTEST.EXE", ROOT_DIR / "build" / "win32" / "SEHTEST.EXE", "Win32 SEHTEST.EXE"),
-            ("WCCOMPAT.EXE", ROOT_DIR / "build" / "win32" / "WINECALC_COMPAT.EXE", "Win32 WineCalc compatibility test"),
-            ("EDITTEST.EXE", ROOT_DIR / "build" / "win32" / "EDITTEST.EXE", "Win32 multiline EDIT test"),
-            ("WIN98COMPAT.EXE", ROOT_DIR / "build" / "win32" / "WIN98COMPAT.EXE", "Win95/98 API compatibility test"),
-            ("WIN95COMPAT2.EXE", ROOT_DIR / "build" / "win32" / "WIN95COMPAT2.EXE", "Win95 compatibility batch 2"),
-        ]
-        developer_native = {"gears.o", "apitest.o", "phase2.o", "ring3proxy.o", "print_test.o"}
+        developer_native = {"gears.o", "apitest.o", "phase2.o", "posix_test.o", "linux_abi_test.o", "sdl_demo.o", "ring3proxy.o", "print_test.o"}
         for dst_name, src_path, label in native_programs:
             data = load(src_path, label)
             if data is not None:
@@ -379,13 +476,72 @@ def main():
                     mcopy(image, src,
                           f"::/SYSTEM/PROGRAMS/{installed_name}")
 
+            # Los artefactos ELF/Win32 de abajo pertenecen sólo a la edición
+            # developer, cuyas carpetas TESTS se crean arriba.
+            if not developer:
+                continue
+
+            module_path = ROOT_DIR / "build" / "tests" / "userland" / "DLMOD.SO"
+            module_data = load(module_path, "ELF32 dynamic loader test module")
+            if module_data is not None:
+                module_source = write_payload(tmpdir, "DLMOD.SO", module_data)
+                mcopy(image, module_source, "::/SYSTEM/TESTS/NATIVE/DLMOD.SO")
+            dependency_path = ROOT_DIR / "build" / "tests" / "userland" / "DLDEP.SO"
+            dependency_data = load(dependency_path, "ELF32 DT_NEEDED test dependency")
+            if dependency_data is not None:
+                dependency_source = write_payload(tmpdir, "DLDEP.SO", dependency_data)
+                mcopy(image, dependency_source, "::/SYSTEM/TESTS/NATIVE/DLDEP.SO")
+            tls_dependency_path = ROOT_DIR / "build" / "tests" / "userland" / "TLSDEP.SO"
+            tls_dependency_data = load(tls_dependency_path, "Linux i386 static TLS dependency")
+            if tls_dependency_data is not None:
+                tls_dependency_source = write_payload(tmpdir, "TLSDEP.SO", tls_dependency_data)
+                mcopy(image, tls_dependency_source, "::/SYSTEM/TESTS/NATIVE/LIB/TLSDEP.SO")
+            pie_path = ROOT_DIR / "build" / "tests" / "userland" / "LINUXPIE.ELF"
+            pie_data = load(pie_path, "Linux ELF32 PIE executable test")
+            if pie_data is not None:
+                pie_source = write_payload(tmpdir, "LINUXPIE.ELF", pie_data)
+                mcopy(image, pie_source, "::/SYSTEM/TESTS/NATIVE/LINUXPIE.ELF")
+            interp_test_path = ROOT_DIR / "build" / "tests" / "userland" / "INTERPPIE.ELF"
+            interp_test_data = load(interp_test_path, "Linux PT_INTERP integration test")
+            if interp_test_data is not None:
+                interp_test_source = write_payload(tmpdir, "INTERPPIE.ELF", interp_test_data)
+                mcopy(image, interp_test_source, "::/SYSTEM/TESTS/NATIVE/INTERPPIE.ELF")
+            dynamic_test_path = ROOT_DIR / "build" / "tests" / "userland" / "DYNAMIC.ELF"
+            dynamic_test_data = load(dynamic_test_path, "Linux DT_NEEDED/PLT integration test")
+            if dynamic_test_data is not None:
+                dynamic_test_source = write_payload(tmpdir, "DYNAMIC.ELF", dynamic_test_data)
+                mcopy(image, dynamic_test_source, "::/SYSTEM/TESTS/NATIVE/DYNAMIC.ELF")
+            exec_test_path = ROOT_DIR / "build" / "tests" / "userland" / "EXECFIX.ELF"
+            exec_test_data = load(exec_test_path, "Linux fixed ET_EXEC/CR3 integration test")
+            if exec_test_data is not None:
+                exec_test_source = write_payload(tmpdir, "EXECFIX.ELF", exec_test_data)
+                mcopy(image, exec_test_source, "::/SYSTEM/TESTS/NATIVE/EXECFIX.ELF")
+            glibc_test_path = ROOT_DIR / "build" / "tests" / "userland" / "GLIBCHEL.ELF"
+            glibc_test_data = load(glibc_test_path, "Linux GCC/glibc ABI integration test")
+            if glibc_test_data is not None:
+                glibc_test_source = write_payload(tmpdir, "GLIBCHEL.ELF", glibc_test_data)
+                mcopy(image, glibc_test_source, "::/SYSTEM/TESTS/NATIVE/GLIBCHEL.ELF")
+            libc_linux_path = ROOT_DIR / "build" / "system" / "libs" / "posix" / "libc.so.6"
+            libc_linux_data = load(libc_linux_path, "BlesK Linux libc.so.6 compatibility layer")
+            if libc_linux_data is not None:
+                libc_linux_source = write_payload(tmpdir, "LIBC.SO.6", libc_linux_data)
+                mcopy(image, libc_linux_source, "::/LIB/LIBC.SO.6")
+                mcopy(image, libc_linux_source, "::/SYSTEM/LIBS/POSIX/LIBC.SO.6")
+            loader_path = ROOT_DIR / "build" / "system" / "libs" / "posix" / "ld-blesk.so"
+            loader_data = load(loader_path, "BlesK Linux dynamic interpreter")
+            if loader_data is not None:
+                loader_source = write_payload(tmpdir, "LD-BLESK.SO", loader_data)
+                mcopy(image, loader_source, "::/SYSTEM/LIBS/POSIX/LD-BLESK.SO")
+                mcopy(image, loader_source, "::/LIB/LD-LINUX.SO.2")
+
         command_names = (
-            "help about uname hostname uptime date time shutdown reboot sleep bosrecovery "
-            "fdisk format mount unmount label checkdisk fsinfo backup dir ls copy move "
-            "delete mkdir rmdir rename touch tree find attrib chmod type more cat "
+            "help echo about uname hostname uptime date time shutdown reboot sleep bosrecovery "
+            "fdisk format mount unmount label checkdisk fsinfo backup dir ls copy cp move "
+            "delete rm mkdir rmdir rename touch tree find attrib chmod type more cat "
             "diff ps kill tasklist taskkill top nice pci usb lspci lsusb "
             "cpuinfo mem soundtest ipconfig ping netstat ftp wget curl compile link "
-            "objdump nm hexdump strings calc hexedit compress extract "
+            "gcc cc ld as ar ranlib build nasm ndisasm make fatpack "
+            "addr2line cxxfilt elfedit objcopy objdump readelf nm size strip hexdump strings calc hexedit compress extract "
             "checksum benchmark start"
         ).split()
         for command_name in command_names:
@@ -396,36 +552,63 @@ def main():
             if command_data is not None:
                 src = write_payload(tmpdir, filename, command_data)
                 mcopy(image, src, f"::/SYSTEM/COMMANDS/{filename}")
-        if developer:
-            for dst_name, src_path, label in win32_programs:
-                data = load(src_path, label)
-                if data is not None:
-                    src = write_payload(tmpdir, dst_name, data)
-                    mcopy(image, src, f"::/SYSTEM/TESTS/WIN32/{dst_name}")
+        sdk_include = ROOT_DIR / "sdk" / "include"
+        for directory in sorted(path for path in sdk_include.rglob("*")
+                                if path.is_dir()):
+            relative = directory.relative_to(sdk_include).as_posix().upper()
+            mmd(image, f"::/SYSTEM/SDK/INCLUDE/{relative}")
+        for source in sorted(path for path in sdk_include.rglob("*")
+                             if path.is_file() and ".pre-" not in path.name):
+            relative = source.relative_to(sdk_include).as_posix().upper()
+            mcopy(image, source, f"::/SYSTEM/SDK/INCLUDE/{relative}")
+        for source in sorted((ROOT_DIR / "sdk" / "examples" / "selfhost").iterdir()):
+            if source.is_file():
+                mcopy(image, source,
+                      f"::/SYSTEM/SDK/EXAMPLES/HELLO/{source.name.upper()}")
+
+        selfhost = ROOT_DIR / "build" / "selfhost" / "toolchain"
+        if not selfhost.is_dir():
+            raise RuntimeError(
+                "toolchain self-hosting ausente; ejecute make selfhost"
+            )
+        for directory in sorted(path for path in selfhost.rglob("*")
+                                if path.is_dir()):
+            relative = directory.relative_to(selfhost).as_posix().upper()
+            mmd(image, f"::/SYSTEM/DEVEL/{relative}")
+        for source in sorted(path for path in selfhost.rglob("*")
+                             if path.is_file()):
+            relative = source.relative_to(selfhost).as_posix().upper()
+            mcopy(image, source, f"::/SYSTEM/DEVEL/{relative}")
 
         if developer:
-            sdk_files = [
-                (ROOT_DIR / "sdk" / "include" / "bleskernos_api.h",
-                 "::/SYSTEM/SDK/INCLUDE/BLESAPI.H"),
-                (ROOT_DIR / "sdk" / "include" / "bleskernos_print.h",
-                 "::/SYSTEM/SDK/INCLUDE/BLESPRNT.H"),
-                (ROOT_DIR / "sdk" / "include" / "bleskernos.h",
-                 "::/SYSTEM/SDK/INCLUDE/BLESK.H"),
-                (ROOT_DIR / "build" / "sdk" / "libblesk.a",
-                 "::/SYSTEM/SDK/LIB/LIBBLESK.A"),
-            ]
-            for source, destination in sdk_files:
-                if source.is_file():
-                    mcopy(image, source, destination)
-                else:
-                    print(f"Warning: SDK file missing: {source}", file=sys.stderr)
-
-        optional_win32_libs = ROOT_DIR / "system" / "win32-libs"
-        if optional_win32_libs.is_dir():
-            for dll_path in sorted(optional_win32_libs.iterdir()):
-                if not dll_path.is_file() or dll_path.suffix.lower() not in (".dll", ".drv", ".ocx"):
-                    continue
-                mcopy(image, dll_path, f"::/SYSTEM/LIBS/WIN32/{dll_path.name.upper()}")
+            source_roots = (
+                "boot", "kernel", "gui", "programs", "system", "sdk",
+                "config", "mk", "docs", "libs", "assets", "tools",
+            )
+            for root_name in source_roots:
+                source_root = ROOT_DIR / root_name
+                mmd(image, f"::/SYSTEM/SOURCE/{root_name.upper()}")
+                for directory in sorted(path for path in source_root.rglob("*")
+                                        if path.is_dir() and
+                                        "__pycache__" not in
+                                        path.relative_to(source_root).parts):
+                    relative = directory.relative_to(source_root).as_posix().upper()
+                    mmd(image, f"::/SYSTEM/SOURCE/{root_name.upper()}/{relative}")
+                for source in sorted(path for path in source_root.rglob("*")
+                                     if path.is_file() and
+                                     "__pycache__" not in
+                                     path.relative_to(source_root).parts and
+                                     path.suffix.lower() != ".pyc" and
+                                     ".pre-" not in path.name and
+                                     not path.name.endswith((".rej", ".bak", ".orig"))):
+                    relative = source.relative_to(source_root).as_posix().upper()
+                    mcopy(image, source,
+                          f"::/SYSTEM/SOURCE/{root_name.upper()}/{relative}")
+            for source in (ROOT_DIR / "Makefile", ROOT_DIR / "GNUmakefile",
+                           ROOT_DIR / "mk/selfhost.mk",
+                           ROOT_DIR / "docs" / "build" / "self-hosting.md"):
+                mcopy(image, source,
+                      f"::/SYSTEM/SOURCE/{source.name.upper()}")
 
         for language_name in ("ESPANOL.LNG", "ENGLISH.LNG", "ITALIANO.LNG"):
             language_path = ROOT_DIR / "system" / "leng" / language_name
@@ -442,22 +625,10 @@ def main():
                 mcopy(image, wallpaper_path,
                       f"::/SYSTEM/WALLPAPR/{wallpaper_path.name}")
 
-        cursor_dir = ROOT_DIR / "gui" / "cursor"
-        if cursor_dir.is_dir():
-            cursor_names = {
-                "arrow.cur": "ARROW.CUR",
-                "arrow_clock.cur": "WAIT.CUR",
-                "hresize.cur": "HRESIZE.CUR",
-                "vresize.cur": "VRESIZE.CUR",
-                "dresize1.cur": "DRESIZE1.CUR",
-                "dresize2.cur": "DRESIZE2.CUR",
-            }
-            for cursor_path in sorted(cursor_dir.glob("*.cur")):
-                destination = cursor_names.get(cursor_path.name.lower())
-                if not destination:
-                    continue
-                mcopy(image, cursor_path,
-                      f"::/SYSTEM/CURSORS/{destination}")
+        cursor_dir = ROOT_DIR / "assets" / "cursors"
+        for cursor_path in sorted(cursor_dir.iterdir()):
+            if cursor_path.is_file():
+                mcopy(image, cursor_path, f"::/SYSTEM/CURSORS/{cursor_path.name}")
         system_files = [
             ("::/SYSTEM/CORE/deskbar.o", ROOT_DIR / "build" / "system" / "desktop" / "deskbar.o", "Deskbar core"),
             ("::/SYSTEM/CORE/deskmanager.o", ROOT_DIR / "build" / "system" / "desktop" / "deskmanager.o", "Desktop manager core"),
@@ -476,6 +647,7 @@ def main():
             ("::/SYSTEM/DRIVERS/RTL8139.DVR", ROOT_DIR / "build" / "system" / "drivers" / "RTL8139.DVR", "Realtek RTL8139 driver"),
             ("::/SYSTEM/DRIVERS/TLS.DVR", ROOT_DIR / "build" / "system" / "drivers" / "TLS.DVR", "BearSSL TLS 1.2 provider"),
             ("::/SYSTEM/SERVICES/SCREENSV.BEX", screensaverd_path, "ScreenSaver daemon"),
+            ("::/SYSTEM/SERVICES/VISION.BEX", ROOT_DIR / "build" / "system" / "services" / "vision.o", "Vision GUI service"),
             ("::/SYSTEM/SERVICES/PRINTSPL.BEX", ROOT_DIR / "build" / "system" / "services" / "printspool.o", "PrintSpool daemon"),
             ("::/SYSTEM/SCREENS/SSLOGO.SCV", ss_logo_path, "ScreenSaver logo"),
             ("::/SYSTEM/SCREENS/SSPIPES.SCV", ss_pipes_path, "ScreenSaver pipes"),
@@ -483,14 +655,7 @@ def main():
             ("::/SYSTEM/LIBS/TINYGL/TINYGL.A", tinygl_path, "TinyGL library"),
             ("::/SYSTEM/LIBS/MESA35/MESA35.A", mesa35_path, "Mesa 3.5 GFX3D/OSMesa library"),
             ("::/SYSTEM/LIBS/LIBC/LIBC.A", libc_path, "C library"),
-            ("::/SYSTEM/LIBS/WINE/WINE.A", ROOT_DIR / "build" / "system" / "libs" / "wine" / "WINE.A", "Unified Win95/98 compatibility library"),
         ]
-        if developer:
-            system_files.append((
-                "::/SYSTEM/LIBS/WINE/TESTDLL.DLL",
-                ROOT_DIR / "build" / "win32" / "TESTDLL.DLL",
-                "Win32 test DLL",
-            ))
         control_names = [
             ("CONTROL.BEX", "Control Panel"),
             ("APPEAR.CPL", "Appearance CPL"),
@@ -504,6 +669,7 @@ def main():
             ("INTERNET.CPL", "Internet CPL"),
             ("MODEM.CPL", "Modem CPL"),
             ("LANGUAGE.CPL", "Language CPL"),
+            ("WINE.CPL", "Windows applications CPL"),
         ]
         for (name, label), src_path in zip(control_names, control_paths):
             system_files.append((f"::/SYSTEM/CONTROL/{name}", src_path, label))
@@ -531,13 +697,42 @@ def main():
                 src = write_payload(tmpdir, Path(dst).name, data)
                 mcopy(image, src, dst)
 
-        printing_doc = ROOT_DIR / "docs" / "printing.md"
+        # Combined index plus original notices for bundled libraries.
+        notices = write_notices(Path(tmpdir) / "LICENSES.TXT")
+        mcopy(image, notices, "::/DOCS/LICENSES.TXT")
+
+        # Copied Linux PRO/100 template and PCI identity database: ship sources/licenses.
+        family_source = build_family_source_archive(Path(tmpdir) / "FAMILYSRC.TGZ")
+        mcopy(image, family_source, "::/DOCS/FAMILYSRC.TGZ")
+        for source, destination in [
+            ("LICENSES/GPL-2.0.txt", "NETGPL.TXT"),
+            ("third_party/pciids/COPYING", "PCIIDSLICENSE.TXT"),
+            ("docs/platform/family-drivers.md", "FAMILYDRIVERS.TXT"),
+            ("docs/family-expansion-2026-10-13.md", "FAMILYTESTS.TXT"),
+            ("docs/platform/family-driver-sources.json", "FAMILYSOURCES.JSON"),
+            ("docs/platform/framebuffer-device-catalog.json", "FRAMEBUFFERIDS.JSON")]:
+            mcopy(image, ROOT_DIR / source, "::/DOCS/" + destination)
+
+        # The combined PrintSpool executable links GPL JBIG-KIT: ship source.
+        mcopy(image, ROOT_DIR / "third_party/jbigkit/COPYING", "::/DOCS/PRINTGPL.TXT")
+        source_archive = build_print_source_archive(Path(tmpdir) / "PRINTSRC.TGZ")
+        mcopy(image, source_archive, "::/DOCS/PRINTSRC.TGZ")
+        mcopy(image, ROOT_DIR / "system/firmware/README.md", "::/SYSTEM/FIRMWARE/README.TXT")
+        for filename in ["SIHP1000.DL", "SIHP1005.DL", "SIHP1018.DL", "SIHP1020.DL"]:
+            firmware = ROOT_DIR / "system/firmware" / filename
+            if firmware.is_file():
+                mcopy(image, firmware, "::/SYSTEM/FIRMWARE/" + filename)
+
+        mcopy(image, ROOT_DIR / "docs/driver-source-layout.md", "::/DOCS/DRIVERSPLIT.TXT")
+        mcopy(image, ROOT_DIR / "docs/platform/legacy-drivers.md", "::/DOCS/LEGACYDRIVERS.TXT")
+        mcopy(image, ROOT_DIR / "docs/platform/legacy-driver-sources.json", "::/DOCS/DRIVERSOURCES.JSON")
+        printing_doc = ROOT_DIR / "docs" / "platform" / "printing.md"
         if printing_doc.is_file():
             mcopy(image, printing_doc, "::/DOCS/PRINTING.TXT")
         else:
             print(f"Warning: printing documentation missing: {printing_doc}", file=sys.stderr)
 
-        usbclass_doc = ROOT_DIR / "docs" / "usbclass.md"
+        usbclass_doc = ROOT_DIR / "docs" / "platform" / "usbclass.md"
         if usbclass_doc.is_file():
             mcopy(image, usbclass_doc, "::/DOCS/USBCLASS.TXT")
         else:
@@ -549,17 +744,35 @@ def main():
                 mcopy(image, profile_path,
                       f"::/SYSTEM/PRINTERS/{profile_path.name.upper()}")
 
-        startup_wav = ROOT_DIR / "assets" / "sounds" / "startup.wav"
-        startup_data = load(startup_wav, "Startup WAV")
-        if startup_data is not None:
-            src = write_payload(tmpdir, "START.WAV", startup_data)
-            mcopy(image, src, "::/SYSTEM/SOUNDS/START.WAV")
+        sound_assets = [
+            ("START.WAV", "startup.wav", "Startup WAV"),
+            ("WINOPEN.WAV", "winopen.wav", "Window open sound"),
+            ("WINCLOSE.WAV", "winclose.wav", "Window close sound"),
+            ("MINIMIZE.WAV", "minimize.wav", "Window minimize sound"),
+            ("RESTORE.WAV", "restore.wav", "Window restore sound"),
+            ("RESIZE.WAV", "resize.wav", "Window resize sound"),
+            ("BOTTON.WAV", "botton.wav", "GUI button sound"),
+            ("SCROLL.WAV", "scroll.wav", "GUI scroll sound"),
+        ]
+        for dst_name, src_name, label in sound_assets:
+            sound_path = ROOT_DIR / "assets" / "sounds" / src_name
+            sound_data = load(sound_path, label)
+            if sound_data is not None:
+                src = write_payload(tmpdir, dst_name, sound_data)
+                mcopy(image, src, f"::/SYSTEM/SOUNDS/{dst_name}")
 
         graphics_pak = ROOT_DIR / "assets" / "graphics" / "GRAPHICS.PAK"
         graphics_data = load(graphics_pak, "Shared graphics package")
         if graphics_data is not None:
             src = write_payload(tmpdir, "GRAPHICS.PAK", graphics_data)
             mcopy(image, src, "::/SYSTEM/GRAPHICS.PAK")
+
+        for destination, source_path in (
+            ("GRAPHICS.CSV", ROOT_DIR / "assets/graphics/GRAPHICS.CSV"),
+            ("KDE1SRC.TGZ", ROOT_DIR / "assets/graphics/KDE1SRC.TGZ"),
+            ("KDE1LIC.TXT", ROOT_DIR / "third_party/kde1/README.md"),
+        ):
+            mcopy(image, source_path, f"::/SYSTEM/{destination}")
 
         skin_dir = ROOT_DIR / "programs" / "winmap"
         root_assets = [
@@ -579,7 +792,80 @@ def main():
                 if src_path.is_file():
                     mcopy(image, src_path, f"::/ICONS/{src_path.name.upper()}")
 
-    print(f"[ATA] FAT32 image: {image} ({ATA_SIZE_KB // 1024} MiB)", file=sys.stderr)
+        # The CDE Deskbar expects this exact canonical runtime path.  Copy it
+        # explicitly even though the generic loop above normally already did;
+        # this makes the build deterministic when the source asset was placed
+        # in a legacy top-level icons/ directory and prints what was packaged.
+        bles_start_icon = find_bleskernos_start_icon(icons_path)
+        if bles_start_icon is not None:
+            mcopy(image, bles_start_icon, "::/ICONS/BLESKERNOS.BMP")
+            print(f"[ATA] Start icon: {bles_start_icon} -> "
+                  "/ICONS/BLESKERNOS.BMP", file=sys.stderr)
+        else:
+            print("Warning: BLESKERNOS.BMP not found; Deskbar will use its "
+                  "fallback mark", file=sys.stderr)
+
+        wine_root = ROOT_DIR / "ports/wine/package/wine-11.0-i386/rootfs"
+        wine_program = wine_root / "opt/wine/bin/wine"
+        tinyx_program = wine_root / "WINEGATE/bin/XFBDEV"
+        launcher = ROOT_DIR / "build/wine/wine-launch"
+        tool_launcher = ROOT_DIR / "build/wine/wine-tool"
+        for required in (wine_program, tinyx_program, launcher, tool_launcher):
+            if not required.is_file():
+                raise FileNotFoundError(f"Wine 11 default build requires {required}")
+        mmd(image, "::/OPT")
+        mcopy_tree(image, wine_root / "opt/wine", "::/OPT/WINE")
+        # Keep Wine's Unix support private, but place drive C: on the normal
+        # BlesKernOS filesystem so Archivos and native programs can browse it.
+        # wine-launch creates $WINEPREFIX/drive_c as a compatibility symlink.
+        mcopy_tree(image, wine_root / "WINEGATE", "::/WINEGATE",
+                   exclude=("prefix/drive_c",))
+        user_reg, system_reg, theme_marker = theme_defaults(
+            (wine_root / "WINEGATE/prefix/user.reg").read_bytes(),
+            (wine_root / "WINEGATE/prefix/system.reg").read_bytes(),
+            (ROOT_DIR / "ports/tinyx/wine-launch.c").read_text())
+        display_reg = write_payload(tmpdir, "wine-display-defaults.reg",
+                                    desktop_defaults(app_defaults(display_defaults(user_reg))))
+        mcopy(image, display_reg, "::/WINEGATE/prefix/user.reg")
+        mcopy(image, write_payload(tmpdir, "wine-system-defaults.reg", system_reg),
+              "::/WINEGATE/prefix/system.reg")
+        mcopy(image, write_payload(tmpdir, "wine-theme-ready", b""),
+              "::" + theme_marker)
+        mcopy_tree(image, wine_root / "WINEGATE/prefix/drive_c",
+                   "::/SYSTEM/WINE")
+        retro_icons = ROOT_DIR / "build/wine/BLESICONS.DLL"
+        if not retro_icons.is_file():
+            raise FileNotFoundError(f"Wine classic icons require {retro_icons}")
+        mcopy(image, retro_icons,
+              "::/SYSTEM/WINE/WINDOWS/SYSTEM32/BLESICONS.DLL")
+        # The installed prefix disables automatic wineboot updates. New builtin
+        # drivers still need their PE stub in the Windows DLL search directory.
+        mcopy(image, ROOT_DIR / "ports/wine/package/wine-11.0-i386/rootfs/opt/wine/lib/wine/i386-windows/wineoss.drv",
+              "::/SYSTEM/WINE/WINDOWS/SYSTEM32/WINEOSS.DRV")
+        # Keep the historical extensionless path for shell/tests, and install
+        # an .ELF alias for WINE.BEX.  The public bk_app_launch() API routes
+        # native executables by their stable file identity/extension instead
+        # of exposing the kernel's private elf_execute_program_ex symbol.
+        mcopy(image, launcher, "::/WINEGATE/BIN/wine-launch")
+        mcopy(image, launcher, "::/WINEGATE/BIN/wine-launch.ELF")
+        mcopy(image, ROOT_DIR / "build/wine/wine-ready.exe", "::/WINEGATE/BIN/wine-ready.exe")
+        mcopy(image, tool_launcher, "::/WINEGATE/BIN/wine-tool.ELF")
+        mmd(image, "::/WINEGATE/CACHE")
+        mmd(image, "::/WINEGATE/CACHE/FONTCONFIG")
+        mcopy_tree(image,
+                   ROOT_DIR / "ports/wine/package/wine-11.0-i386/licenses",
+                   "::/DOCS/WINE")
+        mcopy(image,
+              ROOT_DIR / "ports/tinyx/upstream/tinycorelinux-tinyx/COPYING",
+              "::/DOCS/WINE/TINYX-COPYING.TXT")
+
+    if bfs_build:
+        bfs4.build(image, BFS_STAGING, image_size_kb // 1024, "BLESKERNOS")
+        bfs4.check(image)
+        BFS_STAGING = None
+        stage.cleanup()
+    print(f"[ATA] {'BFS4' if bfs_build else 'FAT32'} image: {image} "
+          f"({image_size_kb // 1024} MiB)", file=sys.stderr)
     return 0
 
 

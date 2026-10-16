@@ -1,0 +1,8 @@
+# Raspberry Pi 3 - BlesKernOS ARM32 Stage 1
+arm_64bit=0
+kernel=kernel7.img
+kernel_address=0x8000
+
+# Mini UART baud rate depends on core clock. Keep it deterministic.
+core_freq=250
+enable_uart=1

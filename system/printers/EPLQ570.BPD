@@ -1,0 +1,8 @@
+[Printer]
+Id=EPLQ570
+Name=Epson LQ-570+ ESC/P2 compatibility
+Language=ESCP2
+Transport=LPT
+Port=LPT1
+DPI=60
+EscpMode=0

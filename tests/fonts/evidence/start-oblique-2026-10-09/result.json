@@ -1,0 +1,13 @@
+{
+  "label": "Start",
+  "font": "Helvetica Bold Oblique Bitmap",
+  "color": "#C0C0C0",
+  "antialiasing": false,
+  "families": 24,
+  "normal_user_build": "PASS",
+  "native_renderer_ASan_UBSan_24x65": "PASS",
+  "pack_catalog_sources_and_codec": "PASS",
+  "guest": "QEMU KVM 2 CPU, 2GiB, virtio-vga without GL; Start appearance visually checked; menu opens",
+  "normal_image_payloads": "PASS",
+  "production_image_written_by_this_task": false
+}

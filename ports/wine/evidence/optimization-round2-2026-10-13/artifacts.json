@@ -1,0 +1,52 @@
+[
+  {
+    "path": "build/bleskernos-ata-user.img",
+    "bytes": 805306368,
+    "sha256": "0aa2144bf3ef1858ae2d3fcf23cc723f36aaf5d7ce77da49af7646e78775a30b"
+  },
+  {
+    "path": "build/bleskernos-wine-optimized.img",
+    "bytes": 805306368,
+    "sha256": "c8a8a1f1de35e18bae898338385080f423b29f2f4ee189f765bf9ea928c3ce71"
+  },
+  {
+    "path": "build/bleskernos-wine-optimized-v2.img",
+    "bytes": 805306368,
+    "sha256": "36557cb4fe5476865de07657c3ddd1b8f98c084603843ebb6f4c839f3a5ad992"
+  },
+  {
+    "path": "build/kernel.bin",
+    "bytes": 837676,
+    "sha256": "1e95cc9a7b9adfe1d56427b4ffca7a0b28ee80f689ca9299799555a1849cde2f"
+  },
+  {
+    "path": "build/kernel.elf",
+    "bytes": 952076,
+    "sha256": "9c47ef62f72e10cc8deff1e92361b55f648ab321554f0d7b7dca5e8b3c58d151"
+  },
+  {
+    "path": "build/stage2.bin",
+    "bytes": 4096,
+    "sha256": "fc010e0f0815329b88e5b494f29f14f956c8c707a502dd4fd38da3523cc6e20c"
+  },
+  {
+    "path": "kernel/linux/i386_futex.inc",
+    "bytes": 5895,
+    "sha256": "365fa8a56b809257daeb06eec4757123e2b04570d482c7c3021f5f01d203c04a"
+  },
+  {
+    "path": "ports/wine/tests/futex-latency.c",
+    "bytes": 1834,
+    "sha256": "aca3f4ac02f20a8755423db281db46900a947fd1acc7d960e47521a8afc40b73"
+  },
+  {
+    "path": "tests/kernel/test_futex_wake_ready.py",
+    "bytes": 3680,
+    "sha256": "f33adfa0e1e380684b7f747b70e8719b5dbc121470101e886ba3abb15883dd06"
+  },
+  {
+    "path": "tests/kernel/run_futex_bench.py",
+    "bytes": 5233,
+    "sha256": "a77403a57defaee5b1148d0a8d65616b632a3f37cbb19c840fdf9657c8dd929e"
+  }
+]

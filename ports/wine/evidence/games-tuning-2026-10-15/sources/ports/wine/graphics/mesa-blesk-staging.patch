@@ -1,0 +1,42 @@
+--- a/src/gallium/drivers/virgl/virgl_winsys.h
++++ b/src/gallium/drivers/virgl/virgl_winsys.h
+@@ -50,6 +50,11 @@
+    int supports_encoded_transfers; /* Encoded transfers are supported */
+    int supports_coherent;          /* Coherent memory is supported */
+ 
++   /* resource_map is private CPU staging, never GPU-accessible. Explicit
++    * transfers are ordered; transfer_get completes prior GPU work and put
++    * consumes its CPU source before returning. */
++   bool has_private_staging;
++
+    void (*destroy)(struct virgl_winsys *vws);
+ 
+    int (*get_fd)(struct virgl_winsys *vws);
+--- a/src/gallium/drivers/virgl/virgl_resource.c
++++ b/src/gallium/drivers/virgl/virgl_resource.c
+@@ -185,7 +185,7 @@
+    /* We need to wait for all cmdbufs, current or previous, that access the
+     * resource to finish unless synchronization is disabled.
+     */
+-   wait = !(xfer->base.usage & PIPE_MAP_UNSYNCHRONIZED);
++   wait = !(xfer->base.usage & PIPE_MAP_UNSYNCHRONIZED) && !vws->has_private_staging;
+ 
+    /* When the transfer range consists of only uninitialized data, we can
+     * assume the GPU is not accessing the range and readback is unnecessary.
+@@ -283,13 +283,14 @@
+        * PIPE_MAP_UNSYNCHRONIZED is set.
+        */
+       if (!is_blob) {
+-         vws->resource_wait(vws, res->hw_res);
++         if (!vws->has_private_staging)
++            vws->resource_wait(vws, res->hw_res);
+          vws->transfer_get(vws, res->hw_res, &xfer->base.box, xfer->base.stride,
+                            xfer->l_stride, xfer->offset, xfer->base.level);
+       }
+       /* transfer_get puts the resource into a maybe_busy state, so we will have
+        * to wait another time if we want to use that resource. */
+-      wait = true;
++      wait = !vws->has_private_staging;
+    }
+ 
+    if (wait)

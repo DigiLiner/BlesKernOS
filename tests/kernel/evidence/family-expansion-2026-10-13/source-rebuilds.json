@@ -1,0 +1,10 @@
+{
+  "FAMILYSRC": {
+    "exit_code": 0,
+    "archive_sha256": "d111d736a8c41709ba9b15e4c4e740018a0c504ea4b4c943ed623870f6390e3f"
+  },
+  "PRINTSRC": {
+    "exit_code": 0,
+    "archive_sha256": "ca86c338c4abbf808ed38321be5c5d70e6c725610f2988f85956477b8a51fde1"
+  }
+}

@@ -1,6 +1,15 @@
 #include "../kernel/include/api.h"
 #include "../kernel/include/network.h"
 #include "../kernel/include/perfmon.h"
+/* The real kernel shell is programs/shell.c (see Makefile). Keep recovery
+ * builtins here: kernel/console/shell.c is an older, unlinked implementation. */
+#include "../kernel/include/recovery_console.h"
+#include "../kernel/include/vga.h"
+#include "../kernel/include/memory.h"
+#include "../kernel/include/pci.h"
+#include "../kernel/include/block.h"
+#include "../kernel/include/usb_storage.h"
+#include "../kernel/include/vfs.h"
 
 #define SHELL_ALIAS_MAX 16
 #define SHELL_VAR_MAX 16
@@ -17,6 +26,7 @@ static int history_idx;
 static shell_pair_t aliases[SHELL_ALIAS_MAX];
 static shell_pair_t variables[SHELL_VAR_MAX];
 static bool exit_requested;
+static bool append_argument(char *output,uint32_t capacity,const char *argument);
 static char previous_cwd[VFS_MAX_PATH] = "/";
 
 static void copy_text(char *dst, uint32_t capacity, const char *src) {
@@ -259,7 +269,7 @@ static int cmd_echo(int argc, char **argv) {
 }
 
 static int cmd_ver(int argc UNUSED, char **argv UNUSED) {
-    kprintf("BlesKernOS 0.6 - Shell 1.0 - API %u\n", bk_sys_api_version());
+    kprintf("BlesKernOS 0.9 - Shell 1.2 - API %u\n", bk_sys_api_version());
     return 0;
 }
 
@@ -281,11 +291,19 @@ static bool shell_parse_perf_interval(const char *text, uint32_t *value_out) {
 static int cmd_perfmon(int argc, char **argv) {
     uint32_t seconds;
     if (argc == 1 || (argc == 2 && bk_runtime_strcmp(argv[1], "status") == 0)) {
-        kprintf("perfmon: %s, modo manual; use 'perfmon now' para capturar\n",
-                perfmon_enabled() ? "activo" : "inactivo");
+        kprintf("perfmon: %s, modo %s; use 'perfmon now' para capturar\n",
+                perfmon_enabled() ? "activo" : "inactivo",
+                perfmon_watch() ? "watch" : "manual");
+        return 0;
+    }
+    if (argc == 2 && bk_runtime_strcmp(argv[1], "watch") == 0) {
+        perfmon_set_enabled(true);
+        perfmon_set_watch(true);
+        kprintf("perfmon: FPS por proceso y tiempos 3D cada %u s por COM1\n", perfmon_interval_seconds());
         return 0;
     }
     if (argc == 2 && bk_runtime_strcmp(argv[1], "on") == 0) {
+        perfmon_set_watch(false);
         perfmon_set_enabled(true);
         kprintf("perfmon: activado y contadores reiniciados\n");
         return 0;
@@ -313,11 +331,11 @@ static int cmd_perfmon(int argc, char **argv) {
         shell_parse_perf_interval(argv[2], &seconds)) {
         perfmon_set_interval_seconds(seconds);
         kprintf("perfmon: intervalo guardado en %u s; los reportes "
-                "automaticos estan desactivados\n",
-                perfmon_interval_seconds());
+                "automaticos %s\n",
+                perfmon_interval_seconds(), perfmon_watch() ? "activos" : "desactivados");
         return 0;
     }
-    kprintf("Uso: perfmon [status|on|off|now|reset|interval <10..600>]\n");
+    kprintf("Uso: perfmon [status|on|watch|off|now|reset|interval <10..600>]\n");
     return 2;
 }
 
@@ -664,7 +682,133 @@ bool shell_take_exit_request(void) {
     return requested;
 }
 
+/* Recovery commands must not be loaded from /SYSTEM/COMMANDS: the whole
+ * reason for entering recovery can be a missing/incorrect root volume. */
+static int cmd_recovery_help(int argc UNUSED, char **argv UNUSED) {
+    kprintf("Recovery builtins (available without files):\n");
+    kprintf("  help  bootlog [lines]  root  disks  pci  mem  usbdiag\n");
+    kprintf("  echo  pwd  cd  clear  ver  history  exit\n");
+    kprintf("External commands require /SYSTEM/COMMANDS/*.BEX.\n");
+    return 0;
+}
+
+static uint32_t recovery_parse_count(const char *arg, uint32_t fallback,
+                                     uint32_t limit) {
+    uint32_t value = 0U;
+    if (!arg || !*arg) return fallback;
+    for (const char *p = arg; *p; ++p) {
+        if (*p < '0' || *p > '9') return fallback;
+        value = value * 10U + (uint32_t)(*p - '0');
+        if (value > limit) return limit;
+    }
+    return value > 0U ? value : fallback;
+}
+
+static int cmd_recovery_bootlog(int argc, char **argv) {
+    uint32_t snapshot = vga_com1_log_size();
+    uint32_t n = recovery_parse_count(argc > 1 ? argv[1] : NULL, 16U, 50U);
+    uint32_t start = snapshot;
+    uint32_t found = 0U;
+    if (start && vga_com1_log_char_at(start - 1U) == '\n') --start;
+    while (start && found < n) {
+        --start;
+        if (vga_com1_log_char_at(start) == '\n') {
+            if (++found == n) ++start;
+        }
+    }
+    kprintf("[BOOTLOG] %u lines, %u bytes captured, %u dropped\n",
+            n, snapshot, vga_com1_log_dropped());
+    for (uint32_t i = start; i < snapshot; ++i) {
+        char c = vga_com1_log_char_at(i);
+        if (c == '\n' || c == '\r' || c == '\t' ||
+            ((uint8_t)c >= 32U && (uint8_t)c <= 126U)) {
+            /* In framebuffer recovery print directly, avoiding recursive
+             * capture of the replay into the COM1 history. */
+            if (recovery_console_graphics_active())
+                recovery_console_putchar(c, 7U);
+            else
+                vga_putchar(c);
+        }
+    }
+    vga_putchar('\n');
+    return 0;
+}
+
+static int cmd_recovery_mem(int argc UNUSED, char **argv UNUSED) {
+    heap_info_t h;
+    system_memory_info_t m;
+    mm_get_info(&h);
+    mm_get_system_info(&m);
+    kprintf("[MEM] RAM total=%u KiB used=%u KiB free=%u KiB\n",
+            (uint32_t)(m.total_bytes / 1024U),
+            (uint32_t)(m.used_bytes / 1024U),
+            (uint32_t)(m.free_bytes / 1024U));
+    kprintf("[MEM] Heap used=%u KiB free=%u KiB\n",
+            (uint32_t)(h.used_bytes / 1024U),
+            (uint32_t)(h.free_bytes / 1024U));
+    return 0;
+}
+
+static int cmd_recovery_pci(int argc UNUSED, char **argv UNUSED) {
+    uint32_t count = pci_device_count();
+    kprintf("[PCI] devices=%u\n", count);
+    for (uint32_t i = 0; i < count && i < 48U; ++i) {
+        const pci_device_t *d = pci_device_at(i);
+        if (!d) continue;
+        kprintf("  %u:%u.%u %x:%x class=%x/%x prog=%x irq=%u\n",
+            (uint32_t)d->bus, (uint32_t)d->slot,
+            (uint32_t)d->function, (uint32_t)d->vendor_id,
+            (uint32_t)d->device_id, (uint32_t)d->class_code,
+            (uint32_t)d->subclass, (uint32_t)d->prog_if,
+            (uint32_t)d->interrupt_line);
+    }
+    return 0;
+}
+
+static int cmd_recovery_disks(int argc UNUSED, char **argv UNUSED) {
+    uint32_t count = block_count();
+    kprintf("[DISKS] block devices=%u\n", count);
+    for (uint32_t i = 0; i < count && i < BLOCK_MAX_DEVICES; ++i) {
+        block_device_t *d = block_at(i);
+        if (!d) continue;
+        kprintf("  %s type=%s sectors=%u size=%u readonly=%u\n",
+                d->name, block_type_name(d->type), d->sector_count,
+                (uint32_t)d->sector_size, (uint32_t)d->read_only);
+    }
+    return 0;
+}
+
+static int cmd_recovery_root(int argc UNUSED, char **argv UNUSED) {
+    vfs_dir_entry_t e;
+    const char *name = vfs_get_mount_name();
+    kprintf("[ROOT] volume=%s cdrom_root=%u cwd=%s\n",
+            name && *name ? name : "(none)",
+            (uint32_t)vfs_cdrom_is_root(), bk_file_getcwd());
+    kprintf("[ROOT] /SYSTEM: %s\n",
+            vfs_stat("/SYSTEM", &e) ? "OK" : "NOT FOUND");
+    kprintf("[ROOT] VISION.BEX: %s\n",
+            (vfs_stat("/SYSTEM/SERVICES/VISION.BEX", &e) &&
+             e.type == VFS_NODE_FILE) ? "OK" : "NOT FOUND");
+    kprintf("[ROOT] HELP.BEX: %s\n",
+            (vfs_stat("/SYSTEM/COMMANDS/HELP.BEX", &e) &&
+             e.type == VFS_NODE_FILE) ? "OK" : "NOT FOUND");
+    kprintf("[ROOT] If commands are missing, inspect 'disks' and 'pci'.\n");
+    return 0;
+}
+
+static int cmd_recovery_usbdiag(int argc UNUSED, char **argv UNUSED) {
+    usb_storage_diagnostics();
+    return 0;
+}
+
 static const shell_cmd_t builtins[] = {
+    {"help", "Builtin recovery help", cmd_recovery_help},
+    {"bootlog", "Read COM1 log directly from memory", cmd_recovery_bootlog},
+    {"mem", "RAM and heap usage", cmd_recovery_mem},
+    {"pci", "Detected PCI devices", cmd_recovery_pci},
+    {"disks", "Registered block devices", cmd_recovery_disks},
+    {"usbdiag", "Read USB HC and physical port status (no disk needed)", cmd_recovery_usbdiag},
+    {"root", "Mounted root and required system files", cmd_recovery_root},
     {"cd", "@H8EBC4DC7", cmd_cd},
     {"pwd", "@H4294EF07", cmd_pwd},
     {"exit", "@H5AA123D8", cmd_exit},
@@ -696,32 +840,54 @@ static bool append_argument(char *output, uint32_t capacity,
                             const char *argument) {
     bool quote = false;
     const char *p = argument ? argument : "";
+    uint32_t used;
     for (; *p; p++)
         if (*p == ' ' || *p == '\t' || *p == '\n' || *p == '"') quote = true;
-    if (!append_text(output, capacity, " ")) return false;
+    used = (uint32_t)bk_runtime_strlen(output);
+    if (used + 2U > capacity) return false;
+    output[used++] = ' ';
+    output[used] = '\0';
     if (!quote) return append_text(output, capacity, argument ? argument : "");
-    if (!append_text(output, capacity, "\"")) return false;
+    if (used + 2U > capacity) return false;
+    output[used++] = '"';
+    output[used] = '\0';
     for (p = argument ? argument : ""; *p; p++) {
         char part[3] = {0, 0, 0};
         if (*p == '"' || *p == '\\') part[0] = '\\', part[1] = *p;
         else part[0] = *p;
         if (!append_text(output, capacity, part)) return false;
     }
-    return append_text(output, capacity, "\"");
+    used = (uint32_t)bk_runtime_strlen(output);
+    if (used + 2U > capacity) return false;
+    output[used++] = '"';
+    output[used] = '\0';
+    return true;
 }
 
 static bool launch_external(const char *name, int argc, char **argv) {
     char path[VFS_MAX_PATH] = "/SYSTEM/COMMANDS/";
     char argument[SHELL_MAX_CMD] = "";
+    vfs_dir_entry_t command;
+    int status;
     append_text(path, sizeof(path), name);
     append_text(path, sizeof(path), ".BEX");
+    /* No entrar al cargador con una ruta inexistente: sus diagnósticos son
+     * útiles por COM1, pero no pertenecen a la salida normal de la terminal. */
+    if (!bk_file_stat(path, &command) || command.type != VFS_NODE_FILE)
+        return false;
     append_text(argument, sizeof(argument), name);
     if (!append_argument(argument, sizeof(argument), "--cwd") ||
         !append_argument(argument, sizeof(argument), bk_file_getcwd()))
         return false;
     for (int i = 1; i < argc; i++)
         if (!append_argument(argument, sizeof(argument), argv[i])) return false;
-    return bk_app_execute_path_arg(bk_gui_get_desktop(), path, argument);
+
+    /* Los comandos comparten el cwd del shell. Esperar al hijo evita carreras
+     * entre ls/tree y un cd escrito mientras el proceso anterior arrancaba. */
+    status = bk_app_run_sync(path, argument);
+    if (status < 0)
+        kprintf("%s: no se pudo ejecutar el comando\n", name);
+    return true;
 }
 
 static void execute(char *line) {
@@ -743,14 +909,28 @@ static void execute(char *line) {
         char merged[SHELL_MAX_CMD];
         copy_text(merged, sizeof(merged), aliases[alias].value);
         for (int i = 1; i < argc; i++) {
-            append_text(merged, sizeof(merged), " ");
-            append_text(merged, sizeof(merged), argv[i]);
+            if(!append_argument(merged,sizeof(merged),argv[i])) {
+                kprintf("alias: linea demasiado larga\n");return;
+            }
         }
         copy_text(aliased, sizeof(aliased), merged);
         argc = parse_args(aliased, argv, SHELL_MAX_ARGS);
         if (!argc) return;
     }
 
+    if(argc==2 && !bk_runtime_strcmp(argv[1],"--help")) {
+        for(int i=0;builtins[i].name;i++)if(!bk_runtime_strcmp(argv[0],builtins[i].name)) {
+            char *help_args[]={"help",argv[0],NULL};
+            if(launch_external("help",2,help_args))return;
+            break;
+        }
+    }
+    /* Enhanced external implementations take precedence when installed;
+       recovery builtins still work if the system disk is unavailable. */
+    if ((!bk_runtime_strcmp(argv[0],"help") || !bk_runtime_strcmp(argv[0],"mem") ||
+         !bk_runtime_strcmp(argv[0],"ping") || !bk_runtime_strcmp(argv[0],"curl") ||
+         !bk_runtime_strcmp(argv[0],"wget") || !bk_runtime_strcmp(argv[0],"ipconfig")) &&
+        launch_external(argv[0],argc,argv)) return;
     for (int i = 0; builtins[i].name; i++) {
         if (bk_runtime_strcmp(argv[0], builtins[i].name) == 0) {
             builtins[i].func(argc, argv);
@@ -770,8 +950,18 @@ void shell_execute_line(const char *line) {
 
 void shell_run(void) {
     char line[SHELL_MAX_CMD];
+    bool recovering = recovery_console_graphics_active();
     vga_clear();
-    kprintf("BlesKernOS Terminal 1.1 - escriba 'help' para obtener ayuda\n");
+    if (recovering) {
+        kprintf("BlesKernOS Recovery 0.9 (kernel builtins, no disk needed)\n");
+        kprintf("Type: help | root | disks | pci | mem | usbdiag | bootlog 20\n");
+        /* Never touch the filesystem automatically: the device itself may
+         * be hung. root can be invoked explicitly after inspecting logs. */
+        cmd_recovery_disks(0, NULL);
+        cmd_recovery_bootlog(0, NULL);
+    } else {
+        kprintf("BlesKernOS Terminal 1.1 - escriba 'help' para obtener ayuda\n");
+    }
     while (!exit_requested) {
         kprintf("bles@bleskernos:%s> ", bk_file_getcwd());
         readline(line, sizeof(line));

@@ -1,6 +1,7 @@
 #include "../../include/sound.h"
 
 static const sound_driver_ops_t *g_sound_driver;
+static uint8_t g_sound_master_volume = SOUND_DEFAULT_MASTER_VOLUME;
 
 bool sound_register_driver(const sound_driver_ops_t *ops) {
     if (!ops || !ops->poll || !ops->play || !ops->stop || !ops->beep ||
@@ -24,8 +25,19 @@ bool sound_start_tone(uint32_t hz, uint32_t ms) {
 }
 bool sound_play_pcm_u8(const uint8_t *samples, uint32_t length,
                        uint16_t rate, uint8_t volume) {
-    return g_sound_driver &&
-           g_sound_driver->play_pcm_u8(samples, length, rate, volume);
+    uint32_t scaled;
+    if (!g_sound_driver) return false;
+    scaled = ((uint32_t)volume * (uint32_t)g_sound_master_volume + 50U) / 100U;
+    if (scaled > 255U) scaled = 255U;
+    return g_sound_driver->play_pcm_u8(samples, length, rate, (uint8_t)scaled);
+}
+
+void sound_set_master_volume(uint8_t percent) {
+    g_sound_master_volume = percent > 100U ? 100U : percent;
+}
+
+uint8_t sound_get_master_volume(void) {
+    return g_sound_master_volume;
 }
 bool sound_pcm_available(void) {
     return g_sound_driver && g_sound_driver->pcm_available();

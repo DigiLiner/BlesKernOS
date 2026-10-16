@@ -1,0 +1,87 @@
+[
+  {
+    "path": "gui/gui.h",
+    "bytes": 37753,
+    "sha256": "7a7bc277be779362fcabfecd9c4ed5f0cb8766cf6c52b86f81683d6f4724cd61"
+  },
+  {
+    "path": "gui/compositor.c",
+    "bytes": 56928,
+    "sha256": "17f483d6ffceec2a7542bd2d65bead9aca31f3b9d45973642a8e2850b4279516"
+  },
+  {
+    "path": "kernel/linux/i386_ipc.inc",
+    "bytes": 74468,
+    "sha256": "7609d2585ed013d087d2d979aa311c570b95593d253d729525b4445ce395ad5b"
+  },
+  {
+    "path": "kernel/api/syscall.c",
+    "bytes": 165752,
+    "sha256": "f9995d3a79ca6c41fcfeabbb2e213539998306ac8bb1f0afe7e92a1a6e2875df"
+  },
+  {
+    "path": "kernel/mm/usercopy.c",
+    "bytes": 2810,
+    "sha256": "1ac258b877ba2fb762d8adb3f13d489e59f4c76df63b318279bec163be5e181b"
+  },
+  {
+    "path": "ports/tinyx/wine-launch.c",
+    "bytes": 61006,
+    "sha256": "1ac4c95962d5347f7152a03a7780422de9993faeb22051eaab800ef284a37472"
+  },
+  {
+    "path": "ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesgfx.h",
+    "bytes": 3865,
+    "sha256": "92a6798b38b75f98ad4a794cc76718af1fc65f0592bfbc577fd4c759fe1d5fb2"
+  },
+  {
+    "path": "tests/kernel/run_wine_gui_smoke.py",
+    "bytes": 21052,
+    "sha256": "f8183625fdc83da5e05c925f678ccccec6da44998291398392583d0e73bdde4f"
+  },
+  {
+    "path": "tests/kernel/run_futex_bench.py",
+    "bytes": 5861,
+    "sha256": "9bab20f45d8acf8f51097ba8e4324945de861630b9372060536fb5adc12c5931"
+  },
+  {
+    "path": "tests/desktop/test_launch_cursor.py",
+    "bytes": 2669,
+    "sha256": "209921d8a5716eec4106d5ebed905979dcb1ba8ddfaf8a466d50f8303499ab81"
+  },
+  {
+    "path": "tests/kernel/test_usercopy_string.py",
+    "bytes": 3480,
+    "sha256": "fecf4a52c8ef26ec238de43ac7d8c447bb220acf8c88df70c262300e4a2feb69"
+  },
+  {
+    "path": "ports/wine/tests/path-lookup.c",
+    "bytes": 760,
+    "sha256": "7e6af97e76b865d39aa428959874215c01c25f25f38890c6358f4afbb3ab748b"
+  },
+  {
+    "path": "build/kernel.bin",
+    "bytes": 837676,
+    "sha256": "74647d96334f315b85a8b4d6a2a3de23e413578b7b0645f8a05c8c4fbc5b2914"
+  },
+  {
+    "path": "build/stage2.bin",
+    "bytes": 4096,
+    "sha256": "120f31fa63fed27098ab4ee5f89afdc2b767506baaca41c964f1a33c4b2d0075"
+  },
+  {
+    "path": "build/system/services/vision.o",
+    "bytes": 255436,
+    "sha256": "4506abb8e139d364215249eefc389197bb085cc1c3c87843c14d6e801ef2cc88"
+  },
+  {
+    "path": "build/wine/wine-launch",
+    "bytes": 48100,
+    "sha256": "d48dd20082f093b5443a24e4e73bf3f1a2b2db67d7d75cbd91adfccb2fff32fa"
+  },
+  {
+    "path": "build/bleskernos-wine-startup.img",
+    "bytes": 805306368,
+    "sha256": "58bffb0c9f51f0a2272ff608449750319f0c18df0e3e8e1bfcce90f778595e62"
+  }
+]

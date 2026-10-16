@@ -52,6 +52,8 @@ static volatile uint8_t g_dhcp_type;
 static uint8_t g_dhcp_offer[4], g_dhcp_server[4];
 static uint8_t g_dhcp_mask[4], g_dhcp_gateway[4], g_dhcp_dns[4];
 static uint32_t g_dhcp_xid;
+static volatile uint32_t g_dhcp_busy;
+static volatile uint8_t g_dhcp_phase; /* 1=selecting, 2=requesting, 0=inactive */
 static volatile bool g_ping_reply;
 static uint16_t g_ping_id, g_ping_sequence;
 static uint8_t g_ping_target[4];
@@ -74,20 +76,16 @@ static dns_cache_entry_t g_dns_cache[DNS_CACHE_MAX];
 static uint32_t g_dns_cache_clock;
 static volatile uint32_t g_dns_lock;
 static volatile uint32_t g_socket_lock;
-
-static uint32_t net_irq_save(void) {
-    uint32_t flags;
-    __asm__ volatile ("pushfl; popl %0; cli" : "=r"(flags) : : "memory");
-    return flags;
-}
-
-static void net_irq_restore(uint32_t flags) {
-    if (flags & (1U << 9)) __asm__ volatile ("sti" : : : "memory");
-}
+static volatile uint32_t g_tcp_buffer_lock;
+static volatile uint32_t g_udp_buffer_lock;
 
 static void net_spin_lock(volatile uint32_t *lock) {
     while (!__sync_bool_compare_and_swap(lock, 0U, 1U))
+#if defined(BLES_ARCH_ARM32_RPI3)
+        __asm__ volatile ("yield");
+#else
         __asm__ volatile ("pause");
+#endif
 }
 
 static void net_spin_unlock(volatile uint32_t *lock) {
@@ -414,7 +412,7 @@ static bool stack_resolve(const char *hostname, uint8_t address[4],
     uint32_t per_try;
     bool resolved = false;
     uint32_t oldest = 0U;
-    if (!hostname || !address || !g_configured || ip_zero(g_dns)) return false;
+    if (!hostname || !address || !g_configured) return false;
     if (parse_numeric_ip(hostname, address)) return true;
     if (kstrlen(hostname) >= sizeof(current)) return false;
     net_spin_lock(&g_dns_lock);
@@ -454,6 +452,9 @@ done:
         entry->used = true;
     }
     net_spin_unlock(&g_dns_lock);
+    if (!resolved)
+        kprintf("[NET][DNS] fallo host=%s dns=%u.%u.%u.%u timeout=%ums\n",
+                hostname, g_dns[0], g_dns[1], g_dns[2], g_dns[3], timeout_ms);
     return resolved;
 }
 
@@ -509,37 +510,56 @@ static bool dhcp_send(uint8_t message_type, bool request) {
         option = dhcp_option(option, 50, g_dhcp_offer, 4);
         option = dhcp_option(option, 54, g_dhcp_server, 4);
     }
-    option = dhcp_option(option, 55, requested, sizeof(requested)); *option++ = 255;
+    option = dhcp_option(option, 55, requested, sizeof(requested));
+    uint8_t client_id[7] = {1}; kmemcpy(client_id + 1, g_mac, 6);
+    option = dhcp_option(option, 61, client_id, sizeof(client_id));
+    uint16_t maximum = be16(576U);
+    option = dhcp_option(option, 57, &maximum, sizeof(maximum));
+    *option++ = 255;
     length = (uint16_t)((uintptr_t)option - (uintptr_t)dhcp);
     if (length < 300U) length = 300U;
     return udp_send(broadcast, DHCP_CLIENT_PORT, DHCP_SERVER_PORT, dhcp, length, true);
 }
 
+/* Parse into temporary values: malformed/irrelevant packets must never erase
+ * a selected offer. ACK may omit parameters already supplied in the OFFER. */
 static void dhcp_receive(const uint8_t *payload, uint16_t length) {
     const dhcp_packet_t *dhcp = (const dhcp_packet_t *)payload;
     const uint8_t *option, *end; uint8_t type = 0;
-    if (length < 240U || dhcp->op != 2 || be32(dhcp->xid) != g_dhcp_xid ||
+    uint8_t mask[4], gateway[4], dns[4], server[4] = {0};
+    if (!g_dhcp_phase || length < 240U || dhcp->op != 2 ||
+        dhcp->htype != 1 || dhcp->hlen != 6 || be32(dhcp->xid) != g_dhcp_xid ||
         be32(dhcp->magic) != DHCP_MAGIC || !bytes_equal(dhcp->chaddr, g_mac, 6)) return;
-    kmemset(g_dhcp_mask, 0, 4); kmemset(g_dhcp_gateway, 0, 4); kmemset(g_dhcp_dns, 0, 4);
+    kmemcpy(mask,g_dhcp_mask,4); kmemcpy(gateway,g_dhcp_gateway,4);
+    kmemcpy(dns,g_dhcp_dns,4);
     option = dhcp->options; end = payload + length;
     while (option < end) {
         uint8_t code = *option++;
-        uint8_t size;
         if (code == 255U) break;
         if (code == 0U) continue;
-        if (option >= end) break;
-        size = *option++;
-        if ((uint32_t)(end - option) < size) break;
-        if (code == 53U && size >= 1U) type = option[0];
-        else if (code == 1U && size >= 4U) kmemcpy(g_dhcp_mask, option, 4);
-        else if (code == 3U && size >= 4U) kmemcpy(g_dhcp_gateway, option, 4);
-        else if (code == 6U && size >= 4U) kmemcpy(g_dhcp_dns, option, 4);
-        else if (code == 54U && size >= 4U) kmemcpy(g_dhcp_server, option, 4);
+        if (option >= end) return;
+        uint8_t size = *option++;
+        if ((uint32_t)(end - option) < size) return;
+        if (code == 53U && size == 1U) type = option[0];
+        else if (code == 1U && size == 4U) kmemcpy(mask, option, 4);
+        else if (code == 3U && size >= 4U && !(size & 3U)) kmemcpy(gateway, option, 4);
+        else if (code == 6U && size >= 4U && !(size & 3U)) kmemcpy(dns, option, 4);
+        else if (code == 54U && size == 4U) kmemcpy(server, option, 4);
         option += size;
     }
-    if (type == 2U || type == 5U || type == 6U) {
-        kmemcpy(g_dhcp_offer, dhcp->yiaddr, 4); g_dhcp_type = type;
+    if (g_dhcp_phase == 1U) {
+        if (type != 2U || ip_zero(server) || ip_zero(dhcp->yiaddr)) return;
+    } else {
+        if ((type != 5U && type != 6U) ||
+            (!ip_zero(server) && !bytes_equal(server,g_dhcp_server,4))) return;
+        if (type == 5U && !bytes_equal(dhcp->yiaddr,g_dhcp_offer,4)) return;
     }
+    kmemcpy(g_dhcp_mask,mask,4); kmemcpy(g_dhcp_gateway,gateway,4);
+    kmemcpy(g_dhcp_dns,dns,4);
+    if (type == 2U) {
+        kmemcpy(g_dhcp_offer,dhcp->yiaddr,4); kmemcpy(g_dhcp_server,server,4);
+    }
+    __sync_synchronize(); g_dhcp_type = type;
 }
 
 static void icmp_receive(const ipv4_header_t *ip, const uint8_t *payload, uint16_t length) {
@@ -641,17 +661,23 @@ static void tcp_receive(const ipv4_header_t *ip, const uint8_t *segment,
     }
     if (socket->state != TCP_ESTABLISHED && socket->state != TCP_FIN_WAIT) return;
     if (payload_length && sequence == socket->receive_next) {
-        uint32_t flags = net_irq_save();
-        uint32_t available = TCP_RECEIVE_SIZE - socket->receive_length;
-        uint32_t accepted = payload_length < available ? payload_length : available;
-        if (accepted) {
-            kmemcpy(socket->receive + socket->receive_length,
-                    segment + header_length, accepted);
-            socket->receive_length += accepted;
-            socket->receive_next += accepted;
+        uint32_t accepted = 0U;
+        /* cli() sólo protegía al CPU actual. El poll RX puede ejecutarse en
+           otro core mientras una syscall consume/mueve este buffer. */
+        net_spin_lock(&g_tcp_buffer_lock);
+        if (socket->state == TCP_ESTABLISHED || socket->state == TCP_FIN_WAIT) {
+            uint32_t available = TCP_RECEIVE_SIZE - socket->receive_length;
+            accepted = payload_length < available ? payload_length : available;
+            if (accepted) {
+                kmemcpy(socket->receive + socket->receive_length,
+                        segment + header_length, accepted);
+                socket->receive_length += accepted;
+                socket->receive_next += accepted;
+            }
         }
-        net_irq_restore(flags);
-        tcp_send_segment(socket, TCP_FLAG_ACK, NULL, 0, socket->send_next);
+        net_spin_unlock(&g_tcp_buffer_lock);
+        if (accepted)
+            tcp_send_segment(socket, TCP_FLAG_ACK, NULL, 0, socket->send_next);
     } else if (payload_length) {
         /* ACK duplicado pide la retransmisión del primer byte ausente. */
         tcp_send_segment(socket, TCP_FLAG_ACK, NULL, 0, socket->send_next);
@@ -702,6 +728,7 @@ static void netstack_receive(const uint8_t *frame, uint16_t length) {
             else if (udp_length >= sizeof(*udp) && udp_length <= payload_length) {
                 uint16_t destination = be16(udp->destination);
                 uint16_t source = be16(udp->source);
+                net_spin_lock(&g_udp_buffer_lock);
                 for (uint8_t i = 0; i < NET_SOCKET_MAX; i++) {
                     udp_socket_t *socket = &g_udp_sockets[i];
                     uint16_t data_length;
@@ -717,6 +744,7 @@ static void netstack_receive(const uint8_t *frame, uint16_t length) {
                     socket->receive_length = data_length;
                     break;
                 }
+                net_spin_unlock(&g_udp_buffer_lock);
             }
         }
     }
@@ -730,21 +758,42 @@ static bool stack_configure(const uint8_t address[4], const uint8_t mask[4],
     g_configured = true; g_arp_valid = false; return true;
 }
 
+static bool dhcp_wait_phase(uint8_t message, bool request, uint8_t expected,
+                            uint32_t limit) {
+    uint32_t start=pit_get_ticks(), next=0, interval=timeout_ticks(1000U);
+    do {
+        uint32_t elapsed=pit_get_ticks()-start;
+        if(elapsed>=next) {
+            (void)dhcp_send(message,request);
+            next=elapsed+interval;
+            if(interval<timeout_ticks(4000U))interval*=2U;
+        }
+        if(g_dhcp_type==expected)return true;
+        if(g_dhcp_type==6U)return false;
+        wait_one_tick();
+    } while((uint32_t)(pit_get_ticks()-start)<limit);
+    return g_dhcp_type==expected;
+}
+
 static bool stack_dhcp(uint32_t timeout_ms) {
-    uint32_t start, limit;
-    if (!refresh_device_mac()) return false;
-    kmemset(g_ip, 0, 4); g_configured = false; g_dhcp_type = 0;
-    g_dhcp_xid = 0xB1E50000U ^ pit_get_ticks();
-    if (!dhcp_send(1, false)) return false;
-    start = pit_get_ticks(); limit = timeout_ticks(timeout_ms / 2U);
-    while ((uint32_t)(pit_get_ticks() - start) < limit && g_dhcp_type != 2U) wait_one_tick();
-    if (g_dhcp_type != 2U) return false;
-    g_dhcp_type = 0; if (!dhcp_send(3, true)) return false;
-    start = pit_get_ticks();
-    while ((uint32_t)(pit_get_ticks() - start) < limit && g_dhcp_type != 5U && g_dhcp_type != 6U) wait_one_tick();
-    if (g_dhcp_type != 5U) return false;
-    if (ip_zero(g_dhcp_mask)) { g_dhcp_mask[0] = g_dhcp_mask[1] = g_dhcp_mask[2] = 255; }
-    return stack_configure(g_dhcp_offer, g_dhcp_mask, g_dhcp_gateway, g_dhcp_dns);
+    if (!refresh_device_mac() ||
+        !__sync_bool_compare_and_swap(&g_dhcp_busy,0U,1U)) return false;
+    bool ok=false;
+    uint32_t phase_limit=timeout_ticks(timeout_ms/2U);
+    kmemset(g_ip,0,4); g_configured=false; g_dhcp_type=0;
+    kmemset(g_dhcp_mask,0,4); kmemset(g_dhcp_gateway,0,4);
+    kmemset(g_dhcp_dns,0,4); kmemset(g_dhcp_server,0,4);
+    g_dhcp_xid=0xB1E50000U ^ pit_get_ticks() ^ ((uint32_t)g_mac[4]<<8) ^ g_mac[5];
+    g_dhcp_phase=1U;
+    if(!dhcp_wait_phase(1,false,2U,phase_limit))goto done;
+    g_dhcp_type=0; g_dhcp_phase=2U;
+    if(!dhcp_wait_phase(3,true,5U,phase_limit))goto done;
+    if(ip_zero(g_dhcp_mask))g_dhcp_mask[0]=g_dhcp_mask[1]=g_dhcp_mask[2]=255;
+    ok=stack_configure(g_dhcp_offer,g_dhcp_mask,g_dhcp_gateway,g_dhcp_dns);
+done:
+    g_dhcp_phase=0;
+    __sync_lock_release(&g_dhcp_busy);
+    return ok;
 }
 
 static bool stack_ping(const uint8_t address[4], uint32_t timeout_ms, uint32_t *elapsed_ms) {
@@ -950,6 +999,9 @@ static bool stack_socket_connect(int handle, const uint8_t address[4],
         if (socket->reset || socket->state == TCP_CLOSED) break;
         wait_one_tick();
     }
+    kprintf("[NET][TCP] connect fallo dst=%u.%u.%u.%u:%u reset=%u state=%u\n",
+            address[0], address[1], address[2], address[3], (uint32_t)port,
+            socket->reset ? 1U : 0U, (uint32_t)socket->state);
     socket->state = TCP_CLOSED;
     return false;
 }
@@ -971,17 +1023,16 @@ static int32_t stack_socket_send(int handle, const void *data, uint32_t length,
     if (socket->peer >= 0 && socket_valid(socket->peer)) {
         tcp_socket_t *peer = &g_sockets[(uint8_t)socket->peer];
         uint32_t available;
-        uint32_t flags;
         if (peer->state != TCP_ESTABLISHED && peer->state != TCP_CLOSE_WAIT)
             return -1;
-        flags = net_irq_save();
+        net_spin_lock(&g_tcp_buffer_lock);
         available = TCP_RECEIVE_SIZE - peer->receive_length;
         if (length > available) length = available;
         if (length) {
             kmemcpy(peer->receive + peer->receive_length, data, length);
             peer->receive_length += length;
         }
-        net_irq_restore(flags);
+        net_spin_unlock(&g_tcp_buffer_lock);
         return (int32_t)length;
     }
     while (sent < length) {
@@ -1022,7 +1073,8 @@ static int32_t stack_socket_send(int handle, const void *data, uint32_t length,
 static int32_t stack_socket_receive(int handle, void *data, uint32_t capacity,
                                     uint32_t timeout_ms) {
     tcp_socket_t *socket;
-    uint32_t start, limit, take, remaining, flags;
+    uint32_t start, limit, take, remaining, free_before;
+    bool window_update;
     if (udp_socket_valid(handle))
         return stack_socket_receivefrom(handle, NULL, NULL, data, capacity, timeout_ms);
     if (!socket_valid(handle) || !data || !capacity) return -1;
@@ -1034,17 +1086,26 @@ static int32_t stack_socket_receive(int handle, void *data, uint32_t capacity,
         wait_one_tick();
     }
     if (!socket->receive_length) return 0;
-    flags = net_irq_save();
+    net_spin_lock(&g_tcp_buffer_lock);
     if (!socket->receive_length) {
-        net_irq_restore(flags);
+        net_spin_unlock(&g_tcp_buffer_lock);
         return 0;
     }
+    free_before = TCP_RECEIVE_SIZE - socket->receive_length;
     take = socket->receive_length < capacity ? socket->receive_length : capacity;
     kmemcpy(data, socket->receive, take);
     remaining = socket->receive_length - take;
     if (remaining) kmemcpy(socket->receive, socket->receive + take, remaining);
     socket->receive_length = remaining;
-    net_irq_restore(flags);
+    /* Reopen an advertised small/zero receive window after the reader drains
+       it. Otherwise a TLS record larger than our 8 KiB buffer waits for the
+       sender's persist probes. Update after freeing half the buffer to avoid
+       advertising tiny windows on every byte-sized read. */
+    window_update = free_before < TCP_RECEIVE_SIZE / 2U &&
+                    TCP_RECEIVE_SIZE - remaining >= TCP_RECEIVE_SIZE / 2U;
+    net_spin_unlock(&g_tcp_buffer_lock);
+    if (window_update && socket->peer < 0 && socket->state == TCP_ESTABLISHED)
+        tcp_send_segment(socket, TCP_FLAG_ACK, NULL, 0, socket->send_next);
     return (int32_t)take;
 }
 
@@ -1063,7 +1124,7 @@ static int32_t stack_socket_receivefrom(int handle, uint8_t address[4], uint16_t
                                         void *data, uint32_t capacity,
                                         uint32_t timeout_ms) {
     udp_socket_t *socket;
-    uint32_t start, limit, flags, take;
+    uint32_t start, limit, take;
     if (!udp_socket_valid(handle) || !data || !capacity) return -1;
     socket = &g_udp_sockets[handle - UDP_HANDLE_BASE];
     start = pit_get_ticks(); limit = timeout_ticks(timeout_ms);
@@ -1071,13 +1132,13 @@ static int32_t stack_socket_receivefrom(int handle, uint8_t address[4], uint16_t
         if ((uint32_t)(pit_get_ticks() - start) >= limit) return 0;
         wait_one_tick();
     }
-    flags = net_irq_save();
+    net_spin_lock(&g_udp_buffer_lock);
     take = socket->receive_length < capacity ? socket->receive_length : capacity;
     kmemcpy(data, socket->receive, take);
     if (address) kmemcpy(address, socket->receive_ip, 4);
     if (port) *port = socket->receive_port;
     socket->receive_length = 0;
-    net_irq_restore(flags);
+    net_spin_unlock(&g_udp_buffer_lock);
     return (int32_t)take;
 }
 
@@ -1096,17 +1157,21 @@ static void stack_socket_close(int handle) {
     tcp_socket_t *socket;
     uint32_t start, limit;
     if (udp_socket_valid(handle)) {
+        net_spin_lock(&g_udp_buffer_lock);
         kmemset(&g_udp_sockets[handle - UDP_HANDLE_BASE], 0,
                 sizeof(g_udp_sockets[0]));
+        net_spin_unlock(&g_udp_buffer_lock);
         return;
     }
     if (!socket_valid(handle)) return;
     socket = &g_sockets[handle];
     if (socket->peer >= 0 && socket_valid(socket->peer)) {
         tcp_socket_t *peer = &g_sockets[(uint8_t)socket->peer];
+        net_spin_lock(&g_tcp_buffer_lock);
         peer->peer = -1;
         if (peer->state == TCP_ESTABLISHED) peer->state = TCP_CLOSE_WAIT;
         kmemset(socket, 0, sizeof(*socket));
+        net_spin_unlock(&g_tcp_buffer_lock);
         return;
     }
     if (socket->state == TCP_ESTABLISHED) {
@@ -1118,9 +1183,11 @@ static void stack_socket_close(int handle) {
         while (socket->send_unacknowledged < socket->send_next &&
                (uint32_t)(pit_get_ticks() - start) < limit) wait_one_tick();
     }
+    net_spin_lock(&g_tcp_buffer_lock);
     if (socket->state == TCP_LISTEN && socket->pending >= 0)
         kmemset(&g_sockets[(uint8_t)socket->pending], 0, sizeof(*socket));
     kmemset(socket, 0, sizeof(*socket));
+    net_spin_unlock(&g_tcp_buffer_lock);
 }
 
 static bool append_string(char *destination, uint32_t capacity,
@@ -1248,6 +1315,25 @@ static void stack_info(net_info_t *info) {
     kmemcpy(info->gateway, g_gateway, 4); kmemcpy(info->dns, g_dns, 4);
 }
 
+static uint32_t stack_socket_snapshot(bk_socket_info_t *out,uint32_t capacity) {
+    uint32_t count=0;
+    net_spin_lock(&g_tcp_buffer_lock);
+    for(uint32_t i=0;i<NET_SOCKET_MAX && count<capacity;i++) {
+        tcp_socket_t *s=&g_sockets[i];if(s->state==TCP_CLOSED)continue;
+        bk_socket_info_t *p=&out[count++];kmemset(p,0,sizeof(*p));
+        p->handle=i;p->type=NET_SOCKET_TCP;p->state=s->state;p->pending=s->receive_length;
+        p->local_port=s->local_port;p->remote_port=s->remote_port;kmemcpy(p->remote_ip,s->remote_ip,4);
+    }
+    net_spin_unlock(&g_tcp_buffer_lock);
+    net_spin_lock(&g_udp_buffer_lock);
+    for(uint32_t i=0;i<NET_SOCKET_MAX && count<capacity;i++) {
+        udp_socket_t *s=&g_udp_sockets[i];if(!s->used)continue;
+        bk_socket_info_t *p=&out[count++];kmemset(p,0,sizeof(*p));
+        p->handle=i+UDP_HANDLE_BASE;p->type=NET_SOCKET_UDP;p->state=1;p->pending=s->receive_length;
+        p->local_port=s->local_port;p->remote_port=s->remote_port;kmemcpy(p->remote_ip,s->remote_ip,4);
+    }
+    net_spin_unlock(&g_udp_buffer_lock);return count;
+}
 static const net_stack_ops_t g_ops = {
     stack_dhcp, stack_configure, stack_ping, stack_resolve,
     stack_socket_open, stack_socket_connect, stack_socket_bind,
@@ -1258,12 +1344,13 @@ static const net_stack_ops_t g_ops = {
 };
 static bool netstack_init(void) {
     if (!network_register_stack(&g_ops)) return false;
+    network_register_socket_inspector(stack_socket_snapshot);
     netdev_set_rx_handler(netstack_receive);
     kprintf("  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado\n"); return true;
 }
-static void netstack_shutdown(void) { netdev_set_rx_handler(NULL); network_unregister_stack(&g_ops); }
+static void netstack_shutdown(void) { network_register_socket_inspector(NULL); netdev_set_rx_handler(NULL); network_unregister_stack(&g_ops); }
 const bk_driver_module_t *bleskernos_driver_query(void) {
-    static const bk_driver_module_t module = { BK_DRIVER_ABI_VERSION, sizeof(bk_driver_module_t),
+    static const bk_driver_module_t module = { BK_DRIVER_ABI_VERSION, sizeof(bk_driver_module_t), 1U, 0U,
         "netstack-ipv4", "Ethernet, ARP, IPv4, ICMP, UDP y DHCP", netstack_init, netstack_shutdown };
     return &module;
 }

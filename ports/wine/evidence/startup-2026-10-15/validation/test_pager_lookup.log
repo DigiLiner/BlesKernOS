@@ -1,0 +1,33 @@
+/tmp/bk-pager-lookup-igr_qgxa/test.c: In function ‘pager_metadata_alloc’:
+/tmp/bk-pager-lookup-igr_qgxa/test.c:82:37: warning: implicit declaration of function ‘mm_vm_frame_total_pages’ [-Wimplicit-function-declaration]
+   82 |     if(!physical || !pages || pages>mm_vm_frame_total_pages())return false;
+      |                                     ^~~~~~~~~~~~~~~~~~~~~~~
+/tmp/bk-pager-lookup-igr_qgxa/test.c:82:36: warning: comparison of integer expressions of different signedness: ‘uint32_t’ {aka ‘unsigned int’} and ‘int’ [-Wsign-compare]
+   82 |     if(!physical || !pages || pages>mm_vm_frame_total_pages())return false;
+      |                                    ^
+/tmp/bk-pager-lookup-igr_qgxa/test.c:84:23: warning: comparison of integer expressions of different signedness: ‘uint32_t’ {aka ‘unsigned int’} and ‘int’ [-Wsign-compare]
+   84 |     for(uint32_t i=0;i<mm_vm_frame_total_pages() &&
+      |                       ^
+/tmp/bk-pager-lookup-igr_qgxa/test.c:85:9: warning: implicit declaration of function ‘mm_vm_frame_free_pages’ [-Wimplicit-function-declaration]
+   85 |         mm_vm_frame_free_pages()<pages+16U;i++) {
+      |         ^~~~~~~~~~~~~~~~~~~~~~
+/tmp/bk-pager-lookup-igr_qgxa/test.c:85:33: warning: comparison of integer expressions of different signedness: ‘int’ and ‘uint32_t’ {aka ‘unsigned int’} [-Wsign-compare]
+   85 |         mm_vm_frame_free_pages()<pages+16U;i++) {
+      |                                 ^
+/tmp/bk-pager-lookup-igr_qgxa/test.c:88:9: warning: implicit declaration of function ‘mm_vm_frame_free’ [-Wimplicit-function-declaration]
+   88 |         mm_vm_frame_free(victim,1);
+      |         ^~~~~~~~~~~~~~~~
+/tmp/bk-pager-lookup-igr_qgxa/test.c:90:13: warning: implicit declaration of function ‘mm_vm_frame_alloc’ [-Wimplicit-function-declaration]
+   90 |     bool ok=mm_vm_frame_alloc(pages,physical);
+      |             ^~~~~~~~~~~~~~~~~
+/tmp/bk-pager-lookup-igr_qgxa/test.c:91:30: warning: comparison of integer expressions of different signedness: ‘uint32_t’ {aka ‘unsigned int’} and ‘int’ [-Wsign-compare]
+   91 |     for(uint32_t i=0;!ok && i<mm_vm_frame_total_pages();i++) {
+      |                              ^
+/tmp/bk-pager-lookup-igr_qgxa/test.c: At top level:
+/tmp/bk-pager-lookup-igr_qgxa/test.c:76:13: warning: ‘reclaim’ used but never defined
+   76 | static bool reclaim(uint32_t *frame);
+      |             ^~~~~~~
+/tmp/bk-pager-lookup-igr_qgxa/test.c:80:13: warning: ‘pager_metadata_alloc’ defined but not used [-Wunused-function]
+   80 | static bool pager_metadata_alloc(uint32_t pages,uint32_t *physical) {
+      |             ^~~~~~~~~~~~~~~~~~~~
+PASS 1024 mappings: 10000 hot hits and cross-page gap hits; new mapping invalidates misses; PID collisions, partial unmap, file in a hole, VFS locking and freed-pointer invalidation

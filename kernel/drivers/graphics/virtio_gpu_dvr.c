@@ -22,11 +22,10 @@ const bk_driver_module_t *bleskernos_driver_query(void);
  *   - software Fill/BitBlt/off-screen surfaces followed by host upload
  *   - VirGL feature/capset discovery, capset download and context lifecycle
  *
- * VIRTIO_GPU_F_VIRGL only exposes the 3D transport. Rendering triangles
- * requires a VirGL/Gallium command-stream encoder (shader and pipeline state,
- * vertex elements, resources and contexts). This module deliberately does not
- * register a fake gfx3d backend. TinyGL can still render into the framebuffer;
- * this driver then transfers the completed image to the host scanout.
+ * VIRTIO_GPU_F_VIRGL alone only exposes the transport. The encoder below
+ * implements fixed-function triangles, textures, depth and blend state.
+ * GFX3D is registered only after command submission and pixel self-tests pass;
+ * plain virtio-vga retains the 2D framebuffer path.
  */
 
 #define VIRTIO_PCI_VENDOR_ID               0x1AF4U
@@ -132,8 +131,10 @@ const bk_driver_module_t *bleskernos_driver_query(void);
 #define VIRGL_CCMD_SET_VERTEX_BUFFERS          6U
 #define VIRGL_CCMD_CLEAR                       7U
 #define VIRGL_CCMD_DRAW_VBO                    8U
+#define VIRGL_CCMD_RESOURCE_INLINE_WRITE       9U
 #define VIRGL_CCMD_SET_SAMPLER_VIEWS           10U
 #define VIRGL_CCMD_BIND_SAMPLER_STATES         18U
+#define VIRGL_CCMD_SET_SCISSOR_STATE          15U
 #define VIRGL_CCMD_BIND_SHADER                 31U
 #define VIRGL_CCMD_LINK_SHADER                 52U
 #define VIRGL_CLEAR_COLOR0                     (1U << 2)
@@ -406,7 +407,7 @@ typedef struct {
     uint32_t flags,resource,surface_object,sampler_view_object;
     void *raw;
     uint32_t *pixels;
-    uint32_t bytes;
+    uint32_t bytes, mip_levels;
     uint32_t depth_resource,depth_surface_object;
     void *depth_raw,*depth_pixels;
 } virtio_gpu_3d_surface_t;
@@ -479,6 +480,9 @@ typedef struct {
     uint32_t virgl_vbo_hash[3],virgl_vbo_uploaded[3];
     uint32_t virgl_frame_commands[16384];
     uint32_t virgl_frame_command_count;
+    uint32_t virgl_alpha_flags;
+    bool virgl_alpha_created;
+    bool virgl_pending;
     bool virgl_frame_batching;
 } virtio_gpu_state_t;
 
@@ -487,10 +491,12 @@ static void vg_reset(void);
 static bool vg_surface_destroy(gfx3d_surface_handle_t h);
 
 static const gfx_display_mode_t g_virtio_modes[] = {
-    {640, 480, 32}, {800, 600, 32}, {1024, 768, 32},
-    {1152, 864, 32}, {1280, 720, 32}, {1280, 800, 32},
-    {1280, 1024, 32}, {1366, 768, 32}, {1440, 900, 32},
-    {1600, 900, 32}, {1680, 1050, 32}, {1920, 1080, 32}
+    {640, 480, 32}, {720, 480, 32}, {800, 600, 32},
+    {960, 540, 32}, {1024, 600, 32}, {1024, 768, 32},
+    {1152, 864, 32}, {1280, 720, 32}, {1280, 768, 32},
+    {1280, 800, 32}, {1280, 1024, 32}, {1360, 768, 32},
+    {1366, 768, 32}, {1440, 900, 32}, {1600, 900, 32},
+    {1680, 1050, 32}, {1920, 1080, 32}
 };
 
 static void virtio_barrier(void) {
@@ -1226,9 +1232,9 @@ static bool virtio_gpu_create_virgl_context(void) {
     return true;
 }
 
-static bool virtio_gpu_resource_create_3d_ex(uint32_t resource_id,
+static bool virtio_gpu_resource_create_3d_levels(uint32_t resource_id,
         uint32_t target,uint32_t format,uint32_t bind,
-        uint32_t width,uint32_t height) {
+        uint32_t width,uint32_t height,uint32_t levels) {
     virtio_gpu_resource_create_3d_t request;
     virtio_gpu_ctrl_hdr_t response;
     kmemset(&request,0,sizeof(request));
@@ -1236,9 +1242,16 @@ static bool virtio_gpu_resource_create_3d_ex(uint32_t resource_id,
     request.resource_id=resource_id;
     request.target=target;request.format=format;request.bind=bind;
     request.width=width;request.height=height;
-    request.depth=1U;request.array_size=1U;
+    request.depth=1U;request.array_size=1U;request.last_level=levels-1U;
     return virtio_gpu_control_command(&request,sizeof(request),&response,
         sizeof(response),VIRTIO_GPU_RESP_OK_NODATA,false,NULL);
+}
+
+static bool virtio_gpu_resource_create_3d_ex(uint32_t resource_id,
+        uint32_t target,uint32_t format,uint32_t bind,
+        uint32_t width,uint32_t height) {
+    return virtio_gpu_resource_create_3d_levels(resource_id,target,format,bind,
+                                               width,height,1U);
 }
 
 static bool virtio_gpu_context_resource(uint32_t command,
@@ -1253,8 +1266,8 @@ static bool virtio_gpu_context_resource(uint32_t command,
         sizeof(response),VIRTIO_GPU_RESP_OK_NODATA,false,NULL);
 }
 
-static bool virtio_gpu_transfer_host_3d(uint32_t command,uint32_t resource_id,
-        uint32_t width,uint32_t height,uint32_t stride) {
+static bool virtio_gpu_transfer_host_3d_level(uint32_t command,uint32_t resource_id,
+        uint32_t width,uint32_t height,uint32_t stride,uint32_t level) {
     virtio_gpu_transfer_host_3d_t request;
     virtio_gpu_ctrl_hdr_t response;
     kmemset(&request,0,sizeof(request));
@@ -1262,14 +1275,19 @@ static bool virtio_gpu_transfer_host_3d(uint32_t command,uint32_t resource_id,
     request.hdr.ctx_id=g_virtio.virgl_context_id;
     request.box.w=width;request.box.h=height;request.box.d=1U;
     request.resource_id=resource_id;
-    request.stride=stride;
+    request.stride=stride;request.level=level;
     request.layer_stride=stride*height;
     return virtio_gpu_control_command(&request,sizeof(request),&response,
         sizeof(response),VIRTIO_GPU_RESP_OK_NODATA,true,NULL);
 }
 
-static bool virtio_gpu_submit_3d(const uint32_t *commands,
-                                 uint32_t dword_count) {
+static bool virtio_gpu_transfer_host_3d(uint32_t command,uint32_t resource_id,
+        uint32_t width,uint32_t height,uint32_t stride) {
+    return virtio_gpu_transfer_host_3d_level(command,resource_id,width,height,stride,0U);
+}
+
+static bool virtio_gpu_submit_3d_sync(const uint32_t *commands,
+                                 uint32_t dword_count,bool fenced) {
     virtio_gpu_cmd_submit_t *request;
     virtio_gpu_ctrl_hdr_t response;
     uint32_t bytes,total;
@@ -1286,9 +1304,14 @@ static bool virtio_gpu_submit_3d(const uint32_t *commands,
     request->size=bytes;
     kmemcpy((uint8_t *)request+sizeof(*request),commands,bytes);
     ok=virtio_gpu_control_command(request,total,&response,sizeof(response),
-        VIRTIO_GPU_RESP_OK_NODATA,true,NULL);
+        VIRTIO_GPU_RESP_OK_NODATA,fenced,NULL);
+    if(ok)g_virtio.virgl_pending=!fenced;
     kfree(request);
     return ok;
+}
+
+static bool virtio_gpu_submit_3d(const uint32_t *commands,uint32_t count){
+    return virtio_gpu_submit_3d_sync(commands,count,false);
 }
 
 /*
@@ -1375,8 +1398,10 @@ static void virtio_gpu_probe_capsets(void) {
             kprintf("[VIRTIOGPU.DVR] capset[%u]: id=%u version=%u size=%u\n",
                     i, response.capset_id, response.capset_max_version,
                     response.capset_max_size);
-            /* VIRGL2 (id 2) is preferred, VIRGL (id 1) remains compatible. */
-            if (((response.capset_id==2U && g_virtio.context_init_available) ||
+            /* VIRGL2 extends the VirGL capability structure and works with
+             * legacy contexts too (as in Mesa's DRM winsys). CONTEXT_INIT
+             * only controls whether CTX_CREATE carries an explicit capset. */
+            if ((response.capset_id==2U ||
                 (!g_virtio.virgl_capset_id && response.capset_id==1U)) &&
                 response.capset_max_size) {
                 g_virtio.virgl_capset_id=response.capset_id;
@@ -1517,9 +1542,30 @@ static bool virtio_gpu_queue_dirty(int x, int y, int w, int h) {
     if (!g_virtio.active || !virtio_gpu_clip_rect(&x, &y, &w, &h))
         return false;
     if (g_virtio.dirty_count >= VIRTIO_GPU_MAX_DIRTY_RECTS) {
-        g_virtio.dirty[0] = (gfx_rect_t){0, 0, (int32_t)g_virtio.width,
-                                         (int32_t)g_virtio.height};
-        g_virtio.dirty_count = 1U;
+        /* BLES_VIRTIO_DIRTY_OVERFLOW_COST / BLES_GRAPHICS_GUI_PERF_V1
+         * Never turn a full damage list into a full-screen transfer. Fold the
+         * new rectangle into the existing entry whose union grows least. */
+        uint32_t best = 0U;
+        uint32_t best_cost = 0xFFFFFFFFU;
+        int32_t best_x0 = 0, best_y0 = 0, best_x1 = 0, best_y1 = 0;
+        for (uint32_t i = 0U; i < g_virtio.dirty_count; i++) {
+            const gfx_rect_t old = g_virtio.dirty[i];
+            int32_t x0 = old.x < x ? old.x : x;
+            int32_t y0 = old.y < y ? old.y : y;
+            int32_t x1 = old.x + old.w > x + w ? old.x + old.w : x + w;
+            int32_t y1 = old.y + old.h > y + h ? old.y + old.h : y + h;
+            uint32_t merged_area = (uint32_t)(x1 - x0) * (uint32_t)(y1 - y0);
+            uint32_t old_area = (uint32_t)old.w * (uint32_t)old.h;
+            uint32_t cost = merged_area >= old_area ? merged_area - old_area : 0U;
+            if (cost < best_cost) {
+                best = i;
+                best_cost = cost;
+                best_x0 = x0; best_y0 = y0;
+                best_x1 = x1; best_y1 = y1;
+            }
+        }
+        g_virtio.dirty[best] = (gfx_rect_t){best_x0, best_y0,
+            best_x1 - best_x0, best_y1 - best_y0};
         return true;
     }
     rect = &g_virtio.dirty[g_virtio.dirty_count++];
@@ -1527,35 +1573,94 @@ static bool virtio_gpu_queue_dirty(int x, int y, int w, int h) {
     return true;
 }
 
-static bool virtio_gpu_dirty_union(gfx_rect_t *out) {
-    int32_t x1, y1, x2, y2;
-    if (!out || !g_virtio.dirty_count) return false;
-    x1 = g_virtio.dirty[0].x;
-    y1 = g_virtio.dirty[0].y;
-    x2 = x1 + g_virtio.dirty[0].w;
-    y2 = y1 + g_virtio.dirty[0].h;
-    for (uint32_t i = 1; i < g_virtio.dirty_count; i++) {
-        gfx_rect_t *r = &g_virtio.dirty[i];
-        if (r->x < x1) x1 = r->x;
-        if (r->y < y1) y1 = r->y;
-        if (r->x + r->w > x2) x2 = r->x + r->w;
-        if (r->y + r->h > y2) y2 = r->y + r->h;
-    }
-    *out = (gfx_rect_t){x1, y1, x2 - x1, y2 - y1};
-    return true;
+static uint32_t virtio_gpu_rect_area(gfx_rect_t rect) {
+    if (rect.w <= 0 || rect.h <= 0) return 0U;
+    return (uint32_t)rect.w * (uint32_t)rect.h;
+}
+
+static gfx_rect_t virtio_gpu_rect_union(gfx_rect_t a, gfx_rect_t b) {
+    int32_t x0 = a.x < b.x ? a.x : b.x;
+    int32_t y0 = a.y < b.y ? a.y : b.y;
+    int32_t x1 = a.x + a.w > b.x + b.w ? a.x + a.w : b.x + b.w;
+    int32_t y1 = a.y + a.h > b.y + b.h ? a.y + a.h : b.y + b.h;
+    return (gfx_rect_t){x0, y0, x1 - x0, y1 - y0};
+}
+
+static bool virtio_gpu_rects_touch(gfx_rect_t a, gfx_rect_t b) {
+    return a.x <= b.x + b.w && b.x <= a.x + a.w &&
+           a.y <= b.y + b.h && b.y <= a.y + a.h;
 }
 
 static bool virtio_gpu_submit_dirty(uint32_t *fence_out) {
-    gfx_rect_t rect;
-    bool ok;
+    gfx_rect_t rects[VIRTIO_GPU_MAX_DIRTY_RECTS];
+    gfx_rect_t bounds;
+    uint32_t count, total_area = 0U, bounds_area;
+
     if (fence_out) *fence_out = 0U;
     if (!g_virtio.active) return false;
-    if (!virtio_gpu_dirty_union(&rect)) return true;
+    count = g_virtio.dirty_count;
+    if (!count) return true;
+    if (count > VIRTIO_GPU_MAX_DIRTY_RECTS)
+        count = VIRTIO_GPU_MAX_DIRTY_RECTS;
+    for (uint32_t i = 0U; i < count; i++) rects[i] = g_virtio.dirty[i];
     g_virtio.dirty_count = 0U;
-    ok = virtio_gpu_upload_scanout_rect(g_virtio.display_resource,
-                                          g_virtio.pitch, rect, fence_out);
-    if (!ok) (void)virtio_gpu_queue_dirty(rect.x, rect.y, rect.w, rect.h);
-    return ok;
+
+    /* Preserve damage instead of blindly turning every batch into one huge
+     * bounding rectangle. A clock update near the bottom plus a tiny window
+     * invalidation near the top used to transfer most of a 1024x768 scanout.
+     * Merge only touching regions whose bounding box adds <=25% overdraw. */
+    for (uint32_t i = 0U; i < count; i++) {
+        uint32_t j = i + 1U;
+        while (j < count) {
+            gfx_rect_t merged;
+            uint32_t input_area, merged_area;
+            if (!virtio_gpu_rects_touch(rects[i], rects[j])) {
+                j++;
+                continue;
+            }
+            merged = virtio_gpu_rect_union(rects[i], rects[j]);
+            input_area = virtio_gpu_rect_area(rects[i]) +
+                         virtio_gpu_rect_area(rects[j]);
+            merged_area = virtio_gpu_rect_area(merged);
+            if (merged_area <= input_area + input_area / 4U) {
+                rects[i] = merged;
+                for (uint32_t k = j; k + 1U < count; k++)
+                    rects[k] = rects[k + 1U];
+                count--;
+                continue;
+            }
+            j++;
+        }
+    }
+
+    bounds = rects[0];
+    for (uint32_t i = 0U; i < count; i++) {
+        total_area += virtio_gpu_rect_area(rects[i]);
+        if (i) bounds = virtio_gpu_rect_union(bounds, rects[i]);
+    }
+    bounds_area = virtio_gpu_rect_area(bounds);
+
+    /* One transfer/flush pair is still cheaper when the damage is naturally
+     * clustered. For distant regions, keep them separate and save bandwidth. */
+    if (count == 1U || bounds_area <= total_area + total_area / 4U) {
+        if (virtio_gpu_upload_scanout_rect(g_virtio.display_resource,
+                                           g_virtio.pitch, bounds, fence_out))
+            return true;
+        (void)virtio_gpu_queue_dirty(bounds.x, bounds.y, bounds.w, bounds.h);
+        return false;
+    }
+
+    for (uint32_t i = 0U; i < count; i++) {
+        uint32_t *out = (i + 1U == count) ? fence_out : NULL;
+        if (!virtio_gpu_upload_scanout_rect(g_virtio.display_resource,
+                                             g_virtio.pitch, rects[i], out)) {
+            for (uint32_t j = i; j < count; j++)
+                (void)virtio_gpu_queue_dirty(rects[j].x, rects[j].y,
+                                             rects[j].w, rects[j].h);
+            return false;
+        }
+    }
+    return true;
 }
 
 static bool virtio_gpu_configure_mode(gfx_info_t *info, uint16_t width,
@@ -1576,6 +1681,10 @@ static bool virtio_gpu_configure_mode(gfx_info_t *info, uint16_t width,
     pixels = (uint32_t *)virtio_alloc_aligned(
         ALIGN_UP(size, VIRTIO_GPU_PAGE_SIZE), VIRTIO_GPU_PAGE_SIZE, &raw);
     if (!pixels) return false;
+    /* The resource is uploaded immediately after SET_SCANOUT.  Do not expose
+     * stale heap contents while the first bootsplash frame is still being
+     * constructed. */
+    kmemset(pixels, 0, size);
     resource = virtio_gpu_next_resource();
 
     if (!virtio_gpu_resource_create(resource,
@@ -1627,19 +1736,33 @@ static bool virtio_gpu_configure_mode(gfx_info_t *info, uint16_t width,
 static bool virtio_gpu_activate(gfx_info_t *info, uint16_t preferred_width,
                                 uint16_t preferred_height) {
     uint32_t host_width = 0U, host_height = 0U;
-    uint16_t width = 800U, height = 600U;
+    uint16_t width = 1024U, height = 768U;
     if (!info || !virtio_gpu_device_start()) return false;
-    if (preferred_width && preferred_height &&
+
+    /* Stage2 normally leaves a conservative 800x600 VESA mode.  That is a
+     * useful bootstrap resolution but should not artificially cap a modern
+     * VirtIO scanout.  Preserve explicit >=1024-wide requests; otherwise use
+     * 1024x768 as the native desktop baseline. */
+    if (preferred_width >= 1024U && preferred_height >= 600U &&
         virtio_gpu_mode_supported(preferred_width, preferred_height, 32U)) {
         width = preferred_width;
         height = preferred_height;
-    } else if (virtio_gpu_get_display_info(&host_width, &host_height) &&
+    } else if (!virtio_gpu_mode_supported(width, height, 32U) &&
+               preferred_width && preferred_height &&
+               virtio_gpu_mode_supported(preferred_width, preferred_height, 32U)) {
+        width = preferred_width;
+        height = preferred_height;
+    } else if (!virtio_gpu_mode_supported(width, height, 32U) &&
+               virtio_gpu_get_display_info(&host_width, &host_height) &&
                host_width <= 0xFFFFU && host_height <= 0xFFFFU &&
                virtio_gpu_mode_supported((uint16_t)host_width,
                                          (uint16_t)host_height, 32U)) {
         width = (uint16_t)host_width;
         height = (uint16_t)host_height;
     }
+    kprintf("[VIRTIOGPU.DVR] desktop preferido: stage2=%ux%u -> virtio=%ux%u\n",
+            (uint32_t)preferred_width, (uint32_t)preferred_height,
+            (uint32_t)width, (uint32_t)height);
     return virtio_gpu_configure_mode(info, width, height);
 }
 
@@ -1722,20 +1845,41 @@ static bool virtio_gpu_present_buffer(const gfx_info_t *info,
                                       const gfx_rect_t *rects,
                                       uint32_t rect_count,
                                       uint32_t *fence_out) {
+    bool source_is_scanout;
+
     if (fence_out) *fence_out = 0U;
     if (!g_virtio.active || !info || !pixels || !rects || !rect_count ||
         source_pitch < info->width || info->mode != GFX_MODE_VIRTIO_GPU)
         return false;
-    for (uint32_t i = 0; i < rect_count; i++) {
+
+    /* BLES_VIRTIO_PRESENT_COPY_FAST / BLES_GRAPHICS_GUI_PERF_V1
+     * If the compositor already rendered into the scanout backing store,
+     * copying it onto itself is pure memory bandwidth. Full-width sources are
+     * contiguous and can be copied in one operation instead of one per row. */
+    source_is_scanout = pixels == g_virtio.framebuffer &&
+                        source_pitch == g_virtio.width;
+
+    for (uint32_t i = 0U; i < rect_count; i++) {
         int x = rects[i].x, y = rects[i].y;
         int w = rects[i].w, h = rects[i].h;
         if (!virtio_gpu_clip_rect(&x, &y, &w, &h)) continue;
-        for (int row = 0; row < h; row++) {
-            uint32_t *dst = g_virtio.framebuffer +
-                (uint32_t)(y + row) * g_virtio.width + (uint32_t)x;
-            const uint32_t *src = pixels +
-                (uint32_t)(y + row) * source_pitch + (uint32_t)x;
-            kmemcpy(dst, src, (uint32_t)w * sizeof(uint32_t));
+
+        if (!source_is_scanout) {
+            if (x == 0 && w == (int)g_virtio.width &&
+                source_pitch == g_virtio.width) {
+                uint32_t *dst = g_virtio.framebuffer +
+                    (uint32_t)y * g_virtio.width;
+                const uint32_t *src = pixels + (uint32_t)y * source_pitch;
+                kmemcpy(dst, src, (uint32_t)w * (uint32_t)h * sizeof(uint32_t));
+            } else {
+                for (int row = 0; row < h; row++) {
+                    uint32_t *dst = g_virtio.framebuffer +
+                        (uint32_t)(y + row) * g_virtio.width + (uint32_t)x;
+                    const uint32_t *src = pixels +
+                        (uint32_t)(y + row) * source_pitch + (uint32_t)x;
+                    kmemcpy(dst, src, (uint32_t)w * sizeof(uint32_t));
+                }
+            }
         }
         (void)virtio_gpu_queue_dirty(x, y, w, h);
     }
@@ -2043,7 +2187,7 @@ static bool virtio_gpu_surface_blit(const gfx_info_t *info,
     return virtio_gpu_submit_dirty(fence_out);
 }
 
-typedef struct {uint32_t d[768];uint32_t n;} virgl_builder_t;
+typedef struct {uint32_t d[1024];uint32_t n;} virgl_builder_t;
 typedef struct {float p[4],c[4],t[4];} virgl_vertex_t;
 
 static uint32_t virgl_f32(float f){union{float f;uint32_t u;}v;v.f=f;return v.u;}
@@ -2069,15 +2213,26 @@ static bool virgl_shader(virgl_builder_t *b,uint32_t handle,uint32_t type,
 #define VG_OBJ_BLEND_OPAQUE 10U
 #define VG_OBJ_BLEND_ALPHA 11U
 #define VG_OBJ_BLEND_ADDITIVE 12U
+#define VG_OBJ_BLEND_PREMULT 13U
+#define VG_OBJ_BLEND_MULTIPLY 14U
 #define VG_OBJ_DSA_OFF 20U
 #define VG_OBJ_DSA_BASE 21U
 #define VG_OBJ_DSA_WRITE_BASE 29U
-#define VG_OBJ_RS 40U
+/* VirGL object handles share one context namespace even when their object
+ * types differ.  The old code assigned 40 to both the rasterizer and VS; the
+ * shader creation displaced/collided with the rasterizer and vrend later
+ * reported "bind rasterizer: Illegal handle 40". */
+#define VG_OBJ_RS 60U
+#define VG_OBJ_DSA_ALPHA 61U
+#define VG_OBJ_RS_CLIPPED 62U
 #define VG_SHADER_VS 40U
 #define VG_SHADER_FS_COLOR 41U
 #define VG_SHADER_FS_TEXTURE 42U
-#define VG_SAMPLER_NEAREST 50U
-#define VG_SAMPLER_LINEAR 51U
+#define VG_SHADER_FS_DECAL 43U
+#define VG_SAMPLER_BASE 64U
+
+static bool vg_flush(void);
+static bool vg_sync(void);
 
 static void vg_destroy_resource(uint32_t resource);
 
@@ -2093,6 +2248,12 @@ static bool virtio_gpu_virgl_init_pipeline(void) {
         "DCL SAMP[0]\nDCL SVIEW[0], 2D, FLOAT\nDCL TEMP[0]\n"
         "0: TEX TEMP[0], IN[1], SAMP[0], 2D\n"
         "1: MUL OUT[0], TEMP[0], IN[0]\n2: END\n";
+    static const char fs_decal[]="FRAG\nDCL IN[0], COLOR, LINEAR\n"
+        "DCL IN[1], GENERIC[0], PERSPECTIVE\nDCL OUT[0], COLOR\n"
+        "DCL SAMP[0]\nDCL SVIEW[0], 2D, FLOAT\nDCL TEMP[0]\n"
+        "0: TEX TEMP[0], IN[1], SAMP[0], 2D\n"
+        "1: LRP OUT[0].xyz, TEMP[0].wwww, TEMP[0], IN[0]\n"
+        "2: MOV OUT[0].w, IN[0].wwww\n3: END\n";
     virgl_builder_t b={{0},0U};uint32_t rt;
     if(g_virtio.virgl_pipeline_ready)return true;
     /* Three float4 attributes: clip position, color and texture coordinate. */
@@ -2105,15 +2266,21 @@ static bool virtio_gpu_virgl_init_pipeline(void) {
     virgl_put(&b,32U);virgl_put(&b,0U);virgl_put(&b,0U);
     virgl_put(&b,VIRGL_FORMAT_R32G32B32A32_FLOAT);
     /* Opaque, source-alpha and additive source-alpha blend objects. */
-    for(uint32_t blend=0;blend<3U;blend++){
+    for(uint32_t blend=0;blend<5U;blend++){
         uint32_t handle=blend==0U?VG_OBJ_BLEND_OPAQUE:
-            (blend==1U?VG_OBJ_BLEND_ALPHA:VG_OBJ_BLEND_ADDITIVE);
+            (blend==1U?VG_OBJ_BLEND_ALPHA:
+             (blend==2U?VG_OBJ_BLEND_ADDITIVE:
+              (blend==3U?VG_OBJ_BLEND_PREMULT:VG_OBJ_BLEND_MULTIPLY)));
         virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_CREATE_OBJECT,
         VIRGL_OBJECT_BLEND,11U));virgl_put(&b,handle);
         virgl_put(&b,0U);virgl_put(&b,0U);
         rt=15U<<27;
         if(blend){uint32_t dst=blend==2U?1U:0x13U;
-            rt|=1U|(3U<<4)|(dst<<9)|(1U<<17)|(dst<<22);}
+            rt|=1U|((blend==3U?1U:3U)<<4)|(dst<<9)|(1U<<17)|(dst<<22);}
+        /* Quake lightmaps: dst.rgb *= src.rgb, dst.a *= src.a.
+         * Gallium factors: ZERO=0x11, SRC_COLOR=2, SRC_ALPHA=3. */
+        if(blend==4U)rt=(15U<<27)|1U|(0x11U<<4)|(2U<<9)|
+                         (0x11U<<17)|(3U<<22);
         virgl_put(&b,rt);for(uint32_t i=1;i<8U;i++)virgl_put(&b,0U);
     }
     /* Complete OpenGL depth comparison set, with and without Z writes. */
@@ -2127,15 +2294,20 @@ static bool virtio_gpu_virgl_init_pipeline(void) {
         virgl_put(&b,handle);virgl_put(&b,s0);virgl_put(&b,0U);
         virgl_put(&b,0U);virgl_put(&b,0U);
     }
+    for(uint32_t clipped=0;clipped<2;clipped++){
     virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_CREATE_OBJECT,VIRGL_OBJECT_RASTERIZER,9U));
-    virgl_put(&b,VG_OBJ_RS);virgl_put(&b,(1U<<1)|(1U<<29)|(1U<<30));
+    virgl_put(&b,clipped?VG_OBJ_RS_CLIPPED:VG_OBJ_RS);
+    virgl_put(&b,(1U<<1)|(1U<<29)|(1U<<30)|(clipped?(1U<<14):0U));
     virgl_put(&b,virgl_f32(1.0f));virgl_put(&b,0U);virgl_put(&b,0U);
     virgl_put(&b,virgl_f32(1.0f));virgl_put(&b,0U);virgl_put(&b,0U);virgl_put(&b,0U);
-    /* Samplers: clamp/nearest and repeat/linear. */
-    for(uint32_t i=0;i<2U;i++){
-        uint32_t s0=i?((1U<<9)|(1U<<13)):0U;
+    }
+    /* Independent S/T repeat, image filter and nearest mip selection.
+       PIPE_TEX_WRAP_CLAMP_TO_EDGE=2; PIPE_TEX_MIPFILTER_NONE=2. */
+    for(uint32_t i=0;i<16U;i++){
+        uint32_t s0=((i&2U)?0U:2U)|(((i&4U)?0U:2U)<<3)|
+            ((i&1U)?((1U<<9)|(1U<<13)):0U)|((i&8U)?0U:(2U<<11));
         virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_CREATE_OBJECT,
-            VIRGL_OBJECT_SAMPLER_STATE,9U));virgl_put(&b,VG_SAMPLER_NEAREST+i);
+            VIRGL_OBJECT_SAMPLER_STATE,9U));virgl_put(&b,VG_SAMPLER_BASE+i);
         virgl_put(&b,s0);virgl_put(&b,0U);virgl_put(&b,0U);
         virgl_put(&b,virgl_f32(16.0f));
         for(uint32_t j=0;j<4U;j++)virgl_put(&b,0U);
@@ -2143,6 +2315,7 @@ static bool virtio_gpu_virgl_init_pipeline(void) {
     if(!virgl_shader(&b,VG_SHADER_VS,0U,vs)||
        !virgl_shader(&b,VG_SHADER_FS_COLOR,1U,fs_color)||
        !virgl_shader(&b,VG_SHADER_FS_TEXTURE,1U,fs_tex)||
+       !virgl_shader(&b,VG_SHADER_FS_DECAL,1U,fs_decal)||
        !virtio_gpu_submit_3d(b.d,b.n))return false;
     g_virtio.virgl_vbo_capacity=256U*1024U;
     for(uint32_t slot=0U;slot<3U;slot++){
@@ -2188,18 +2361,24 @@ static void vg_destroy_resource(uint32_t resource){
     (void)virtio_gpu_resource_detach(resource);(void)virtio_gpu_resource_unref(resource);
 }
 
+#define VIRTIO_GPU_GFX3D_CAPS (\
+    GFX3D_CAP_FIXED_FUNCTION | GFX3D_CAP_RENDER_TARGETS | \
+    GFX3D_CAP_VERTEX_BUFFERS | GFX3D_CAP_SURFACE_DMA | GFX3D_CAP_PRESENT | \
+    GFX3D_CAP_ALPHA_BLEND | GFX3D_CAP_TEXTURES | GFX3D_CAP_TINYGL | \
+    GFX3D_CAP_DEPTH_BUFFER | GFX3D_CAP_DEPTH_SURFACE_IO | \
+    GFX3D_CAP_DEPTH_FUNCS | GFX3D_CAP_BLEND_ADDITIVE | \
+    GFX3D_CAP_TEXTURE_REGION_UPLOAD | GFX3D_CAP_SCALE | \
+    GFX3D_CAP_TRANSFORM | GFX3D_CAP_WINDOW_SURFACES | GFX3D_CAP_GLYPH_ATLAS | \
+    GFX3D_CAP_ALPHA_TEST | GFX3D_CAP_TEXTURE_DECAL | GFX3D_CAP_TEXTURE_MIPMAPS | \
+    GFX3D_CAP_ORDERED_SUBMIT | GFX3D_CAP_BLEND_MULTIPLY)
+
 static bool vg_probe(gfx3d_info_t *info){
     if(!virtio_gpu_device_start()||!g_virtio.virgl_commands_ready)return false;
     if(!virtio_gpu_virgl_init_pipeline()){
         g_virtio.virgl_commands_ready=false;return false;
     }
     if(info)*info=(gfx3d_info_t){true,"virtio_virgl","VirtIO GPU/VirGL",
-        GFX3D_CAP_FIXED_FUNCTION|GFX3D_CAP_RENDER_TARGETS|
-        GFX3D_CAP_VERTEX_BUFFERS|GFX3D_CAP_SURFACE_DMA|GFX3D_CAP_PRESENT|
-        GFX3D_CAP_ALPHA_BLEND|GFX3D_CAP_TEXTURES|GFX3D_CAP_TINYGL|
-        GFX3D_CAP_DEPTH_BUFFER|GFX3D_CAP_DEPTH_SURFACE_IO|
-        GFX3D_CAP_DEPTH_FUNCS|GFX3D_CAP_BLEND_ADDITIVE|
-        GFX3D_CAP_TEXTURE_REGION_UPLOAD,2U,1U,1U};
+        VIRTIO_GPU_GFX3D_CAPS,2U,1U,1U};
     return true;
 }
 static void vg_reset(void){
@@ -2216,11 +2395,11 @@ static void vg_reset(void){
       const uint32_t handles[]={VG_OBJ_VE,VG_OBJ_BLEND_OPAQUE,
         VG_OBJ_BLEND_ALPHA,VG_OBJ_BLEND_ADDITIVE,VG_OBJ_DSA_OFF,VG_OBJ_RS,
         VG_SHADER_VS,VG_SHADER_FS_COLOR,VG_SHADER_FS_TEXTURE,
-        VG_SAMPLER_NEAREST,VG_SAMPLER_LINEAR};
+        VG_SHADER_FS_DECAL,VG_OBJ_BLEND_PREMULT,VG_OBJ_RS_CLIPPED,VG_OBJ_BLEND_MULTIPLY};
       const uint32_t objects[]={VIRGL_OBJECT_VERTEX_ELEMENTS,VIRGL_OBJECT_BLEND,
         VIRGL_OBJECT_BLEND,VIRGL_OBJECT_BLEND,VIRGL_OBJECT_DSA,
         VIRGL_OBJECT_RASTERIZER,VIRGL_OBJECT_SHADER,VIRGL_OBJECT_SHADER,
-        VIRGL_OBJECT_SHADER,VIRGL_OBJECT_SAMPLER_STATE,VIRGL_OBJECT_SAMPLER_STATE};
+        VIRGL_OBJECT_SHADER,VIRGL_OBJECT_SHADER,VIRGL_OBJECT_BLEND,VIRGL_OBJECT_RASTERIZER,VIRGL_OBJECT_BLEND};
       for(uint32_t i=0;i<sizeof(handles)/sizeof(handles[0]);i++){
         virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_DESTROY_OBJECT,objects[i],1U));
         virgl_put(&b,handles[i]);
@@ -2229,6 +2408,15 @@ static void vg_reset(void){
         virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_DESTROY_OBJECT,VIRGL_OBJECT_DSA,1U));
         virgl_put(&b,(write?VG_OBJ_DSA_WRITE_BASE:VG_OBJ_DSA_BASE)+func);
       }
+      for(uint32_t i=0;i<16U;i++){
+        virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_DESTROY_OBJECT,VIRGL_OBJECT_SAMPLER_STATE,1U));
+        virgl_put(&b,VG_SAMPLER_BASE+i);
+      }
+      if(g_virtio.virgl_alpha_created){
+        virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_DESTROY_OBJECT,VIRGL_OBJECT_DSA,1U));
+        virgl_put(&b,VG_OBJ_DSA_ALPHA);
+      }
+      g_virtio.virgl_alpha_created=false;
       (void)virtio_gpu_submit_3d(b.d,b.n);
     }
     for(uint32_t slot=0U;slot<3U;slot++){
@@ -2254,6 +2442,9 @@ static bool vg_surface_create(const gfx3d_surface_desc_t *desc,
        desc->format==GFX3D_FORMAT_Z16||!vg_probe(NULL))return false;
     for(i=0;i<VIRTIO_GPU_MAX_3D_SURFACES;i++)if(!g_virtio.surfaces3d[i].used){s=&g_virtio.surfaces3d[i];break;}
     if(!s)return false;
+    s->mip_levels=1U+((desc->flags>>8U)&15U);
+    {uint32_t largest=desc->width>desc->height?desc->width:desc->height;
+     if((largest>>(s->mip_levels-1U))==0U)return false;}
     bytes=(uint32_t)desc->width*desc->height*4U;
     s->raw=NULL;s->pixels=(uint32_t *)virtio_alloc_aligned(
         ALIGN_UP(bytes,4096U),4096U,&s->raw);if(!s->pixels)return false;
@@ -2262,8 +2453,8 @@ static bool vg_surface_create(const gfx3d_surface_desc_t *desc,
     bind=VIRGL_BIND_SAMPLER_VIEW;
     if(desc->flags&GFX3D_SURFACE_RENDER_TARGET)bind|=VIRGL_BIND_RENDER_TARGET;
     if(desc->flags&GFX3D_SURFACE_WINDOW)bind|=VIRGL_BIND_SCANOUT;
-    if(!virtio_gpu_resource_create_3d_ex(s->resource,VIRGL_TARGET_TEXTURE_2D,
-        VIRTIO_GPU_FORMAT_B8G8R8A8_UNORM,bind,s->width,s->height)||
+    if(!virtio_gpu_resource_create_3d_levels(s->resource,VIRGL_TARGET_TEXTURE_2D,
+        VIRTIO_GPU_FORMAT_B8G8R8A8_UNORM,bind,s->width,s->height,s->mip_levels)||
        !virtio_gpu_resource_attach(s->resource,s->pixels,ALIGN_UP(bytes,4096U))||
        !virtio_gpu_context_resource(VIRTIO_GPU_CMD_CTX_ATTACH_RESOURCE,s->resource))goto fail;
     s->surface_object=100U+i;s->depth_surface_object=200U+i;
@@ -2275,7 +2466,7 @@ static bool vg_surface_create(const gfx3d_surface_desc_t *desc,
      virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_CREATE_OBJECT,VIRGL_OBJECT_SAMPLER_VIEW,6U));
      virgl_put(&b,s->sampler_view_object);virgl_put(&b,s->resource);
      virgl_put(&b,VIRTIO_GPU_FORMAT_B8G8R8A8_UNORM);virgl_put(&b,0U);
-     virgl_put(&b,0U);virgl_put(&b,0x688U);
+     virgl_put(&b,(s->mip_levels-1U)<<8U);virgl_put(&b,0x688U);
      if(!virtio_gpu_submit_3d(b.d,b.n))goto fail;}
     if(desc->flags&GFX3D_SURFACE_RENDER_TARGET){uint32_t db=(uint32_t)s->width*s->height*2U;
         s->depth_pixels=virtio_alloc_aligned(ALIGN_UP(db,4096U),4096U,&s->depth_raw);
@@ -2304,6 +2495,7 @@ fail:
 
 static bool vg_surface_destroy(gfx3d_surface_handle_t h){
     virtio_gpu_3d_surface_t *s=vg_surface(h);virgl_builder_t b={{0},0U};
+    if(!vg_sync())return false;
     if(!s)return false;
     virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_DESTROY_OBJECT,VIRGL_OBJECT_SURFACE,1U));
     virgl_put(&b,s->surface_object);
@@ -2319,32 +2511,64 @@ static bool vg_surface_destroy(gfx3d_surface_handle_t h){
     {uint8_t generation=s->generation;kmemset(s,0,sizeof(*s));s->generation=generation;}
     return true;
 }
+static bool vg_upload_rect(virtio_gpu_3d_surface_t *s,gfx_rect_t r){
+    virtio_gpu_transfer_host_3d_t transfer;
+    virtio_gpu_ctrl_hdr_t response;
+    kmemset(&transfer,0,sizeof(transfer));
+    transfer.hdr.type=VIRTIO_GPU_CMD_TRANSFER_TO_HOST_3D;
+    transfer.hdr.ctx_id=g_virtio.virgl_context_id;
+    transfer.resource_id=s->resource;
+    transfer.box.x=r.x;transfer.box.y=r.y;
+    transfer.box.w=r.w;transfer.box.h=r.h;transfer.box.d=1U;
+    transfer.stride=(uint32_t)s->width*4U;
+    transfer.layer_stride=transfer.stride*s->height;
+    transfer.offset=(uint64_t)((uint32_t)r.y*transfer.stride+(uint32_t)r.x*4U);
+    return virtio_gpu_control_command(&transfer,sizeof(transfer),&response,
+        sizeof(response),VIRTIO_GPU_RESP_OK_NODATA,true,NULL);
+}
+
 static bool vg_surface_upload(gfx3d_surface_handle_t h,const uint32_t *pixels,
         uint32_t pitch,const gfx_rect_t *rect){
     virtio_gpu_3d_surface_t *s=vg_surface(h);gfx_rect_t r;
+    if(!vg_flush())return false;
     if(!s||!pixels||pitch<s->width)return false;
     r=rect?*rect:(gfx_rect_t){0,0,s->width,s->height};
     if(r.x<0||r.y<0||r.w<=0||r.h<=0||r.x+r.w>s->width||r.y+r.h>s->height)return false;
     for(int y=0;y<r.h;y++)kmemcpy(s->pixels+(uint32_t)(r.y+y)*s->width+r.x,
         pixels+(uint32_t)(r.y+y)*pitch+r.x,(uint32_t)r.w*4U);
-    return virtio_gpu_transfer_host_3d(VIRTIO_GPU_CMD_TRANSFER_TO_HOST_3D,
-        s->resource,s->width,s->height,(uint32_t)s->width*4U);
+    return vg_upload_rect(s,r);
 }
+/* Level transfers reuse the base-sized staging allocation only after the
+ * preceding fenced transfer completed; the host owns independent mip images. */
+static bool vg_surface_upload_mip(gfx3d_surface_handle_t h,uint32_t level,
+        const uint32_t *pixels,uint32_t pitch){
+    virtio_gpu_3d_surface_t *s=vg_surface(h);uint32_t w,height;
+    if(!s||!pixels||level>=s->mip_levels)return false;
+    w=s->width>>level;height=s->height>>level;
+    if(!w)w=1U;
+    if(!height)height=1U;
+    if(pitch<w||!vg_flush())return false;
+    for(uint32_t y=0;y<height;y++)kmemcpy(s->pixels+y*w,pixels+y*pitch,w*4U);
+    return virtio_gpu_transfer_host_3d_level(VIRTIO_GPU_CMD_TRANSFER_TO_HOST_3D,
+        s->resource,w,height,w*4U,level);
+}
+
 static bool vg_surface_upload_region(gfx3d_surface_handle_t h,
         const uint32_t *pixels,uint32_t pitch,uint32_t dx,uint32_t dy,
         uint32_t width,uint32_t height){
     virtio_gpu_3d_surface_t *s=vg_surface(h);
+    if(!vg_flush())return false;
     if(!s||!pixels||!pitch||pitch<width||!width||!height||
        dx+width>s->width||dy+height>s->height)return false;
     for(uint32_t y=0U;y<height;y++)
         kmemcpy(s->pixels+(dy+y)*s->width+dx,pixels+y*pitch,width*4U);
-    return virtio_gpu_transfer_host_3d(VIRTIO_GPU_CMD_TRANSFER_TO_HOST_3D,
-        s->resource,s->width,s->height,(uint32_t)s->width*4U);
+    return vg_upload_rect(s,(gfx_rect_t){dx,dy,width,height});
 }
 
 static bool vg_surface_download(gfx3d_surface_handle_t h,uint32_t *pixels,
         uint32_t pitch,const gfx_rect_t *rect){
     virtio_gpu_3d_surface_t *s=vg_surface(h);gfx_rect_t r;
+    if(!vg_flush())return false;
     if(!s||!pixels||pitch<s->width||!virtio_gpu_transfer_host_3d(
        VIRTIO_GPU_CMD_TRANSFER_FROM_HOST_3D,s->resource,s->width,s->height,
        (uint32_t)s->width*4U))return false;
@@ -2358,6 +2582,7 @@ static bool vg_depth_transfer(gfx3d_surface_handle_t h,uint16_t *depth,
         uint32_t pitch,const gfx_rect_t *rect,bool upload){
     virtio_gpu_3d_surface_t *s=vg_surface(h);gfx_rect_t r;
     uint16_t *storage;
+    if(!vg_flush())return false;
     if(!s||!s->depth_resource||!s->depth_pixels||!depth||pitch<s->width)
         return false;
     r=rect?*rect:(gfx_rect_t){0,0,s->width,s->height};
@@ -2389,17 +2614,23 @@ static bool vg_depth_download(gfx3d_surface_handle_t h,uint16_t *depth,
 static bool vg_clear_internal(virtio_gpu_3d_surface_t *s,uint32_t color,
                               float depth,uint32_t flags){
     virgl_builder_t b={{0},0U};uint32_t buffers=0U;
-    if(!s)return false;
+    if(!s||!vg_flush())return false;
+    if(!(flags&(GFX3D_DRAW_CLEAR_COLOR|GFX3D_DRAW_CLEAR_DEPTH)))return true;
     virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_SET_FRAMEBUFFER_STATE,0U,3U));
     virgl_put(&b,1U);virgl_put(&b,s->depth_surface_object);virgl_put(&b,s->surface_object);
     if(flags&GFX3D_DRAW_CLEAR_COLOR)buffers|=VIRGL_CLEAR_COLOR0;
     if((flags&GFX3D_DRAW_CLEAR_DEPTH)&&s->depth_resource)buffers|=VIRGL_CLEAR_DEPTH;
-    if(buffers){virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_CLEAR,0U,8U));virgl_put(&b,buffers);
+    if(buffers){
+      virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_BIND_OBJECT,VIRGL_OBJECT_RASTERIZER,1U));
+      virgl_put(&b,VG_OBJ_RS);
+      virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_CLEAR,0U,8U));virgl_put(&b,buffers);
       virgl_put(&b,virgl_f32((float)((color>>16)&255U)/255.0f));
       virgl_put(&b,virgl_f32((float)((color>>8)&255U)/255.0f));
       virgl_put(&b,virgl_f32((float)(color&255U)/255.0f));
       virgl_put(&b,virgl_f32((float)(color>>24)/255.0f));
-      virgl_put(&b,0U);virgl_put(&b,depth>=1.0f?0x3FF00000U:0U);virgl_put(&b,0U);}
+      union {double value;uint32_t word[2];} z;
+      z.value=depth<0.0f?0.0:(depth>1.0f?1.0:(double)depth);
+      virgl_put(&b,z.word[0]);virgl_put(&b,z.word[1]);virgl_put(&b,0U);}
     return virtio_gpu_submit_3d(b.d,b.n);
 }
 static bool vg_surface_clear(gfx3d_surface_handle_t h,uint32_t color,uint32_t *f){
@@ -2409,6 +2640,7 @@ static bool vg_surface_clear(gfx3d_surface_handle_t h,uint32_t color,uint32_t *f
 }
 static bool vg_surface_present(gfx3d_surface_handle_t h,const gfx_rect_t *r,
                                uint32_t *f){
+    if(!vg_flush())return false;
     virtio_gpu_3d_surface_t *s=vg_surface(h);gfx_rect_t full;
     if(f)*f=0U;
     if(!s||!g_virtio.active||s->width!=g_virtio.width||
@@ -2418,7 +2650,12 @@ static bool vg_surface_present(gfx3d_surface_handle_t h,const gfx_rect_t *r,
        (g_virtio.scanout_resource==s->resource||
         virtio_gpu_set_scanout_resource(s->resource,s->width,s->height))){
         g_virtio.scanout_resource=s->resource;
-        if(virtio_gpu_flush_resource(s->resource,full,f))return true;
+        if(virtio_gpu_flush_resource(s->resource,full,NULL)){
+            /* Publication is ordered; explicit wait_fence still waits on GPU. */
+            g_virtio.virgl_pending=true;
+            if(f)*f=virtio_gpu_next_fence();
+            return true;
+        }
     }
     /* Compatibility fallback for hosts that reject scanout-capable VirGL
        resources. This is intentionally not used on a working virglrenderer. */
@@ -2427,32 +2664,39 @@ static bool vg_surface_present(gfx3d_surface_handle_t h,const gfx_rect_t *r,
                                           g_virtio.pitch,full,f);
 }
 static bool vg_begin(gfx3d_surface_handle_t h,uint32_t color,float depth,uint32_t flags){
-    virtio_gpu_3d_surface_t *s=vg_surface(h);if(!s)return false;
-    if(g_virtio.virgl_frame_batching)return false;
-    g_virtio.virgl_target=h;
-    g_virtio.virgl_vbo_index=(g_virtio.virgl_vbo_index+1U)%3U;
-    for(uint32_t slot=0U;slot<3U;slot++)g_virtio.virgl_vbo_used[slot]=0U;
-    g_virtio.virgl_frame_command_count=0U;
-    g_virtio.virgl_frame_batching=true;
-    if(vg_clear_internal(s,color,depth,flags))return true;
-    g_virtio.virgl_target=0U;g_virtio.virgl_frame_batching=false;
-    return false;
+    virtio_gpu_3d_surface_t *s=vg_surface(h);
+    if(!s||!(s->flags&GFX3D_SURFACE_RENDER_TARGET))return false;
+    /* begin/end are logical client boundaries, not exclusive GPU ownership. */
+    if(!(flags&(GFX3D_DRAW_CLEAR_COLOR|GFX3D_DRAW_CLEAR_DEPTH)))return true;
+    return vg_clear_internal(s,color,depth,flags);
 }
-static bool vg_draw(gfx3d_surface_handle_t target,gfx3d_surface_handle_t texture,
-        const gfx3d_vertex_t *vertices,uint32_t count,uint32_t flags,uint32_t *f){
+static bool vg_draw_clipped(gfx3d_surface_handle_t target,gfx3d_surface_handle_t texture,
+        const gfx3d_vertex_t *vertices,uint32_t count,uint32_t flags,uint32_t *f,const gfx_rect_t *clip){
     virtio_gpu_3d_surface_t *dst=vg_surface(target),*tex=texture?vg_surface(texture):NULL;
     virgl_vertex_t *v;uint32_t resource,bytes,offset;
     virgl_builder_t b={{0},0U};bool ok=false;
     if(f)*f=0U;
-    if(!dst||!vertices||count<3U||(flags&GFX3D_DRAW_TEXTURED&&!tex))return false;
+    if(!dst||!(dst->flags&GFX3D_SURFACE_RENDER_TARGET)||!vertices||count<3U||
+       count%3U||(flags&GFX3D_DRAW_TEXTURED&&!tex))return false;
+    if(!(flags&GFX3D_DRAW_TEXTURED))tex=NULL;
+    uint32_t limit=1200U; /* Inline data + states fit the 64 KiB command budget. */
+    if(!limit)return false;
+    if(count>limit){
+        for(uint32_t first=0;first<count;){
+            uint32_t n=count-first;if(n>limit)n=limit;
+            if(!vg_draw_clipped(target,texture,vertices+first,n,flags,f,clip))return false;
+            first+=n;
+        }
+        return true;
+    }
     bytes=count*sizeof(*v);
-    if(!g_virtio.virgl_frame_batching||target!=g_virtio.virgl_target||
-       bytes>g_virtio.virgl_vbo_capacity||
-       !g_virtio.virgl_vbo_resource[g_virtio.virgl_vbo_index])return false;
+    if(!g_virtio.virgl_vbo_resource[g_virtio.virgl_vbo_index])return false;
+    if(g_virtio.virgl_frame_command_count+160U+12U+bytes/4U>
+       sizeof(g_virtio.virgl_frame_commands)/sizeof(uint32_t)&&!vg_flush())return false;
     if(bytes>g_virtio.virgl_vbo_capacity-
        g_virtio.virgl_vbo_used[g_virtio.virgl_vbo_index]){
         uint32_t next=(g_virtio.virgl_vbo_index+1U)%3U;
-        if(g_virtio.virgl_vbo_used[next])return false;
+        if(g_virtio.virgl_vbo_used[next]&&!vg_sync())return false;
         g_virtio.virgl_vbo_index=next;
     }
     offset=g_virtio.virgl_vbo_used[g_virtio.virgl_vbo_index];
@@ -2461,7 +2705,9 @@ static bool vg_draw(gfx3d_surface_handle_t target,gfx3d_surface_handle_t texture
     for(uint32_t i=0;i<count;i++){uint32_t c=vertices[i].color;
       v[i].p[0]=(vertices[i].x/(float)dst->width)*2.0f-1.0f;
       v[i].p[1]=(vertices[i].y/(float)dst->height)*2.0f-1.0f;
-      v[i].p[2]=vertices[i].z*2.0f-1.0f;v[i].p[3]=1.0f;
+      v[i].p[2]=vertices[i].z*2.0f-1.0f;
+      float w=vertices[i].rhw>0.0f?1.0f/vertices[i].rhw:1.0f;
+      v[i].p[0]*=w;v[i].p[1]*=w;v[i].p[2]*=w;v[i].p[3]=w;
       v[i].c[0]=(float)((c>>16)&255U)/255.0f;v[i].c[1]=(float)((c>>8)&255U)/255.0f;
       v[i].c[2]=(float)(c&255U)/255.0f;v[i].c[3]=(float)(c>>24)/255.0f;
       v[i].t[0]=vertices[i].u;v[i].t[1]=vertices[i].v;v[i].t[2]=0.0f;v[i].t[3]=1.0f;}
@@ -2472,14 +2718,44 @@ static bool vg_draw(gfx3d_surface_handle_t target,gfx3d_surface_handle_t texture
     virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_SET_VERTEX_BUFFERS,0U,3U));
     virgl_put(&b,sizeof(*v));virgl_put(&b,offset);virgl_put(&b,resource);
     virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_BIND_OBJECT,VIRGL_OBJECT_BLEND,1U));
-    virgl_put(&b,(flags&GFX3D_DRAW_BLEND)?
+    virgl_put(&b,(flags&GFX3D_DRAW_BLEND_MULTIPLY)?VG_OBJ_BLEND_MULTIPLY:
+        (flags&GFX3D_DRAW_BLEND)?
         ((flags&GFX3D_DRAW_BLEND_ADDITIVE)?VG_OBJ_BLEND_ADDITIVE:
-         VG_OBJ_BLEND_ALPHA):VG_OBJ_BLEND_OPAQUE);
-    virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_BIND_OBJECT,VIRGL_OBJECT_DSA,1U));
-    virgl_put(&b,(flags&GFX3D_DRAW_DEPTH_TEST)?
+         ((flags&GFX3D_DRAW_PREMULTIPLIED)?VG_OBJ_BLEND_PREMULT:VG_OBJ_BLEND_ALPHA)):
+        VG_OBJ_BLEND_OPAQUE);
+    uint32_t dsa=(flags&GFX3D_DRAW_DEPTH_TEST)?
         (((flags&GFX3D_DRAW_DEPTH_WRITE)?VG_OBJ_DSA_WRITE_BASE:VG_OBJ_DSA_BASE)+
-         (uint32_t)gfx3d_draw_depth_func(flags)):VG_OBJ_DSA_OFF);
-    virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_BIND_OBJECT,VIRGL_OBJECT_RASTERIZER,1U));virgl_put(&b,VG_OBJ_RS);
+         (uint32_t)gfx3d_draw_depth_func(flags)):VG_OBJ_DSA_OFF;
+    if(flags&GFX3D_DRAW_ALPHA_TEST){
+        dsa=VG_OBJ_DSA_ALPHA;
+        if(!g_virtio.virgl_alpha_created||g_virtio.virgl_alpha_flags!=flags){
+            if(g_virtio.virgl_alpha_created){
+                virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_DESTROY_OBJECT,VIRGL_OBJECT_DSA,1U));
+                virgl_put(&b,dsa);
+            }
+            uint32_t state=(flags&GFX3D_DRAW_DEPTH_TEST)?
+                (1U|((flags&GFX3D_DRAW_DEPTH_WRITE)?2U:0U)|
+                 ((uint32_t)gfx3d_draw_depth_func(flags)<<2U)):0U;
+            state|=(1U<<8U)|(((flags>>GFX3D_DRAW_ALPHA_FUNC_SHIFT)&7U)<<9U);
+            virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_CREATE_OBJECT,VIRGL_OBJECT_DSA,5U));
+            virgl_put(&b,dsa);virgl_put(&b,state);virgl_put(&b,0U);virgl_put(&b,0U);
+            virgl_put(&b,virgl_f32((float)((flags>>GFX3D_DRAW_ALPHA_REF_SHIFT)&255U)/255.0f));
+            g_virtio.virgl_alpha_created=true;g_virtio.virgl_alpha_flags=flags;
+        }
+    }
+    virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_BIND_OBJECT,VIRGL_OBJECT_DSA,1U));virgl_put(&b,dsa);
+    virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_BIND_OBJECT,VIRGL_OBJECT_RASTERIZER,1U));virgl_put(&b,clip?VG_OBJ_RS_CLIPPED:VG_OBJ_RS);
+    if(clip){
+        int x0=clip->x<0?0:clip->x,y0=clip->y<0?0:clip->y;
+        int x1=clip->x+clip->w,y1=clip->y+clip->h;
+        if(x1>dst->width)x1=dst->width;
+        if(y1>dst->height)y1=dst->height;
+        if(x1<x0)x1=x0;
+        if(y1<y0)y1=y0;
+        virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_SET_SCISSOR_STATE,0U,3U));
+        virgl_put(&b,0U);virgl_put(&b,(uint32_t)x0|((uint32_t)y0<<16U));
+        virgl_put(&b,(uint32_t)x1|((uint32_t)y1<<16U));
+    }
     virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_SET_VIEWPORT_STATE,0U,7U));virgl_put(&b,0U);
     virgl_put(&b,virgl_f32((float)dst->width*0.5f));
     virgl_put(&b,virgl_f32((float)dst->height*0.5f));virgl_put(&b,virgl_f32(0.5f));
@@ -2487,15 +2763,17 @@ static bool vg_draw(gfx3d_surface_handle_t target,gfx3d_surface_handle_t texture
     virgl_put(&b,virgl_f32((float)dst->height*0.5f));virgl_put(&b,virgl_f32(0.5f));
     virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_BIND_SHADER,0U,2U));virgl_put(&b,VG_SHADER_VS);virgl_put(&b,0U);
     virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_BIND_SHADER,0U,2U));
-    virgl_put(&b,tex?VG_SHADER_FS_TEXTURE:VG_SHADER_FS_COLOR);virgl_put(&b,1U);
+    virgl_put(&b,tex?((flags&GFX3D_DRAW_TEXTURE_DECAL)?VG_SHADER_FS_DECAL:VG_SHADER_FS_TEXTURE):VG_SHADER_FS_COLOR);virgl_put(&b,1U);
     virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_LINK_SHADER,0U,6U));virgl_put(&b,VG_SHADER_VS);
-    virgl_put(&b,tex?VG_SHADER_FS_TEXTURE:VG_SHADER_FS_COLOR);
+    virgl_put(&b,tex?((flags&GFX3D_DRAW_TEXTURE_DECAL)?VG_SHADER_FS_DECAL:VG_SHADER_FS_TEXTURE):VG_SHADER_FS_COLOR);
     for(uint32_t i=0;i<4U;i++)virgl_put(&b,0U);
     if(tex){virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_SET_SAMPLER_VIEWS,0U,3U));
       virgl_put(&b,1U);virgl_put(&b,0U);virgl_put(&b,tex->sampler_view_object);
       virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_BIND_SAMPLER_STATES,0U,3U));
       virgl_put(&b,1U);virgl_put(&b,0U);
-      virgl_put(&b,(flags&GFX3D_DRAW_LINEAR)?VG_SAMPLER_LINEAR:VG_SAMPLER_NEAREST);}
+      virgl_put(&b,VG_SAMPLER_BASE+((flags&GFX3D_DRAW_LINEAR)?1U:0U)+
+        ((flags&GFX3D_DRAW_REPEAT_U)?2U:0U)+((flags&GFX3D_DRAW_REPEAT_V)?4U:0U)+
+        ((flags&GFX3D_DRAW_MIPMAP_NEAREST)?8U:0U));}
     virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_DRAW_VBO,0U,12U));virgl_put(&b,0U);
     virgl_put(&b,count);virgl_put(&b,4U);virgl_put(&b,0U);virgl_put(&b,1U);
     virgl_put(&b,0U);virgl_put(&b,0U);virgl_put(&b,0U);virgl_put(&b,0U);
@@ -2503,44 +2781,49 @@ static bool vg_draw(gfx3d_surface_handle_t target,gfx3d_surface_handle_t texture
     if(g_virtio.virgl_frame_command_count+b.n>
        sizeof(g_virtio.virgl_frame_commands)/
        sizeof(g_virtio.virgl_frame_commands[0]))return false;
+    uint32_t *inline_words=&g_virtio.virgl_frame_commands[g_virtio.virgl_frame_command_count];
+    inline_words[0]=VIRGL_CMD0(VIRGL_CCMD_RESOURCE_INLINE_WRITE,0U,11U+bytes/4U);
+    inline_words[1]=resource;inline_words[2]=0U;inline_words[3]=2U; /* PIPE_MAP_WRITE */
+    inline_words[4]=bytes;inline_words[5]=bytes;
+    inline_words[6]=offset;inline_words[7]=inline_words[8]=0U;
+    inline_words[9]=bytes;inline_words[10]=inline_words[11]=1U;
+    kmemcpy(inline_words+12U,v,bytes);
+    g_virtio.virgl_frame_command_count+=12U+bytes/4U;
     kmemcpy(&g_virtio.virgl_frame_commands[
         g_virtio.virgl_frame_command_count],b.d,b.n*sizeof(uint32_t));
     g_virtio.virgl_frame_command_count+=b.n;
     g_virtio.virgl_vbo_used[g_virtio.virgl_vbo_index]+=bytes;
     ok=true;
-    if(ok&&f){uint32_t fence=virtio_gpu_next_fence();g_virtio.completed_fence=fence;*f=fence;}
+    /* Deferred commands have no completed fence until flush/end. */
     return ok;
 }
-static bool vg_end(gfx3d_surface_handle_t h,uint32_t *f){
-    bool ok=true;
-    if(h!=g_virtio.virgl_target||!g_virtio.virgl_frame_batching)return false;
-    for(uint32_t slot=0U;slot<3U&&ok;slot++)if(g_virtio.virgl_vbo_used[slot]){
-        uint32_t hash=2166136261U;
-        const uint32_t *words=(const uint32_t *)g_virtio.virgl_vbo[slot];
-        uint32_t word_count=g_virtio.virgl_vbo_used[slot]/4U;
-        for(uint32_t i=0U;i<word_count;i++)
-            hash=(hash^words[i])*16777619U;
-        /* Unchanged immediate-mode geometry remains in the host resource.
-           Camera/object edits naturally change the transformed vertex hash. */
-        if(g_virtio.virgl_vbo_uploaded[slot]!=g_virtio.virgl_vbo_used[slot]||
-           g_virtio.virgl_vbo_hash[slot]!=hash){
-            ok=virtio_gpu_transfer_host_3d(VIRTIO_GPU_CMD_TRANSFER_TO_HOST_3D,
-                g_virtio.virgl_vbo_resource[slot],g_virtio.virgl_vbo_used[slot],
-                1U,g_virtio.virgl_vbo_used[slot]);
-            if(ok){g_virtio.virgl_vbo_hash[slot]=hash;
-                   g_virtio.virgl_vbo_uploaded[slot]=
-                       g_virtio.virgl_vbo_used[slot];}
-        }
-    }
-    if(ok&&g_virtio.virgl_frame_command_count)
-        ok=virtio_gpu_submit_3d(g_virtio.virgl_frame_commands,
-                                g_virtio.virgl_frame_command_count);
-    g_virtio.virgl_target=0U;
-    g_virtio.virgl_frame_batching=false;
+static bool vg_draw(gfx3d_surface_handle_t target,gfx3d_surface_handle_t texture,
+        const gfx3d_vertex_t *v,uint32_t count,uint32_t flags,uint32_t *f){
+    return vg_draw_clipped(target,texture,v,count,flags,f,NULL);
+}
+static bool vg_flush(void){
+    if(g_virtio.virgl_frame_command_count&&!virtio_gpu_submit_3d(
+        g_virtio.virgl_frame_commands,g_virtio.virgl_frame_command_count))return false;
     g_virtio.virgl_frame_command_count=0U;
+    /* Submission is not completion: VirGL maps inline buffer writes with
+     * GL_MAP_UNSYNCHRONIZED_BIT. Keep each range reserved across submissions
+     * until vg_sync establishes a real GPU completion boundary. */
+    return true;
+}
+static bool vg_sync(void){
+    const uint32_t barrier[]={VIRGL_CMD0(VIRGL_CCMD_SET_FRAMEBUFFER_STATE,0U,2U),0U,0U};
+    if(!vg_flush()||(g_virtio.virgl_pending&&
+        !virtio_gpu_submit_3d_sync(barrier,3U,true)))return false;
     for(uint32_t slot=0U;slot<3U;slot++)g_virtio.virgl_vbo_used[slot]=0U;
-    if(!ok){if(f)*f=0U;return false;}
-    if(f){*f=virtio_gpu_next_fence();g_virtio.completed_fence=*f;}return true;
+    return true;
+}
+static bool vg_end(gfx3d_surface_handle_t h,uint32_t *f){
+    if(f)*f=0U;
+    if(!vg_surface(h)||!vg_flush())return false;
+    /* This is a submitted fence token, never a fabricated completion.
+     * wait_fence and CPU readback establish an actual host fence when needed. */
+    if(f)*f=g_virtio.virgl_pending?virtio_gpu_next_fence():g_virtio.completed_fence;
+    return true;
 }
 static bool vg_composite(gfx3d_surface_handle_t source_handle,
         gfx3d_surface_handle_t destination_handle,
@@ -2571,6 +2854,12 @@ static bool vg_composite(gfx3d_surface_handle_t source_handle,
     color=operation->modulation_color?operation->modulation_color:0xFFFFFFFFU;
     color=(color&0x00FFFFFFU)|
           ((uint32_t)(((color>>24)*operation->opacity)/255U)<<24);
+    if(operation->source_premultiplied){
+        uint32_t r=((color>>16)&255U)*operation->opacity/255U;
+        uint32_t g=((color>>8)&255U)*operation->opacity/255U;
+        uint32_t b=(color&255U)*operation->opacity/255U;
+        color=(color&0xFF000000U)|(r<<16)|(g<<8)|b;
+    }
     flags=GFX3D_DRAW_TEXTURED|GFX3D_DRAW_BLEND;
     if(operation->filter==GFX3D_FILTER_LINEAR)flags|=GFX3D_DRAW_LINEAR;
     if(operation->source_premultiplied)flags|=GFX3D_DRAW_PREMULTIPLIED;
@@ -2578,9 +2867,14 @@ static bool vg_composite(gfx3d_surface_handle_t source_handle,
     VG_CV(0,x0,y0,u0,v0);VG_CV(1,x1,y1,u1,v0);VG_CV(2,x2,y2,u1,v1);
     VG_CV(3,x0,y0,u0,v0);VG_CV(4,x2,y2,u1,v1);VG_CV(5,x3,y3,u0,v1);
 #undef VG_CV
-    return vg_draw(destination_handle,source_handle,v,6U,flags,f);
+    return vg_draw_clipped(destination_handle,source_handle,v,6U,flags,f,
+                           &operation->clip);
 }
-static bool vg_wait(uint32_t f){return !f||(int32_t)(g_virtio.completed_fence-f)>=0;}
+static bool vg_wait(uint32_t f){
+    if(!f||(int32_t)(g_virtio.completed_fence-f)>=0)return true;
+    if((int32_t)(g_virtio.next_fence-f)<0)return false;
+    return vg_sync()&&(int32_t)(g_virtio.completed_fence-f)>=0;
+}
 static bool vg_selftest(uint32_t *f){gfx3d_surface_desc_t d={32U,32U,
     GFX3D_FORMAT_ARGB8888,GFX3D_SURFACE_RENDER_TARGET};
     gfx3d_surface_desc_t td={2U,2U,GFX3D_FORMAT_ARGB8888,
@@ -2611,22 +2905,162 @@ static bool vg_selftest(uint32_t *f){gfx3d_surface_desc_t d={32U,32U,
     if(ok)ok=s->pixels[12U*s->width+16U]!=0xFF000000U;
     vg_surface_destroy(texture);vg_surface_destroy(h);return ok;}
 
+/* Exercise the public semantics: interleaved clients, buffer rollover and
+ * texture state must produce pixels before advertising the new capabilities. */
+static bool vg_extended_selftest(void){
+    gfx3d_surface_desc_t rd={32,32,GFX3D_FORMAT_ARGB8888,GFX3D_SURFACE_RENDER_TARGET};
+    gfx3d_surface_desc_t td={4,4,GFX3D_FORMAT_ARGB8888,
+        GFX3D_SURFACE_TEXTURE|GFX3D_SURFACE_MIP_LEVELS(3)};
+    gfx3d_surface_handle_t a=0,b=0,t=0;
+    uint32_t pixels[32*32]={0},texels[16],f=0;bool ok=false;
+    gfx3d_vertex_t v[3]={{4,4,0.5f,1,0xFF00FF00U,0,0},
+        {28,4,0.5f,1,0xFF00FF00U,1,0},{16,28,0.5f,1,0xFF00FF00U,0.5f,1}};
+    if(!vg_surface_create(&rd,&a)||!vg_surface_create(&rd,&b)||
+       !vg_surface_create(&td,&t))goto done;
+    for(uint32_t i=0;i<3;i++)v[i].color=0xFF4080C0U;
+    if(!vg_begin(a,0xFF806040U,0,GFX3D_DRAW_CLEAR_COLOR)||
+       !vg_draw(a,0,v,3,GFX3D_DRAW_BLEND|GFX3D_DRAW_BLEND_MULTIPLY,&f)||
+       !vg_surface_download(a,pixels,32,NULL))goto done;
+    for(uint32_t shift=0;shift<32;shift+=8){
+        int got=(pixels[12*32+16]>>shift)&255U;
+        int expected=(0xFF203030U>>shift)&255U;
+        if(got<expected-1||got>expected+1)goto done;
+    }
+    kprintf("[VIRGL:TEST] multiplicative lightmap blend PASS\n");
+    for(uint32_t func=0;func<8;func++)for(uint32_t ref=0;ref<3;ref++){
+        uint32_t reference=ref==0?64U:(ref==1?128U:192U);
+        bool expected=false;
+        switch(func){case 0:break;case 1:expected=128<reference;break;
+        case 2:expected=128==reference;break;case 3:expected=128<=reference;break;
+        case 4:expected=128>reference;break;case 5:expected=128!=reference;break;
+        case 6:expected=128>=reference;break;default:expected=true;}
+        for(uint32_t i=0;i<3;i++)v[i].color=0x8000FF00U;
+        if(!vg_begin(a,0xFF000000U,0,GFX3D_DRAW_CLEAR_COLOR)||
+           !vg_draw(a,0,v,3,GFX3D_DRAW_ALPHA(func,reference),&f)||
+           !vg_surface_download(a,pixels,32,NULL)||
+           ((pixels[12*32+16]&0xFFFFFFU)!=0U)!=expected)goto done;
+    }
+    kprintf("[VIRGL:TEST] alpha comparisons=24 PASS\n");
+    for(uint32_t i=0;i<16;i++)texels[i]=0x00FF0000U;
+    for(uint32_t i=0;i<3;i++)v[i].color=0xFF00FF00U;
+    if(!vg_surface_upload_mip(t,0,texels,4)||
+       !vg_begin(a,0xFF000000U,0,GFX3D_DRAW_CLEAR_COLOR)||
+       !vg_draw(a,t,v,3,GFX3D_DRAW_TEXTURED|GFX3D_DRAW_TEXTURE_DECAL,&f)||
+       !vg_surface_download(a,pixels,32,NULL)||pixels[12*32+16]!=0xFF00FF00U)goto done;
+    kprintf("[VIRGL:TEST] DECAL alpha preserved PASS\n");
+    for(uint32_t level=0;level<3;level++){
+        for(uint32_t i=0;i<16;i++)texels[i]=level==0?0xFFFF0000U:
+            (level==1?0xFF00FF00U:0xFF0000FFU);
+        if(!vg_surface_upload_mip(t,level,texels,4U>>level))goto done;
+    }
+    for(uint32_t i=0;i<3;i++){v[i].color=0xFFFFFFFFU;v[i].u*=32;v[i].v*=32;}
+    if(!vg_begin(a,0xFF000000U,0,GFX3D_DRAW_CLEAR_COLOR)||
+       !vg_draw(a,t,v,3,GFX3D_DRAW_TEXTURED|GFX3D_DRAW_MIPMAP_NEAREST,&f)||
+       !vg_surface_download(a,pixels,32,NULL)||pixels[12*32+16]!=0xFF0000FFU)goto done;
+    if(!vg_draw(a,t,v,3,GFX3D_DRAW_TEXTURED,&f)||
+       !vg_surface_download(a,pixels,32,NULL)||pixels[12*32+16]!=0xFFFF0000U||
+       vg_surface_upload_mip(t,3,texels,1))goto done;
+    kprintf("[VIRGL:TEST] native mip selection and disabled mip PASS\n");
+    /* A lower-mip upload must not poison an unrelated base-level subimage. */
+    for(uint32_t i=0;i<16;i++)texels[i]=0xFFFF0000U;
+    if(!vg_surface_upload_mip(t,0,texels,4))goto done;
+    for(uint32_t i=0;i<16;i++)texels[i]=0xFF0000FFU;
+    if(!vg_surface_upload_mip(t,1,texels,2))goto done;
+    texels[0]=0xFF00FF00U;
+    if(!vg_surface_upload_region(t,texels,1,2,1,1,1)||
+       !vg_surface_download(t,pixels,4,NULL)||pixels[0]!=0xFFFF0000U||
+       pixels[6]!=0xFF00FF00U)goto done;
+    texels[0]=0xFF00FF00U;
+    if(!vg_surface_upload_mip(t,2,texels,1)||
+       !vg_draw(a,t,v,3,GFX3D_DRAW_TEXTURED|GFX3D_DRAW_MIPMAP_NEAREST,&f)||
+       !vg_surface_download(a,pixels,32,NULL)||pixels[12*32+16]!=0xFF00FF00U)goto done;
+    kprintf("[VIRGL:TEST] mip update + isolated base subimage PASS\n");
+    for(uint32_t i=0;i<16;i++)texels[i]=0x80800000U;
+    if(!vg_surface_upload_mip(t,0,texels,4)||
+       !vg_begin(a,0xFF000000U,0.5f,GFX3D_DRAW_CLEAR_COLOR|GFX3D_DRAW_CLEAR_DEPTH))goto done;
+    {gfx3d_composite_t op={{0,0,4,4},{8,0,0,0,8,0},{8,8,8,8},128,
+                           GFX3D_FILTER_NEAREST,true,0xFFFFFFFFU};
+     if(!vg_composite(t,a,&op,&f)||!vg_end(a,&f)||!vg_wait(f)||
+        !vg_surface_download(a,pixels,32,NULL))goto done;
+     uint32_t red=(pixels[12*32+12]>>16)&255U;
+     if(red<63U||red>65U||pixels[12*32+20]!=0xFF000000U)goto done;}
+    {uint16_t *z=(uint16_t *)pixels;
+     if(!vg_depth_download(a,z,32,NULL)||z[0]<32766U||z[0]>32769U)goto done;}
+    kprintf("[VIRGL:TEST] premultiplied opacity + clip + fractional Z clear PASS\n");
+    if(!vg_begin(a,0xFF000000U,0,GFX3D_DRAW_CLEAR_COLOR)||
+       !vg_begin(b,0xFF000000U,0,GFX3D_DRAW_CLEAR_COLOR))goto done;
+    for(uint32_t draw=0;draw<240;draw++){
+        for(uint32_t i=0;i<3;i++)v[i].color=(draw&1)?0xFF00FF00U:0xFFFF0000U;
+        if(!vg_draw((draw&1)?b:a,0,v,3,0,&f)||f)goto done;
+    }
+    if(!vg_end(b,&f)||!vg_wait(f)||!vg_end(a,&f)||
+       !vg_surface_download(a,pixels,32,NULL)||pixels[12*32+16]!=0xFFFF0000U||
+       !vg_surface_download(b,pixels,32,NULL)||pixels[12*32+16]!=0xFF00FF00U)goto done;
+    /* Force all three VBO slots to wrap, with a draw larger than one slot. */
+    {uint32_t count=18000;gfx3d_vertex_t *large=kmalloc(count*sizeof(*large));
+     if(!large)goto done;
+     for(uint32_t i=0;i<count;i++)large[i]=v[i%3];
+     bool drawn=vg_draw(a,0,large,count,0,&f)&&vg_end(a,&f);
+     kfree(large);if(!drawn)goto done;}
+    if(!vg_surface_download(a,pixels,32,NULL)||pixels[12*32+16]!=0xFF00FF00U)goto done;
+    kprintf("[VIRGL:TEST] interleaved targets + command/VBO rollover PASS\n");
+    ok=true;
+done:
+    if(!ok)kprintf("[VIRGL:TEST] FAIL sample=0x%x\n",pixels[12*32+16]);
+    if(t)vg_surface_destroy(t);
+    if(b)vg_surface_destroy(b);
+    if(a)vg_surface_destroy(a);
+    return ok;
+}
+
+/* Unlike identical-triangle tests, every submission below uses different
+ * positions and colors. Reusing a still-live VBO range changes old draws. */
+static bool vg_vbo_lifetime_test(void){
+    gfx3d_surface_desc_t desc={256,256,GFX3D_FORMAT_ARGB8888,GFX3D_SURFACE_RENDER_TARGET};
+    gfx3d_surface_handle_t target=0;
+    gfx3d_vertex_t *vertices=kmalloc(600U*sizeof(*vertices));
+    uint32_t *pixels=kmalloc(256U*256U*4U);
+    bool ok=false;uint32_t bad=0;
+    if(!vertices||!pixels||!vg_surface_create(&desc,&target))goto done;
+    if(!vg_begin(target,0xFF000000U,0,GFX3D_DRAW_CLEAR_COLOR))goto done;
+    for(uint32_t draw=0;draw<64U;draw++){
+        uint32_t tile=draw%16U;
+        float x=(float)((tile%4U)*64U),y=(float)((tile/4U)*64U);
+        uint32_t color=0xFF000000U|((draw+1U)*0x030507U);
+        gfx3d_vertex_t quad[6]={{x,y,0.5f,1,color,0,0},
+            {x+64,y,0.5f,1,color,0,0},{x+64,y+64,0.5f,1,color,0,0},
+            {x,y,0.5f,1,color,0,0},{x+64,y+64,0.5f,1,color,0,0},
+            {x,y+64,0.5f,1,color,0,0}};
+        for(uint32_t i=0;i<600U;i++)vertices[i]=quad[i%6U];
+        if(!vg_draw(target,0,vertices,600U,0,NULL)||!vg_end(target,NULL))goto done;
+    }
+    if(!vg_surface_download(target,pixels,256,NULL))goto done;
+    for(uint32_t tile=0;tile<16U;tile++){
+        uint32_t expected=0xFF000000U|((49U+tile)*0x030507U);
+        uint32_t actual=pixels[((tile/4U)*64U+32U)*256U+(tile%4U)*64U+32U];
+        if(actual!=expected)bad++;
+    }
+    ok=!bad;
+done:
+    if(target)vg_surface_destroy(target);
+    if(vertices)kfree(vertices);
+    if(pixels)kfree(pixels);
+    kprintf("[VIRGL:TEST] VBO lifetime submissions=64 bad_tiles=%u %s\n",bad,ok?"PASS":"FAIL");
+    return ok;
+}
+
+#include "virtio_gpu_gallium.inc"
+
 static bool vg_register(void){static const gfx3d_driver_ops_t ops={
     BK_GFX3D_DRIVER_ABI_VERSION,sizeof(gfx3d_driver_ops_t),"virtio_virgl",245U,
-    GFX3D_CAP_FIXED_FUNCTION|GFX3D_CAP_RENDER_TARGETS|GFX3D_CAP_VERTEX_BUFFERS|
-    GFX3D_CAP_SURFACE_DMA|GFX3D_CAP_PRESENT|GFX3D_CAP_ALPHA_BLEND|
-    GFX3D_CAP_TEXTURES|GFX3D_CAP_TINYGL|GFX3D_CAP_DEPTH_BUFFER|
-    GFX3D_CAP_DEPTH_SURFACE_IO|GFX3D_CAP_DEPTH_FUNCS|
-    GFX3D_CAP_BLEND_ADDITIVE|GFX3D_CAP_TEXTURE_REGION_UPLOAD|
-    GFX3D_CAP_SCALE|GFX3D_CAP_TRANSFORM|GFX3D_CAP_WINDOW_SURFACES|
-    GFX3D_CAP_GLYPH_ATLAS,
+    VIRTIO_GPU_GFX3D_CAPS,
     vg_probe,vg_reset,vg_surface_create,vg_surface_destroy,vg_surface_upload,
     vg_surface_download,vg_surface_clear,vg_composite,vg_surface_present,vg_begin,vg_draw,
     vg_end,vg_wait,vg_selftest,vg_surface_upload_region,vg_depth_upload,
-    vg_depth_download};uint32_t fence=0U;
+    vg_depth_download,vg_surface_upload_mip,vg_raw_call};uint32_t fence=0U;
     if(!gfx3d_register_driver(&ops))return false;
     if(g_virtio.virgl_commands_ready){
-        if(!vg_selftest(&fence)){
+        if(!vg_selftest(&fence)||!vg_extended_selftest()||!vg_vbo_lifetime_test()){
             kprintf("[VIRTIOGPU.DVR] DRAW_VBO fallo; backend TinyGL deshabilitado\n");
             g_virtio.virgl_commands_ready=false;
         }else kprintf("[VIRTIOGPU.DVR] VirGL GFX3D/TinyGL: DRAW_VBO + Z + textura + descarga OK\n");
@@ -2685,6 +3119,7 @@ const bk_driver_module_t *bleskernos_driver_query(void) {
     static const bk_driver_module_t module = {
         BK_DRIVER_ABI_VERSION,
         sizeof(bk_driver_module_t),
+        1U, 0U,
         "virtio_gpu",
         "VirtIO GPU: scanout 2D rapido, cursor HW y VirGL GFX3D/TinyGL",
         virtio_gpu_driver_init,

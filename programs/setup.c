@@ -370,7 +370,7 @@ static bool setup_write_configuration(setup_state_t *state,
     char features[128];
     char datetime[80];
     char language[40];
-    char sound[128];
+    char sound[320];
     char offset[24];
     char zone_index[12];
     const setup_zone_t *zone = &g_zones[state->zone_index];
@@ -423,6 +423,16 @@ static bool setup_write_configuration(setup_state_t *state,
     st_copy(sound, sizeof(sound), state->startup_sound
         ? "[SOUND]\r\nStartupEnabled=1\r\nStartupSound=/SYSTEM/SOUNDS/START.WAV\r\n"
         : "[SOUND]\r\nStartupEnabled=0\r\nStartupSound=/SYSTEM/SOUNDS/START.WAV\r\n");
+    st_append(sound, sizeof(sound),
+        "SystemEventsEnabled=1\r\n"
+        "MasterVolume=100\r\n"
+        "WindowOpen=1\r\n"
+        "WindowClose=1\r\n"
+        "WindowMinimize=1\r\n"
+        "WindowRestore=1\r\n"
+        "WindowResize=1\r\n"
+        "Button=1\r\n"
+        "Scroll=1\r\n");
 
     if (!setup_final_write(state, ++(*step), total, "Guardando PROFILE.INI...",
                            "/SYSTEM/USER/PROFILE.INI", profile)) return false;
@@ -886,7 +896,7 @@ static void setup_paint(bk_gui_window_t *window UNUSED,
     bk_gui_surface_fill_rect(surface,
         (bk_gui_rect_t){l.header.x,l.header.y+l.header.h-2,l.header.w,2}, SETUP_GOLD);
     bk_gui_surface_draw_text_px(surface, l.header.x+20, l.header.y+11,
-        "BlesKernOS 0.8 Setup", 21, SETUP_WHITE, 20, true, false, false, l.header);
+        "BlesKernOS 1.0 Setup", 21, SETUP_WHITE, 20, true, false, false, l.header);
     bk_gui_surface_draw_text(surface, l.header.x+22, l.header.y+39,
         "Asistente de instalacion y primer inicio", 0x00D8D8E8U, 0, false);
     setup_draw_sidebar(surface, &l, state);
@@ -1271,7 +1281,7 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     st_copy(state->status,sizeof(state->status),"Esperando opciones...");
     setup_load_terms(state);
 
-    state->window=bk_gui_create_window(desktop,60,28,680,544,"BlesKernOS 0.8 Setup");
+    state->window=bk_gui_create_window(desktop,60,28,680,544,"BlesKernOS 1.0 Setup");
     if (!state->window) {
         if (state->terms) bk_sys_free(state->terms);
         bk_sys_free(state); return;
@@ -1287,7 +1297,7 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     (void)bk_gui_widget_set_icon(state->next_button,"ArrowRight");
     (void)bk_gui_widget_set_icon(state->cancel_button,"Close");
     state->license_box=bk_gui_create_textbox(desktop,state->window,
-        (bk_gui_rect_t){0,0,280,24},"BLES-0.8-USER",95,setup_button);
+        (bk_gui_rect_t){0,0,280,24},"BLES-1.0-USER",95,setup_button);
     state->user_box=bk_gui_create_textbox(desktop,state->window,
         (bk_gui_rect_t){0,0,260,24},"Usuario",63,setup_button);
     state->computer_box=bk_gui_create_textbox(desktop,state->window,

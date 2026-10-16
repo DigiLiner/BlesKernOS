@@ -1,0 +1,242 @@
+{
+  "samples": [
+    {
+      "key_to_glyph_ms": 127.90400499943644,
+      "injection_ms": 2.1756310015916824,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 169.86764801549725,
+      "injection_ms": 2.7080349973402917,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 83.91806500731036,
+      "injection_ms": 1.3076990144327283,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 123.39278199942783,
+      "injection_ms": 2.150705986423418,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 78.33479502005503,
+      "injection_ms": 1.9162550161127,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 90.74181600590236,
+      "injection_ms": 2.6613249792717397,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 199.87942598527297,
+      "injection_ms": 1.6190650057978928,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 68.64823098294437,
+      "injection_ms": 2.0378209883347154,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 123.21693598642014,
+      "injection_ms": 2.3287739895749837,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 104.14250800386071,
+      "injection_ms": 1.978757994947955,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 79.37221499742009,
+      "injection_ms": 1.41368800541386,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 135.86651597870514,
+      "injection_ms": 2.3211489897221327,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 103.32274198299274,
+      "injection_ms": 1.8673169834073633,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 86.9614600087516,
+      "injection_ms": 2.0267099898774177,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 111.94902399438433,
+      "injection_ms": 2.0610600186046213,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 75.22982300724834,
+      "injection_ms": 1.3390109816100448,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 73.23881599586457,
+      "injection_ms": 1.8236030009575188,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 83.17998601705767,
+      "injection_ms": 1.9950309942942113,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 107.38025099271908,
+      "injection_ms": 1.395974977640435,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 86.87277100398205,
+      "injection_ms": 1.243629987584427,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 145.65996601595543,
+      "injection_ms": 1.4820380019955337,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 89.57345498492941,
+      "injection_ms": 3.394075989490375,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 103.03094499977306,
+      "injection_ms": 2.2166940034367144,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 105.70628399727866,
+      "injection_ms": 1.6580899828113616,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 69.78975998936221,
+      "injection_ms": 1.9221619877498597,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 76.24838699121028,
+      "injection_ms": 2.358138997806236,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 81.79158400162123,
+      "injection_ms": 2.7828110032714903,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 103.03142701741308,
+      "injection_ms": 1.4937790110707283,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 90.15657601412386,
+      "injection_ms": 2.4128970107994974,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 95.5288160184864,
+      "injection_ms": 2.4120130110532045,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 100.72963900165632,
+      "injection_ms": 2.3720290046185255,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    },
+    {
+      "key_to_glyph_ms": 88.75752199674025,
+      "injection_ms": 1.2710479786619544,
+      "native_route_ms": null,
+      "tinyx_consume_ms": null,
+      "stream_publish_ms": null
+    }
+  ],
+  "p50_ms": 93.13531601219438,
+  "p95_ms": 169.86764801549725,
+  "max_ms": 199.87942598527297,
+  "capture_p50_ms": 9.415403983439319,
+  "capture_max_ms": 31.654362013796344,
+  "ram_mib": 1536,
+  "smp": 2,
+  "vga": "vmware",
+  "tinyx": "None",
+  "framebuffer": "0xfd000000",
+  "method": "host monotonic from QMP key-down until new glyph ink in displayed VRAM scanlines; no guest stop while timing; includes VRAM query and QMP overhead",
+  "disk_bus": "ide",
+  "kernel_sha256": "494ca74a89ee31c13edbb147d7f3e66bd141dc7bb041c073ccc93e88690863ee",
+  "first_surface_ms": 39536
+}

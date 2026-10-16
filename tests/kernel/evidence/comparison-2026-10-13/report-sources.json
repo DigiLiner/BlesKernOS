@@ -1,0 +1,30 @@
+{
+  "review_date": "2026-10-13",
+  "urls": [
+    "https://docs.kernel.org/core-api/mm-api.html",
+    "https://docs.kernel.org/filesystems/journalling.html",
+    "https://docs.kernel.org/locking/lockdep-design.html",
+    "https://docs.kernel.org/scheduler/sched-eevdf.html",
+    "https://github.com/NetBSD/src/blob/1fc61a5c45cdd2a67b7e1b272c41a67aa200f621/sys/uvm/uvm_map.c",
+    "https://github.com/SerenityOS/serenity/blob/7c0540a22900a8366741205dead7f76ae4cfabcc/Kernel/Library/UserOrKernelBuffer.h",
+    "https://github.com/SerenityOS/serenity/blob/9ad0303622f37088feaf54a6ef8b689deb1a13ff/Kernel/Syscalls/read.cpp",
+    "https://github.com/SerenityOS/serenity/blob/fb23f3c90282f916a74a062ba6a6d4e8c9e884c0/Kernel/Memory/MemoryManager.cpp",
+    "https://github.com/freebsd/freebsd-src/blob/d9e2caccfac14c43bf9ad62bdd35d4a03356ff91/sys/kern/subr_witness.c",
+    "https://github.com/freebsd/freebsd-src/blob/main/share/man/man9/copy.9",
+    "https://github.com/freebsd/freebsd-src/blob/main/sys/vm/vm_map.c",
+    "https://github.com/haiku/haiku/blob/9661ecabc2b8b461ddb0bf38b0cfd07c7e08c4e7/src/servers/app/ServerApp.cpp",
+    "https://github.com/haiku/haiku/blob/master/src/system/kernel/vm/vm.cpp",
+    "https://github.com/openbsd/src/blob/1c37ded5694cf0fe50d6c9e17c7176daf7afedc7/sys/kern/kern_pledge.c",
+    "https://github.com/torvalds/linux/blob/1fb3d8c20bfadbbe2d9e5de18074de9282a52b5f/mm/mmu_gather.c",
+    "https://github.com/torvalds/linux/blob/3eaa50e1e255ec261c757b9eea811ef3bac10d1e/arch/x86/kernel/ldt.c",
+    "https://man.freebsd.org/cgi/man.cgi?query=witness&sektion=4",
+    "https://man.netbsd.org/copy.9",
+    "https://man.netbsd.org/uvm.9",
+    "https://man.openbsd.org/copyin.9",
+    "https://man.openbsd.org/pledge.2",
+    "https://man.openbsd.org/unveil.2"
+  ],
+  "pinned_code_manifest": "references.json",
+  "prior_code_manifest": "../audit-stage2-2026-10-13/references.json",
+  "documentation_note": "official web docs reviewed; page URLs may be updated by upstream"
+}

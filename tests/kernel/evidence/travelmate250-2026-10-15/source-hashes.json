@@ -1,0 +1,21 @@
+{
+  "Makefile": "685591e5080a0b32669516b90b7082398832c93b910225be2e8a83bf20dc0352",
+  "docs/platform/travelmate250.md": "72ab365a1c916f7f320219ff7e5d0216b68e1098749e3b62a6eaf50bce9b4a00",
+  "kernel/drivers/audio/ac97.c": "06b3ec7f1cb0a66705f787bd0da0120e408ab3a162692e0296e0955c63ffd000",
+  "kernel/drivers/graphics/intel_gma9xx_dvr.c": "c06bf10ac66b9bc442dcde8ca80accde4833a222d09d951b32affa12a7ee4cd6",
+  "kernel/drivers/graphics/intel_i830_3d.inc": "7dd1ac82400b7053518744c84e7b543f276dc36f41a46e0ac4d8aa5a844256cb",
+  "kernel/drivers/graphics/intel_i830_common.h": "acbfe3ff47dc24d6fbc59781ed87ca849d54d7364c63c0e551eada01bd68d56d",
+  "kernel/drivers/graphics/intel_i830_regs.h": "8db10a27649b7615410c0b6ddec788a7af832ae554c1831ab6dd46629e8d6406",
+  "kernel/drivers/network/netstack.c": "fa58b0614457cb9c3c060d830617d2e171fa474554fa54a6ca170c28fa251dc3",
+  "kernel/drivers/network/rtl8139.c": "0cb644547c1a850eaed0aecfc87221c0052ced53e3b1f21dca7bf74d5b22d361",
+  "kernel/exec/elf_loader.c": "d2c67b4ba14dcfaf34faf2715fc81763c51b437841527b5521b2e90681f8d79b",
+  "system/desktop/deskbar.c": "d298397453012b976de665cb5f4b0d8cac6bb93c58b35de361ef3a5d49269898",
+  "system/desktop/deskmanager.c": "4e34f897ee202fbcc53f77c1524e34c888b79e75d32611f78d595d3fb478b761",
+  "tests/installer/test_firstboot_bootstrap.py": "10c48d9a57ceb4306407723a5b45dd72e2f446e250ecd96fd3e7c6c8122925c9",
+  "tests/kernel/run_ram_smoke.py": "f695877282ea0b0f083fa9ac0b18b9b4a04f5cfae9330479215f86b4b3185216",
+  "tests/kernel/test_ac97_hardware_access.py": "f752ba48c894478f4014df1fd420c121035d6ea044d70b2fa7b65675d45f82a1",
+  "tests/kernel/test_intel_gen2.py": "023a745f6604a66b5be041dbb1b6bb6671192598c1dd9728fd2f9f004110043f",
+  "tests/kernel/test_travelmate_network.py": "7caaa51974d21d8612234e73bd18ab9fae656f52f881d4f2fd83f50de5fb2445",
+  "tests/userland/legacy_network_smoke.c": "44591fed60e9daf04d1d7a69b06cf00be698e68254625ed6e638ab0f6c0c2ccc",
+  "tools/build_cd_bkl_installer.py": "434b5997502edb4584b7e119e902cd4e1c7b915b8b075583cae3997dca166a5f"
+}

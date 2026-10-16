@@ -1,0 +1,7 @@
+test: /tmp/bk-pager-ranges-u7g1h14u/test.c:23: find: Assertion `a==0xfffff000U' failed.
+Traceback (most recent call last):
+  File "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/tests/kernel/test_pager_ranges.py", line 116, in <module>
+    subprocess.run([str(binary), case], check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/tmp/bk-pager-ranges-u7g1h14u/test', 'gap']' died with <Signals.SIGABRT: 6>.

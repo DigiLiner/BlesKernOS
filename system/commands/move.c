@@ -1,5 +1,3 @@
 #include "common.h"
-
-static int run(int argc,char **argv){ if(argc!=3)return command_error("move","@H8EC88B1D"); if(bk_file_rename(argv[1],argv[2]))return 0; return command_copy_file(argv[1],argv[2],true); }
-
+static int run(int argc,char **argv){return command_filetool(argc,argv);}
 BK_COMMAND_MAIN(run)

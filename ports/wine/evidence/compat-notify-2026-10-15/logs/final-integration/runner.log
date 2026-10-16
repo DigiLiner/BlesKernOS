@@ -1,0 +1,11 @@
+make: 'build/system/services/vision.o' is up to date.
+ld: warning: build/isr_stubs.o: missing .note.GNU-stack section implies executable stack
+ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+patched /home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/build/wine-notify/final-integration/guest/test.img: kernel 845868 bytes
+/SYSTEM/SERVICES/VISION.BEX 255380 bytes; mode 0o100644
+/WINEGATE/bin/futex-suite.ELF 15244 bytes; mode 0o100755
+/WINEGATE/bin/inotify.ELF 20504 bytes; mode 0o100755
+/WINEGATE/bin/directory-notify-launch.ELF 15244 bytes; mode 0o100755
+/SYSTEM/USER/CONFIG/SCREENSV.INI 23 bytes; mode 0o100644
+{'host_s': 50.39065807199222, 'line': '[FUTEX-SUITE] PASS'}
+[]

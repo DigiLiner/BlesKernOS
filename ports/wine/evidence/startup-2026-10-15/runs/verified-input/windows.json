@@ -1,0 +1,30 @@
+[
+  {
+    "handle": 56214420,
+    "bounds": [
+      600,
+      100,
+      300,
+      177
+    ],
+    "title": "Wine y Vision",
+    "visible": true,
+    "listed": true,
+    "owner": 6,
+    "controller": 6
+  },
+  {
+    "handle": 62218912,
+    "bounds": [
+      36,
+      70,
+      511,
+      376
+    ],
+    "title": "notepad.exe",
+    "visible": true,
+    "listed": true,
+    "owner": 8,
+    "controller": 7
+  }
+]

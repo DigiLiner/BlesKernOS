@@ -1,0 +1,2 @@
+PASS: 183997730 bytes streamed, reopened read/write and verified; VFS cache <=1 MiB
+PASS: random writes, alias reads, zero gaps, truncate/grow, ENOSPC, failed I/O rollback, overflow and free-space accounting

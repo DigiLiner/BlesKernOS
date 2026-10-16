@@ -1,0 +1,13 @@
+{
+  "kernel_sha256": "65c63b7a7b894b47089cc67b1922182c18916563dee7c137b0c9657917a6da84",
+  "installed_payloads": {
+    "/SYSTEM/DRIVERS/ATIR128.DVR": "fe32c0145de0d71d8cbd303c8b9da2bfa7f82a84bd9ee3972812c5d3a53f5fd4",
+    "/SYSTEM/PROGRAMS/PERFORMANCE_MONITOR.BEX": "34d86d0ca5bd8ac038ed56da1aef9b8c48d7dc95cf3ae04cc46796e296dc1e0d",
+    "/SYSTEM/SCREENS/SSBALLS.SCV": "b8d91eced1f544b021aa5d78a7d6d16da4cc5548adf58cee3c6f9b94dd5a7924",
+    "/SYSTEM/SCREENS/SSPIPES.SCV": "48515861f6365e8a45a3af11aea0575c61c94a20789877f747c797a1a365ef80"
+  },
+  "usb_partition_matches_normal": true,
+  "boot_payloads_verified": true,
+  "master_volume": 30,
+  "physical_ati_validation": "pending"
+}

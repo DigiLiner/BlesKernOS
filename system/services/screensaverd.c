@@ -3,15 +3,10 @@
 #define SCREENSAVER_DEFAULT_PATH "/SYSTEM/SCREENS/SSLOGO.SCV"
 #define SCREENSAVER_MAX_PATH 64
 
-typedef struct {
-    gui_desktop_t *desktop;
-} screensaverd_state_t;
-
 static gui_desktop_t *g_screensaver_desktop;
 static bool g_screensaver_enabled = true;
 static uint32_t g_screensaver_timeout_seconds = 300;
 static char g_screensaver_path[SCREENSAVER_MAX_PATH] = SCREENSAVER_DEFAULT_PATH;
-static bool g_screensaverd_started;
 
 static bool text_starts_with(const char *text, const char *prefix) {
     if (!text || !prefix) return false;
@@ -158,10 +153,6 @@ static void screensaver_load_config(void) {
     bk_sys_free(text);
 }
 
-static bool screensaver_any_active(void) {
-    return false;
-}
-
 static bool screensaver_launch(gui_desktop_t *desktop) {
     if (!desktop) desktop = g_screensaver_desktop;
     if (!desktop) return false;
@@ -194,7 +185,22 @@ void screensaver_set_timeout_seconds(uint32_t seconds) {
 }
 
 const char *screensaver_get_path(void) {
+    /* Kernel/internal callers may use this direct pointer.  Native Ring-3
+       programs must use screensaver_copy_path(): kernel storage is supervisor
+       mapped and returning it through the public ELF ABI is not dereferenceable
+       from user mode. */
     return g_screensaver_path;
+}
+
+bool screensaver_copy_path(char *buffer, uint32_t capacity) {
+    uint32_t i = 0U;
+    if (!buffer || capacity == 0U) return false;
+    while (i + 1U < capacity && g_screensaver_path[i]) {
+        buffer[i] = g_screensaver_path[i];
+        i++;
+    }
+    buffer[i] = '\0';
+    return true;
 }
 
 void screensaver_set_path(const char *path) {
@@ -205,47 +211,10 @@ void screensaver_set_path(const char *path) {
     screensaver_save_config();
 }
 
-static void screensaverd_main(void *arg) {
-    screensaverd_state_t *st = (screensaverd_state_t *)arg;
-    uint32_t last_launch_activity;
-
-    if (!st) bk_proc_exit();
-    g_screensaver_desktop = st->desktop;
+/* Transitional configuration/launch ABI shared with the display CPL. The
+ * polling worker lives in Vision's executable, never at a kernel entrypoint. */
+void screensaver_initialize(gui_desktop_t *desktop) {
+    g_screensaver_desktop = desktop;
     screensaver_load_config();
     screensaver_save_config();
-    last_launch_activity = 0xFFFFFFFFU;
-
-    while (!bk_proc_exit_requested()) {
-        uint32_t now = bk_sys_ticks();
-        uint32_t freq = bk_sys_tick_frequency();
-        uint32_t last_input = bk_gui_get_last_input_tick();
-        uint32_t idle_ticks = now - last_input;
-        uint32_t timeout_ticks = g_screensaver_timeout_seconds * freq;
-
-        if (g_screensaver_enabled && !screensaver_any_active() &&
-            last_input != last_launch_activity && idle_ticks >= timeout_ticks) {
-            last_launch_activity = last_input;
-            (void)screensaver_launch(g_screensaver_desktop);
-        }
-
-        bk_sys_sleep_ticks(freq / 2U ? freq / 2U : 1U);
-    }
-
-    bk_sys_free(st);
-    g_screensaverd_started = false;
-    bk_proc_exit();
-}
-
-void screensaverd_install(gui_desktop_t *desktop) {
-    screensaverd_state_t *st;
-
-    if (!desktop || g_screensaverd_started) return;
-    st = (screensaverd_state_t *)bk_sys_alloc_zero(sizeof(*st));
-    if (!st) return;
-    st->desktop = desktop;
-    g_screensaverd_started = true;
-    if (bk_proc_spawn_thread("screensaverd", screensaverd_main, st) < 0) {
-        g_screensaverd_started = false;
-        bk_sys_free(st);
-    }
 }
