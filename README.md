@@ -1,290 +1,88 @@
 # BlesKernOS 0.9
 
-Source layout and build entrypoints: [repository guide](docs/README.md).
+**A hobby operating system for 32-bit x86 computers, built with C, Assembly.**
 
-BlesKernOS is a lightweight 32-bit x86 operating system written primarily from scratch in C and x86 Assembly.
+BlesKernOS is an experimental operating system featuring its own bootloader, kernel, graphical desktop, native applications, device drivers, and compatibility layers.
 
-It includes its own bootloader and protected-mode kernel, preemptive multitasking, native Ring 3 applications, a graphical desktop, FAT/ISO9660 storage, networking with HTTPS, loadable drivers, multimedia support, an SDK for native software, Windows applications through Wine, and software/hardware-assisted 3D graphics.
+Inspired by the desktop operating systems of the 1990s, the project aims to combine a classic computing experience with more advanced operating-system features.
 
-BlesKernOS is still under active development. Hardware support and compatibility layers are incomplete, and some features described below remain experimental.
-
----
+**Status:** Alpha — actively developed. Not intended for production use.
 
 ## Screenshots
 
-<img width="799" height="599" alt="BlesKernOS desktop" src="https://github.com/user-attachments/assets/e7134b00-7bca-4d60-8192-2383515afa01" />
-<img width="799" height="598" alt="BlesKernOS desktop" src="https://github.com/user-attachments/assets/2a1cd55c-a47a-46b6-bca7-67945d70ed0f" />
-<img width="796" height="602" alt="BlesKernOS desktop" src="https://github.com/user-attachments/assets/559f631b-f4c6-4dc3-8289-92f81bbff0f5" />
-<img width="799" height="604" alt="BlesKernOS desktop" src="https://github.com/user-attachments/assets/8fe6fcc9-f26d-4d3d-8e04-677d1d784510" />
-<img width="802" height="602" alt="BlesKernOS desktop" src="https://github.com/user-attachments/assets/7512fe19-1ada-4eeb-9eda-c0d91d44f89f" />
-<img width="799" height="600" alt="BlesKernOS desktop" src="https://github.com/user-attachments/assets/6f9c2add-6da9-4880-a63b-575e7b3ccf2c" />
-<img width="796" height="603" alt="BlesKernOS desktop" src="https://github.com/user-attachments/assets/01e41ead-1915-4838-b1f8-db01a0f76a2e" />
-<img width="802" height="600" alt="BlesKernOS desktop" src="https://github.com/user-attachments/assets/38775fc8-bc0f-4db5-badc-7464a4f49fa9" />
+<img width="1366" alt="BlesKernOS 0.9 Alpha screenshot 1" src="https://github.com/user-attachments/assets/3a786152-6267-45a7-81fd-afa594d82fcb" />
 
----
+<img width="1366" alt="BlesKernOS 0.9 Alpha screenshot 2" src="https://github.com/user-attachments/assets/b11d4967-e81b-408b-af15-44dc803e4189" />
 
-## What's new in 0.8
+<img width="1366" alt="BlesKernOS 0.9 Alpha screenshot 3" src="https://github.com/user-attachments/assets/954edec1-6253-4305-9c9e-a2f226ad251d" />
 
-- SMP support for up to 16 logical processors, with automatic single-CPU fallback.
-- Per-CPU scheduling infrastructure, Local APIC timers, task affinity and load distribution for native Ring 3 applications.
-- IA-32 paging enabled at boot, `CR0.WP`, dynamic RAM-sized heap and stronger user-pointer validation.
-- Automatic low-memory compatibility profiles from 4 MB to 15 MB of RAM.
-- Loadable `.DVR` driver system with a versioned driver ABI.
-- Expanded graphics stack with VMware SVGA-II, VirtIO GPU, ATI Rage 128 and experimental 3D backends.
-- Mesa 3.5/OpenGL 1.2 port alongside TinyGL, with GFX3D acceleration where supported and software fallback.
-- IPv4 networking with DHCP, DNS, ICMP, TCP, HTTP and HTTPS.
-- TLS 1.2 using BearSSL with X.509 certificate validation and a CA bundle.
-- NetSurf browser port and network utilities including `ping`, `curl`, `wget`, `ipconfig` and `netstat`.
-- USB UHCI support, USB storage and an external USB class driver for HID, hubs and USB printers.
-- Expanded audio support including Sound Blaster 16, Intel AC'97 and ESS Maestro3-family hardware.
-- Print spooler and printer profiles for text, PostScript, PCL 5 and ESC/P-family output over file, LPT and USB printer transports.
-- Windows application support is now provided by the Wine port.
-- User and Developer editions, installer media and SDK improvements.
-- Improved desktop, graphics resources, language catalogs, system utilities and performance monitoring.
+<img width="1366" alt="BlesKernOS 0.9 Alpha screenshot 4" src="https://github.com/user-attachments/assets/0966cb7a-3698-4d9f-8c7a-e385f7ca6980" />
 
----
+## What's new in 0.9?
+
+Version 0.9 represents a major architectural update over previous releases.
+
+- **Kernel improvements:** SMP support for up to 16 logical processors, preemptive multitasking, paging, Ring 3 applications, and improved memory management.
+- **Windows compatibility:** Experimental Wine 11 integration for running Windows applications.
+- **Graphics:** VMware SVGA-II, VirtIO GPU, ATI Rage 128, TinyGL, and Mesa 3.5/OpenGL support, with experimental acceleration paths.
+- **Desktop:** Improved graphical interface, window management, system utilities, and native applications.
+- **Networking:** IPv4, TCP, DNS, DHCP, HTTP, HTTPS/TLS 1.2, and a NetSurf browser port.
+- **Hardware support:** Modular drivers, USB, audio, storage, and experimental printing support.
+- **Installation:** Bootable installation media, User and Developer editions, and expanded development tools.
+
+Many subsystems have also been reorganized and optimized as part of the transition to 0.9.
 
 ## Features
 
-### Kernel and system
+| Component | Capabilities |
+|---|---|
+| Architecture | 32-bit x86 |
+| Kernel | Protected mode, SMP, preemptive scheduling, Ring 3, paging |
+| Desktop | Window manager, taskbar, graphical applications |
+| Storage | ATA/IDE, FAT12/16/32, ISO9660, USB storage |
+| Graphics | VGA/VESA, VMware SVGA-II, VirtIO GPU, ATI Rage 128 |
+| 3D | TinyGL, Mesa 3.5, experimental GPU acceleration |
+| Networking | Ethernet, IPv4, HTTP, HTTPS/TLS 1.2 |
+| Audio | Sound Blaster 16, AC'97, PC speaker, MIDI |
+| Compatibility | Experimental Wine 11 port |
+| Drivers | Loadable `.DVR` modules |
+| Development | Native SDK, ELF32 applications, system utilities |
 
-- Custom x86 bootloader with FAT32-capable Stage 2.
-- 32-bit protected-mode kernel.
-- Preemptive multitasking.
-- Native Ring 3 userspace and system-call ABI.
-- ELF32 loader for native applications and loadable modules.
-- SMP for up to 16 logical CPUs.
-- ACPI MADT and Intel MP-table CPU discovery.
-- xAPIC startup using INIT/SIPI and Local APIC scheduler timers.
-- Per-CPU scheduler state, kernel stacks, TSS and x87 state.
-- Automatic uniprocessor fallback when SMP is unavailable.
-- IA-32 paging with PSE and write protection enabled.
-- Dynamic heap sized from the E820 memory map instead of a fixed 64 MB heap.
-- Per-process allocation tracking and cleanup on process exit.
-- Process fault containment for faults produced by native applications while crossing API/syscall boundaries.
-- Recovery Console.
-- Versioned public userspace API and SDK.
-- Freestanding C runtime used by native programs.
+### Included software
 
-> Paging is active in 0.8, but BlesKernOS still uses a shared identity-mapped address space. Full per-process virtual address-space isolation is not implemented yet.
+BlesKernOS includes a File Browser, Text Editor, Calculator, Calendar, Paint, Image Viewer, Control Panel, Process Manager, MIDI player, system utilities, and various graphical demos.
 
-### Low-memory mode
+Ports and compatibility projects include NetSurf, Doom-related support, and Wine.
 
-BlesKernOS automatically selects a reduced profile according to detected physical RAM:
+### Windows applications
 
-- **4 MB:** minimal 320x200x8 desktop, two tasks and no Ring 3 applications.
-- **5 MB:** minimal profile with one application at a time.
-- **6-7 MB:** minimal profile with up to five tasks.
-- **8-15 MB:** reduced desktop profile, lower GUI refresh rate and disabled heavy subsystems.
-- **More than 15 MB:** normal feature set.
+BlesKernOS 0.9 includes an experimental port of **Wine 11**, running on an i386 Linux-compatible ABI implemented within the operating system.
 
-Low-memory profiles can automatically disable external drivers, network autoconfiguration, USB hotplug, printing, startup audio, screensavers, wallpaper, image icons and compatibility services to preserve RAM.
+This allows selected Windows applications to run without Windows itself.
 
-### Storage and filesystems
+Compatibility, performance, and application startup times are still being improved.
 
-- ATA / IDE.
-- ATAPI support.
-- FAT12 / FAT16 / FAT32.
-- ISO9660 CD-ROM filesystem.
-- Virtual filesystem and block-device layer.
-- USB Mass Storage.
-- Bootable ATA and USB images.
-- Text-mode installer capable of installing the system to writable ATA or USB media.
+More information: [Wine port documentation](ports/wine/README.md).
 
-### Loadable drivers
-
-BlesKernOS can load resident ELF32 `.DVR` modules from `/SYSTEM/DRIVERS`.
-
-Current driver modules include:
-
-- Sound Blaster 16.
-- Intel ICH-family AC'97.
-- ESS Maestro3 / Allegro-family audio.
-- CMOS/RTC.
-- ISO9660.
-- PS/2 mouse.
-- USB class support.
-- VESA.
-- VMware SVGA-II.
-- VirtIO GPU.
-- ATI Rage 128 / Rage Mobility.
-- Experimental ATI Rage 128 3D backend.
-- Experimental VMware SVGA3D backend.
-- Intel GMA9xx graphics support.
-- 3Com EtherLink XL / 3c90x networking.
-- Realtek RTL8129 / RTL8139 networking.
-- Modular IPv4 network stack.
-- TLS 1.2 provider.
-
-The boot-critical ATA, FAT/VFS, UHCI and USB-storage paths remain built into the kernel so the system can load external drivers from disk or USB.
-
-### Graphics
-
-- VGA fallback modes.
-- VESA linear framebuffer support.
-- VMware SVGA-II native 2D backend.
-- VirtIO GPU 2D backend.
-- ATI Rage 128 graphics support.
-- Intel GMA9xx graphics driver.
-- Dirty-rectangle presentation and accelerated rectangle operations on supported backends.
-- GPU-aware compositor infrastructure.
-- Hardware cursor support on selected drivers.
-- `GFX3D` backend abstraction for accelerated 3D rendering.
-- Software fallback when hardware acceleration is unavailable or an operation is unsupported.
-
-### 3D and OpenGL
-
-BlesKernOS 0.8 includes two 3D paths:
-
-- **TinyGL**, retained as a lightweight software renderer with optional GFX3D acceleration.
-- **Mesa 3.5**, ported as a freestanding OpenGL 1.2 implementation using the real Mesa TNL/OSMesa pipeline.
-
-The Mesa integration can accelerate supported fixed-function rendering through GFX3D while retaining SWRAST fallback. The accelerated subset includes triangles, lines, points, depth testing, a single 2D texture unit, common filtering/wrapping modes, alpha blending, scissor, linear fog and polygon offset. Some classic OpenGL operations remain CPU-only.
-
-Experimental GFX3D backends exist for VMware SVGA3D, VirtIO/VirGL and ATI Rage 128. Exact capabilities differ by driver and hardware.
-
-### Networking and Internet
-
-- 3Com 3c90x and Realtek RTL8139 Ethernet drivers.
-- Ethernet and ARP.
-- IPv4.
-- ICMP / ping.
-- UDP internally.
-- DHCP client.
-- DNS resolver.
-- TCP client sockets for Ring 3 applications.
-- HTTP/1.1 client support.
-- HTTPS with TLS 1.2.
-- BearSSL 0.6 integration.
-- X.509 certificate-chain and hostname validation.
-- SNI support.
-- CA trust bundle.
-- Network commands including `ipconfig`, `ping`, `curl`, `wget` and `netstat`.
-- NetSurf browser port.
-
-Current networking is intentionally small: IPv4 only, a single active NIC, client-oriented TCP and limited buffering. It is not intended to be a full modern TCP/IP implementation yet.
-
-### USB
-
-- UHCI USB 1.1 host controller support.
-- USB Mass Storage.
-- USB hotplug infrastructure.
-- USB core ABI for external class drivers.
-- HID keyboard/mouse class support.
-- USB hubs.
-- USB Printer Class exposed as `USBPRN1` through `USBPRN8`.
-
-### Audio
-
-- Sound Blaster 16.
-- PC speaker fallback.
-- Intel ICH-family AC'97 PCM audio.
-- ESS Maestro3 / Allegro-family support.
-- MIDI playback through MidAmp.
-- Startup sound.
-
-### Printing
-
-- Ring 3 print API.
-- Persistent print spooler.
-- BPJ1 intermediate print-job format.
-- Queue retry, pause and cancellation states.
-- External `.BPD` printer profiles.
-- Text output.
-- PostScript output.
-- PCL 5 monochrome output.
-- ESC/P and basic ESC/P2 monochrome output.
-- File output for testing.
-- Parallel LPT transport.
-- USB Printer Class transport.
-
-### Desktop
-
-- Graphical desktop environment.
-- Window manager and compositor.
-- Deskbar / taskbar.
-- Desktop icons and shortcuts.
-- Configurable desktop through INI files.
-- Runtime resolution and display configuration infrastructure.
-- BMP, GIF, JPEG and SVG image support in the graphics stack.
-- Packed shared graphics resources through `GRAPHICS.PAK`.
-- Screensavers, including TinyGL-based screensavers.
-- Global text clipboard and Clipboard Viewer.
-- File-selection dialogs available to native applications.
-- Multiple language catalogs, including Spanish, English and Italian resources.
-
-### Native applications and utilities
-
-The source tree includes native BlesKernOS applications and system tools such as:
-
-- File Browser.
-- Text Editor.
-- Calculator.
-- Calendar.
-- Font: visor de 24 familias de 8 a 72 px, lista con nombres en su propia fuente y vista previa desplazable.
-- Paint.
-- Image Viewer.
-- Control Panel.
-- Device Manager.
-- Process Manager.
-- Performance Monitor.
-- MidAmp MIDI Player.
-- NetSurf browser.
-- Shell and Run box.
-- Help Center.
-- Find Files.
-- Archive Manager.
-- Disk Tools and ScanDisk.
-- Network Status.
-- Clipboard Viewer.
-- Setup / installer utilities.
-- 3D/OpenGL test programs such as Gears.
-- Doom port support in the system resources/build tree.
-
-The command-line environment also contains a larger collection of Unix/DOS-style utilities for files, processes, hardware inspection, networking, checksums, archives and system diagnostics.
-
-### Windows applications through Wine
-
-Windows executables and batch files run through Wine 11 on the Linux i386 ABI.
-The former kernel PE/NE loaders and built-in Win32 API implementation have been
-removed. The desktop launcher is `WINE.BEX`; console developer tools enter
-Wine through `wine-tool.ELF`.
-
-See [the Wine port](ports/wine/README.md) for build instructions and
-compatibility evidence. Full self-hosting through Wine still needs guest
-validation: the old Win32 makefile relied on the removed batch interpreter to
-launch native BEX commands. Individual developer tools now use Wine.
-
-The [2026-10-14 responsiveness report](ports/wine/evidence/responsiveness-2026-10-14/README.md)
-documents the SMP wakeup correction, Notepad measurements, regression checks,
-and the separate `build/bleskernos-wine-performance.img` test image. The goals
-of 5–10 second launches and 20–30 ms typing latency remain open.
-
-The [2026-10-15 startup report](ports/wine/evidence/startup-2026-10-15/README.md)
-adds bounded read-ahead and writeback, faster resident-page pinning and frame
-allocation, and native repaint preservation during application loading.
-`build/bleskernos-wine-responsive.img` contains these changes. The report
-separates idle startup from startup while using another window; stable
-20-second launches and consistently responsive loading still need work.
-
----
-
-## Building
+## Building and running
 
 ### Requirements
 
-- NASM
 - GCC with 32-bit x86 support
-- Binutils
+- NASM and Binutils
 - Python 3
-- QEMU for testing
+- QEMU
 
-The Windows self-hosting tools require a MinGW i686 cross-compiler when rebuilt.
-
-Build the normal User edition:
+Build the User edition:
 
 ```bash
 make user
+```
+
+Run it in QEMU:
+
+```bash
+make EDITION=user run
 ```
 
 Build the Developer edition:
@@ -293,160 +91,56 @@ Build the Developer edition:
 make developer
 ```
 
-Build both editions:
+### Installer
 
-```bash
-make editions
-```
-
-Run the User edition:
-
-```bash
-make EDITION=user run
-```
-
-The main ATA images are written to:
-
-```text
-build/bleskernos-ata-user.img
-build/bleskernos-ata-developer.img
-```
-
-The build system can also create USB and VMware images. `make vmware-image` generates a VMDK and a compatible VMX profile for legacy SVGA3D. See [`docs/graphics/SVGA3D_VALIDATION.md`](docs/graphics/SVGA3D_VALIDATION.md) for Tux Racer, automatic pixel validation and VMware compatibility, and [`docs/build/EDITIONS_AND_UTILITIES.md`](docs/build/EDITIONS_AND_UTILITIES.md) for image editions.
-
-### Installer CD
-
-The installer ISO boots a text-mode installer instead of the desktop. It can prepare a writable ATA or USB device, create the FAT32 system layout, install the boot stages and kernel, and copy the selected edition.
+Build and launch the installer ISO:
 
 ```bash
 make iso-user
 make EDITION=user run-iso
-make run-installed
 ```
 
-Use `make reset-installer-target` to recreate the default blank test disk.
-
-### Graphics test targets
-
-The source contains QEMU targets for several graphics backends, including VMware SVGA and VirtIO GPU/VirGL. See the relevant documents under `docs/` before testing experimental 3D acceleration.
-
----
-
-## SDK
-
-Native software uses the public versioned BlesKernOS userspace API rather than private kernel structures.
-
-Important SDK components include:
-
-```text
-sdk/include/                 Public headers
-build/sdk/                   Built SDK libraries
-build/sdk/libblesk_tinygl.a  TinyGL integration
-build/sdk/libblesk_mesa.a    Mesa 3.5 / OpenGL integration
-```
-
-See [`docs/reference/API.md`](docs/reference/API.md) and [`sdk/README.md`](sdk/README.md).
-
-Kernel driver headers are not part of the native application ABI.
-
----
+For additional build targets and development information, see the [repository guide](docs/README.md).
 
 ## Project structure
 
 ```text
-boot/       Bootloader and boot stages
-kernel/     Kernel, compatibility layers and built-in subsystems
-gui/        Window system, compositor and graphics helpers
-programs/   Native applications and ports
-system/     Desktop components, commands, services, drivers, languages and Control Panel
-libs/       TinyGL, Mesa 3.5, BearSSL and system libraries
-sdk/        Public application SDK
-docs/       Architecture and subsystem documentation
-assets/     Icons, wallpapers, sounds and shared graphics resources
-tools/      Image/build/resource generation tools
-tests/      Kernel, userspace, hardware and compatibility tests
+boot/       Bootloader
+kernel/     Kernel and low-level subsystems
+gui/        Graphics and windowing
+system/     Desktop, drivers, services and utilities
+programs/   Native applications
+ports/      Ported third-party software
+libs/       System libraries
+sdk/        Native development SDK
+docs/       Technical documentation
+tests/      Tests and validation
 ```
 
-Runtime layout inside the FAT32 system image includes:
+## Current status
 
-```text
-/SYSTEM/PROGRAMS/      Native applications
-/SYSTEM/CORE/          Desktop core components
-/SYSTEM/DRIVERS/       Loadable .DVR drivers
-/SYSTEM/LIBS/          Runtime/static libraries
-/SYSTEM/WINE/          Windows applications installed under Wine
-/SYSTEM/PRINTERS/      Printer profiles
-/SYSTEM/GRAPHICS.PAK   Shared graphical resources
-```
+BlesKernOS is an **Alpha-stage research and hobby project**.
 
----
+Although many features are functional, hardware compatibility varies, and several components remain experimental.
 
-## Technical documentation
+Current development priorities include kernel stability, memory protection, driver reliability, graphics performance, Wine compatibility, and broader testing on real hardware.
 
-The repository contains more detailed documentation for individual subsystems, including:
+## Development approach
 
-- [`docs/reference/API.md`](docs/reference/API.md) — native userspace API.
-- [`docs/kernel/SMP.md`](docs/kernel/SMP.md) — multiprocessor architecture.
-- [`docs/kernel/SMP_LOCKING.md`](docs/kernel/SMP_LOCKING.md) — SMP locking model.
-- [`docs/kernel/PAGING.md`](docs/kernel/PAGING.md) — paging and process memory.
-- [`docs/kernel/LOW_MEMORY_MODE.md`](docs/kernel/LOW_MEMORY_MODE.md) — 4-15 MB compatibility profiles.
-- [`docs/platform/DRIVERS.md`](docs/platform/DRIVERS.md) — loadable driver ABI.
-- [`docs/platform/NETWORKING.md`](docs/platform/NETWORKING.md) — IPv4, sockets, HTTP and TLS.
-- [`docs/platform/printing.md`](docs/platform/printing.md) — print subsystem.
-- [`docs/graphics/mesa35.md`](docs/graphics/mesa35.md) — Mesa 3.5/GFX3D integration.
-- [`docs/graphics/tinygl-gfx3d.md`](docs/graphics/tinygl-gfx3d.md) — TinyGL hardware acceleration path.
-- [`docs/graphics/VMWARE_SVGA_II.md`](docs/graphics/VMWARE_SVGA_II.md) — VMware SVGA-II.
-- [`docs/graphics/virtio_gpu.md`](docs/graphics/virtio_gpu.md) — VirtIO GPU and VirGL.
+BlesKernOS is developed through an AI-assisted workflow involving architectural planning, code generation, debugging, integration, and testing.
+
+The project combines original operating-system components with ports of existing open-source software. It is not a claim that every included line of code was written from scratch.
+
+## License and credits
+
+Original BlesKernOS code is distributed under the MIT License unless otherwise indicated.
+
+Third-party software and assets retain their respective licenses. Some bundled components have unresolved provenance or redistribution restrictions and require further review.
+
+See [NOTICE.md](NOTICE.md), [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md), and [LICENSES](LICENSES/README.md) for details.
+
+The project incorporates or draws upon work from Wine, TinyGL, Mesa, BearSSL, DoomGeneric, NetSurf, and other open-source projects and technical references.
 
 ---
 
-## Current limitations and future work
-
-The 0.8 tree is considerably more capable than previous releases, but several architectural areas remain unfinished:
-
-- Per-process page tables and true virtual-memory isolation.
-- IOAPIC-based interrupt routing and more complete SMP IRQ distribution.
-- Broader hardware validation of experimental GPU drivers.
-- More complete OpenGL hardware acceleration coverage.
-- More complete TCP/IP behavior and server-side sockets.
-- EHCI/class-driver unification in the USB stack.
-- Broader application compatibility through Wine.
-- Continued GUI, driver, filesystem and performance stabilization.
-
----
-
-## License
-
-BlesKernOS is distributed under the MIT License unless a source file or third-party component states otherwise.
-
-Third-party components retain their own licenses and notices. See the scope in
-[`NOTICE.md`](NOTICE.md), the component matrix in [`LICENSES/README.md`](LICENSES/README.md)
-and [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md).
-
-That inventory records unresolved provenance and redistribution permissions,
-including Actua Soccer/HMI, the local Heretic snapshot, some KDE artwork and
-the exact TinyGL import. Descent carries its own noncommercial terms.
-The general MIT license does not resolve those cases. Image builders collect
-additional library notices in `/DOCS/LICENSES.TXT`.
-
-Workspace cleanup and preserved build outputs are documented in
-[`docs/source-maintenance.md`](docs/source-maintenance.md).
-
----
-
-## Acknowledgments and third-party components
-
-BlesKernOS uses, ports, adapts or references several external projects and public technical resources. These include:
-
-- DoomGeneric
-- TinyGL
-- Mesa 3.5
-- BearSSL
-- Wine documentation/source architecture for compatibility work where noted
-- React95 shared graphic resources where documented
-- OSDev Wiki
-- James Molloy's Kernel Tutorial
-- Bochs VBE documentation
-- KolibriOS and other open operating-system projects used as technical references
-
-See [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) for licensing details.
+**BlesKernOS 0.9 Alpha — an experimental operating system, still evolving.**
