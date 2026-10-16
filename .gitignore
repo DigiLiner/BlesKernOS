@@ -31,3 +31,7 @@ __pycache__/
 .pytest_cache/
 .repair-backup-*/
 .gl117-*-backup/
+
+# Conservar documentación de compilación
+!docs/build/
+!docs/build/*.md

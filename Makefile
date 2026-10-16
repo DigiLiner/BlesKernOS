@@ -1817,7 +1817,9 @@ $(ISO_IMAGE): $(ATA_IMG) $(ISO_BOOT_IMG) $(SETUP_OBJ) $(MBR_BIN) tools/build_cd_
 
 iso: $(ISO_IMAGE)
 
-iso-user: iso
+iso-user:
+	@$(PYTHON) ports/wine/scripts/fetch-release.py
+	@$(MAKE) iso
 
 installer-target: $(INSTALL_TARGET)
 
