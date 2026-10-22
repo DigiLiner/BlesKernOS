@@ -1476,7 +1476,11 @@ KdBlockHandler(int screen, pointer blockData, pointer timeout, pointer readmask)
 	/* if we need to poll for events, do that */
 	if (kdOsFuncs->pollEvents) {
 		(*kdOsFuncs->pollEvents) ();
-		myTimeout = 20;
+#ifdef BLESK
+        myTimeout = 8;
+#else
+        myTimeout = 20;
+#endif
 	}
 	if (myTimeout > 0)
 		AdjustWaitForDelay(timeout, myTimeout);

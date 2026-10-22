@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Atomically update the shell/Wine in an existing offline BFS4 user image."""
-import argparse,os,re,shutil,subprocess
+import argparse,json,os,re,shutil,subprocess
 from pathlib import Path
 import bfs4
 from bfs4_update import Editor
+from lbs_payload import application_payloads, remove_old_libraries, documentation_payloads
+from native_graphics_payload import native_graphics_payloads
 from license_notices import write_notices
 from wine_display_defaults import display_defaults
 from wine_app_defaults import app_defaults
@@ -33,13 +35,19 @@ def main():
   '/SYSTEM/DOCS/GUI-THEME.TXT':ROOT/'docs/platform/gui-theme.md',
   '/SYSTEM/SERVICES/VISION.BEX':ROOT/'build/system/services/vision.o',
   '/SYSTEM/PROGRAMS/VIEWER.BEX':ROOT/'build/programs/viewer.o',
+  '/SYSTEM/PROGRAMS/IMAGEVIEWER.BEX':ROOT/'build/programs/imageviewer.o',
   '/SYSTEM/SDK/INCLUDE/BLESKERNOS_THEME.H':ROOT/'sdk/include/bleskernos_theme.h',
   '/SYSTEM/PROGRAMS/FILE.BEX':ROOT/'build/programs/filebrowser.o',
+  '/SYSTEM/PROGRAMS/TEXTEDITOR.BEX':ROOT/'build/programs/texteditor.o',
+  '/SYSTEM/PROGRAMS/RUNBOX.BEX':ROOT/'build/programs/runbox.o',
+  '/SYSTEM/PROGRAMS/PAINT.BEX':ROOT/'build/programs/paint.o',
   '/WINEGATE/BIN/wine-launch':ROOT/'build/wine/wine-launch',
   '/WINEGATE/BIN/wine-launch.ELF':ROOT/'build/wine/wine-launch',
   '/WINEGATE/BIN/wine-ready.exe':ROOT/'build/wine/wine-ready.exe',
   '/WINEGATE/BIN/wine-tool.ELF':ROOT/'build/wine/wine-tool',
   '/SYSTEM/PROGRAMS/WINE.BEX':ROOT/'build/programs/wine.o'}
+ for guest,source in [('SSLOGO','ss_logo'),('SSBALLS','ss_balls'),('SSPIPES','ss_pipes')]:
+  files[f'/SYSTEM/SCREENS/{guest}.SCV']=ROOT/f'build/system/screensavers/{source}.o'
  for source in sorted((ROOT/'assets/cursors').iterdir()):
   if source.is_file():files['/SYSTEM/CURSORS/'+source.name]=source
  files['/SYSTEM/PROGRAMS/FONT.BEX']=ROOT/'build/programs/font.o'
@@ -70,6 +78,20 @@ def main():
  files['/SYSTEM/WINE/WINDOWS/SYSTEM32/wineoss.drv']=runtime/'opt/wine/lib/wine/i386-windows/wineoss.drv'
  files['/DOCS/WINE/OSS-GPL-COPYING']=ROOT/'ports/wine/package/wine-11.0-i386/licenses/OSS-GPL-COPYING'
  files['/DOCS/LICENSES.TXT']=write_notices(ROOT/'build/licenses/LICENSES.TXT')
+ files.update(application_payloads())
+ files.update(documentation_payloads())
+ files.update(native_graphics_payloads())
+ files["/SYSTEM/DRIVERS/TLS.DVR"]=ROOT/"build/system/drivers/TLS.DVR"
+ files['/SYSTEM/SDK/LIB/LIBLBSPX.A']=ROOT/'build/sdk/libblesk_lbs_posix.a'
+ files['/SYSTEM/SDK/LIB/LIBLBSNT.A']=ROOT/'build/sdk/libblesk_lbs_native.a'
+
+ files["/SYSTEM/PROGRAMS/NETWORK_STATUS.BEX"]=ROOT/"build/lbs/apps/programs/network_status.o"
+ for name,source in [("LIBLBS.A","libblesk_lbs.a"),("LIBPOSIX.A","libblesk_posix.a"),("LIBBLESK.A","libblesk.a"),("LBSHOST.O","lbs_host.o")]:
+  files["/SYSTEM/SDK/LIB/"+name]=ROOT/"build/sdk"/source
+ for header in (ROOT/"sdk/include").glob("*.h"):
+  files["/SYSTEM/SDK/INCLUDE/"+header.name.upper()]=header
+ for module in json.loads((ROOT/"sdk/lbs/dependencies.json").read_text()):
+  files[f"/SYSTEM/{module}.LBS"]=ROOT/f"build/system/libs/native/{module}.LBS"
  for source in files.values():
   if not source.is_file():p.error(f'build the missing payload first: {source}')
  kernel=(ROOT/'build/kernel.bin').read_bytes();stage=(ROOT/'build/stage2.bin').read_bytes()
@@ -79,6 +101,8 @@ def main():
  bfs4.check(image);shutil.copyfile(image,temp)
  try:
   editor=Editor(temp)
+  remove_old_libraries(editor)
+  editor.mkdir("/SYSTEM/DOCS")
   editor.mkdir('/SYSTEM/FONTS')
   editor.mkdir('/SYSTEM/CURSORS')
   editor.mkdir('/SYSTEM/DOCS')
@@ -87,7 +111,8 @@ def main():
   editor.remove('/SYSTEM/GAMES/TUXRACER')
   for legacy in ['/SYSTEM/LIBS/WINE','/SYSTEM/LIBS/WIN32','/SYSTEM/TESTS/WIN32']:
    editor.remove(legacy)
-  for guest,source in files.items():editor.update(guest,source.read_bytes())
+  for guest,source in files.items():
+   editor.mkdir(str(Path(guest).parent));editor.update(guest,source.read_bytes())
   user_reg='/WINEGATE/prefix/user.reg'
   editor.update(user_reg,desktop_defaults(app_defaults(display_defaults(editor.contents(user_reg)))))
   if a.fifa2000_gpu:

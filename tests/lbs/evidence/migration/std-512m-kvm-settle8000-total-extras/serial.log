@@ -1,0 +1,420 @@
+[PAGING] activo: kernel supervisor, pagina cero guard, CR0.WP
+[MM] E820: entradas=7 util=523775 KiB top=524160 KiB
+  [MM] Ventana ET_EXEC reservada: 0x8000000 - 0xa000000
+  [MM] RAM usable: 512 MB
+  [MM] Heap dinamico: 0x2000000 - 0x10ff0000 (245696 KB)
+  [MM] VM frames: 0x10ff0000 - 0x1ffe0000 (245696 KiB, 61424 paginas)
+  [MM] Vista PE fija: 0x400000 - 0x2000000
+[PAGING] Ring 3 permitido: 0x400000-0x2000000 y heap 0x2000000-0x10ff0000
+[COMPAT] perfil=normal RAM_top=524160 KiB heap=245696 KiB tareas=128 CPU=fam6/mod122 GUI=60FPS TIMER=300Hz
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:EARLY] BIOS LFB 800x600x32 pitch=3200 fb=0xfd000000
+[BKBOOT t=0] STARTING KERNEL
+[BKBOOT t=0] MEMORY MANAGER
+[TASK] FPU context=FXSAVE SSE=1
+[BKBOOT t=0] TASK SYSTEM
+[BKBOOT t=0] INTERRUPTS READY
+[BKBOOT t=0] INPUT DEVICES
+  [PCI] 7 dispositivos detectados
+  [LPT] LPT1 base=0x0378 status=0xD9 listo
+  [ATA] ata0: 1572864 sectores de 512 bytes
+  [ATA] ata0: read burst=16 sectores
+  [ATA] ata0: PIO read width=32 bits
+  [ATA] ata1: 2097152 sectores de 512 bytes
+  [ATA] ata1: read burst=16 sectores
+  [ATA] ata1: PIO read width=32 bits
+  [ATAPI] cd0: unidad detectada sin medio listo
+[ATA:PROBE] io=0x170 slave=1 ausente (status=0x0)
+  [ATA] canales IDE normalizados despues del probe
+  [ATA] ata0: QEMU PIIX DMA read/write enabled
+  [ATA] ata1: QEMU PIIX DMA read/write enabled
+[BKBOOT t=600] STORAGE DRIVERS
+[BKBOOT t=601] MOUNTING FILESYSTEM
+[BKBOOT t=602] F8: RECOVERY MODE (2 SEC)
+[BOOT] Pulse F8 para entrar a recovery sin Vision ni servicios
+[VFS] entrando a vfs_mount_default
+[VFS] block_count=3
+[FAT] entrando a fat_mount_default
+[FAT] dispositivos registrados: 3
+[FAT] dev[0]=ata0 tipo=1 sectores=1572864
+[FAT] dev[1]=ata1 tipo=1 sectores=2097152
+[FAT] dev[2]=cd0 tipo=3 sectores=0
+Intentando montar ata0...
+fat_set_active(ata0)
+No es particion, buscando ata0
+Dispositivo encontrado
+[BFS4:CACHE] slots=2048 bytes=8429568
+fat_try_mount_device OK
+fat_set_active OK
+Montado ata0 OK
+[VFS] /TEMP listo
+[RING3] no se pudo cargar autoprueba: no se pudo leer el programa
+[DVR] Buscando modulos en /SYSTEM/DRIVERS
+[DVR] /SYSTEM/DRIVERS/3C90X.DVR: ERROR: init del driver fallo
+[AC97] access=PIO power=0xf master=0x0 headphone=0x0 PCM=0x0
+[DVR] ac97: cargado (/SYSTEM/DRIVERS/AC97.DVR)
+[ATIR128:TRACE] DRIVER init begin ops_size=100 gfx_abi=2
+[ATIR128:TRACE] PCI scan count=7 target=1002:4C46
+[ATIR128:TRACE] PCI target no utilizable
+[ATIR128.DVR] dispositivo ATI 1002:4C46 no detectado
+[DVR] /SYSTEM/DRIVERS/ATIR128.DVR: ERROR: init del driver fallo
+[ATIR1283D.DVR] extension registrada; espera ATIR128 32bpp
+[DVR] ati_rage128_3d: cargado (/SYSTEM/DRIVERS/ATIR1283D.DVR)
+.[DVR] USB CDC-ECM: cargado (/SYSTEM/DRIVERS/CDC_ECM.DVR)
+[DVR] /SYSTEM/DRIVERS/CMIPCI.DVR: ERROR: init del driver fallo
+[DVR] cmos-rtc: cargado (/SYSTEM/DRIVERS/CMOSRTC.DVR)
+[DVR] /SYSTEM/DRIVERS/CS4281.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/E100.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/E1000.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/ES1370.DVR: ERROR: init del driver fallo
+[INTELGMA.DVR] Intel 852/855/915/945/965 no detectada
+[DVR] /SYSTEM/DRIVERS/INTELGMA.DVR: ERROR: init del driver fallo
+[DVR] iso9660: cargado (/SYSTEM/DRIVERS/ISO9660.DVR)
+[DVR] /SYSTEM/DRIVERS/LEGACYFB.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/MAESTRO3.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/NATSEMI.DVR: ERROR: init del driver fallo
+[DVR] /SYSTEM/DRIVERS/NE2KPCI.DVR: ERROR: init del driver fallo
+  [NET] Ethernet/ARP/IPv4/ICMP/UDP/DHCP/DNS/TCP/HTTP instalado
+[DVR] netstack-ipv4: cargado (/SYSTEM/DRIVERS/NETSTACK.DVR)
+[DVR] /SYSTEM/DRIVERS/PCNET.DVR: ERROR: init del driver fallo
+  [MOUSE] PS/2 id=0 packet=3
+[DVR] ps2-mouse: cargado (/SYSTEM/DRIVERS/PS2MOUSE.DVR)
+[DVR] /SYSTEM/DRIVERS/RHINE.DVR: ERROR: init del driver fallo
+  [RTL8139] PCI 0x10ec:0x8139 IO=0x0xc400 MAC=0x52:0x54:0x0:0x12:0x34:0x56 polling
+[DVR] rtl8139: cargado (/SYSTEM/DRIVERS/RTL8139.DVR)
+[DVR] /SYSTEM/DRIVERS/RTL8169.DVR: ERROR: init del driver fallo
+  [SND] PC speaker activo, SB16 no detectada
+[DVR] sb16: cargado (/SYSTEM/DRIVERS/SB16.DVR)
+.[DVR] /SYSTEM/DRIVERS/SIS900.DVR: ERROR: init del driver fallo
+  [TLS] BearSSL TLS 1.2 + validacion X.509 instalado (121 CA)
+[DVR] tls-bearssl: cargado (/SYSTEM/DRIVERS/TLS.DVR)
+[DVR] /SYSTEM/DRIVERS/TULIP.DVR: ERROR: init del driver fallo
+  [USBCLASS] HID boot/report, hubs USB 1.1 y printers cargados
+[DVR] usbclass: cargado (/SYSTEM/DRIVERS/USBCLASS.DVR)
+[DVR] vesa: cargado (/SYSTEM/DRIVERS/VESA.DVR)
+[DVR] /SYSTEM/DRIVERS/VIA686.DVR: ERROR: init del driver fallo
+[VIRTIOGPU.DVR] dispositivo 1AF4:1050/1010 no detectado
+[DVR] /SYSTEM/DRIVERS/VIRTIOGPU.DVR: ERROR: init del driver fallo
+[SVGA.DVR] dispositivo 15AD:0405 no detectado
+[DVR] /SYSTEM/DRIVERS/VMWARESVGA.DVR: ERROR: init del driver fallo
+[SVGA3D.DVR] extension 3D registrada; activacion por capacidades
+[DVR] vmware_svga3d: cargado (/SYSTEM/DRIVERS/VMWARESVGA3D.DVR)
+[DVR] 13 modulo(s) cargado(s)
+[GFX:TRACE] INIT boot_magic=0x31495547 registered=(ninguno) ops=0x0
+[GFX:TRACE] VESA bootinfo presente pero no hay driver registrado
+[GFX:TRACE] FALLBACK VESA OK mode=800x600x32 pitch=3200 fb=0xfd000000
+[NET] Co[GFXRES] boot icons 9/9 precargados
+[BKBOOT t=4709] LOADING PRINT SERVICE
+[PRINT] spooler iniciado en segundo plano, pid=9
+[BKBOOT t=4731] STARTING VISION
+[BKBOOT t=4733] VISION: LOADING ELF
+[VISION] servicio lanzado pid=10
+[BKBOOTnfiguracion IPv4=10.0.2.15 gatew t=4788] VISION: ENTER RING3
+ay=10.0.2.2 DNS[V=10.0.2.3
+ISION] ownership grafico adquirido pid=10
+[BKBOOT t=4839] VISION: GRAPHICS ENGINE
+[BKBOOT t=4872] PREPARING DESKTOP
+[PRIN[BKT] PrintBOOT t=4923] VISpool Ring 3 lSION: ENGIisto
+NE READY
+[BKBOOT t=4978] VISION: DESKTOP
+[BKBOOT t=4982] LOADING DESKTOP ICONS
+[BKBOOT t=4983] ICONPAK preload begin
+[BKBOOT t=4986] LOADING ICON CACHE
+[BKBOOT t=4998] ICONPAK preload end
+[WALLPAPER] BMP1 OK: /SYSTEM/WALLPAPR/CLASSIC.BMP 50x50 -> 50x50 modo=2
+[WALLPAPER] installed /SYSTEM/WALLPAPR/CLASSIC.BMP 50x50 tiled=1
+[BKBOOT t=5055] DESKMANAGER read desktop config
+[BKBOOT t=5056] DESKMANAGER desktop config loaded
+[BKBOOT t=5057] VISION: DESKBAR
+[DESKBAR] alloc state bytes=17536
+[DESKBAR] reset state
+[DESKBAR] load clock preferences
+[DESKBAR] load React95 launcher icons
+[DESKBAR] launcher Files / WindowsExplorer OK
+[DESKBAR] launcher Editor / Notepad OK
+[DESKBAR] launcher Web / Globe OK
+[DESKBAR] launcher Paint / Mspaint OK
+[DESKBAR] launcher Calc / Calculator OK
+[DESKBAR] launcher Shell / MsDos OK
+[DESKBAR] launcher MidAmp / MediaAudio OK
+[DESKBAR] launcher Image / Camera OK
+.[DESKBAR] launcher Processes / Taskman100 OK
+[DESKBAR] launcher Config / Settings OK
+[DESKBAR] icon 1/8 InfoBubble begin
+[DESKBAR] icon 1 InfoBubble OK
+[DESKBAR] icon 2/8 Runonce106 begin
+[DESKBAR] icon 2 Runonce106 OK
+[DESKBAR] icon 3/8 Computer begin
+[DESKBAR] icon 3 Computer OK
+[DESKBAR] icon 4/8 FolderExe begin
+[DESKBAR] icon 4 FolderExe OK
+[DESKBAR] icon 5/8 FileText begin
+[DESKBAR] icon 5 FileText OK
+[DESKBAR] icon 6/8 Folder begin
+[DESKBAR] icon 6 Folder OK
+[DESKBAR] icon 7/8 Settings begin
+[DESKBAR] icon 7 Settings OK
+[DESKBAR] icon 8/8 PowerOff begin
+[DESKBAR] icon 8 PowerOff OK
+[DESKBAR] icon Folder begin
+[DESKBAR] icon Folder OK
+[DESKBAR] icon Appwiz1500 begin
+[DESKBAR] icon Appwiz1500 OK
+[DESKBAR] icon FileText begin
+[DESKBAR] icon FileText OK
+[DESKBAR] embedded in Vision desktop layer
+[BKBOOT t=6198] VISION: SCREENSAVER
+[VISION:WAIT] pid=10 elapsed=5 ready=0
+[BKBOOT t=6358] VISION: START SHELL
+[BKBOOT t=6361] VISION: READY
+[VISION] READY: [BKBOOT t=6363] kernel_main: Vision READY
+[RAM:DESKTOP] installed_kib=523775 managed_kib=458624 used_kib=22478 free_kib=436145 unmanaged_kib=65150 heap_used_kib=22350 heap_free_kib=190577 vm_free_kib=245568
+[SMP] escritorio listo; iniciando procesadores secumotor, escritorio yndarios
+[SMP] topologia detectada: compositor b 2 CPU(s), BSP APIC=0, LAPIC=0xfee00000
+[SMP] iniciando CPU1 APIC=1...
+[SMP] CPU1 online
+[SMP] 2/2 CPU(s) online; timer LAPIC=208472 cuentas/tick
+[SCHED] runqueues por CPU activas; idle fuera de TASK_MAX (118 slots libres)
+[SMP] scheajo Vision
+duler por runqueue activo en 2 CPU(s); work steali[VISION:SAVER] Ring 3 worker started
+ng + IPI
+[BKBOOT] VISION ONLINE pid=10
+[WINE:BOOT] deferred until Windows program launch
+[BKBOOT t=6851] DISABLE SPLASH / ENTER GUI
+[BKBOOT] DESKTOP RELEASED
+[BKBOOT] QUEUE STARTUP SOUND
+[VISION:ENGINE] compositor y ventanas CPL=3
+[LBSMIG] starting /SYSTEM/PROGRAMS/CODEX.O
+[LBS:APP] /SYSTEM/PROGRAMS/CODEX.O modules=FONT,INPUT,MEDIA,NGS,SOUND,SYSTEM,VISION symbols=57 ready
+[DESKBAR:SELECTOR] pid=15 process=CODEX.O icon=ExecutableWindow
+[RAM:IDLE] installed_kib=523775 managed_kib=458624 used_kib=33909 free_kib=424714 unmanaged_kib=65150 heap_used_kib=33397 heap_free_kib=179530 vm_free_kib=245184
+[LBSMIG] PASS startup /SYSTEM/PROGRAMS/CODEX.O
+[LBSMIG] PASS cleanup /SYSTEM/PROGRAMS/CODEX.O
+[LBSMIG] starting /SYSTEM/PROGRAMS/HYPERZIP.O
+[LBS:APP] /SYSTEM/PROGRAMS/HYPERZIP.O modules=ARCHIVE,FONT,INPUT,MEDIA,NGS,SYSTEM,VISION symbols=39 ready
+[DESKBAR:SELECTOR] pid=16 process=HYPERZIP.O icon=ExecutableWindow
+[LBSMIG] PASS startup /SYSTEM/PROGRAMS/HYPERZIP.O
+[LBSMIG] PASS cleanup /SYSTEM/PROGRAMS/HYPERZIP.O
+[LBSMIG] starting /SYSTEM/PROGRAMS/LEXINET.O
+[LBS:APP] /SYSTEM/PROGRAMS/LEXINET.O modules=ARCHIVE,FONT,INPUT,MEDIA,NETWORK,NGS,SYSTEM,VISION symbols=52 ready
+[DESKBAR:SELECTOR] pid=17 process=LEXINET.O icon=ExecutableWindow
+[LBSMIG] PASS startup /SYSTEM/PROGRAMS/LEXINET.O
+[LBSMIG] PASS cleanup /SYSTEM/PROGRAMS/LEXINET.O
+[LBSMIG] starting /SYSTEM/PROGRAMS/3DPMESA.O
+[LBS:APP] /SYSTEM/PROGRAMS/3DPMESA.O modules=FONT,INPUT,MEDIA,NGS,NGS3D,SYSTEM,VISION symbols=121 ready
+[MM:PERF] ring3 alloc begin size=1736408 pid=18
+[MM:PERF] ring3 alloc end ptr=0x4040930 pid=18
+[3DPLUS][SMP] workers CPU=1.
+[DESKBAR:SELECTOR] pid=18 process=3DPMESA.O icon=ExecutableWindow
+[3DPLUS][BOOT] ventana publicada.
+[3DPLUS][BOOT] cargando iconos...
+[3DPLUS][BOOT] icono GRAPHICS.PAK no encontrado: Undo
+[3DPLUS][BOOT] icono GRAPHICS.PAK no encontrado: Redo
+[3DPLUS][BOOT] icono GRAPHICS.PAK no encontrado: Lights101
+[3DPLUS][BOOT] icono GRAPHICS.PAK no encontrado: Lock
+[3DPLUS][BOOT] iconos GRAPHICS.PAK 10/14.
+[3DPLUS][BOOT] iconos listos.
+[3DPLUS][BOOT] iniciando renderer...
+[3DPLUS][BOOT] renderer listo.
+[MESA35:FALLBACK] reason=3 operacion de pixels/SWRAST alpha=0 fog=2048 tricaps=0x0 tex=0
+[MESA35:FALLBACK] reason=1 driver GFX3D no disponible alpha=0 fog=2048 tricaps=0x0 tex=0
+[LBSMIG] PASS startup /SYSTEM/PROGRAMS/3DPMESA.O
+[LBSMIG] PASS cleanup /SYSTEM/PROGRAMS/3DPMESA.O
+[LBSMIG] starting /SYSTEM/PROGRAMS/3DPTINY.O
+[LBS:APP] /SYSTEM/PROGRAMS/3DPTINY.O modules=FONT,INPUT,MEDIA,NGS,SYSTEM,TINYGL,VISION symbols=118 ready
+[MM:PERF] ring3 alloc begin size=1736408 pid=19
+[MM:PERF] ring3 alloc end ptr=0x403fc18 pid=19
+[3DPLUS][SMP] workers CPU=1.
+[DESKBAR:SELECTOR] pid=19 process=3DPTINY.O icon=ExecutableWindow
+[3DPLUS][BOOT] ventana publicada.
+[3DPLUS][BOOT] cargando iconos...
+[3DPLUS][BOOT] icono GRAPHICS.PAK no encontrado: Undo
+[3DPLUS][BOOT] icono GRAPHICS.PAK no encontrado: Redo
+[3DPLUS][BOOT] icono GRAPHICS.PAK no encontrado: Lights101
+[3DPLUS][BOOT] icono GRAPHICS.PAK no encontrado: Lock
+[3DPLUS][BOOT] iconos GRAPHICS.PAK 10/14.
+[3DPLUS][BOOT] iconos listos.
+[3DPLUS][BOOT] iniciando renderer...
+[3DPLUS][BOOT] renderer listo.
+[LBSMIG] PASS startup /SYSTEM/PROGRAMS/3DPTINY.O
+[LBSMIG] PASS cleanup /SYSTEM/PROGRAMS/3DPTINY.O
+[LBSMIG] starting /SYSTEM/PROGRAMS/DOOM.O
+[LBS:APP] /SYSTEM/PROGRAMS/DOOM.O modules=FONT,NGS,SOUND,SYSTEM,VISION symbols=30 ready
+[DESKBAR:SELECTOR] pid=20 process=? icon=ExecutableWindow
+[doom] iniciando motor con /DOOM/DOOM1.WAD
+                           Doom Generic 0.1
+Z_Init: Init zone memory allocation daemon. 
+zone memory: 0x0421cf10, 600000 allocated for zone
+Using . for configuration and saves
+V_Init: allocate screens.
+M_LoadDefaults: Load system defaults.
+saving config in .default.cfg
+W_Init: Init WADfiles.
+ adding /DOOM/DOOM1.WAD
+Using ./.savegame/ for savegames
+===========================================================================
+                            DOOM Shareware
+===========================================================================
+ Doom Generic is free software, covered by the GNU General Public
+ License.  There is NO warranty; not even for MERCHANTABILITY or FITNESS
+ FOR A PARTICULAR PURPOSE. You are welcome to change and distribute
+ copies under certain conditions. See the source for more information.
+===========================================================================
+I_Init: Setting up machine state.
+M_Init: Init miscellaneous info.
+R_Init: Init DOOM refresh daemon - ...................
+P_Init: Init Playloop state.
+S_Init: Setting up sound.
+D_CheckNetGame: Checking network game status.
+startskill 2  deathmatch: 0  startmap: 1  startepisode: 1
+player 1 of 1 (1 nodes)
+Emulating the behavior of the 'Doom 1.9' executable.
+HU_Init: Setting up heads up display.
+ST_Init: Init status bar.
+I_InitGraphics: framebuffer: x_res: 640, y_res: 400, x_virtual: 640, y_virtual: 400, bpp: 32
+I_InitGraphics: framebuffer: RGBA: 8888, red_off: 16, green_off: 8, blue_off: 0, transp_off: 24
+I_InitGraphics: DOOM screen size: w x h: 320 x 200
+I_InitGraphics: Auto-scaling factor: 2
+[doom] engine retornó
+[LBSMIG] PASS startup /SYSTEM/PROGRAMS/DOOM.O
+[LBSMIG] PASS cleanup /SYSTEM/PROGRAMS/DOOM.O
+[LBSMIG] starting /SYSTEM/PROGRAMS/QUAKE.O
+[LBS:APP] /SYSTEM/PROGRAMS/QUAKE.O modules=FONT,INPUT,NETWORK,NGS,SYSTEM,VISION symbols=34 ready
+[DESKBAR:SELECTOR] pid=22 process=? icon=ExecutableWindow
+[quake] Added packfile /QUAKE/id1/pak0.pak (339 files)
+[quake] FindFile: can't find gfx/pop.lmp
+[quake] Playing shareware version.
+[quake] PackFile: /QUAKE/id1/pak0.pak : gfx.wad
+[quake] Console initialized.
+[quake] BlesKernOS UDP initialized at 10.0.2.15
+[quake] Exe: 21:25:21 Oct 20 2026
+[quake]  8.0 megabyte heap
+[quake] PackFile: /QUAKE/id1/pak0.pak : gfx/palette.lmp
+[quake] PackFile: /QUAKE/id1/pak0.pak : gfx/colormap.lmp
+[quake] 512k surface cache
+[quake] ========Quake Initialized=========
+[quake] PackFile: /QUAKE/id1/pak0.pak : quake.rc
+[quake] execing quake.rc
+[quake] PackFile: /QUAKE/id1/pak0.pak : gfx/conback.lmp
+[quake] PackFile: /QUAKE/id1/pak0.pak : default.cfg
+[quake] execing default.cfg
+[quake] Unknown command "volume"
+[quake] FindFile: can't find config.cfg
+[quake] couldn't exec config.cfg
+[quake] FindFile: can't find autoexec.cfg
+[quake] couldn't exec autoexec.cfg
+[quake] 3 demo(s) in loop
+[quake] Playing demo from demo1.dem.
+[quake] PackFile: /QUAKE/id1/pak0.pak : demo1.dem
+[quake] 
+
+
+
+[quake] the Necropolis
+[quake] PackFile: /QUAKE/id1/pak0.pak : maps/e1m3.bsp
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/player.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/eyes.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/h_player.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/gib1.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/gib2.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/gib3.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/s_bubble.spr
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/s_explod.spr
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/v_axe.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/v_shot.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/v_nail.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/v_rock.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/v_shot2.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/v_nail2.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/v_rock2.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/bolt.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/bolt2.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/bolt3.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/lavaball.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/missile.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/grenade.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/spike.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/s_spike.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/backpack.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/zom_gib.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/v_light.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/flame2.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/flame.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/zombie.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/h_zombie.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/w_g_key.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/ogre.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/h_ogre.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/wizard.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/h_wizard.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/w_spike.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/demon.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/h_demon.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/g_nail.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : maps/b_shell1.bsp
+[quake] PackFile: /QUAKE/id1/pak0.pak : maps/b_bh25.bsp
+[quake] PackFile: /QUAKE/id1/pak0.pak : maps/b_bh10.bsp
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/g_shot.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : maps/b_shell0.bsp
+[quake] PackFile: /QUAKE/id1/pak0.pak : maps/b_rock0.bsp
+[quake] PackFile: /QUAKE/id1/pak0.pak : maps/b_nail1.bsp
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/armor.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : maps/b_nail0.bsp
+[quake] PackFile: /QUAKE/id1/pak0.pak : maps/b_rock1.bsp
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/g_rock.mdl
+[quake] PackFile: /QUAKE/id1/pak0.pak : progs/invisibl.mdl
+[quake] You got the [quake] shells[quake] 
+[LBSMIG] PASS startup /SYSTEM/PROGRAMS/QUAKE.O
+[quake] You got the [quake] Grenade Launcher[quake] 
+[LBSMIG] PASS cleanup /SYSTEM/PROGRAMS/QUAKE.O
+[LBSMIG] starting /SYSTEM/PROGRAMS/FREECIV_CLIENT.O
+[LBS:APP] /SYSTEM/PROGRAMS/FREECIV_CLIENT.O modules=FONT,INPUT,MEDIA,NETWORK,NGS,SOUND,SYSTEM,VISION symbols=57 ready
+[DESKBAR:SELECTOR] pid=24 process=FREECIV_CLIENT.O icon=ExecutableWindow
+[FREECIV] ventana de carga creada
+No es particion, buscando ata1
+Dispositivo encontrado
+[BFS4] superblock invalido dev=ata1 intento=1 magic=0x0 ver=0x0 block=0 state=0x0 crc=0x0/0xf7cfdf3
+[BFS4] superblock invalido dev=ata1 intento=2 magic=0x0 ver=0x0 block=0 state=0x0 crc=0x0/0xf7cfdf3
+fat_mount: block_read OK
+OEM: mkfs.fat
+Firma: 0x55 0xaa
+fat_mount: BPB valido
+BPS=512 SPC=8 Reserved=32 FATs=2 Root=0 Total=2097144 FATSize=2048 FirstData=4128
+Clusters=261627
+Tipo FAT=32
+Label=BKEXTRAS   
+FS=FAT32   
+fat_mount OK
+fat_try_mount_device OK
+[FREECIV] emblema de carga listo
+[FREECIV] servidor local iniciado
+[FREECIV] 5% Preparando el cliente: Inicializando el motor comun
+[LB[MM:PERF] S:APP] /SYSrTEM/PRiOnGg3 RAaMS/FlRlEoECIV_SERVER.O cm obdeugliens =sizeNE=10T4WO8RK576,SY STEMp symbiols=d25 re=a2dy
+4
+[MM:PERF] ring3 alloc end ptr=0x4344e6c pid=24
+[[MM:PERFFRE]ECIV ] r12% iPngr3ep alaloc bergin asnize=1d048576 poid=26
+ [MM:PERF] ring3 alloelc c lieend ptr=0x4444e84 ntpie: Registro, audio y codificd=26
+acion listos
+You are running Freeciv without using iconv. Unless
+you are using the UTF-8 character set, some characters
+may not be displayed properly. You can download iconv
+at https://gnu.org/.
+[FREECIV] 20% Configurando Freeciv: Opciones de inicio procesadas
+[FREECIV] 30% Inicializando la interfaz: Red y cola de eventos listas
+You are running Freeciv without using iconv. Unless
+you are using the UTF-8 character set, some characters
+may not be displayed properly. You can download iconv
+at https://gnu.org/.
+This is the server for Freeciv version 3.2.5
+You can learn a lot about Freeciv at https://www.freeciv.org/
+3: Loading rulesets.
+3: Didn't find the option file. Creating a new one.
+[FREECIV] 40% Cargando configuracion: Preferencias y temas cargados
+[LBSMIG] PASS startup /SYSTEM/PROGRAMS/FREECIV_CLIENT.O
+[FREECIV] 50% Inicializando reglas: Motor de scripts preparado
+[MM:PERF] ring3 alloc begin size=1048576 pid=26
+[MM:PERF] ring3 alloc end ptr=0x4544e9c pid=26
+[FREECIV] 62% Cargando manuales: Ayuda y textos del juego listos
+[FREECIV] 70% Cargando graficos: Leyendo el tileset original amplio2
+[LBSMIG] FAIL surviving thread /SYSTEM/PROGRAMS/FREECIV_CLIENT.O

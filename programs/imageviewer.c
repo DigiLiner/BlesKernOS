@@ -472,17 +472,7 @@ static void viewer_play_cb(gui_window_t *window, uint32_t id UNUSED) {
     viewer_toggle_play(st);
 }
 
-static void viewer_draw_checker(gui_surface_t *surface, gui_rect_t rect) {
-    const int tile = 10;
-
-    for (int y = 0; y < rect.h; y++) {
-        for (int x = 0; x < rect.w; x++) {
-            bool dark = (((x / tile) + (y / tile)) & 1) != 0;
-            bk_gui_gfx_putpixel(surface, rect.x + x, rect.y + y,
-                             dark ? 0x00383838 : 0x00484848);
-        }
-    }
-}
+#include "imageviewer_render.h"
 
 static void viewer_build_status(viewer_state_t *st, char *text,
                                 size_t capacity) {
@@ -588,23 +578,8 @@ static void viewer_draw(gui_window_t *window UNUSED, gui_surface_t *surface,
     viewer_draw_checker(surface, area);
     bk_gui_gfx_draw_rect(surface, area, 0x00565656);
 
-    {
-        int clip_x0 = origin_x > area.x ? origin_x : area.x;
-        int clip_y0 = origin_y > area.y ? origin_y : area.y;
-        int clip_x1 = origin_x + draw_w < area.x + area.w
-                    ? origin_x + draw_w : area.x + area.w;
-        int clip_y1 = origin_y + draw_h < area.y + area.h
-                    ? origin_y + draw_h : area.y + area.h;
-        for (int y = clip_y0; y < clip_y1; y++) {
-            int sy = ((y - origin_y) * image->height) / draw_h;
-            for (int x = clip_x0; x < clip_x1; x++) {
-                int sx = ((x - origin_x) * image->width) / draw_w;
-                uint32_t color = image->pixels[(uint32_t)sy * image->width + sx];
-                if ((color >> 24) != 0)
-                    bk_gui_gfx_putpixel(surface, x, y, color & 0x00FFFFFF);
-            }
-        }
-    }
+    viewer_blit_image(surface, area,
+        (gui_rect_t){origin_x, origin_y, draw_w, draw_h}, image);
 
     viewer_build_status(st, status, sizeof(status));
     bk_gui_font_draw_string_clipped(surface, status_rect.x + 6, status_rect.y + 5,

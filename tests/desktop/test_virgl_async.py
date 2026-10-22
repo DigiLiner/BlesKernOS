@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT/'ports/wine/graphics/virgl-winsys.c').read_text()
+source = (ROOT/'ports/gallium/virgl-winsys.c').read_text()
 functions = source[source.index('static int bk_ioctl('):source.index('static void bk_destroy(')]
 functions += source[source.index('static void bk_wait_resource('):source.index('static uint32_t bk_size(')]
 functions += source[source.index('static bool bk_fence_wait('):source.index('static int bk_caps(')]
@@ -21,7 +21,7 @@ code = r'''
 #include <pthread.h>
 #include "ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesvirgl.h"
 struct virgl_winsys {int unused;};
-struct bk_winsys {struct virgl_winsys base;int fd;pthread_mutex_t lock;bool async,failed;uint64_t submitted,completed;};
+struct bk_winsys {struct virgl_winsys base;int fd;pthread_mutex_t lock;bool async,failed;uint64_t submitted,completed,readbacks;};
 struct virgl_hw_res {uint64_t last_submit,last_use;};
 struct virgl_cmd_buf {uint32_t *buf,cdw;};
 struct bk_command {struct virgl_cmd_buf base;struct virgl_winsys *ws;struct virgl_hw_res **refs;unsigned count,capacity,words;bool failed;};
@@ -34,7 +34,7 @@ static unsigned last_op,calls,barriers;
 static bool host_pending,fail_wait;
 static int fake_ioctl(int fd,unsigned request,bles_virgl_t *a) {
  (void)fd;assert(request==BLES_GFX_VIRGL);calls++;last_op=a->op;
- if(a->op==BLES_VIRGL_SUBMIT_ASYNC || a->op==BLES_VIRGL_TRANSFER_WRITE_ASYNC)host_pending=true;
+ if(a->op==BLES_VIRGL_SUBMIT_ASYNC || a->op==BLES_VIRGL_TRANSFER_WRITE_ASYNC || a->op==BLES_VIRGL_PRESENT)host_pending=true;
  else if(a->op==BLES_VIRGL_WAIT){barriers++;if(fail_wait)return -1;host_pending=false;}
  else if(a->op==BLES_VIRGL_SUBMIT || a->op==BLES_VIRGL_TRANSFER_READ)host_pending=false;
  else assert(0);
@@ -53,11 +53,16 @@ int main(void) {
  c.base.cdw=1;c.count=1;assert(!bk_submit(&ws.base,&c.base,NULL));
  bles_virgl_t read={.op=BLES_VIRGL_TRANSFER_READ};assert(!bk_call(&ws.base,&read,NULL,0));
  assert(!bk_busy(&ws.base,&r));bk_wait_resource(&ws.base,&r);assert(barriers==1);
+ assert(ws.readbacks==1);
+ c.base.cdw=1;c.count=1;assert(!bk_submit(&ws.base,&c.base,NULL));assert(host_pending);
+ bles_virgl_t present={.op=BLES_VIRGL_PRESENT};assert(!bk_call(&ws.base,&present,NULL,0));
+ assert(host_pending && ws.completed<ws.submitted && ws.readbacks==1);
+ assert(bk_busy(&ws.base,&r));bk_wait_resource(&ws.base,&r);assert(!host_pending && barriers==2);
  struct pipe_fence_handle *f=NULL;c.base.cdw=1;c.count=1;
  assert(!bk_submit(&ws.base,&c.base,&f));assert(last_op==BLES_VIRGL_SUBMIT && !host_pending && f);
  assert(bk_fence_wait(&ws.base,f,0));free(f);
  c.base.cdw=1;c.count=1;assert(!bk_submit(&ws.base,&c.base,NULL));
- c.base.cdw=0;c.count=0;assert(!bk_submit(&ws.base,&c.base,&f));assert(barriers==2 && !host_pending);
+ c.base.cdw=0;c.count=0;assert(!bk_submit(&ws.base,&c.base,&f));assert(barriers==3 && !host_pending);
  assert(bk_fence_wait(&ws.base,f,0));free(f);
  ws.async=false;c.base.cdw=1;c.count=1;assert(!bk_submit(&ws.base,&c.base,NULL));
  assert(last_op==BLES_VIRGL_SUBMIT && !host_pending && !bk_busy(&ws.base,&r));

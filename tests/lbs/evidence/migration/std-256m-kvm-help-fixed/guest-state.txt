@@ -1,0 +1,77 @@
+add symbol table from file "/home/lucas/Escritorio/BlesKernOS 0.10/tests/lbs/evidence/migration/std-256m-kvm-help-fixed/types.o" at
+	.text_addr = 0x0
+0x00123307 in idle_main ()
+  Id   Target Id                    Frame 
+* 1    Thread 1.1 (CPU#0 [halted ]) 0x00123307 in idle_main ()
+  2    Thread 1.2 (CPU#1 [running]) 0x0012423a in task_current_entry ()
+
+Thread 2 (Thread 1.2 (CPU#1 [running])):
+eax            0x1                 1
+ebx            0x2d0d90            2952592
+ecx            0x0                 0
+edx            0xa                 10
+esi            0x35f0fb4           56561588
+edi            0x1                 1
+eip            0x12423a            0x12423a <task_current_entry+27>
+esp            0x35f0890           0x35f0890
+ebp            0x35f0898           0x35f0898
+eflags         0x206               [ IOPL=0 IF PF ]
+cr3            0x271000            [ PDBR=625 PCID=0 ]
+
+Thread 1 (Thread 1.1 (CPU#0 [halted ])):
+eax            0x2000018           33554456
+ebx            0x0                 0
+ecx            0x0                 0
+edx            0x123306            1192710
+esi            0x0                 0
+edi            0x0                 0
+eip            0x123307            0x123307 <idle_main+1>
+esp            0x2027fd8           0x2027fd8
+ebp            0x2027ff4           0x2027ff4
+eflags         0x202               [ IOPL=0 IF ]
+cr3            0x271000            [ PDBR=625 PCID=0 ]
+$1 = {{owner = 14, depth = 1, reserved = 0, waiters = 0, contentions = 2696}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 26}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 15}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 0}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 0}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 0}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 0}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 0}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 1}}
+$2 = {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 0}
+$3 = {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 12}
+$4 = {state = 0, owner_cpu = 0, depth = 0, reserved = 0, contentions = 0}
+$5 = 15625
+$6 = 0
+$7 = 0
+
+TASK pid=1 process=1 state=3 name=kernel-core api=(null)
+$8 = {gs = 1179664, fs = 2949136, es = 16, ds = 4128784, edi = 4193650, esi = 2657856, ebp = 4193692, esp_dummy = 4193600, ebx = 1, edx = 2952592, ecx = 2952576, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 4193650, ss = 4294967295}
+
+TASK pid=2 process=2 state=3 name=system-admin api=(null)
+$9 = {gs = 1179664, fs = 2949136, es = 16, ds = 46923792, edi = 46931146, esi = 2660148, ebp = 46931188, esp_dummy = 46931096, ebx = 75, edx = 2952592, ecx = 2952576, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 46931146, ss = 14}
+
+TASK pid=3 process=3 state=3 name=ac97-mixer api=(null)
+$10 = {gs = 1179664, fs = 2949136, es = 16, ds = 47906832, edi = 47914890, esi = 2662440, ebp = 47914932, esp_dummy = 47914840, ebx = 3, edx = 2952592, ecx = 2952576, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 47914890, ss = 0}
+
+TASK pid=4 process=4 state=3 name=usb-ecm-rx api=(null)
+$11 = {gs = 1179664, fs = 2949136, es = 16, ds = 48037904, edi = 48058250, esi = 2664732, ebp = 48058292, esp_dummy = 48058200, ebx = 1, edx = 2952592, ecx = 2952576, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 48058250, ss = 2678484}
+
+TASK pid=5 process=5 state=3 name=rtl8139-rx api=(null)
+$12 = {gs = 1179664, fs = 2949136, es = 16, ds = 48234512, edi = 48295818, esi = 2667024, ebp = 48295860, esp_dummy = 48295768, ebx = 1, edx = 2952592, ecx = 2952576, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 48295818, ss = 9}
+
+TASK pid=6 process=6 state=3 name=usbclass-poll api=(null)
+$13 = {gs = 1179664, fs = 2949136, es = 16, ds = 48758800, edi = 48799210, esi = 2669316, ebp = 48799252, esp_dummy = 48799160, ebx = 3, edx = 2952592, ecx = 2952576, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 48799210, ss = 1}
+
+TASK pid=11 process=10 state=3 name=screensaverd api=bk_sys_sleep_ticks
+$14 = {gs = 1179664, fs = 2949136, es = 16, ds = 49020944, edi = 49072134, esi = 2671608, ebp = 49072176, esp_dummy = 49072084, ebx = 150, edx = 2952592, ecx = 2952576, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 49072134, ss = 1202039}
+
+TASK pid=8 process=8 state=3 name=cdrom-watch api=(null)
+$15 = {gs = 1179664, fs = 2949136, es = 16, ds = 50200592, edi = 50208634, esi = 2673900, ebp = 50208676, esp_dummy = 50208584, ebx = 600, edx = 2952592, ecx = 2952576, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 50208634, ss = 46940208}
+
+TASK pid=9 process=9 state=3 name=PRINTSPL.BEX api=bk_sys_sleep_ms
+$16 = {gs = 1179664, fs = 2949136, es = 16, ds = 51445776, edi = 51484678, esi = 2676192, ebp = 51484720, esp_dummy = 51484628, ebx = 600, edx = 2952592, ecx = 2952576, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 51484678, ss = 0}
+
+TASK pid=10 process=10 state=3 name=VISION.BEX api=bk_vision_ipc_wait
+$17 = {gs = 1179664, fs = 2949136, es = 16, ds = 51576848, edi = 518, esi = 9, ebp = 51640256, esp_dummy = 51640164, ebx = 2678484, edx = 2952592, ecx = 2952576, eax = 0, int_no = 128, err_code = 0, eip = 1201693, cs = 8, eflags = 582, useresp = 51640214, ss = 1183798}
+
+TASK pid=14 process=14 state=2 name=LBSMIG.BEX api=bk_proc_end_process
+$18 = {gs = 35, fs = 35, es = 35, ds = 35, edi = 1, esi = 22, ebp = 63469464, esp_dummy = 56561636, ebx = 15, edx = 3, ecx = 63469516, eax = 22, int_no = 128, err_code = 0, eip = 62881262, cs = 27, eflags = 582, useresp = 63469456, ss = 35}
+
+TASK pid=15 process=15 state=3 name=HELP_CENTER.BEX api=bk_sys_sleep_ms
+$19 = {gs = 1179664, fs = 2949136, es = 16, ds = 63504400, edi = 63551494, esi = 2685360, ebp = 63551536, esp_dummy = 63551444, ebx = 5, edx = 2952592, ecx = 2952576, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 63551494, ss = 0}
+Heap headers inspected: 703
+[Inferior 1 (process 1) detached]

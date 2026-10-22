@@ -107,7 +107,7 @@ static void BlesPoll(void)
     }
     static CARD32 last_present;
     CARD32 now = GetTimeInMillis();
-    if (now - last_present >= 33) {
+    if (now - last_present >= 16) {
         /* libc compares idle images without the serial FNV dependency on
          * every pixel. Exact comparison retains direct framebuffer writes. */
         size_t bytes = (size_t)priv->var.xres * priv->var.yres * 4U;

@@ -167,7 +167,7 @@
 +GLAPI OSMesaContext GLAPIENTRY OSMesaBleskCreateContextAttribs(const int *, OSMesaContext);
 +GLAPI OSMesaContext GLAPIENTRY
 +OSMesaBleskCreateContextAttribs(const int *attributes, OSMesaContext share)
-+{ return OSMesaCreateContextAttribs(attributes, share); }
++{ return get_st_manager() && get_st_manager()->screen ? OSMesaCreateContextAttribs(attributes, share) : NULL; }
 +
 +/* Copy-swap: front and back are distinct GPU resources. Retain back-buffer
 + * contents. Queue the copy after Mesa drains its vertices, but before the

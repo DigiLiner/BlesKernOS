@@ -1,0 +1,11 @@
+{
+  "status": "pass",
+  "commands": [
+    "compress",
+    "extract",
+    "copy",
+    "echo",
+    "checksum"
+  ],
+  "round_trip": true
+}

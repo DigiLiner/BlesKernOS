@@ -1,0 +1,56 @@
+{
+  "SYSTEM": [],
+  "INPUT": [
+    "SYSTEM"
+  ],
+  "FONT": [
+    "SYSTEM"
+  ],
+  "NGS": [
+    "SYSTEM"
+  ],
+  "SOUND": [
+    "SYSTEM"
+  ],
+  "NETWORK": [
+    "SYSTEM"
+  ],
+  "VISION": [
+    "SYSTEM",
+    "NGS",
+    "FONT",
+    "INPUT"
+  ],
+  "NGS3D": [
+    "SYSTEM",
+    "NGS",
+    "VISION"
+  ],
+  "MEDIA": [
+    "SYSTEM",
+    "NGS",
+    "SOUND"
+  ],
+  "PRINT": [
+    "SYSTEM"
+  ],
+  "CRYPTO": [
+    "SYSTEM",
+    "NETWORK"
+  ],
+  "SECURITY": [
+    "SYSTEM"
+  ],
+  "TINYGL": [
+    "SYSTEM",
+    "NGS",
+    "VISION"
+  ],
+  "ARCHIVE": [
+    "SYSTEM"
+  ],
+  "COMMAND": [
+    "SYSTEM",
+    "NETWORK"
+  ]
+}

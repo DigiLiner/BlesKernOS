@@ -150,6 +150,11 @@ void _mesa_free_texture_object( struct gl_shared_state *shared,
          if (t->Image[i]) {
             _mesa_free_texture_image( t->Image[i] );
          }
+         if (t->NegX[i]) _mesa_free_texture_image( t->NegX[i] );
+         if (t->PosY[i]) _mesa_free_texture_image( t->PosY[i] );
+         if (t->NegY[i]) _mesa_free_texture_image( t->NegY[i] );
+         if (t->PosZ[i]) _mesa_free_texture_image( t->PosZ[i] );
+         if (t->NegZ[i]) _mesa_free_texture_image( t->NegZ[i] );
       }
    }
 

@@ -31,6 +31,13 @@ int main(void) {
     assert(ss_frame_due(5000, &last));
     assert(!ss_frame_due(5000, &last));
     assert(ss_frame_due(5016, &last));
+    uint32_t physics=0;
+    assert(ss_steps_due(99,&physics,33,8)==3 && physics==99);
+    assert(ss_steps_due(99,&physics,33,8)==0);
+    assert(ss_steps_due(10000,&physics,33,8)==8);
+    assert(ss_steps_due(10000,&physics,33,8)==0);
+    physics=UINT32_MAX-40;
+    assert(ss_steps_due(58,&physics,33,8)==3);
     puts("PASS: 30 FPS pacing at 100/300 Hz, no drift, wraparound, no catch-up burst");
 }
 '''

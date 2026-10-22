@@ -1,3 +1,4 @@
+#include <bleskernos_archive_lbs.h>
 #include "system_tools_common.h"
 
 #define ARCHIVE_MIN_API 23U
@@ -29,13 +30,6 @@ static archive_state_t *g_archive_state;
 static uint32_t archive_read_u32(const uint8_t *bytes) {
     return (uint32_t)bytes[0] | ((uint32_t)bytes[1] << 8) |
            ((uint32_t)bytes[2] << 16) | ((uint32_t)bytes[3] << 24);
-}
-
-static void archive_write_u32(uint8_t *bytes, uint32_t value) {
-    bytes[0] = (uint8_t)value;
-    bytes[1] = (uint8_t)(value >> 8);
-    bytes[2] = (uint8_t)(value >> 16);
-    bytes[3] = (uint8_t)(value >> 24);
 }
 
 static bool archive_is_bkz(const void *data, uint32_t size) {
@@ -167,23 +161,11 @@ static void archive_compress(archive_state_t *state) {
         state->busy = false;
         return;
     }
-    packed = (uint8_t *)bk_sys_alloc(size * 2U + 8U);
-    if (!packed) {
+    if (bk_archive_pack(raw, size, (void **)&packed, &out)) {
         bk_sys_free(raw);
-        archive_status(state, "No hay memoria suficiente.", "");
+        archive_status(state, "No se pudo comprimir.", input);
         state->busy = false;
         return;
-    }
-    packed[0] = 'B'; packed[1] = 'K'; packed[2] = 'Z'; packed[3] = '1';
-    archive_write_u32(packed + 4U, size);
-    for (uint32_t i = 0; i < size;) {
-        uint8_t value = ((uint8_t *)raw)[i];
-        uint8_t count = 1U;
-        while (i + count < size && count < 255U &&
-               ((uint8_t *)raw)[i + count] == value) count++;
-        packed[out++] = count;
-        packed[out++] = value;
-        i += count;
     }
     if (!bk_file_write_all(output, packed, out)) {
         archive_status(state, "No se pudo escribir la salida.", output);
@@ -210,7 +192,6 @@ static void archive_extract(archive_state_t *state) {
     uint8_t *unpacked;
     uint32_t size = 0;
     uint32_t expected;
-    uint32_t in = 8U;
     uint32_t out = 0;
     state->pending_extract = false;
     state->busy = true;
@@ -233,20 +214,8 @@ static void archive_extract(archive_state_t *state) {
         state->busy = false;
         return;
     }
-    unpacked = (uint8_t *)bk_sys_alloc(expected ? expected : 1U);
-    if (!unpacked) {
-        bk_sys_free(raw);
-        archive_status(state, "No hay memoria suficiente.", "");
-        state->busy = false;
-        return;
-    }
-    while (in + 1U < size && out < expected) {
-        uint8_t count = ((uint8_t *)raw)[in++];
-        uint8_t value = ((uint8_t *)raw)[in++];
-        if (!count || out + count > expected) break;
-        for (uint32_t n = 0; n < count; n++) unpacked[out++] = value;
-    }
-    if (out != expected || !bk_file_write_all(output, unpacked, expected)) {
+    int decode_error = bk_archive_unpack(raw, size, (void **)&unpacked, &out);
+    if (decode_error || out != expected || !bk_file_write_all(output, unpacked, expected)) {
         archive_status(state, "Extraccion fallida.",
                        out != expected ? "Flujo BKZ truncado o corrupto." : output);
     } else {
@@ -259,7 +228,7 @@ static void archive_extract(archive_state_t *state) {
         st_append(detail, sizeof(detail), output);
         archive_status(state, "Extraccion completada.", detail);
     }
-    bk_sys_free(unpacked);
+    if (unpacked) bk_sys_free(unpacked);
     bk_sys_free(raw);
     state->busy = false;
 }
@@ -353,7 +322,7 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     bk_gui_set_window_min_size(state->window, 470, 300);
     bk_gui_window_set_owner(state->window, bk_sys_getpid());
 
-    while (bk_gui_window_is_open(state->window)) {
+    while (!bk_proc_exit_requested() && bk_gui_window_is_open(state->window)) {
         if (state->pending_inspect && !state->busy) archive_inspect(state);
         if (state->pending_compress && !state->busy) archive_compress(state);
         if (state->pending_extract && !state->busy) archive_extract(state);

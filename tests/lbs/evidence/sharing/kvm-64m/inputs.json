@@ -1,0 +1,21 @@
+{
+  "kernel_sha256": "0948a248e72bc615d69b209816f3c8328ed754e835640b2a7c98181abde1120f",
+  "stage2_sha256": "b74a66b960f63df36e8da3446b3a0e16daafa278a629ca43e25d301fae0163b8",
+  "build/system/libs/native/TINYGL.LBS": "65c9370452056c759a86855372475a0d7d9c72daa13be37de752c2b07e141295",
+  "build/system/libs/native/FONT.LBS": "8cf65face115f4110b1cdc4f0be30f6cb3fa8ab20e89ea7050d6eef162f20150",
+  "build/system/libs/native/MEDIA.LBS": "77c066b9d8c6cdf2b73eeec69b9206781c5576f0050f063e1d0590edbed268a4",
+  "build/system/libs/native/CRYPTO.LBS": "8d29dd0e9c5a1920ddcec049ee4db8e5b22c9c3523fa7f80d3db77081d68b266",
+  "build/system/libs/native/SECURITY.LBS": "7708d78df219c7ec0a3966e16c00f0ee80a592bd4efea9463619d2dd66c2a173",
+  "build/system/libs/native/SYSTEM.LBS": "7ba58c4161e72b0830516e5a90d4e42b64ae7a7d1f2c8d3545892ca3f8c84538",
+  "build/system/libs/native/NGS3D.LBS": "feb9e043aafc0337d496696a5fca10ad117ef65ca3df9a52fa07793129c279ef",
+  "build/system/libs/native/SOUND.LBS": "848b72b171d3428cfe9dcb6f5c7501a2690837040bb0e009ccf6b5e3040c996d",
+  "build/system/libs/native/VISION.LBS": "e467e7c8b2d4b272e91442d8d390ca31ff2818ae9f00f59855ab18c95d08299c",
+  "build/system/libs/native/PRINT.LBS": "43b42a1cfcd71f744fa48d6269f8e120b402f47c6a0531137ce2ac9b370191ff",
+  "build/system/libs/native/NGS.LBS": "2adb9948da09cac105ff98b3e67e2b5e410dfebb214a588c0945d0a27f398793",
+  "build/system/libs/native/COMMAND.LBS": "63c480d88fbe3455c2d214937d51a885218a858ba5bdc3773cc6df7dc57fe130",
+  "build/system/libs/native/INPUT.LBS": "9821223516613753a5faefa626f9a815ab106e5b45b5ae0fe85e3b5f9524edc8",
+  "build/system/libs/native/ARCHIVE.LBS": "94af766bccbc74b6aa8d63ef0929fbb0b1c2ba3e958973827e5acacd671c8ff3",
+  "build/system/libs/native/NETWORK.LBS": "da2e192804212ceea9e08e1f44e7816745c00ee015d8b75c3e197b191b3661b1",
+  "build/tests/userland/LBSSHARE.BEX": "42b86a7728d4b26660caa655f499131edb013ba4050b27534a4a645116bd7b6b",
+  "build/tests/lbs/FIXSHARE.LBS": "d154e8d951fdf38d2485eb37e47e8d9f935fa8e41618188abbd5a5108276ea9f"
+}

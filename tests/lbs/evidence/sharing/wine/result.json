@@ -1,0 +1,26 @@
+{
+  "result": "PASS",
+  "first_surface_ms": 64860,
+  "ram_mib": 512,
+  "host_launch_observed_to_surface_ms": 66983.743282035,
+  "smp": 2,
+  "disk_bus": "ide",
+  "vga": "std",
+  "kernel_sha256": "db7e9edbd5fcd43e42015f8b1fd73ac95191faccc0d99e7b6a2c0520aa507446",
+  "notepad": {
+    "handle": 64675532,
+    "bounds": [
+      178,
+      117,
+      511,
+      376
+    ],
+    "title": "notepad.exe",
+    "visible": true,
+    "listed": true,
+    "owner": 11,
+    "controller": 10
+  },
+  "native_input_during_load": false,
+  "method": "guest launcher monotonic time to first surface; fresh guest boot, no typing into Wine"
+}

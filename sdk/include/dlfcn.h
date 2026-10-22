@@ -1,5 +1,6 @@
 #ifndef BLESKERNOS_POSIX_DLFCN_H
 #define BLESKERNOS_POSIX_DLFCN_H
+#include "bleskernos_lbs_stats.h"
 #define RTLD_LAZY 1
 #define RTLD_NOW 2
 #define RTLD_LOCAL 0

@@ -255,7 +255,7 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     bk_gui_set_window_min_size(state->window, 520, 350);
     bk_gui_window_set_owner(state->window, bk_sys_getpid());
 
-    while (bk_gui_window_is_open(state->window)) bk_sys_sleep_ms(15);
+    while (!bk_proc_exit_requested() && bk_gui_window_is_open(state->window)) bk_sys_sleep_ms(15);
     bk_gui_destroy_window(desktop, state->window);
     if (state->have_icon) bk_gui_image_free(&state->icon);
     if (state->have_open_icon) bk_gui_image_free(&state->open_icon);

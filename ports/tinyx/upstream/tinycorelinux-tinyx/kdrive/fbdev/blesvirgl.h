@@ -5,16 +5,23 @@
 
 #define BLES_GFX_VIRGL 0xB10CU
 #define BLES_VIRGL_ABI 1U
+/* Kernel snapshot pool; the on-wire ABI and user structs are unchanged. */
+#define BLES_VIRGL_NATIVE_SLOTS 4U
 #define BLES_VIRGL_MAX_DATA (64U * 1024U * 1024U)
 #define BLES_VIRGL_MAX_COMMANDS (512U * 1024U)
 #define BLES_VIRGL_FEATURE_ASYNC_SUBMIT 1U
 #define BLES_VIRGL_FEATURE_ASYNC_UPLOAD 2U
+#define BLES_VIRGL_FEATURE_NATIVE_PRESENT 4U
 enum {
     BLES_VIRGL_CAPS = 1, BLES_VIRGL_CONTEXT_CREATE, BLES_VIRGL_CONTEXT_DESTROY,
     BLES_VIRGL_RESOURCE_CREATE, BLES_VIRGL_RESOURCE_DESTROY,
     BLES_VIRGL_TRANSFER_WRITE, BLES_VIRGL_TRANSFER_READ,
     BLES_VIRGL_SUBMIT, BLES_VIRGL_WAIT, BLES_VIRGL_SUBMIT_ASYNC,
-    BLES_VIRGL_TRANSFER_WRITE_ASYNC
+    BLES_VIRGL_TRANSFER_WRITE_ASYNC,
+    /* p[0]=owned color resource; p[1..3] must be zero at the user boundary.
+     * Enqueues an immutable GPU capture; completion is asynchronous.
+     * Kernel-only: snapshot target, fence, stage (capture/seal/poll). */
+    BLES_VIRGL_PRESENT
 };
 /* The kernel supplies context from the open file description; callers cannot
  * select another owner's context. buffer is a userspace address at the ioctl

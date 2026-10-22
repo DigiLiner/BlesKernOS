@@ -62,6 +62,8 @@ bool print_end_page(bk_print_job_t *job);
 /* Escribe primero .TMP y publica mediante rename atomico a .BPJ.
    Siempre consume job, tanto si devuelve true como false. */
 bool print_submit(bk_print_job_t *job);
+/* Stable queue path captured before submit consumes the job. */
+bool print_job_path(const bk_print_job_t *job, char *buffer, uint32_t capacity);
 /* Use print_cancel solamente para trabajos que aun no fueron enviados. */
 void print_cancel(bk_print_job_t *job);
 

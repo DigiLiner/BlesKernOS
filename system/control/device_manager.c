@@ -6,7 +6,7 @@
 #define DEVMGR_ROW_H            22
 #define DEVMGR_MAX_ITEMS        (PCI_MAX_DEVICES + BLOCK_MAX_DEVICES + 16)
 #define DEVMGR_DBLCLICK_MS  500
-#define DEVMGR_ICON_SIZE        20
+#define DEVMGR_ICON_SIZE        16
 
 typedef enum {
     DEVMGR_KIND_BLOCK = 1,
@@ -663,7 +663,7 @@ static void devmgr_draw_fallback_icon(gui_surface_t *s, int x, int y,
                    0x00FFFFFF, false);
     bk_gui_gfx_fill_rect(s, (gui_rect_t){x + 5, y + 5, 10, 8}, color);
     bk_gui_gfx_draw_rect(s, (gui_rect_t){x + 5, y + 5, 10, 8}, CPL_DARK);
-    bk_gui_gfx_fill_rect(s, (gui_rect_t){x + 8, y + 15, 5, 2}, CPL_DARK);
+    bk_gui_gfx_fill_rect(s, (gui_rect_t){x + 6, y + 13, 5, 2}, CPL_DARK);
 }
 
 static void devmgr_draw_icon(gui_surface_t *s, int x, int y,
@@ -676,41 +676,28 @@ static void devmgr_draw_icon(gui_surface_t *s, int x, int y,
     devmgr_draw_fallback_icon(s, x, y, icon);
 }
 
-static void devmgr_load_icons(devmgr_state_t *st) {
-    static const char *paths[DEVMGR_ICON_COUNT] = {
-        "/ICONS/SYSTEM.BMP",
-        "/ICONS/SYSTEM.BMP",
-        "/ICONS/CONFIG.BMP",
-        "/ICONS/HDD.BMP",
-        "/ICONS/MONITOR.BMP",
-        "/ICONS/SOUND.BMP",
-        "/ICONS/MOUSE.BMP",
-        "/ICONS/DATETIME.BMP",
-        "/ICONS/DEVICES.BMP",
-    };
-
-    if (!st) return;
-    for (uint32_t i = 0; i < DEVMGR_ICON_COUNT; i++) {
-        if (st->icons[i]) continue;
-        st->icons[i] = bk_app_load_icon(paths[i],
-                                                    DEVMGR_ICON_SIZE,
-                                                    DEVMGR_ICON_SIZE);
-    }
-}
-
 static const char *devmgr_icon_path(devmgr_icon_t icon) {
     static const char *paths[DEVMGR_ICON_COUNT] = {
         "/ICONS/SYSTEM.BMP",
-        "/ICONS/SYSTEM.BMP",
-        "/ICONS/CONFIG.BMP",
+        "/ICONS/CPU.BMP",
+        "/ICONS/MEMORY.BMP",
         "/ICONS/HDD.BMP",
         "/ICONS/MONITOR.BMP",
         "/ICONS/SOUND.BMP",
-        "/ICONS/MOUSE.BMP",
+        "/ICONS/KEYBOARD.BMP",
         "/ICONS/DATETIME.BMP",
-        "/ICONS/DEVICES.BMP",
+        "/ICONS/PCI.BMP",
     };
     return icon < DEVMGR_ICON_COUNT ? paths[icon] : "/ICONS/DEVICES.BMP";
+}
+
+static void devmgr_load_icons(devmgr_state_t *st) {
+    if (!st) return;
+    for (uint32_t i = 0; i < DEVMGR_ICON_COUNT; i++) {
+        if (st->icons[i]) continue;
+        st->icons[i] = bk_app_load_icon(devmgr_icon_path((devmgr_icon_t)i),
+                                      DEVMGR_ICON_SIZE, DEVMGR_ICON_SIZE);
+    }
 }
 
 static void devmgr_free_icons(devmgr_state_t *st) {
@@ -789,7 +776,7 @@ static void devmgr_paint(gui_window_t *window UNUSED,
                                   : 0x00EEF3F8);
 
         if (type == DEVMGR_ROW_ROOT) {
-            devmgr_draw_icon(s, row.x + 20, row.y + 1, st,
+            devmgr_draw_icon(s, row.x + 20, row.y + (DEVMGR_ROW_H - DEVMGR_ICON_SIZE) / 2, st,
                              DEVMGR_ICON_COMPUTER);
             bk_gui_font_draw_string_clipped(s, row.x + 46, row.y + 6,
                                          "Equipo", CPL_TEXT,
@@ -799,7 +786,7 @@ static void devmgr_paint(gui_window_t *window UNUSED,
             bool expanded = devmgr_section_expanded(st, section);
             devmgr_draw_plus(s, (gui_rect_t){row.x + 16, row.y + 7, 9, 9},
                              expanded);
-            devmgr_draw_icon(s, row.x + 30, row.y + 1, st,
+            devmgr_draw_icon(s, row.x + 30, row.y + (DEVMGR_ROW_H - DEVMGR_ICON_SIZE) / 2, st,
                              (devmgr_icon_t)section);
             bk_gui_font_draw_string_clipped(s, row.x + 56, row.y + 6,
                                          devmgr_section_text(section), CPL_TEXT,
@@ -809,7 +796,7 @@ static void devmgr_paint(gui_window_t *window UNUSED,
             devmgr_item_t *item = &st->items[item_index];
             bk_gui_gfx_fill_rect(s, (gui_rect_t){row.x + 58, row.y + 8, 6, 6},
                               devmgr_status_color(item->status));
-            devmgr_draw_icon(s, row.x + 70, row.y + 1, st,
+            devmgr_draw_icon(s, row.x + 70, row.y + (DEVMGR_ROW_H - DEVMGR_ICON_SIZE) / 2, st,
                              devmgr_icon_for_kind(item->kind));
             text_x = row.x + 96;
             bk_gui_font_draw_string_clipped(s, text_x, row.y + 6, item->name,

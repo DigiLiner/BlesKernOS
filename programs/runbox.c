@@ -1,12 +1,13 @@
 #include "../kernel/include/api.h"
+#include "../system/control/control_common.h"
 
-#define RUNBOX_W 390
-#define RUNBOX_H 150
+#define RUNBOX_W 480
+#define RUNBOX_H 238
 #define RUNBOX_INPUT_MAX 128
 #define RUNBOX_STATUS_MAX 96
 
-#define RUNBOX_BTN_W 72
-#define RUNBOX_BTN_H 22
+#define RUNBOX_BTN_W 104
+#define RUNBOX_BTN_H 26
 
 typedef struct {
     gui_desktop_t *desktop;
@@ -233,35 +234,32 @@ static void runbox_execute(runbox_state_t *st) {
 }
 
 static gui_rect_t runbox_input_rect(runbox_state_t *st) {
-    int x = st->window->bounds.x + 18;
-    int y = bk_gui_window_content_rect_raw(st->window).y + 44;
-    return (gui_rect_t){x, y, st->window->bounds.w - 36, 22};
+    gui_rect_t client = bk_gui_window_content_rect_raw(st->window);
+    return (gui_rect_t){client.x + 16, client.y + 56, client.w - 32, 26};
 }
 
 static gui_rect_t runbox_ok_rect(runbox_state_t *st) {
-    int y = st->window->bounds.y + st->window->bounds.h - 34;
-    return (gui_rect_t){st->window->bounds.x + st->window->bounds.w - 168,
-                        y, RUNBOX_BTN_W, RUNBOX_BTN_H};
+    gui_rect_t client = bk_gui_window_content_rect_raw(st->window);
+    return (gui_rect_t){client.x + client.w - 16 - 2 * RUNBOX_BTN_W - 8,
+                        client.y + client.h - 12 - RUNBOX_BTN_H,
+                        RUNBOX_BTN_W, RUNBOX_BTN_H};
 }
 
 static gui_rect_t runbox_cancel_rect(runbox_state_t *st) {
-    int y = st->window->bounds.y + st->window->bounds.h - 34;
-    return (gui_rect_t){st->window->bounds.x + st->window->bounds.w - 88,
-                        y, RUNBOX_BTN_W, RUNBOX_BTN_H};
+    gui_rect_t client = bk_gui_window_content_rect_raw(st->window);
+    return (gui_rect_t){client.x + client.w - 16 - RUNBOX_BTN_W,
+                        client.y + client.h - 12 - RUNBOX_BTN_H,
+                        RUNBOX_BTN_W, RUNBOX_BTN_H};
 }
 
 static void runbox_draw_button(gui_surface_t *s, gui_rect_t r,
                                const char *text, const gui_image_t *icon) {
     int text_x = r.x + 12;
-    bk_gui_gfx_fill_rect(s, r, 0x00D8D8D0);
-    bk_gui_gfx_fill_rect(s, (gui_rect_t){r.x, r.y, r.w, 1}, 0x00FFFFFF);
-    bk_gui_gfx_fill_rect(s, (gui_rect_t){r.x, r.y, 1, r.h}, 0x00FFFFFF);
-    bk_gui_gfx_fill_rect(s, (gui_rect_t){r.x + r.w - 1, r.y, 1, r.h}, 0x00484840);
-    bk_gui_gfx_fill_rect(s, (gui_rect_t){r.x, r.y + r.h - 1, r.w, 1}, 0x00484840);
+    cpl_draw_bevel(s, r, CPL_FACE, false);
     if (icon && icon->pixels) {
-        bk_gui_surface_draw_image(s, (gui_rect_t){r.x + 5, r.y + 3, 16, 16},
+        bk_gui_surface_draw_image(s, (gui_rect_t){r.x + 7, r.y + (r.h - 16) / 2, 16, 16},
                                   r, icon);
-        text_x = r.x + 25;
+        text_x = r.x + 29;
     }
     bk_gui_font_draw_string_clipped(s, text_x, r.y + 7, text,
                                     0x00202020,
@@ -273,43 +271,34 @@ static void runbox_draw_button(gui_surface_t *s, gui_rect_t r,
 static void runbox_content(gui_window_t *window, gui_surface_t *s,
                            void *ctx) {
     runbox_state_t *st = (runbox_state_t *)ctx;
+    gui_rect_t client;
     gui_rect_t input;
-    gui_rect_t clip;
-    int x;
-    int y;
+    const char *visible_text;
 
     if (!st || !window || !s) return;
-
-    x = window->bounds.x;
-    y = bk_gui_window_content_rect_raw(window).y;
-    clip = (gui_rect_t){x + 8, y + 4, window->bounds.w - 16,
-                        bk_gui_window_content_rect_raw(window).h - 8};
-
-    bk_gui_gfx_fill_rect(s, clip, 0x00D8D8D0);
-    bk_gui_font_draw_string(s, x + 18, y + 14,
-                         "@H1A6BF702",
-                         0x00202020, 0, false);
+    client = bk_gui_window_content_rect_raw(window);
+    bk_gui_gfx_fill_rect(s, client, CPL_FACE);
+    cpl_draw_text_wrapped(s,
+        (gui_rect_t){client.x + 16, client.y + 12, client.w - 32, 32},
+        "@H1A6BF702", CPL_TEXT, 16, 2);
 
     input = runbox_input_rect(st);
-    bk_gui_gfx_fill_rect(s, input, 0x00FFFFFF);
-    bk_gui_gfx_draw_rect(s, input, st->focused ? 0x000070C0 : 0x00606060);
-    bk_gui_font_draw_string_clipped(s, input.x + 5, input.y + 7,
-                                 st->input, 0x00101010,
-                                 (gui_rect_t){input.x + 4, input.y + 2,
-                                              input.w - 8, input.h - 4});
-
+    cpl_draw_bevel(s, input, CPL_WHITE, true);
+    if (st->focused) bk_gui_gfx_draw_rect(s, input, CPL_BLUE);
+    visible_text = st->input;
+    while (*visible_text && bk_gui_font_text_width(visible_text) > input.w - 14)
+        visible_text++;
+    cpl_draw_text_clipped(s,
+        (gui_rect_t){input.x + 6, input.y + 8, input.w - 12, 14},
+        visible_text, CPL_TEXT);
     if (st->focused) {
-        int cursor_x = input.x + 6 + (int)bk_gui_font_text_width(st->input);
-        if (cursor_x < input.x + input.w - 5) {
-            bk_gui_gfx_fill_rect(s, (gui_rect_t){cursor_x, input.y + 5, 1, 13},
-                              0x00101010);
-        }
+        int cursor_x = input.x + 6 + (int)bk_gui_font_text_width(visible_text);
+        bk_gui_gfx_fill_rect(s, (gui_rect_t){cursor_x, input.y + 6, 1, 13}, CPL_TEXT);
     }
-
-    bk_gui_font_draw_string_clipped(s, x + 18, y + 74,
-                                 st->status, 0x00602020,
-                                 (gui_rect_t){x + 18, y + 70,
-                                              window->bounds.w - 36, 18});
+    cpl_draw_text_wrapped(s,
+        (gui_rect_t){client.x + 16, client.y + 96, client.w - 32,
+                     runbox_ok_rect(st).y - client.y - 106},
+        st->status, CPL_SHADOW, 16, 0);
 
     runbox_draw_button(s, runbox_ok_rect(st), "@H69D93100",
         st->button_icon_loaded[0] ? &st->button_icons[0] : NULL);
@@ -417,6 +406,7 @@ static void runbox_main(void *arg) {
         "@H69D93100", "@H1C1E4EC2", "@H45333E14",
         "@H7A28E1E5", "/ICONS/OBJECT.BMP"});
 
+    bk_gui_set_window_min_size(st->window, RUNBOX_W, RUNBOX_H);
     st->focused = true;
     st->button_icon_loaded[0] =
         bk_graphics_icon_load("16/Runonce106", &st->button_icons[0]);

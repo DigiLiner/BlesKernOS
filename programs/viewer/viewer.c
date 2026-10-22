@@ -1,8 +1,7 @@
 #include <bleskernos_theme.h>
 #include <bleskernos_api.h>
-#include "lib/video.h"
-#include "lib/render.h"
-#include "lib/retro_ui.h"
+#include <bleskernos_media_lbs.h>
+#include <bleskernos_widgets_lbs.h>
 
 #define VIEWER_MIN_API 28U
 #define VIEWER_FACE BK_THEME_FACE
@@ -44,7 +43,8 @@ typedef struct {
     bk_gui_window_t *window;
     void *file_data;
     uint32_t file_size;
-    vv_video_t video;
+    bk_media_video_t *video;
+    bk_media_video_info_t info;
     bool loaded;
     bool playing;
     bool loop;
@@ -52,8 +52,8 @@ typedef struct {
     uint32_t next_frame_ms;
     uint32_t dropped_frames;
     uint32_t total_duration_ms;
-    vr_quality_t quality;
-    vr_stats_t render_stats;
+    bk_media_quality_t quality;
+    bk_media_render_stats_t render_stats;
     char path[BK_PATH_MAX];
     char status[112];
 
@@ -168,7 +168,7 @@ static const char *path_basename(const char *path) {
 
 static uint32_t viewer_frame_time_ms(const viewer_state_t *state) {
     if (!state || !state->loaded) return 0U;
-    return vv_frame_time_ms(&state->video, state->frame);
+    return bk_media_video_frame_time(state->video, state->frame);
 }
 
 static void format_time(uint32_t ms, char *out, uint32_t capacity) {
@@ -233,9 +233,9 @@ static bk_gui_rect_t viewer_fit_video(const viewer_state_t *state,
                                       bk_gui_rect_t viewport) {
     uint32_t w, h;
     int draw_w, draw_h;
-    if (!state || !state->loaded || !state->video.width || !state->video.height)
+    if (!state || !state->loaded || !state->info.width || !state->info.height)
         return viewport;
-    w = state->video.width; h = state->video.height;
+    w = state->info.width; h = state->info.height;
     draw_w = viewport.w - 8;
     draw_h = (int)((uint32_t)draw_w * h / w);
     if (draw_h > viewport.h - 8) {
@@ -257,7 +257,7 @@ static void build_frame_text(viewer_state_t *state, char *out, uint32_t capacity
     p = append_text(p, end, "Frame ");
     p = append_uint(p, end, state->frame + 1U);
     p = append_text(p, end, "/");
-    p = append_uint(p, end, state->video.frame_count);
+    p = append_uint(p, end, state->info.frame_count);
     if (state->dropped_frames) {
         p = append_text(p, end, "  drop ");
         (void)append_uint(p, end, state->dropped_frames);
@@ -273,17 +273,17 @@ static void build_video_info(viewer_state_t *state, char *out, uint32_t capacity
         append_text(out, end, "BlesKernOS Viewer 3.2");
         return;
     }
-    p = append_text(p, end, vv_format_name(&state->video));
+    p = append_text(p, end, bk_media_video_format_name(state->video));
     p = append_text(p, end, "  ");
-    p = append_uint(p, end, state->video.width);
+    p = append_uint(p, end, state->info.width);
     p = append_text(p, end, "x");
-    p = append_uint(p, end, state->video.height);
-    if (state->video.format == VV_FORMAT_GIF) {
+    p = append_uint(p, end, state->info.height);
+    if (state->info.format == BK_MEDIA_GIF) {
         p = append_text(p, end, "  variable fps");
-    } else if (state->video.fps_den) {
-        fps_int = state->video.fps_num / state->video.fps_den;
-        fps_frac = ((state->video.fps_num % state->video.fps_den) * 10U) /
-                   state->video.fps_den;
+    } else if (state->info.fps_den) {
+        fps_int = state->info.fps_num / state->info.fps_den;
+        fps_frac = ((state->info.fps_num % state->info.fps_den) * 10U) /
+                   state->info.fps_den;
         p = append_text(p, end, "  ");
         p = append_uint(p, end, fps_int);
         if (fps_frac) {
@@ -293,7 +293,7 @@ static void build_video_info(viewer_state_t *state, char *out, uint32_t capacity
         p = append_text(p, end, " fps");
     }
     p = append_text(p, end, "  ");
-    p = append_text(p, end, vr_quality_name(state->quality));
+    p = append_text(p, end, bk_media_quality_name(state->quality));
     if (state->render_stats.block_px > 1U) {
         p = append_text(p, end, "/");
         p = append_uint(p, end, state->render_stats.block_px);
@@ -317,7 +317,7 @@ static void build_time_text(viewer_state_t *state, char *out, uint32_t capacity)
 }
 
 static const char *viewer_audio_label(const viewer_state_t *state) {
-    if (!state || !state->loaded || !vv_audio_available(&state->video))
+    if (!state || !state->loaded || !state->info.audio_available)
         return "Video";
     if (!bk_sound_pcm_available()) return "PCM unavailable";
     return state->muted ? "Muted" : bk_sound_pcm_name();
@@ -335,7 +335,7 @@ static void viewer_paint(bk_gui_window_t *window UNUSED,
     bk_gui_surface_fill_rect(surface, c, VIEWER_FACE);
 
     /* Deep recessed picture well, typical of desktop media players of 1994-96. */
-    rvui_bevel_panel(surface, l.video, true, 0x00303030U);
+    bk_vision_bevel_panel(surface, l.video, true, 0x00303030U);
     bk_gui_surface_fill_rect(surface,
         (bk_gui_rect_t){l.video.x + 3, l.video.y + 3, l.video.w - 6, l.video.h - 6},
         VIEWER_BLACK);
@@ -343,8 +343,8 @@ static void viewer_paint(bk_gui_window_t *window UNUSED,
         video_target = viewer_fit_video(state,
             (bk_gui_rect_t){l.video.x + 4, l.video.y + 4, l.video.w - 8, l.video.h - 8});
         bk_gui_surface_fill_rect(surface, video_target, VIEWER_BLACK);
-        if (!vv_prepare_frame(&state->video, state->frame) ||
-            !vr_draw_frame(surface, &state->video, video_target,
+        if (!bk_media_video_prepare(state->video, state->frame) ||
+            !bk_media_video_draw(surface, state->video, video_target,
                            state->quality, &state->render_stats)) {
             bk_gui_surface_draw_text(surface, l.video.x + 18, l.video.y + 18,
                 "Video decode error", 0x00FF8080U, VIEWER_BLACK, false);
@@ -362,7 +362,7 @@ static void viewer_paint(bk_gui_window_t *window UNUSED,
     }
 
     build_time_text(state, time_text, sizeof(time_text));
-    rvui_inset_text(surface, l.time, time_text, true);
+    bk_vision_inset_text(surface, l.time, time_text, true);
     build_frame_text(state, frame_text, sizeof(frame_text));
     build_video_info(state, info, sizeof(info));
     if (frame_text[0])
@@ -376,33 +376,33 @@ static void viewer_paint(bk_gui_window_t *window UNUSED,
                                  info, VIEWER_DIM, VIEWER_FACE, false);
     }
 
-    rvui_slider(surface, l.timeline, state->loaded ? state->frame : 0U,
-        state->loaded && state->video.frame_count > 1U ?
-            state->video.frame_count - 1U : 1U, state->loaded);
+    bk_vision_slider(surface, l.timeline, state->loaded ? state->frame : 0U,
+        state->loaded && state->info.frame_count > 1U ?
+            state->info.frame_count - 1U : 1U, state->loaded);
 
-    rvui_bevel_panel(surface, l.controls, false, VIEWER_FACE);
-    rvui_button(surface, l.first, "|<", false, state->loaded);
-    rvui_button(surface, l.prev, "<", false, state->loaded);
-    rvui_icon_button(surface, l.play, state->playing ? "Pause" : "Play",
+    bk_vision_bevel_panel(surface, l.controls, false, VIEWER_FACE);
+    bk_vision_button(surface, l.first, "|<", false, state->loaded);
+    bk_vision_button(surface, l.prev, "<", false, state->loaded);
+    bk_vision_icon_button(surface, l.play, state->playing ? "Pause" : "Play",
         state->playing ? (state->pause_icon_loaded ? &state->pause_icon : NULL)
                        : (state->play_icon_loaded ? &state->play_icon : NULL),
         state->playing, state->loaded);
-    rvui_button(surface, l.stop, "Stop", false, state->loaded);
-    rvui_button(surface, l.next, ">", false, state->loaded);
-    rvui_button(surface, l.last, ">|", false, state->loaded);
+    bk_vision_button(surface, l.stop, "Stop", false, state->loaded);
+    bk_vision_button(surface, l.next, ">", false, state->loaded);
+    bk_vision_button(surface, l.last, ">|", false, state->loaded);
 
-    text_copy(qlabel, sizeof(qlabel), vr_quality_name(state->quality));
-    rvui_button(surface, l.quality, qlabel, false, state->loaded);
-    rvui_button(surface, l.loop, state->loop ? "Loop*" : "Loop",
+    text_copy(qlabel, sizeof(qlabel), bk_media_quality_name(state->quality));
+    bk_vision_button(surface, l.quality, qlabel, false, state->loaded);
+    bk_vision_button(surface, l.loop, state->loop ? "Loop*" : "Loop",
                 state->loop, state->loaded);
-    rvui_icon_button(surface, l.sound, "",
+    bk_vision_icon_button(surface, l.sound, "",
         state->sound_icon_loaded ? &state->sound_icon : NULL,
-        state->muted, state->loaded && vv_audio_available(&state->video));
-    rvui_slider(surface, l.volume, state->muted ? 0U : state->volume,
-                255U, state->loaded && vv_audio_available(&state->video));
+        state->muted, state->loaded && state->info.audio_available);
+    bk_vision_slider(surface, l.volume, state->muted ? 0U : state->volume,
+                255U, state->loaded && state->info.audio_available);
 
     movie_name = state->loaded ? path_basename(state->path) : state->status;
-    rvui_status_bar(surface, l.status, movie_name, viewer_audio_label(state));
+    bk_vision_status_bar(surface, l.status, movie_name, viewer_audio_label(state));
 
     if (state->playing) {
         bk_gui_surface_fill_rect(surface,
@@ -412,7 +412,7 @@ static void viewer_paint(bk_gui_window_t *window UNUSED,
 }
 
 static void viewer_schedule_current(viewer_state_t *state, uint32_t now) {
-    uint32_t duration = vv_frame_duration_ms(&state->video, state->frame);
+    uint32_t duration = bk_media_video_frame_duration(state->video, state->frame);
     state->next_frame_ms = now + duration;
 }
 
@@ -423,18 +423,17 @@ static void viewer_audio_stop(viewer_state_t *state) {
 }
 
 static void viewer_audio_seek_to_video(viewer_state_t *state) {
-    if (!state || !state->loaded || !vv_audio_available(&state->video)) return;
-    vv_audio_seek_ms(&state->video, viewer_frame_time_ms(state),
+    if (!state || !state->loaded || !state->info.audio_available) return;
+    bk_media_audio_seek(state->video, viewer_frame_time_ms(state),
                      &state->audio_chunk, &state->audio_chunk_offset);
     state->audio_cursor_valid = true;
 }
 
 static void viewer_set_frame(viewer_state_t *state, uint32_t frame) {
     if (!state || !state->loaded) return;
-    if (frame >= state->video.frame_count) frame = state->video.frame_count - 1U;
+    if (frame >= state->info.frame_count) frame = state->info.frame_count - 1U;
     state->frame = frame;
-    state->video.frame_prepared = false;
-    state->video.frame_image_valid = false;
+    bk_media_video_invalidate(state->video);
     viewer_schedule_current(state, bk_sys_uptime_ms());
     state->audio_cursor_valid = false;
     bk_gui_window_invalidate(state->window);
@@ -442,7 +441,7 @@ static void viewer_set_frame(viewer_state_t *state, uint32_t frame) {
 
 static void viewer_toggle_play(viewer_state_t *state) {
     if (!state || !state->loaded) return;
-    if (!state->playing && state->frame + 1U >= state->video.frame_count)
+    if (!state->playing && state->frame + 1U >= state->info.frame_count)
         state->frame = 0U;
     state->playing = !state->playing;
     if (!state->playing) viewer_audio_stop(state);
@@ -467,12 +466,12 @@ static void viewer_stop(viewer_state_t *state, bool rewind) {
 
 static void viewer_cycle_quality(viewer_state_t *state) {
     if (!state) return;
-    state->quality = (vr_quality_t)(((uint32_t)state->quality + 1U) % VR_QUALITY_COUNT);
+    state->quality = (bk_media_quality_t)(((uint32_t)state->quality + 1U) % BK_MEDIA_QUALITY_COUNT);
     bk_gui_window_invalidate(state->window);
 }
 
-static void viewer_set_quality(viewer_state_t *state, vr_quality_t quality) {
-    if (!state || quality >= VR_QUALITY_COUNT) return;
+static void viewer_set_quality(viewer_state_t *state, bk_media_quality_t quality) {
+    if (!state || quality >= BK_MEDIA_QUALITY_COUNT) return;
     state->quality = quality;
     bk_gui_window_invalidate(state->window);
 }
@@ -488,13 +487,13 @@ static void viewer_toggle_mute(viewer_state_t *state) {
 static void viewer_seek_from_x(viewer_state_t *state, bk_gui_rect_t rect, int x) {
     int rel, span;
     uint32_t target;
-    if (!state || !state->loaded || state->video.frame_count < 2U) return;
+    if (!state || !state->loaded || state->info.frame_count < 2U) return;
     span = rect.w - 10;
     if (span < 1) return;
     rel = x - (rect.x + 5);
     if (rel < 0) rel = 0;
     if (rel > span) rel = span;
-    target = (uint32_t)rel * (state->video.frame_count - 1U) / (uint32_t)span;
+    target = (uint32_t)rel * (state->info.frame_count - 1U) / (uint32_t)span;
     viewer_set_frame(state, target);
 }
 
@@ -547,7 +546,7 @@ static bool viewer_event(bk_gui_window_t *window UNUSED,
             viewer_stop(state, false); viewer_set_frame(state, state->frame - 1U); return true;
         }
         if ((event->key == ']' || event->key == BK_KEY_RIGHT) &&
-            state->frame + 1U < state->video.frame_count) {
+            state->frame + 1U < state->info.frame_count) {
             viewer_stop(state, false); viewer_set_frame(state, state->frame + 1U); return true;
         }
         return false;
@@ -555,7 +554,7 @@ static bool viewer_event(bk_gui_window_t *window UNUSED,
 
     viewer_layout(state, &l);
     if (event->type == BK_GUI_EVENT_MOUSE_DOWN) {
-        if (state->loaded && rvui_contains(l.timeline, event->x, event->y)) {
+        if (state->loaded && bk_vision_contains(l.timeline, event->x, event->y)) {
             state->dragging_timeline = true;
             state->resume_after_seek = state->playing;
             state->playing = false;
@@ -563,8 +562,8 @@ static bool viewer_event(bk_gui_window_t *window UNUSED,
             viewer_seek_from_x(state, l.timeline, event->x);
             return true;
         }
-        if (state->loaded && vv_audio_available(&state->video) &&
-            rvui_contains(l.volume, event->x, event->y)) {
+        if (state->loaded && state->info.audio_available &&
+            bk_vision_contains(l.volume, event->x, event->y)) {
             state->dragging_volume = true;
             viewer_volume_from_x(state, l.volume, event->x);
             return true;
@@ -599,24 +598,24 @@ static bool viewer_event(bk_gui_window_t *window UNUSED,
         return true;
     }
     if (!state->loaded) return false;
-    if (rvui_contains(l.first, event->x, event->y)) {
+    if (bk_vision_contains(l.first, event->x, event->y)) {
         viewer_stop(state, false); viewer_set_frame(state, 0U);
-    } else if (rvui_contains(l.prev, event->x, event->y)) {
+    } else if (bk_vision_contains(l.prev, event->x, event->y)) {
         viewer_stop(state, false); viewer_set_frame(state, state->frame ? state->frame - 1U : 0U);
-    } else if (rvui_contains(l.play, event->x, event->y)) {
+    } else if (bk_vision_contains(l.play, event->x, event->y)) {
         viewer_toggle_play(state);
-    } else if (rvui_contains(l.stop, event->x, event->y)) {
+    } else if (bk_vision_contains(l.stop, event->x, event->y)) {
         viewer_stop(state, true);
-    } else if (rvui_contains(l.next, event->x, event->y)) {
+    } else if (bk_vision_contains(l.next, event->x, event->y)) {
         viewer_stop(state, false); viewer_set_frame(state, state->frame + 1U);
-    } else if (rvui_contains(l.last, event->x, event->y)) {
-        viewer_stop(state, false); viewer_set_frame(state, state->video.frame_count - 1U);
-    } else if (rvui_contains(l.loop, event->x, event->y)) {
+    } else if (bk_vision_contains(l.last, event->x, event->y)) {
+        viewer_stop(state, false); viewer_set_frame(state, state->info.frame_count - 1U);
+    } else if (bk_vision_contains(l.loop, event->x, event->y)) {
         state->loop = !state->loop; bk_gui_window_invalidate(state->window);
-    } else if (rvui_contains(l.quality, event->x, event->y)) {
+    } else if (bk_vision_contains(l.quality, event->x, event->y)) {
         viewer_cycle_quality(state);
-    } else if (rvui_contains(l.sound, event->x, event->y) &&
-               vv_audio_available(&state->video)) {
+    } else if (bk_vision_contains(l.sound, event->x, event->y) &&
+               state->info.audio_available) {
         viewer_toggle_mute(state);
     } else return false;
     return true;
@@ -625,7 +624,7 @@ static bool viewer_event(bk_gui_window_t *window UNUSED,
 static void viewer_unload(viewer_state_t *state) {
     if (!state) return;
     viewer_audio_stop(state);
-    if (state->loaded) vv_close(&state->video);
+    if (state->loaded) bk_media_video_close(state->video);
     if (state->window) bk_gui_window_set_streaming(state->window, false);
     if (state->file_data) bk_sys_free(state->file_data);
     state->file_data = NULL;
@@ -636,7 +635,8 @@ static void viewer_unload(viewer_state_t *state) {
     state->dropped_frames = 0U;
     state->total_duration_ms = 0U;
     state->path[0] = '\0';
-    zero_memory(&state->video, sizeof(state->video));
+    state->video = NULL;
+    zero_memory(&state->info, sizeof(state->info));
 }
 
 static bool viewer_load(viewer_state_t *state, const char *path) {
@@ -646,8 +646,10 @@ static bool viewer_load(viewer_state_t *state, const char *path) {
     int fd;
     int32_t length;
     bool opened = false;
-    vv_video_t video;
-    zero_memory(&video, sizeof(video));
+    bk_media_video_t *video;
+    bk_media_video_info_t info;
+    video = NULL;
+    zero_memory(&info, sizeof(info)); info.size = sizeof(info);
     if (!state || !path || !*path) return false;
     fd = bk_file_open(path, BK_FILE_READ_ONLY);
     if (fd < 0) goto read_fail;
@@ -663,15 +665,15 @@ static bool viewer_load(viewer_state_t *state, const char *path) {
     /* Disk-backed MPEG-1/AVI: the complete compressed movie never needs
      * to fit in RAM. pl_mpeg owns independent seekable file cursors. */
     if (magic[0] == 0 && magic[1] == 0 && magic[2] == 1 && magic[3] == 0xBA)
-        opened = vv_open_mpeg_stream(&video, path, size);
+        opened = (video = bk_media_video_open_path(path, size, BK_MEDIA_MPEG1)) != NULL;
     else if (magic[0] == 'R' && magic[1] == 'I' &&
              magic[2] == 'F' && magic[3] == 'F' &&
              magic[8] == 'A' && magic[9] == 'V' &&
              magic[10] == 'I' && magic[11] == ' ')
-        opened = vv_open_avi_stream(&video, path, size);
+        opened = (video = bk_media_video_open_path(path, size, BK_MEDIA_AVI)) != NULL;
     else if (size <= 32U * 1024U * 1024U &&
              bk_file_read_all(path, &data, &size) && data && size)
-        opened = vv_open(&video, data, size);
+        opened = (video = bk_media_video_open(data, size)) != NULL;
 
     if (!opened) {
         if (data) bk_sys_free(data);
@@ -680,8 +682,8 @@ static bool viewer_load(viewer_state_t *state, const char *path) {
         bk_gui_window_invalidate(state->window);
         return false;
     }
-    if (!vv_prepare_frame(&video, 0U)) {
-        vv_close(&video);
+    if (bk_media_video_info(video, &info) || !bk_media_video_prepare(video, 0U)) {
+        bk_media_video_close(video);
         if (data) bk_sys_free(data);
         text_copy(state->status, sizeof(state->status),
                   "Movie opened, but its first frame could not be decoded.");
@@ -693,20 +695,21 @@ static bool viewer_load(viewer_state_t *state, const char *path) {
     state->file_data = data;
     state->file_size = size;
     state->video = video;
+    state->info = info;
     state->loaded = true;
     state->playing = false;
-    state->loop = video.loop_default;
+    state->loop = info.loop_default;
     state->frame = 0U;
     state->dropped_frames = 0U;
-    state->total_duration_ms = vv_total_duration_ms(&state->video);
-    state->quality = VR_QUALITY_AUTO;
+    state->total_duration_ms = state->info.duration_ms;
+    state->quality = BK_MEDIA_QUALITY_AUTO;
     state->audio_cursor_valid = false;
     /* Ask the OS compositor for the fast opaque/video presentation path. */
     bk_gui_window_set_streaming(state->window, true);
     viewer_schedule_current(state, bk_sys_uptime_ms());
     text_copy(state->path, sizeof(state->path), path);
     text_copy(state->status, sizeof(state->status),
-              (video.format == VV_FORMAT_AVI || video.format == VV_FORMAT_MPEG1)
+              (info.format == BK_MEDIA_AVI || info.format == BK_MEDIA_MPEG1)
               ? "Ready (streamed video)" : "Ready");
     bk_gui_window_invalidate(state->window);
     return true;
@@ -717,7 +720,7 @@ read_fail:
 }
 
 static bool viewer_advance_one(viewer_state_t *state) {
-    if (state->frame + 1U < state->video.frame_count) {
+    if (state->frame + 1U < state->info.frame_count) {
         state->frame++;
     } else if (state->loop) {
         state->frame = 0U;
@@ -728,8 +731,7 @@ static bool viewer_advance_one(viewer_state_t *state) {
         viewer_audio_stop(state);
         return false;
     }
-    state->video.frame_prepared = false;
-    state->video.frame_image_valid = false;
+    bk_media_video_invalidate(state->video);
     return true;
 }
 
@@ -737,16 +739,16 @@ static void viewer_audio_tick(viewer_state_t *state) {
     uint32_t samples;
     uint16_t rate;
     if (!state || !state->playing || !state->loaded || state->muted ||
-        !vv_audio_available(&state->video) || !bk_sound_pcm_available() ||
+        !state->info.audio_available || !bk_sound_pcm_available() ||
         !state->audio_buffer) return;
     if (bk_sound_pcm_busy()) return;
     if (!state->audio_cursor_valid) viewer_audio_seek_to_video(state);
     if (!state->audio_cursor_valid) return;
-    samples = vv_audio_decode_u8_mono(&state->video,
+    samples = bk_media_audio_decode(state->video,
         &state->audio_chunk, &state->audio_chunk_offset,
         state->audio_buffer, AUDIO_BUFFER_SIZE);
     if (!samples) return;
-    rate = vv_audio_sample_rate(&state->video);
+    rate = state->info.audio_rate;
     if (!rate) return;
     if (!bk_sound_play_pcm_u8(state->audio_buffer, samples, rate, state->volume))
         state->audio_cursor_valid = false;
@@ -761,7 +763,7 @@ static void viewer_tick(viewer_state_t *state) {
     do {
         if (!viewer_advance_one(state)) break;
         advanced++;
-        state->next_frame_ms += vv_frame_duration_ms(&state->video, state->frame);
+        state->next_frame_ms += bk_media_video_frame_duration(state->video, state->frame);
     } while (state->playing && advanced < 12U &&
              (int32_t)(now - state->next_frame_ms) >= 0);
     if (advanced > 1U) state->dropped_frames += advanced - 1U;
@@ -803,16 +805,16 @@ static void viewer_menu(bk_gui_window_t *window UNUSED,
             if (state->loaded) { viewer_stop(state, false); viewer_set_frame(state, state->frame + 1U); }
             break;
         case MENU_PLAY_LAST:
-            if (state->loaded) { viewer_stop(state, false); viewer_set_frame(state, state->video.frame_count - 1U); }
+            if (state->loaded) { viewer_stop(state, false); viewer_set_frame(state, state->info.frame_count - 1U); }
             break;
         case MENU_PLAY_LOOP:
             state->loop = !state->loop; bk_gui_window_invalidate(state->window); break;
-        case MENU_VIDEO_AUTO: viewer_set_quality(state, VR_QUALITY_AUTO); break;
-        case MENU_VIDEO_EXACT: viewer_set_quality(state, VR_QUALITY_EXACT); break;
-        case MENU_VIDEO_FINE: viewer_set_quality(state, VR_QUALITY_FINE); break;
-        case MENU_VIDEO_FAST: viewer_set_quality(state, VR_QUALITY_FAST); break;
-        case MENU_VIDEO_TURBO: viewer_set_quality(state, VR_QUALITY_TURBO); break;
-        case MENU_VIDEO_ULTRA: viewer_set_quality(state, VR_QUALITY_ULTRA); break;
+        case MENU_VIDEO_AUTO: viewer_set_quality(state, BK_MEDIA_QUALITY_AUTO); break;
+        case MENU_VIDEO_EXACT: viewer_set_quality(state, BK_MEDIA_QUALITY_EXACT); break;
+        case MENU_VIDEO_FINE: viewer_set_quality(state, BK_MEDIA_QUALITY_FINE); break;
+        case MENU_VIDEO_FAST: viewer_set_quality(state, BK_MEDIA_QUALITY_FAST); break;
+        case MENU_VIDEO_TURBO: viewer_set_quality(state, BK_MEDIA_QUALITY_TURBO); break;
+        case MENU_VIDEO_ULTRA: viewer_set_quality(state, BK_MEDIA_QUALITY_ULTRA); break;
         case MENU_AUDIO_MUTE: viewer_toggle_mute(state); break;
         case MENU_HELP_ABOUT:
             text_copy(state->status, sizeof(state->status),
@@ -885,7 +887,7 @@ void bleskernos_program_main(void *unused) {
     if (!state) return;
     zero_memory(state, sizeof(*state));
     state->desktop = desktop;
-    state->quality = VR_QUALITY_AUTO;
+    state->quality = BK_MEDIA_QUALITY_AUTO;
     state->volume = 220U;
     state->audio_buffer = (uint8_t *)bk_sys_alloc(AUDIO_BUFFER_SIZE);
     text_copy(state->status, sizeof(state->status), "Viewer 3.2 - Multimedia Player");

@@ -43,23 +43,27 @@ static void language_paint(gui_window_t *window UNUSED, gui_surface_t *surface,
     int y = client.y + 18;
     char current[96];
 
-    cpl_draw_group(surface, (gui_rect_t){x, y, client.w - 36, 108},
+    cpl_draw_group(surface, (gui_rect_t){x, y, client.w - 36, 174},
                    bk_lang_get("LANGUAGE.GROUP"));
-    bk_gui_font_draw_string(surface, x + 16, y + 22,
-        bk_lang_get("LANGUAGE.DESCRIPTION"), CPL_TEXT, 0, false);
+    cpl_draw_text_wrapped(surface,
+        (gui_rect_t){x + 16, y + 20, client.w - 68, 30},
+        bk_lang_get("LANGUAGE.DESCRIPTION"), CPL_TEXT, 14, 2);
     snprintf(current, sizeof(current), bk_lang_get("LANGUAGE.CURRENT"),
              language_name(bk_lang_current()));
-    bk_gui_font_draw_string(surface, x + 16, y + 48, current,
-                            CPL_TEXT, 0, false);
-    bk_gui_font_draw_string(surface, x + 16, y + 72,
-        bk_lang_get("LANGUAGE.LIVE_NOTE"), CPL_SHADOW, 0, false);
+    cpl_draw_text_clipped(surface,
+        (gui_rect_t){x + 16, y + 56, client.w - 68, 16}, current, CPL_TEXT);
+    cpl_draw_text_wrapped(surface,
+        (gui_rect_t){x + 16, y + 118, client.w - 68, 42},
+        bk_lang_get("LANGUAGE.LIVE_NOTE"), CPL_SHADOW, 14, 3);
 
-    cpl_draw_group(surface, (gui_rect_t){x, y + 128, client.w - 36, 76},
+    cpl_draw_group(surface, (gui_rect_t){x, y + 194, client.w - 36, 86},
                    bk_lang_get("LANGUAGE.FILES_GROUP"));
-    bk_gui_font_draw_string(surface, x + 16, y + 151,
-        bk_lang_get("LANGUAGE.FILES_PATH"), CPL_TEXT, 0, false);
-    bk_gui_font_draw_string(surface, x + 16, y + 174,
-        bk_lang_get("LANGUAGE.RESTART_NOTE"), CPL_SHADOW, 0, false);
+    cpl_draw_text_wrapped(surface,
+        (gui_rect_t){x + 16, y + 214, client.w - 68, 28},
+        bk_lang_get("LANGUAGE.FILES_PATH"), CPL_TEXT, 14, 2);
+    cpl_draw_text_wrapped(surface,
+        (gui_rect_t){x + 16, y + 246, client.w - 68, 28},
+        bk_lang_get("LANGUAGE.RESTART_NOTE"), CPL_SHADOW, 14, 2);
 
     bk_gui_font_draw_string_clipped(surface, client.x + 10,
         client.y + client.h - 18,
@@ -76,27 +80,28 @@ void bleskernos_program_main(gui_desktop_t *desktop) {
     if (!st) return;
     st->desktop = desktop;
     st->seen_generation = bk_lang_generation();
-    st->window = bk_gui_create_window(desktop, 112, 70, 454, 326,
+    st->window = bk_gui_create_window(desktop, 112, 70, 560, 388,
                                       "@LANGUAGE.TITLE");
     if (!st->window) { bk_sys_free(st); return; }
     (void)bk_about_attach(st->window, desktop, &(bk_about_info_t){
         bk_lang_get("LANGUAGE.TITLE"), bk_lang_get("COMMON.VERSION_1"),
         bk_lang_get("LANGUAGE.ABOUT"), "@H7A28E1E5",
         "/ICONS/LANGUAGE.BMP"});
+    bk_gui_set_window_min_size(st->window, 560, 388);
     bk_gui_set_window_content(st->window, language_paint, st);
     st->window->owner_pid = bk_sys_getpid();
     bk_proc_bind_window(st->window);
 
     button = bk_gui_widget_create(desktop, st->window, GUI_WIDGET_BUTTON,
-        (gui_rect_t){22, 100, 112, 24}, "@LANGUAGE.SPANISH",
+        (gui_rect_t){34, 98, 144, 26}, "@LANGUAGE.SPANISH",
         language_choose);
     if (button) st->button_ids[0] = button->id;
     button = bk_gui_widget_create(desktop, st->window, GUI_WIDGET_BUTTON,
-        (gui_rect_t){142, 100, 112, 24}, "@LANGUAGE.ENGLISH",
+        (gui_rect_t){188, 98, 144, 26}, "@LANGUAGE.ENGLISH",
         language_choose);
     if (button) st->button_ids[1] = button->id;
     button = bk_gui_widget_create(desktop, st->window, GUI_WIDGET_BUTTON,
-        (gui_rect_t){262, 100, 112, 24}, "@LANGUAGE.ITALIAN",
+        (gui_rect_t){342, 98, 144, 26}, "@LANGUAGE.ITALIAN",
         language_choose);
     if (button) st->button_ids[2] = button->id;
 

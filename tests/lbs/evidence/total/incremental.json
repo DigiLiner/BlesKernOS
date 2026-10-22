@@ -1,0 +1,5 @@
+{
+  "status": "pass",
+  "unchanged_clients": 140,
+  "scope": "completed build repeated without source or ABI changes; no client relinked"
+}

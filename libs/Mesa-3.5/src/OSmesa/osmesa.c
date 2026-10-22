@@ -779,6 +779,27 @@ static void set_read_buffer( GLcontext *ctx, GLframebuffer *buffer, GLenum mode 
 }
 
 
+#ifdef MESA_BLESKERNOS
+/* Explicit OpenGL readback is a supported operation, including GPU_STRICT.
+ * Resolve the requested data without treating a read as software rendering or
+ * invalidating GPU depth/color. The generic span hook is for CPU writes. */
+static void native_read_pixels(GLcontext *ctx, GLint x, GLint y,
+                              GLsizei width, GLsizei height,
+                              GLenum format, GLenum type,
+                              const struct gl_pixelstore_attrib *pack,
+                              GLvoid *pixels)
+{
+   GLboolean ok = format == GL_DEPTH_COMPONENT ? bkmesa_gpu_resolve(ctx) :
+                                                  bkmesa_gpu_resolve_color(ctx);
+   if (!ok) { _mesa_error(ctx, GL_OUT_OF_MEMORY, "native ReadPixels resolve"); return; }
+   struct swrast_device_driver *driver = _swrast_GetDeviceDriverReference(ctx);
+   void (*saved)(GLcontext *) = driver->SpanRenderStart;
+   driver->SpanRenderStart = NULL;
+   _swrast_ReadPixels(ctx, x, y, width, height, format, type, pack, pixels);
+   driver->SpanRenderStart = saved;
+}
+#endif
+
 static void clear( GLcontext *ctx, GLbitfield mask, GLboolean all,
 		   GLint x, GLint y, GLint width, GLint height )
 {
@@ -2029,7 +2050,11 @@ static void osmesa_update_state( GLcontext *ctx, GLuint new_state )
    ctx->Driver.Clear = clear;
    ctx->Driver.CopyPixels = _swrast_CopyPixels;
    ctx->Driver.DrawPixels = _swrast_DrawPixels;
+#ifdef MESA_BLESKERNOS
+   ctx->Driver.ReadPixels = native_read_pixels;
+#else
    ctx->Driver.ReadPixels = _swrast_ReadPixels;
+#endif
 
    ctx->Driver.ChooseTextureFormat = _mesa_choose_tex_format;
 #ifdef MESA_BLESKERNOS

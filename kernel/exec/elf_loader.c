@@ -379,6 +379,8 @@ static uint32_t elf_vision_private_symbol(const char *name) {
      * using the stable bk_gui_* API and the geometry-only desktop proxy. */
     VISION_PRIVATE_EXPORT(bk_vision_take_desktop_preferences);
     VISION_PRIVATE_EXPORT(bk_vision_publish_desktop_preferences);
+    VISION_PRIVATE_EXPORT(bk_vision_native_pending);
+    VISION_PRIVATE_EXPORT(bk_vision_native_frame);
     VISION_PRIVATE_EXPORT(bootsplash_debug);
     VISION_PRIVATE_EXPORT(bk_graphics_icon_load_size);
     VISION_PRIVATE_EXPORT(bootsplash_pulse);
@@ -401,6 +403,7 @@ static uint32_t elf_vision_private_symbol(const char *name) {
     VISION_PRIVATE_EXPORT(bk_vision_resource_owner);
     VISION_PRIVATE_EXPORT(bk_vision_ipc_take);
     VISION_PRIVATE_EXPORT(bk_vision_ipc_reply);
+    VISION_PRIVATE_EXPORT(bk_vision_ipc_wait);
     VISION_PRIVATE_EXPORT(bk_vision_worker_begin);
     VISION_PRIVATE_EXPORT(bk_vision_worker_end);
     VISION_PRIVATE_EXPORT(bk_vision_frame_begin);

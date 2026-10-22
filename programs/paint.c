@@ -637,6 +637,33 @@ static void paint_draw_name_box(paint_state_t *st, gui_window_t *window,
                                  line, 0x00000000, box);
 }
 
+/* El lienzo ya esta en RGB32. Copiar filas visibles evita una llamada a la
+ * API por pixel y respeta tanto el clip como las superficies de ventana con
+ * origen y pitch propios. */
+static void paint_blit_canvas(const paint_state_t *st, gui_surface_t *surface,
+                               gui_rect_t destination)
+{
+    gui_rect_t visible;
+    gui_rect_t storage;
+    if (!st || !st->canvas || !surface || !surface->pixels) return;
+    storage = (gui_rect_t){surface->origin_x, surface->origin_y,
+        surface->storage_width ? surface->storage_width : surface->width,
+        surface->storage_height ? surface->storage_height : surface->height};
+    if (!gui_rect_intersect(destination, surface->clip, &visible) ||
+        !gui_rect_intersect(visible, storage, &visible)) return;
+    for (int y = visible.y; y < visible.y + visible.h; y++) {
+        const uint32_t *source = st->canvas +
+            (uint32_t)(y - destination.y) * PAINT_CANVAS_W +
+            (uint32_t)(visible.x - destination.x);
+        uint32_t *target = surface->pixels +
+            (uint32_t)(y - surface->origin_y) * surface->pitch +
+            (uint32_t)(visible.x - surface->origin_x);
+        /* Copia local: incluso memcpy exportado cruza la frontera de la API.
+         * Esta memoria ya pertenece a la superficie cedida al callback. */
+        for (int x = 0; x < visible.w; x++) target[x] = source[x];
+    }
+}
+
 static void paint_content(gui_window_t *window, gui_surface_t *surface, void *context)
 {
     paint_state_t *st = (paint_state_t *)context;
@@ -690,21 +717,13 @@ static void paint_content(gui_window_t *window, gui_surface_t *surface, void *co
                       0x00606060);
 
     if (st->canvas) {
-        for (int y = 0; y < PAINT_CANVAS_H; y++) {
-            for (int x = 0; x < PAINT_CANVAS_W; x++) {
-                bk_gui_gfx_putpixel(surface, canvas_rect.x + x, canvas_rect.y + y,
-                                 st->canvas[(uint32_t)y * PAINT_CANVAS_W + (uint32_t)x]);
-            }
-        }
+        paint_blit_canvas(st, surface, canvas_rect);
     } else {
         bk_gui_gfx_fill_rect(surface, canvas_rect, PAINT_COLOR_WHITE);
         bk_gui_font_draw_string_clipped(surface, canvas_rect.x + 8, canvas_rect.y + 8,
                                      "@H58F6DCB9", 0x00000000,
                                      canvas_rect);
     }
-    for (uint32_t i = 0; i < 5U; i++)
-        if (st->toolbar_icon_loaded[i])
-            bk_gui_image_free(&st->toolbar_icons[i]);
 
     paint_draw_preview(st, surface, canvas_rect);
 
@@ -788,10 +807,11 @@ static bool paint_canvas_event(paint_state_t *st, const gui_event_t *event)
     if (!st || !st->window || !event) return false;
 
     canvas_rect = paint_canvas_rect(st->window);
-    if (!paint_inside(canvas_rect, event->x, event->y)) return false;
+    if (event->type == GUI_EVENT_MOUSE_DOWN &&
+        !paint_inside(canvas_rect, event->x, event->y)) return false;
+    if (event->type == GUI_EVENT_MOUSE_MOVE && !st->mouse_down) return false;
 
-    cx = event->x - canvas_rect.x;
-    cy = event->y - canvas_rect.y;
+    paint_event_to_canvas_clamped(st, event, &cx, &cy);
 
     if (event->type == GUI_EVENT_MOUSE_DOWN) {
         st->editing_name = false;
@@ -821,6 +841,7 @@ static bool paint_canvas_event(paint_state_t *st, const gui_event_t *event)
     }
 
     if (event->type == GUI_EVENT_MOUSE_MOVE && st->mouse_down) {
+        if (cx == st->preview_x && cy == st->preview_y) return true;
         st->preview_x = cx;
         st->preview_y = cy;
 
@@ -945,21 +966,24 @@ static bool paint_event(gui_window_t *window, const gui_event_t *event, void *co
 
     if (!st || !event) return false;
 
-    if (event->type == GUI_EVENT_MOUSE_UP) {
-        if (st->mouse_down) {
-            int cx;
-            int cy;
-            paint_event_to_canvas_clamped(st, event, &cx, &cy);
-            st->preview_x = cx;
-            st->preview_y = cy;
+    if ((event->type == GUI_EVENT_MOUSE_UP && event->button == MOUSE_LEFT_BUTTON) ||
+        (event->type == GUI_EVENT_MOUSE_MOVE && st->mouse_down &&
+         !(event->buttons & MOUSE_LEFT_BUTTON))) {
+        if (!st->mouse_down) return false;
+        int cx;
+        int cy;
+        paint_event_to_canvas_clamped(st, event, &cx, &cy);
+        st->preview_x = cx;
+        st->preview_y = cy;
 
-            if (st->tool == PAINT_TOOL_LINE) {
-                paint_draw_line_canvas(st, st->start_x, st->start_y, cx, cy);
-                paint_status(st, "@HF046A226");
-            } else if (st->tool == PAINT_TOOL_RECT) {
-                paint_draw_rect_canvas(st, st->start_x, st->start_y, cx, cy);
-                paint_status(st, "@HC46B7B89");
-            }
+        if (st->tool == PAINT_TOOL_PENCIL || st->tool == PAINT_TOOL_ERASER) {
+            paint_draw_line_canvas(st, st->last_x, st->last_y, cx, cy);
+        } else if (st->tool == PAINT_TOOL_LINE) {
+            paint_draw_line_canvas(st, st->start_x, st->start_y, cx, cy);
+            paint_status(st, "@HF046A226");
+        } else if (st->tool == PAINT_TOOL_RECT) {
+            paint_draw_rect_canvas(st, st->start_x, st->start_y, cx, cy);
+            paint_status(st, "@HC46B7B89");
         }
         st->mouse_down = false;
         if (st->window) st->window->dirty = true;
@@ -967,6 +991,7 @@ static bool paint_event(gui_window_t *window, const gui_event_t *event, void *co
     }
 
     if (event->type == GUI_EVENT_MOUSE_DOWN) {
+        if (event->button != MOUSE_LEFT_BUTTON) return false;
         paint_handle_toolbar(st, event);
         if (paint_canvas_event(st, event)) return true;
         return true;
@@ -1060,16 +1085,21 @@ static void paint_cleanup(paint_state_t *st)
 {
     if (!st) return;
 
-    if (st->canvas) {
-        bk_sys_free(st->canvas);
-        st->canvas = NULL;
-    }
-
     if (st->window) {
         bk_gui_desktop_remove_window(st->desktop, st->window);
         bk_gui_window_destroy_raw(st->window);
         bk_proc_bind_window(NULL);
         st->window = NULL;
+    }
+    for (uint32_t i = 0; i < 5U; i++) {
+        if (st->toolbar_icon_loaded[i]) {
+            bk_gui_image_free(&st->toolbar_icons[i]);
+            st->toolbar_icon_loaded[i] = false;
+        }
+    }
+    if (st->canvas) {
+        bk_sys_free(st->canvas);
+        st->canvas = NULL;
     }
 
     if (g_paint == st) g_paint = NULL;

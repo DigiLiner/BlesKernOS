@@ -1,0 +1,167 @@
+.text
+.globl __lbs_call_bk_about_attach
+.type __lbs_call_bk_about_attach,@function
+__lbs_call_bk_about_attach:
+ jmp *__bk_lbs_app_slots+0
+.size __lbs_call_bk_about_attach,.-__lbs_call_bk_about_attach
+.globl __lbs_call_bk_app_launch
+.type __lbs_call_bk_app_launch,@function
+__lbs_call_bk_app_launch:
+ jmp *__bk_lbs_app_slots+4
+.size __lbs_call_bk_app_launch,.-__lbs_call_bk_app_launch
+.globl __lbs_call_bk_graphics_icon_load
+.type __lbs_call_bk_graphics_icon_load,@function
+__lbs_call_bk_graphics_icon_load:
+ jmp *__bk_lbs_app_slots+8
+.size __lbs_call_bk_graphics_icon_load,.-__lbs_call_bk_graphics_icon_load
+.globl __lbs_call_bk_gui_add_menu
+.type __lbs_call_bk_gui_add_menu,@function
+__lbs_call_bk_gui_add_menu:
+ jmp *__bk_lbs_app_slots+12
+.size __lbs_call_bk_gui_add_menu,.-__lbs_call_bk_gui_add_menu
+.globl __lbs_call_bk_gui_add_menu_item
+.type __lbs_call_bk_gui_add_menu_item,@function
+__lbs_call_bk_gui_add_menu_item:
+ jmp *__bk_lbs_app_slots+16
+.size __lbs_call_bk_gui_add_menu_item,.-__lbs_call_bk_gui_add_menu_item
+.globl __lbs_call_bk_gui_create_window
+.type __lbs_call_bk_gui_create_window,@function
+__lbs_call_bk_gui_create_window:
+ jmp *__bk_lbs_app_slots+20
+.size __lbs_call_bk_gui_create_window,.-__lbs_call_bk_gui_create_window
+.globl __lbs_call_bk_gui_focus_window
+.type __lbs_call_bk_gui_focus_window,@function
+__lbs_call_bk_gui_focus_window:
+ jmp *__bk_lbs_app_slots+24
+.size __lbs_call_bk_gui_focus_window,.-__lbs_call_bk_gui_focus_window
+.globl __lbs_call_bk_gui_set_window_content
+.type __lbs_call_bk_gui_set_window_content,@function
+__lbs_call_bk_gui_set_window_content:
+ jmp *__bk_lbs_app_slots+28
+.size __lbs_call_bk_gui_set_window_content,.-__lbs_call_bk_gui_set_window_content
+.globl __lbs_call_bk_gui_set_window_event_handler
+.type __lbs_call_bk_gui_set_window_event_handler,@function
+__lbs_call_bk_gui_set_window_event_handler:
+ jmp *__bk_lbs_app_slots+32
+.size __lbs_call_bk_gui_set_window_event_handler,.-__lbs_call_bk_gui_set_window_event_handler
+.globl __lbs_call_bk_gui_set_window_min_size
+.type __lbs_call_bk_gui_set_window_min_size,@function
+__lbs_call_bk_gui_set_window_min_size:
+ jmp *__bk_lbs_app_slots+36
+.size __lbs_call_bk_gui_set_window_min_size,.-__lbs_call_bk_gui_set_window_min_size
+.globl __lbs_call_bk_gui_surface_draw_image
+.type __lbs_call_bk_gui_surface_draw_image,@function
+__lbs_call_bk_gui_surface_draw_image:
+ jmp *__bk_lbs_app_slots+40
+.size __lbs_call_bk_gui_surface_draw_image,.-__lbs_call_bk_gui_surface_draw_image
+.globl __lbs_call_bk_proc_bind_window
+.type __lbs_call_bk_proc_bind_window,@function
+__lbs_call_bk_proc_bind_window:
+ jmp *__bk_lbs_app_slots+44
+.size __lbs_call_bk_proc_bind_window,.-__lbs_call_bk_proc_bind_window
+.globl __lbs_call_bk_proc_exit
+.type __lbs_call_bk_proc_exit,@function
+__lbs_call_bk_proc_exit:
+ jmp *__bk_lbs_app_slots+48
+.size __lbs_call_bk_proc_exit,.-__lbs_call_bk_proc_exit
+.globl __lbs_call_bk_proc_exit_requested
+.type __lbs_call_bk_proc_exit_requested,@function
+__lbs_call_bk_proc_exit_requested:
+ jmp *__bk_lbs_app_slots+52
+.size __lbs_call_bk_proc_exit_requested,.-__lbs_call_bk_proc_exit_requested
+.globl __lbs_call_bk_proc_set_memory_hint
+.type __lbs_call_bk_proc_set_memory_hint,@function
+__lbs_call_bk_proc_set_memory_hint:
+ jmp *__bk_lbs_app_slots+56
+.size __lbs_call_bk_proc_set_memory_hint,.-__lbs_call_bk_proc_set_memory_hint
+.globl __lbs_call_bk_proc_spawn_thread
+.type __lbs_call_bk_proc_spawn_thread,@function
+__lbs_call_bk_proc_spawn_thread:
+ jmp *__bk_lbs_app_slots+60
+.size __lbs_call_bk_proc_spawn_thread,.-__lbs_call_bk_proc_spawn_thread
+.globl __lbs_call_bk_sys_alloc_zero
+.type __lbs_call_bk_sys_alloc_zero,@function
+__lbs_call_bk_sys_alloc_zero:
+ jmp *__bk_lbs_app_slots+64
+.size __lbs_call_bk_sys_alloc_zero,.-__lbs_call_bk_sys_alloc_zero
+.globl __lbs_call_bk_sys_free
+.type __lbs_call_bk_sys_free,@function
+__lbs_call_bk_sys_free:
+ jmp *__bk_lbs_app_slots+68
+.size __lbs_call_bk_sys_free,.-__lbs_call_bk_sys_free
+.globl __lbs_call_bk_sys_getpid
+.type __lbs_call_bk_sys_getpid,@function
+__lbs_call_bk_sys_getpid:
+ jmp *__bk_lbs_app_slots+72
+.size __lbs_call_bk_sys_getpid,.-__lbs_call_bk_sys_getpid
+.globl __lbs_call_bk_sys_sleep_ticks
+.type __lbs_call_bk_sys_sleep_ticks,@function
+__lbs_call_bk_sys_sleep_ticks:
+ jmp *__bk_lbs_app_slots+76
+.size __lbs_call_bk_sys_sleep_ticks,.-__lbs_call_bk_sys_sleep_ticks
+.globl __lbs_call_bk_sys_uptime_ms
+.type __lbs_call_bk_sys_uptime_ms,@function
+__lbs_call_bk_sys_uptime_ms:
+ jmp *__bk_lbs_app_slots+80
+.size __lbs_call_bk_sys_uptime_ms,.-__lbs_call_bk_sys_uptime_ms
+.globl __lbs_call_gui_desktop_raise_window
+.type __lbs_call_gui_desktop_raise_window,@function
+__lbs_call_gui_desktop_raise_window:
+ jmp *__bk_lbs_app_slots+84
+.size __lbs_call_gui_desktop_raise_window,.-__lbs_call_gui_desktop_raise_window
+.globl __lbs_call_gui_desktop_remove_window
+.type __lbs_call_gui_desktop_remove_window,@function
+__lbs_call_gui_desktop_remove_window:
+ jmp *__bk_lbs_app_slots+88
+.size __lbs_call_gui_desktop_remove_window,.-__lbs_call_gui_desktop_remove_window
+.globl __lbs_call_gui_font_draw_string_clipped
+.type __lbs_call_gui_font_draw_string_clipped,@function
+__lbs_call_gui_font_draw_string_clipped:
+ jmp *__bk_lbs_app_slots+92
+.size __lbs_call_gui_font_draw_string_clipped,.-__lbs_call_gui_font_draw_string_clipped
+.globl __lbs_call_gui_gfx_draw_line
+.type __lbs_call_gui_gfx_draw_line,@function
+__lbs_call_gui_gfx_draw_line:
+ jmp *__bk_lbs_app_slots+96
+.size __lbs_call_gui_gfx_draw_line,.-__lbs_call_gui_gfx_draw_line
+.globl __lbs_call_gui_gfx_draw_rect
+.type __lbs_call_gui_gfx_draw_rect,@function
+__lbs_call_gui_gfx_draw_rect:
+ jmp *__bk_lbs_app_slots+100
+.size __lbs_call_gui_gfx_draw_rect,.-__lbs_call_gui_gfx_draw_rect
+.globl __lbs_call_gui_gfx_fill_rect
+.type __lbs_call_gui_gfx_fill_rect,@function
+__lbs_call_gui_gfx_fill_rect:
+ jmp *__bk_lbs_app_slots+104
+.size __lbs_call_gui_gfx_fill_rect,.-__lbs_call_gui_gfx_fill_rect
+.globl __lbs_call_gui_image_free
+.type __lbs_call_gui_image_free,@function
+__lbs_call_gui_image_free:
+ jmp *__bk_lbs_app_slots+108
+.size __lbs_call_gui_image_free,.-__lbs_call_gui_image_free
+.globl __lbs_call_gui_rect_intersect
+.type __lbs_call_gui_rect_intersect,@function
+__lbs_call_gui_rect_intersect:
+ jmp *__bk_lbs_app_slots+112
+.size __lbs_call_gui_rect_intersect,.-__lbs_call_gui_rect_intersect
+.globl __lbs_call_gui_window_content_rect
+.type __lbs_call_gui_window_content_rect,@function
+__lbs_call_gui_window_content_rect:
+ jmp *__bk_lbs_app_slots+116
+.size __lbs_call_gui_window_content_rect,.-__lbs_call_gui_window_content_rect
+.globl __lbs_call_gui_window_content_top
+.type __lbs_call_gui_window_content_top,@function
+__lbs_call_gui_window_content_top:
+ jmp *__bk_lbs_app_slots+120
+.size __lbs_call_gui_window_content_top,.-__lbs_call_gui_window_content_top
+.globl __lbs_call_gui_window_destroy
+.type __lbs_call_gui_window_destroy,@function
+__lbs_call_gui_window_destroy:
+ jmp *__bk_lbs_app_slots+124
+.size __lbs_call_gui_window_destroy,.-__lbs_call_gui_window_destroy
+.globl __lbs_call_gui_window_restore
+.type __lbs_call_gui_window_restore,@function
+__lbs_call_gui_window_restore:
+ jmp *__bk_lbs_app_slots+128
+.size __lbs_call_gui_window_restore,.-__lbs_call_gui_window_restore
+.section .note.GNU-stack,"",@progbits

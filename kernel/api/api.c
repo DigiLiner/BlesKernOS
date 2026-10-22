@@ -761,9 +761,21 @@ bool bk_gui_window_set_gpu_viewport(gui_window_t *window,
         }
         return false;
     }
+    /* Vision owns a separate compositor instance in Ring 3. Publishing into
+     * the kernel's instance succeeds but never reaches its displayed scene. */
+    if (vision_ipc_routes_user()) {
+        bk_vision_request_t request={0};uint32_t result=0;
+        request.operation=VISION_IPC_GPU_FRAME;
+        request.window=(uint32_t)(uintptr_t)window;request.bounds=screen_rect;
+        request.values[0]=surface_handle;request.values[1]=surface_width;
+        request.values[2]=surface_height;
+        bool ok=vision_ipc_call(&request,&result) && result;
+        if(ok)perfmon_app_frame(window->owner_pid,true);
+        perfmon_scope_end(PERF_SCOPE_APP_PUBLISH,perf_started);
+        return ok;
+    }
     {
         bool layout_changed = !window->gpu_view_visible ||
-            window->gpu_view_surface != surface_handle ||
             window->gpu_view_width != surface_width ||
             window->gpu_view_height != surface_height ||
             window->gpu_view_rect.x != screen_rect.x ||
@@ -808,6 +820,9 @@ bool bk_gui_window_set_gpu_viewport(gui_window_t *window,
 void bk_gui_window_clear_gpu_viewport(gui_window_t *window) {
     if (!window || (window->owner_pid &&
         window->owner_pid != task_current_process_id())) return;
+    if(vision_ipc_routes_user()) {
+        (void)api_vision_window_call(window,VISION_IPC_GPU_CLEAR,(gui_rect_t){0},0,0);return;
+    }
     gui_desktop_paint_lock();
     gui_gpu_compositor_clear_viewport(window);
     window->gpu_view_surface = 0U;
@@ -1567,7 +1582,19 @@ int bk_app_run_sync(const char *path, const char *command_line) {
      * child's diagnostics instead of losing them on the global console. */
     syscall_inherit_files(parent_pid, pid);
 
+    /* A caller may request cancellation while waiting (for example a GPU
+     * screensaver's launch worker). The caller knows its own request flag,
+     * and run_sync knows the exact child process ID. Propagate once to every
+     * child thread, then keep reaping normally so GPU fds/windows are released.
+     * Do not identify targets by a guessed process name or task-table slot. */
+    bool child_cancel_sent = false;
     do {
+        if (!child_cancel_sent && task_exit_requested()) {
+            child_cancel_sent = true;
+            bool requested = task_request_exit_process(pid, 0);
+            kprintf("[APP:RUN_SYNC] cancel child=%u caller=%u sent=%u\n",
+                    pid,task_current_pid(),requested ? 1U : 0U);
+        }
         waited = task_waitpid(pid, &status);
         if (waited == 0) task_yield();
     } while (waited == 0);

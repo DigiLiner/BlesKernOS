@@ -1,0 +1,842 @@
+{
+  "build/programs/filebrowser.o": {
+    "input": "build/programs/filebrowser.o",
+    "output": "build/lbs/apps/programs/filebrowser.o",
+    "destination": "/SYSTEM/PROGRAMS/FILE.BEX",
+    "kind": "gui"
+  },
+  "build/programs/texteditor.o": {
+    "input": "build/programs/texteditor.raw.o",
+    "output": "build/lbs/apps/programs/texteditor.o",
+    "destination": "/SYSTEM/PROGRAMS/TEXTEDITOR.BEX",
+    "kind": "gui"
+  },
+  "build/programs/calculator.o": {
+    "input": "build/programs/calculator.o",
+    "output": "build/lbs/apps/programs/calculator.o",
+    "destination": "/SYSTEM/PROGRAMS/CALCULATOR.BEX",
+    "kind": "gui"
+  },
+  "build/programs/font.o": {
+    "input": "build/programs/font.o",
+    "output": "build/lbs/apps/programs/font.o",
+    "destination": "/SYSTEM/PROGRAMS/FONT.BEX",
+    "kind": "gui"
+  },
+  "build/programs/midamp.o": {
+    "input": "build/programs/midamp.o",
+    "output": "build/lbs/apps/programs/midamp.o",
+    "destination": "/SYSTEM/PROGRAMS/MIDAMP.BEX",
+    "kind": "gui"
+  },
+  "build/programs/processmanager.o": {
+    "input": "build/programs/processmanager.o",
+    "output": "build/lbs/apps/programs/processmanager.o",
+    "destination": "/SYSTEM/PROGRAMS/PROCESSMANAGER.BEX",
+    "kind": "gui"
+  },
+  "build/programs/calendar.o": {
+    "input": "build/programs/calendar.o",
+    "output": "build/lbs/apps/programs/calendar.o",
+    "destination": "/SYSTEM/PROGRAMS/CALENDAR.BEX",
+    "kind": "gui"
+  },
+  "build/programs/about.o": {
+    "input": "build/programs/about.o",
+    "output": "build/lbs/apps/programs/about.o",
+    "destination": "/SYSTEM/PROGRAMS/ABOUT.BEX",
+    "kind": "gui"
+  },
+  "build/programs/runbox.o": {
+    "input": "build/programs/runbox.o",
+    "output": "build/lbs/apps/programs/runbox.o",
+    "destination": "/SYSTEM/PROGRAMS/RUNBOX.BEX",
+    "kind": "gui"
+  },
+  "build/programs/imageviewer.o": {
+    "input": "build/programs/imageviewer.o",
+    "output": "build/lbs/apps/programs/imageviewer.o",
+    "destination": "/SYSTEM/PROGRAMS/IMAGEVIEWER.BEX",
+    "kind": "gui"
+  },
+  "build/programs/viewer.o": {
+    "input": "build/programs/viewer.o",
+    "output": "build/lbs/apps/programs/viewer.o",
+    "destination": "/SYSTEM/PROGRAMS/VIEWER.BEX",
+    "kind": "gui"
+  },
+  "build/programs/paint.o": {
+    "input": "build/programs/paint.o",
+    "output": "build/lbs/apps/programs/paint.o",
+    "destination": "/SYSTEM/PROGRAMS/PAINT.BEX",
+    "kind": "gui"
+  },
+  "build/programs/scandisk.o": {
+    "input": "build/programs/scandisk.o",
+    "output": "build/lbs/apps/programs/scandisk.o",
+    "destination": "/SYSTEM/PROGRAMS/SCANDISK.BEX",
+    "kind": "gui"
+  },
+  "build/programs/wine.o": {
+    "input": "build/programs/wine.o",
+    "output": "build/lbs/apps/programs/wine.o",
+    "destination": "/SYSTEM/PROGRAMS/WINE.BEX",
+    "kind": "forwarder"
+  },
+  "build/system/control/control_panel.o": {
+    "input": "build/system/control/control_panel.o",
+    "output": "build/lbs/apps/system/control/control_panel.o",
+    "destination": "/SYSTEM/CONTROL/CONTROL.BEX",
+    "kind": "gui"
+  },
+  "build/system/control/appearance.o": {
+    "input": "build/system/control/appearance.raw.o",
+    "output": "build/lbs/apps/system/control/appearance.o",
+    "destination": "/SYSTEM/CONTROL/APPEAR.CPL",
+    "kind": "gui"
+  },
+  "build/system/control/display.o": {
+    "input": "build/system/control/display.raw.o",
+    "output": "build/lbs/apps/system/control/display.o",
+    "destination": "/SYSTEM/CONTROL/DISPLAY.CPL",
+    "kind": "gui"
+  },
+  "build/system/control/sound.o": {
+    "input": "build/system/control/sound.o",
+    "output": "build/lbs/apps/system/control/sound.o",
+    "destination": "/SYSTEM/CONTROL/SOUND.CPL",
+    "kind": "gui"
+  },
+  "build/system/control/datetime.o": {
+    "input": "build/system/control/datetime.o",
+    "output": "build/lbs/apps/system/control/datetime.o",
+    "destination": "/SYSTEM/CONTROL/DATETIME.CPL",
+    "kind": "gui"
+  },
+  "build/system/control/mouse.o": {
+    "input": "build/system/control/mouse.o",
+    "output": "build/lbs/apps/system/control/mouse.o",
+    "destination": "/SYSTEM/CONTROL/MOUSE.CPL",
+    "kind": "gui"
+  },
+  "build/system/control/keyboard.o": {
+    "input": "build/system/control/keyboard.o",
+    "output": "build/lbs/apps/system/control/keyboard.o",
+    "destination": "/SYSTEM/CONTROL/KEYBOARD.CPL",
+    "kind": "gui"
+  },
+  "build/system/control/system.o": {
+    "input": "build/system/control/system.o",
+    "output": "build/lbs/apps/system/control/system.o",
+    "destination": "/SYSTEM/CONTROL/SYSTEM.CPL",
+    "kind": "gui"
+  },
+  "build/system/control/device_manager.o": {
+    "input": "build/system/control/device_manager.o",
+    "output": "build/lbs/apps/system/control/device_manager.o",
+    "destination": "/SYSTEM/CONTROL/DEVMGR.CPL",
+    "kind": "gui"
+  },
+  "build/system/control/internet.o": {
+    "input": "build/system/control/internet.o",
+    "output": "build/lbs/apps/system/control/internet.o",
+    "destination": "/SYSTEM/CONTROL/INTERNET.CPL",
+    "kind": "gui"
+  },
+  "build/system/control/modem.o": {
+    "input": "build/system/control/modem.o",
+    "output": "build/lbs/apps/system/control/modem.o",
+    "destination": "/SYSTEM/CONTROL/MODEM.CPL",
+    "kind": "gui"
+  },
+  "build/system/control/language.o": {
+    "input": "build/system/control/language.o",
+    "output": "build/lbs/apps/system/control/language.o",
+    "destination": "/SYSTEM/CONTROL/LANGUAGE.CPL",
+    "kind": "gui"
+  },
+  "build/system/control/wine.o": {
+    "input": "build/system/control/wine.o",
+    "output": "build/lbs/apps/system/control/wine.o",
+    "destination": "/SYSTEM/CONTROL/WINE.CPL",
+    "kind": "forwarder"
+  },
+  "build/programs/netsurf.o": {
+    "input": "build/programs/netsurf.lbs.raw.o",
+    "output": "build/lbs/apps/programs/netsurf.o",
+    "destination": "/SYSTEM/PROGRAMS/NETSURF.BEX",
+    "kind": "gui"
+  },
+  "build/programs/help_center.o": {
+    "input": "build/programs/help_center.o",
+    "output": "build/lbs/apps/programs/help_center.o",
+    "destination": "/SYSTEM/PROGRAMS/HELP_CENTER.BEX",
+    "kind": "gui"
+  },
+  "build/programs/find_files.o": {
+    "input": "build/programs/find_files.o",
+    "output": "build/lbs/apps/programs/find_files.o",
+    "destination": "/SYSTEM/PROGRAMS/FIND_FILES.BEX",
+    "kind": "gui"
+  },
+  "build/programs/archive_manager.o": {
+    "input": "build/programs/archive_manager.o",
+    "output": "build/lbs/apps/programs/archive_manager.o",
+    "destination": "/SYSTEM/PROGRAMS/ARCHIVE_MANAGER.BEX",
+    "kind": "gui"
+  },
+  "build/programs/disk_tools.o": {
+    "input": "build/programs/disk_tools.o",
+    "output": "build/lbs/apps/programs/disk_tools.o",
+    "destination": "/SYSTEM/PROGRAMS/DISK_TOOLS.BEX",
+    "kind": "gui"
+  },
+  "build/programs/clipboard_viewer.o": {
+    "input": "build/programs/clipboard_viewer.o",
+    "output": "build/lbs/apps/programs/clipboard_viewer.o",
+    "destination": "/SYSTEM/PROGRAMS/CLIPBOARD_VIEWER.BEX",
+    "kind": "gui"
+  },
+  "build/programs/defrag.o": {
+    "input": "build/programs/defrag.o",
+    "output": "build/lbs/apps/programs/defrag.o",
+    "destination": "/SYSTEM/PROGRAMS/DEFRAG.BEX",
+    "kind": "gui"
+  },
+  "build/programs/event_viewer.o": {
+    "input": "build/programs/event_viewer.o",
+    "output": "build/lbs/apps/programs/event_viewer.o",
+    "destination": "/SYSTEM/PROGRAMS/EVENT_VIEWER.BEX",
+    "kind": "gui"
+  },
+  "build/programs/performance_monitor.o": {
+    "input": "build/programs/performance_monitor.o",
+    "output": "build/lbs/apps/programs/performance_monitor.o",
+    "destination": "/SYSTEM/PROGRAMS/PERFORMANCE_MONITOR.BEX",
+    "kind": "gui"
+  },
+  "build/programs/shelllauncher.o": {
+    "input": "build/programs/shelllauncher.o",
+    "output": "build/lbs/apps/programs/shelllauncher.o",
+    "destination": "/SYSTEM/PROGRAMS/SHELL.BEX",
+    "kind": "gui"
+  },
+  "build/programs/network_status.o": {
+    "input": "build/programs/network_status.raw.o",
+    "output": "build/lbs/apps/programs/network_status.o",
+    "destination": "/SYSTEM/PROGRAMS/NETWORK_STATUS.BEX",
+    "kind": "gui"
+  },
+  "build/system/screensavers/ss_logo.o": {
+    "input": "build/system/screensavers/ss_logo.o",
+    "output": "build/lbs/apps/system/screensavers/ss_logo.o",
+    "destination": "/SYSTEM/SCREENS/SSLOGO.SCV",
+    "kind": "screensaver"
+  },
+  "build/system/screensavers/ss_pipes.o": {
+    "input": "build/system/screensavers/ss_pipes.raw.o",
+    "output": "build/lbs/apps/system/screensavers/ss_pipes.o",
+    "destination": "/SYSTEM/SCREENS/SSPIPES.SCV",
+    "kind": "screensaver"
+  },
+  "build/system/screensavers/ss_balls.o": {
+    "input": "build/system/screensavers/ss_balls.raw.o",
+    "output": "build/lbs/apps/system/screensavers/ss_balls.o",
+    "destination": "/SYSTEM/SCREENS/SSBALLS.SCV",
+    "kind": "screensaver"
+  },
+  "build/programs/gears.o": {
+    "input": "build/programs/gears.raw.o",
+    "output": "build/lbs/apps/programs/gears.o",
+    "destination": "/SYSTEM/TESTS/NATIVE/GEARS.BEX",
+    "kind": "developer"
+  },
+  "build/system/commands/help.o": {
+    "input": "build/system/commands/raw/help.o",
+    "output": "build/lbs/apps/system/commands/help.o",
+    "destination": "/SYSTEM/COMMANDS/help.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/echo.o": {
+    "input": "build/system/commands/raw/echo.o",
+    "output": "build/lbs/apps/system/commands/echo.o",
+    "destination": "/SYSTEM/COMMANDS/echo.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/sh.o": {
+    "input": "build/system/commands/raw/sh.o",
+    "output": "build/lbs/apps/system/commands/sh.o",
+    "destination": "/SYSTEM/COMMANDS/sh.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/about.o": {
+    "input": "build/system/commands/raw/about.o",
+    "output": "build/lbs/apps/system/commands/about.o",
+    "destination": "/SYSTEM/COMMANDS/about.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/uname.o": {
+    "input": "build/system/commands/raw/uname.o",
+    "output": "build/lbs/apps/system/commands/uname.o",
+    "destination": "/SYSTEM/COMMANDS/uname.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/hostname.o": {
+    "input": "build/system/commands/raw/hostname.o",
+    "output": "build/lbs/apps/system/commands/hostname.o",
+    "destination": "/SYSTEM/COMMANDS/hostname.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/uptime.o": {
+    "input": "build/system/commands/raw/uptime.o",
+    "output": "build/lbs/apps/system/commands/uptime.o",
+    "destination": "/SYSTEM/COMMANDS/uptime.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/date.o": {
+    "input": "build/system/commands/raw/date.o",
+    "output": "build/lbs/apps/system/commands/date.o",
+    "destination": "/SYSTEM/COMMANDS/date.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/time.o": {
+    "input": "build/system/commands/raw/time.o",
+    "output": "build/lbs/apps/system/commands/time.o",
+    "destination": "/SYSTEM/COMMANDS/time.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/shutdown.o": {
+    "input": "build/system/commands/raw/shutdown.o",
+    "output": "build/lbs/apps/system/commands/shutdown.o",
+    "destination": "/SYSTEM/COMMANDS/shutdown.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/reboot.o": {
+    "input": "build/system/commands/raw/reboot.o",
+    "output": "build/lbs/apps/system/commands/reboot.o",
+    "destination": "/SYSTEM/COMMANDS/reboot.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/sleep.o": {
+    "input": "build/system/commands/raw/sleep.o",
+    "output": "build/lbs/apps/system/commands/sleep.o",
+    "destination": "/SYSTEM/COMMANDS/sleep.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/label.o": {
+    "input": "build/system/commands/raw/label.o",
+    "output": "build/lbs/apps/system/commands/label.o",
+    "destination": "/SYSTEM/COMMANDS/label.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/checkdisk.o": {
+    "input": "build/system/commands/raw/checkdisk.o",
+    "output": "build/lbs/apps/system/commands/checkdisk.o",
+    "destination": "/SYSTEM/COMMANDS/checkdisk.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/fsinfo.o": {
+    "input": "build/system/commands/raw/fsinfo.o",
+    "output": "build/lbs/apps/system/commands/fsinfo.o",
+    "destination": "/SYSTEM/COMMANDS/fsinfo.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/backup.o": {
+    "input": "build/system/commands/raw/backup.o",
+    "output": "build/lbs/apps/system/commands/backup.o",
+    "destination": "/SYSTEM/COMMANDS/backup.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/dir.o": {
+    "input": "build/system/commands/raw/dir.o",
+    "output": "build/lbs/apps/system/commands/dir.o",
+    "destination": "/SYSTEM/COMMANDS/dir.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/ls.o": {
+    "input": "build/system/commands/raw/ls.o",
+    "output": "build/lbs/apps/system/commands/ls.o",
+    "destination": "/SYSTEM/COMMANDS/ls.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/copy.o": {
+    "input": "build/system/commands/raw/copy.o",
+    "output": "build/lbs/apps/system/commands/copy.o",
+    "destination": "/SYSTEM/COMMANDS/copy.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/cp.o": {
+    "input": "build/system/commands/raw/cp.o",
+    "output": "build/lbs/apps/system/commands/cp.o",
+    "destination": "/SYSTEM/COMMANDS/cp.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/move.o": {
+    "input": "build/system/commands/raw/move.o",
+    "output": "build/lbs/apps/system/commands/move.o",
+    "destination": "/SYSTEM/COMMANDS/move.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/delete.o": {
+    "input": "build/system/commands/raw/delete.o",
+    "output": "build/lbs/apps/system/commands/delete.o",
+    "destination": "/SYSTEM/COMMANDS/delete.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/rm.o": {
+    "input": "build/system/commands/raw/rm.o",
+    "output": "build/lbs/apps/system/commands/rm.o",
+    "destination": "/SYSTEM/COMMANDS/rm.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/mkdir.o": {
+    "input": "build/system/commands/raw/mkdir.o",
+    "output": "build/lbs/apps/system/commands/mkdir.o",
+    "destination": "/SYSTEM/COMMANDS/mkdir.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/rmdir.o": {
+    "input": "build/system/commands/raw/rmdir.o",
+    "output": "build/lbs/apps/system/commands/rmdir.o",
+    "destination": "/SYSTEM/COMMANDS/rmdir.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/rename.o": {
+    "input": "build/system/commands/raw/rename.o",
+    "output": "build/lbs/apps/system/commands/rename.o",
+    "destination": "/SYSTEM/COMMANDS/rename.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/touch.o": {
+    "input": "build/system/commands/raw/touch.o",
+    "output": "build/lbs/apps/system/commands/touch.o",
+    "destination": "/SYSTEM/COMMANDS/touch.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/tree.o": {
+    "input": "build/system/commands/raw/tree.o",
+    "output": "build/lbs/apps/system/commands/tree.o",
+    "destination": "/SYSTEM/COMMANDS/tree.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/find.o": {
+    "input": "build/system/commands/raw/find.o",
+    "output": "build/lbs/apps/system/commands/find.o",
+    "destination": "/SYSTEM/COMMANDS/find.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/attrib.o": {
+    "input": "build/system/commands/raw/attrib.o",
+    "output": "build/lbs/apps/system/commands/attrib.o",
+    "destination": "/SYSTEM/COMMANDS/attrib.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/chmod.o": {
+    "input": "build/system/commands/raw/chmod.o",
+    "output": "build/lbs/apps/system/commands/chmod.o",
+    "destination": "/SYSTEM/COMMANDS/chmod.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/type.o": {
+    "input": "build/system/commands/raw/type.o",
+    "output": "build/lbs/apps/system/commands/type.o",
+    "destination": "/SYSTEM/COMMANDS/type.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/more.o": {
+    "input": "build/system/commands/raw/more.o",
+    "output": "build/lbs/apps/system/commands/more.o",
+    "destination": "/SYSTEM/COMMANDS/more.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/cat.o": {
+    "input": "build/system/commands/raw/cat.o",
+    "output": "build/lbs/apps/system/commands/cat.o",
+    "destination": "/SYSTEM/COMMANDS/cat.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/diff.o": {
+    "input": "build/system/commands/raw/diff.o",
+    "output": "build/lbs/apps/system/commands/diff.o",
+    "destination": "/SYSTEM/COMMANDS/diff.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/ps.o": {
+    "input": "build/system/commands/raw/ps.o",
+    "output": "build/lbs/apps/system/commands/ps.o",
+    "destination": "/SYSTEM/COMMANDS/ps.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/kill.o": {
+    "input": "build/system/commands/raw/kill.o",
+    "output": "build/lbs/apps/system/commands/kill.o",
+    "destination": "/SYSTEM/COMMANDS/kill.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/tasklist.o": {
+    "input": "build/system/commands/raw/tasklist.o",
+    "output": "build/lbs/apps/system/commands/tasklist.o",
+    "destination": "/SYSTEM/COMMANDS/tasklist.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/taskkill.o": {
+    "input": "build/system/commands/raw/taskkill.o",
+    "output": "build/lbs/apps/system/commands/taskkill.o",
+    "destination": "/SYSTEM/COMMANDS/taskkill.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/top.o": {
+    "input": "build/system/commands/raw/top.o",
+    "output": "build/lbs/apps/system/commands/top.o",
+    "destination": "/SYSTEM/COMMANDS/top.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/nice.o": {
+    "input": "build/system/commands/raw/nice.o",
+    "output": "build/lbs/apps/system/commands/nice.o",
+    "destination": "/SYSTEM/COMMANDS/nice.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/pci.o": {
+    "input": "build/system/commands/raw/pci.o",
+    "output": "build/lbs/apps/system/commands/pci.o",
+    "destination": "/SYSTEM/COMMANDS/pci.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/usb.o": {
+    "input": "build/system/commands/raw/usb.o",
+    "output": "build/lbs/apps/system/commands/usb.o",
+    "destination": "/SYSTEM/COMMANDS/usb.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/lspci.o": {
+    "input": "build/system/commands/raw/lspci.o",
+    "output": "build/lbs/apps/system/commands/lspci.o",
+    "destination": "/SYSTEM/COMMANDS/lspci.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/lsusb.o": {
+    "input": "build/system/commands/raw/lsusb.o",
+    "output": "build/lbs/apps/system/commands/lsusb.o",
+    "destination": "/SYSTEM/COMMANDS/lsusb.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/cpuinfo.o": {
+    "input": "build/system/commands/raw/cpuinfo.o",
+    "output": "build/lbs/apps/system/commands/cpuinfo.o",
+    "destination": "/SYSTEM/COMMANDS/cpuinfo.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/mem.o": {
+    "input": "build/system/commands/raw/mem.o",
+    "output": "build/lbs/apps/system/commands/mem.o",
+    "destination": "/SYSTEM/COMMANDS/mem.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/soundtest.o": {
+    "input": "build/system/commands/raw/soundtest.o",
+    "output": "build/lbs/apps/system/commands/soundtest.o",
+    "destination": "/SYSTEM/COMMANDS/soundtest.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/ipconfig.o": {
+    "input": "build/system/commands/raw/ipconfig.o",
+    "output": "build/lbs/apps/system/commands/ipconfig.o",
+    "destination": "/SYSTEM/COMMANDS/ipconfig.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/ping.o": {
+    "input": "build/system/commands/raw/ping.o",
+    "output": "build/lbs/apps/system/commands/ping.o",
+    "destination": "/SYSTEM/COMMANDS/ping.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/netstat.o": {
+    "input": "build/system/commands/raw/netstat.o",
+    "output": "build/lbs/apps/system/commands/netstat.o",
+    "destination": "/SYSTEM/COMMANDS/netstat.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/ftp.o": {
+    "input": "build/system/commands/raw/ftp.o",
+    "output": "build/lbs/apps/system/commands/ftp.o",
+    "destination": "/SYSTEM/COMMANDS/ftp.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/wget.o": {
+    "input": "build/system/commands/raw/wget.o",
+    "output": "build/lbs/apps/system/commands/wget.o",
+    "destination": "/SYSTEM/COMMANDS/wget.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/curl.o": {
+    "input": "build/system/commands/raw/curl.o",
+    "output": "build/lbs/apps/system/commands/curl.o",
+    "destination": "/SYSTEM/COMMANDS/curl.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/compile.o": {
+    "input": "build/system/commands/raw/compile.o",
+    "output": "build/lbs/apps/system/commands/compile.o",
+    "destination": "/SYSTEM/COMMANDS/compile.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/link.o": {
+    "input": "build/system/commands/raw/link.o",
+    "output": "build/lbs/apps/system/commands/link.o",
+    "destination": "/SYSTEM/COMMANDS/link.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/gcc.o": {
+    "input": "build/system/commands/raw/gcc.o",
+    "output": "build/lbs/apps/system/commands/gcc.o",
+    "destination": "/SYSTEM/COMMANDS/gcc.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/cc.o": {
+    "input": "build/system/commands/raw/cc.o",
+    "output": "build/lbs/apps/system/commands/cc.o",
+    "destination": "/SYSTEM/COMMANDS/cc.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/ld.o": {
+    "input": "build/system/commands/raw/ld.o",
+    "output": "build/lbs/apps/system/commands/ld.o",
+    "destination": "/SYSTEM/COMMANDS/ld.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/as.o": {
+    "input": "build/system/commands/raw/as.o",
+    "output": "build/lbs/apps/system/commands/as.o",
+    "destination": "/SYSTEM/COMMANDS/as.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/ar.o": {
+    "input": "build/system/commands/raw/ar.o",
+    "output": "build/lbs/apps/system/commands/ar.o",
+    "destination": "/SYSTEM/COMMANDS/ar.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/ranlib.o": {
+    "input": "build/system/commands/raw/ranlib.o",
+    "output": "build/lbs/apps/system/commands/ranlib.o",
+    "destination": "/SYSTEM/COMMANDS/ranlib.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/build.o": {
+    "input": "build/system/commands/raw/build.o",
+    "output": "build/lbs/apps/system/commands/build.o",
+    "destination": "/SYSTEM/COMMANDS/build.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/nasm.o": {
+    "input": "build/system/commands/raw/nasm.o",
+    "output": "build/lbs/apps/system/commands/nasm.o",
+    "destination": "/SYSTEM/COMMANDS/nasm.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/ndisasm.o": {
+    "input": "build/system/commands/raw/ndisasm.o",
+    "output": "build/lbs/apps/system/commands/ndisasm.o",
+    "destination": "/SYSTEM/COMMANDS/ndisasm.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/make.o": {
+    "input": "build/system/commands/raw/make.o",
+    "output": "build/lbs/apps/system/commands/make.o",
+    "destination": "/SYSTEM/COMMANDS/make.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/fatpack.o": {
+    "input": "build/system/commands/raw/fatpack.o",
+    "output": "build/lbs/apps/system/commands/fatpack.o",
+    "destination": "/SYSTEM/COMMANDS/fatpack.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/addr2line.o": {
+    "input": "build/system/commands/raw/addr2line.o",
+    "output": "build/lbs/apps/system/commands/addr2line.o",
+    "destination": "/SYSTEM/COMMANDS/addr2line.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/cxxfilt.o": {
+    "input": "build/system/commands/raw/cxxfilt.o",
+    "output": "build/lbs/apps/system/commands/cxxfilt.o",
+    "destination": "/SYSTEM/COMMANDS/cxxfilt.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/elfedit.o": {
+    "input": "build/system/commands/raw/elfedit.o",
+    "output": "build/lbs/apps/system/commands/elfedit.o",
+    "destination": "/SYSTEM/COMMANDS/elfedit.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/objcopy.o": {
+    "input": "build/system/commands/raw/objcopy.o",
+    "output": "build/lbs/apps/system/commands/objcopy.o",
+    "destination": "/SYSTEM/COMMANDS/objcopy.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/objdump.o": {
+    "input": "build/system/commands/raw/objdump.o",
+    "output": "build/lbs/apps/system/commands/objdump.o",
+    "destination": "/SYSTEM/COMMANDS/objdump.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/readelf.o": {
+    "input": "build/system/commands/raw/readelf.o",
+    "output": "build/lbs/apps/system/commands/readelf.o",
+    "destination": "/SYSTEM/COMMANDS/readelf.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/nm.o": {
+    "input": "build/system/commands/raw/nm.o",
+    "output": "build/lbs/apps/system/commands/nm.o",
+    "destination": "/SYSTEM/COMMANDS/nm.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/size.o": {
+    "input": "build/system/commands/raw/size.o",
+    "output": "build/lbs/apps/system/commands/size.o",
+    "destination": "/SYSTEM/COMMANDS/size.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/strip.o": {
+    "input": "build/system/commands/raw/strip.o",
+    "output": "build/lbs/apps/system/commands/strip.o",
+    "destination": "/SYSTEM/COMMANDS/strip.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/hexdump.o": {
+    "input": "build/system/commands/raw/hexdump.o",
+    "output": "build/lbs/apps/system/commands/hexdump.o",
+    "destination": "/SYSTEM/COMMANDS/hexdump.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/strings.o": {
+    "input": "build/system/commands/raw/strings.o",
+    "output": "build/lbs/apps/system/commands/strings.o",
+    "destination": "/SYSTEM/COMMANDS/strings.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/calc.o": {
+    "input": "build/system/commands/raw/calc.o",
+    "output": "build/lbs/apps/system/commands/calc.o",
+    "destination": "/SYSTEM/COMMANDS/calc.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/hexedit.o": {
+    "input": "build/system/commands/raw/hexedit.o",
+    "output": "build/lbs/apps/system/commands/hexedit.o",
+    "destination": "/SYSTEM/COMMANDS/hexedit.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/compress.o": {
+    "input": "build/system/commands/raw/compress.o",
+    "output": "build/lbs/apps/system/commands/compress.o",
+    "destination": "/SYSTEM/COMMANDS/compress.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/extract.o": {
+    "input": "build/system/commands/raw/extract.o",
+    "output": "build/lbs/apps/system/commands/extract.o",
+    "destination": "/SYSTEM/COMMANDS/extract.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/checksum.o": {
+    "input": "build/system/commands/raw/checksum.o",
+    "output": "build/lbs/apps/system/commands/checksum.o",
+    "destination": "/SYSTEM/COMMANDS/checksum.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/benchmark.o": {
+    "input": "build/system/commands/raw/benchmark.o",
+    "output": "build/lbs/apps/system/commands/benchmark.o",
+    "destination": "/SYSTEM/COMMANDS/benchmark.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/start.o": {
+    "input": "build/system/commands/raw/start.o",
+    "output": "build/lbs/apps/system/commands/start.o",
+    "destination": "/SYSTEM/COMMANDS/start.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/run.o": {
+    "input": "build/system/commands/raw/run.o",
+    "output": "build/lbs/apps/system/commands/run.o",
+    "destination": "/SYSTEM/COMMANDS/run.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/head.o": {
+    "input": "build/system/commands/raw/head.o",
+    "output": "build/lbs/apps/system/commands/head.o",
+    "destination": "/SYSTEM/COMMANDS/head.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/tail.o": {
+    "input": "build/system/commands/raw/tail.o",
+    "output": "build/lbs/apps/system/commands/tail.o",
+    "destination": "/SYSTEM/COMMANDS/tail.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/wc.o": {
+    "input": "build/system/commands/raw/wc.o",
+    "output": "build/lbs/apps/system/commands/wc.o",
+    "destination": "/SYSTEM/COMMANDS/wc.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/grep.o": {
+    "input": "build/system/commands/raw/grep.o",
+    "output": "build/lbs/apps/system/commands/grep.o",
+    "destination": "/SYSTEM/COMMANDS/grep.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/stat.o": {
+    "input": "build/system/commands/raw/stat.o",
+    "output": "build/lbs/apps/system/commands/stat.o",
+    "destination": "/SYSTEM/COMMANDS/stat.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/df.o": {
+    "input": "build/system/commands/raw/df.o",
+    "output": "build/lbs/apps/system/commands/df.o",
+    "destination": "/SYSTEM/COMMANDS/df.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/du.o": {
+    "input": "build/system/commands/raw/du.o",
+    "output": "build/lbs/apps/system/commands/du.o",
+    "destination": "/SYSTEM/COMMANDS/du.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/cmp.o": {
+    "input": "build/system/commands/raw/cmp.o",
+    "output": "build/lbs/apps/system/commands/cmp.o",
+    "destination": "/SYSTEM/COMMANDS/cmp.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/which.o": {
+    "input": "build/system/commands/raw/which.o",
+    "output": "build/lbs/apps/system/commands/which.o",
+    "destination": "/SYSTEM/COMMANDS/which.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/sync.o": {
+    "input": "build/system/commands/raw/sync.o",
+    "output": "build/lbs/apps/system/commands/sync.o",
+    "destination": "/SYSTEM/COMMANDS/sync.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/true.o": {
+    "input": "build/system/commands/raw/true.o",
+    "output": "build/lbs/apps/system/commands/true.o",
+    "destination": "/SYSTEM/COMMANDS/true.BEX",
+    "kind": "command"
+  },
+  "build/system/commands/false.o": {
+    "input": "build/system/commands/raw/false.o",
+    "output": "build/lbs/apps/system/commands/false.o",
+    "destination": "/SYSTEM/COMMANDS/false.BEX",
+    "kind": "command"
+  }
+}

@@ -1,0 +1,3 @@
+{"timestamp": {"seconds": 1792307508, "microseconds": 505714}, "event": "STOP"}
+{"timestamp": {"seconds": 1792307508, "microseconds": 548944}, "event": "RESUME"}
+{"timestamp": {"seconds": 1792307508, "microseconds": 845339}, "event": "SHUTDOWN", "data": {"guest": false, "reason": "host-qmp-quit"}}

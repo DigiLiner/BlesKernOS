@@ -1,0 +1,65 @@
+{
+  "max_bytes": 304112,
+  "functions_over_16k": [
+    {
+      "function": "flat_ci_triangle",
+      "bytes": 16720,
+      "source": "libs/Mesa-3.5/src/swrast/s_triangle.c"
+    },
+    {
+      "function": "flat_rgba_triangle",
+      "bytes": 16720,
+      "source": "libs/Mesa-3.5/src/swrast/s_triangle.c"
+    },
+    {
+      "function": "smooth_ci_triangle",
+      "bytes": 24944,
+      "source": "libs/Mesa-3.5/src/swrast/s_triangle.c"
+    },
+    {
+      "function": "smooth_rgba_triangle",
+      "bytes": 25024,
+      "source": "libs/Mesa-3.5/src/swrast/s_triangle.c"
+    },
+    {
+      "function": "general_textured_triangle",
+      "bytes": 49712,
+      "source": "libs/Mesa-3.5/src/swrast/s_triangle.c"
+    },
+    {
+      "function": "affine_span",
+      "bytes": 24784,
+      "source": "libs/Mesa-3.5/src/swrast/s_triangle.c"
+    },
+    {
+      "function": "index_aa_tri",
+      "bytes": 32992,
+      "source": "libs/Mesa-3.5/src/swrast/s_aatriangle.c"
+    },
+    {
+      "function": "rgba_aa_tri",
+      "bytes": 33040,
+      "source": "libs/Mesa-3.5/src/swrast/s_aatriangle.c"
+    },
+    {
+      "function": "tex_aa_tri",
+      "bytes": 65952,
+      "source": "libs/Mesa-3.5/src/swrast/s_aatriangle.c"
+    },
+    {
+      "function": "multitex_aa_tri",
+      "bytes": 295824,
+      "source": "libs/Mesa-3.5/src/swrast/s_aatriangle.c"
+    },
+    {
+      "function": "spec_tex_aa_tri",
+      "bytes": 74224,
+      "source": "libs/Mesa-3.5/src/swrast/s_aatriangle.c"
+    },
+    {
+      "function": "spec_multitex_aa_tri",
+      "bytes": 304112,
+      "source": "libs/Mesa-3.5/src/swrast/s_aatriangle.c"
+    }
+  ]
+}

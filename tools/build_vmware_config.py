@@ -23,7 +23,7 @@ def main():
 .encoding = "UTF-8"
 config.version = "8"
 virtualHW.version = "10"
-displayName = "BlesKernOS 0.9 - SVGA3D legacy"
+displayName = "BlesKernOS 0.10 - SVGA3D legacy"
 guestOS = "other"
 firmware = "bios"
 numvcpus = "1"

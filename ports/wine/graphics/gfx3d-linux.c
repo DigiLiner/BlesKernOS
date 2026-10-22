@@ -7,14 +7,22 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
+#include <time.h>
 #include "../../tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesgfx.h"
 typedef uint8_t boolean;
 typedef struct {uint16_t w,h;uint32_t format,flags;} desc;
 typedef struct {int32_t x,y,w,h;} rect;
 static int device=-1;
 static pthread_once_t once=PTHREAD_ONCE_INIT;
-static void open_device(void){device=open("/dev/blesgfx",O_RDWR|O_CLOEXEC);}
-static int call(bles_gfx_3d_t *a){pthread_once(&once,open_device);return device>=0?ioctl(device,BLES_GFX_3D,a):-1;}
+static int profile;
+static uint64_t io_ns[15];static unsigned io_calls[15];
+static uint64_t clock_ns(void){struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);return (uint64_t)t.tv_sec*1000000000U+t.tv_nsec;}
+static void open_device(void){device=open("/dev/blesgfx",O_RDWR|O_CLOEXEC);profile=getenv("BKG_MESA35_TRACE")!=NULL;}
+static int call(bles_gfx_3d_t *a){pthread_once(&once,open_device);unsigned op=a->op;
+    uint64_t start=profile?clock_ns():0;
+    int result=device>=0?ioctl(device,BLES_GFX_3D,a):-1;
+    if(profile && op<15){io_ns[op]+=clock_ns()-start;io_calls[op]++;}return result;}
 uint32_t gfx3d_capabilities(void){bles_gfx_3d_t a={BLES_3D_CAPS,{0}};return call(&a)==0?a.p[0]:0;}
 boolean gfx3d_available(void){return gfx3d_capabilities()!=0;}
 const char *gfx3d_driver_name(void){return "BlesKernOS GFX3D";}
@@ -49,3 +57,27 @@ boolean gfx3d_draw_triangles(uint32_t h,uint32_t texture,const void *v,uint32_t 
 }
 boolean gfx3d_end(uint32_t h,uint32_t *fence){bles_gfx_3d_t a={BLES_3D_END,{h}};if(call(&a)<0)return 0;if(fence)*fence=a.p[1];return 1;}
 boolean gfx3d_wait_fence(uint32_t f){bles_gfx_3d_t a={BLES_3D_WAIT,{f}};return call(&a)==0;}
+
+/* Native drawable helpers share the rasterizer's descriptor/resource ownership.
+ * One native window per process; Wine does not invoke these entry points. */
+int bkmesa_native_open(unsigned w,unsigned h,int gpu) {
+    pthread_once(&once,open_device);
+    bles_gfx_open_t a={w,h,gpu?BLES_GFX_OPEN_GALLIUM:BLES_GFX_OPEN_NATIVE};
+    return device>=0 && ioctl(device,BLES_GFX_OPEN,&a)==0;
+}
+int bkmesa_native_present(unsigned target,const void *pixels,unsigned w,unsigned h) {
+    if(target){bles_gfx_3d_t a={BLES_3D_PRESENT,{target}};
+        for(unsigned n=0;n<3000;n++){if(call(&a)==0)return 1;if(errno!=EAGAIN && errno!=EINTR)return 0;usleep(1000);}return 0;}
+    bles_gfx_present_t a={(uint32_t)(uintptr_t)pixels,w,h};
+    return device>=0 && ioctl(device,BLES_GFX_PRESENT,&a)==0;
+}
+int bkmesa_native_poll(bles_gfx_event_t *event) {
+    return device>=0?ioctl(device,BLES_GFX_EVENT,event):0;
+}
+void bkmesa_native_close(void) {if(device>=0){close(device);device=-1;}
+    if(profile)for(unsigned i=1;i<15;i++)if(io_calls[i])fprintf(stderr,"[MESA35:IO] op=%u calls=%u ms=%.3f\n",i,io_calls[i],io_ns[i]/1.e6);
+}
+
+int bkmesa_native_unpublish(void) {
+    bles_gfx_3d_t a={BLES_3D_PRESENT,{0}};return call(&a)==0;
+}

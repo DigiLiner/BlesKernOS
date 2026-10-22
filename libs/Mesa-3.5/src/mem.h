@@ -109,7 +109,7 @@ extern void _mesa_memset16( GLushort *dst, GLushort val, size_t n );
 
 
 /* MACs and BeOS don't support static larger than 32kb, so... */
-#if defined(macintosh) && !defined(__MRC__)
+#if (defined(macintosh) && !defined(__MRC__)) || (defined(MESA_BLESKERNOS) && defined(BKMESA_HEAP_ARRAYS))
 /*extern char *AGLAlloc(int size);*/
 /*extern void AGLFree(char* ptr);*/
 #  define DEFARRAY(TYPE,NAME,SIZE)  			TYPE *NAME = (TYPE*)MALLOC(sizeof(TYPE)*(SIZE))

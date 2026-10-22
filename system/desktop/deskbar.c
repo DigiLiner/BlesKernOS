@@ -58,6 +58,12 @@ typedef struct {
 
 typedef struct {
     bool menu_open;
+    bool switcher_open, switcher_hover, switcher_top_hover, switcher_capture, switcher_pressed_top;
+    uint32_t switcher_selected, switcher_hover_id, switcher_pressed_id;
+    int switcher_scroll, switcher_icon_count, switcher_icon_next;
+    uint32_t switcher_icon_pids[32];
+    gui_image_t switcher_icons[32];
+    gui_image_t switcher_desktop_icon;
     bool button_hovered;
     bool button_pressed;
     bool clock_hovered;
@@ -617,7 +623,7 @@ static gui_rect_t deskbar_cde_launcher_rect(const gui_desktop_t *desktop,
 }
 
 static int deskbar_cde_hit_launcher(const gui_desktop_t *desktop, int x, int y) {
-    for (int i = 0; i < DESKBAR_LAUNCHER_COUNT; i++)
+    for (int i = 0; i < DESKBAR_LAUNCHER_COUNT - 1; i++)
         if (gui_rect_contains(deskbar_cde_launcher_rect(desktop, i), x, y))
             return i;
     return -1;
@@ -820,7 +826,7 @@ static void deskbar_cde_draw_shell(gui_surface_t *surface,
         5, 25, 82, 140, 198, 256, 322, 646,
         711, 768, 824, 881, 940, 962
     };
-    static const int arrow_cells[] = {4, 8, 11, 12};
+    static const int arrow_cells[] = {4, 8, 12};
     gui_rect_t bar;
     gui_rect_t button;
     uint32_t start_face;
@@ -889,8 +895,9 @@ static void deskbar_cde_draw_shell(gui_surface_t *surface,
        at the left are now the same kind of icon-only launcher as the five on
        the right, which makes the front panel denser and more symmetrical. */
 
-    /* All ten cells are real BlesKernOS programs. */
-    for (int i = 0; i < DESKBAR_LAUNCHER_COUNT; i++)
+    /* The first nine cells launch programs; the former Config cell belongs
+       to the running-window selector painted after this shell. */
+    for (int i = 0; i < DESKBAR_LAUNCHER_COUNT - 1; i++)
         deskbar_cde_draw_launcher(surface, desktop, state, i);
 
     /* The former blank center well is the Bles/Start control. */
@@ -1178,6 +1185,8 @@ static void deskbar_cache_submenu(deskbar_state_t *state, int section) {
     deskbar_clear_cascade_from(state, 0);
 }
 
+#include "deskbar_switcher.h"
+
 static int deskbar_window_item_width(gui_window_t *window) {
     int width = (int)gui_font_text_width(window->title) + 16;
     if (width < 48) width = 48;
@@ -1187,37 +1196,10 @@ static int deskbar_window_item_width(gui_window_t *window) {
 
 
 bool deskbar_window_button_rect(const gui_desktop_t *desktop,
-                                const gui_window_t *target,
-                                gui_rect_t *out) {
-    gui_window_t *window;
-    gui_rect_t area;
-    int cursor;
-
-    if (!desktop || !target || !out) return false;
-    area = deskbar_window_area_rect(desktop);
-    cursor = area.x;
-    task_preempt_disable();
-    window = desktop->first_window;
-    while (window) {
-        int width;
-        gui_rect_t item;
-        if (!window->listed) {
-            window = window->next;
-            continue;
-        }
-        width = deskbar_window_item_width(window);
-        item = (gui_rect_t){cursor, area.y, width, area.h};
-        if (cursor + width > area.x + area.w) break;
-        if (window == target) {
-            *out = item;
-            task_preempt_enable();
-            return true;
-        }
-        cursor += width + 4;
-        window = window->next;
-    }
-    task_preempt_enable();
-    return false;
+                                const gui_window_t *target, gui_rect_t *out) {
+    if (!desktop || !target || !target->listed || !out) return false;
+    *out = deskbar_cde_launcher_rect(desktop, DESKBAR_LAUNCHER_COUNT - 1);
+    return true;
 }
 
 static gui_window_t *deskbar_window_at(gui_desktop_t *desktop, int x, int y) {
@@ -1381,6 +1363,7 @@ static void deskbar_paint(gui_program_t *program, gui_desktop_t *desktop, gui_su
 
     deskbar_load_clock_preferences(state);
     deskbar_cde_draw_shell(surface, desktop, state);
+    deskbar_switcher_draw(desktop, surface, state);
 
     if (!state->menu_open) return;
 
@@ -1518,6 +1501,7 @@ static bool deskbar_handle_event(gui_program_t *program, gui_desktop_t *desktop,
     bool old_cascade_valid[DESKBAR_MAX_CASCADE_LEVELS];
 
     if (!desktop || !event || !state) return false;
+    if (deskbar_switcher_event(desktop, state, event)) return true;
     if (event->type != GUI_EVENT_MOUSE_MOVE &&
         event->type != GUI_EVENT_MOUSE_DOWN &&
         event->type != GUI_EVENT_MOUSE_UP) return false;
@@ -2083,6 +2067,10 @@ void vision_deskbar_overlay_rects(gui_program_t *program, gui_desktop_t *desktop
 #define DESKBAR_OVERLAY(rect) do { if (program->staging_overlay_count < 12U) \
     program->staging_overlays[program->staging_overlay_count++] = (rect); } while (0)
     DESKBAR_OVERLAY(deskbar_bar_rect(desktop));
+    if (state->switcher_open) {
+        deskbar_switcher_layout_t selector = deskbar_switcher_layout(desktop);
+        if (selector.count > 1) DESKBAR_OVERLAY(selector.menu);
+    }
     if (state->menu_open) {
         DESKBAR_OVERLAY(deskbar_menu_rect(desktop));
         if (deskbar_main_item_has_submenu(state->open_section) && state->cached_count > 0)
@@ -2133,6 +2121,9 @@ static void deskbar_destroy(gui_program_t *program) {
     for (int i = 0; i < DESKBAR_LAUNCHER_COUNT; i++)
         if (state->launcher_icon_loaded[i])
             bk_gui_image_free(&state->launcher_icons[i]);
+    for (int i = 0; i < state->switcher_icon_count; i++)
+        if (state->switcher_icons[i].pixels) bk_gui_image_free(&state->switcher_icons[i]);
+    if (state->switcher_desktop_icon.pixels) bk_gui_image_free(&state->switcher_desktop_icon);
     kfree(state);
     program->state = NULL;
 }
@@ -2193,7 +2184,7 @@ void deskbar_install(gui_desktop_t *desktop) {
                 state->folder_icon_loaded ? "OK" : "FAIL");
         kprintf("[DESKBAR] icon Appwiz1500 begin\n");
         state->application_icon_loaded =
-            bk_graphics_icon_load_size("Appwiz1500", 32, &state->application_icon);
+            bk_graphics_icon_load_size("ExecutableWindow", 32, &state->application_icon);
         kprintf("[DESKBAR] icon Appwiz1500 %s\n",
                 state->application_icon_loaded ? "OK" : "FAIL");
         kprintf("[DESKBAR] icon FileText begin\n");

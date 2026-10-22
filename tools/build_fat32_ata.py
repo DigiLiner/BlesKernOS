@@ -12,6 +12,8 @@ from build_family_sources import build_family_source_archive
 from license_notices import write_notices
 from build_fat_floppy import bk_iconpak_try_prepare
 import bfs4
+from lbs_payload import documentation_payloads, application_payloads
+from native_graphics_payload import native_graphics_payloads, stage_native_graphics_payloads
 from wine_display_defaults import display_defaults
 from wine_app_defaults import app_defaults
 from wine_desktop_defaults import desktop_defaults
@@ -33,8 +35,10 @@ def run(cmd):
 def load(path, label):
     if not path:
         return None
+    from lbs_payload import migrated_source
+    source = migrated_source(path)
     try:
-        data = Path(path).read_bytes()
+        data = source.read_bytes()
         print(f"{label} size: {len(data)} bytes", file=sys.stderr)
         return data
     except Exception as exc:
@@ -66,6 +70,8 @@ def mmd(image, path):
 
 
 def mcopy(image, src, dst):
+    from lbs_payload import migrated_source
+    src = migrated_source(src)
     if BFS_STAGING is not None:
         target = BFS_STAGING / dst.removeprefix("::/").upper()
         if dst.endswith("/"):
@@ -243,6 +249,8 @@ def main():
     backup_fsinfo_sector = reserved_arg + 2
     reserved_sectors = reserved_arg + 3
 
+    # Validate the complete runtime before replacing an existing build image.
+    graphics_files = native_graphics_payloads()
     image.parent.mkdir(parents=True, exist_ok=True)
     if image.exists():
         image.unlink()
@@ -302,6 +310,8 @@ def main():
     mmd(image, "::/SYSTEM/LENG")
     mmd(image, "::/SYSTEM/LIBS")
     mmd(image, "::/SYSTEM/LIBS/POSIX")
+    for native_lib in sorted((ROOT_DIR / "build/system/libs/native").glob("*.LBS")):
+        mcopy(image, native_lib, "::/SYSTEM/" + native_lib.name)
     mmd(image, "::/SYSTEM/LIBS/TINYGL")
     mmd(image, "::/SYSTEM/LIBS/MESA35")
     mmd(image, "::/SYSTEM/LIBS/LIBC")
@@ -314,6 +324,9 @@ def main():
     mmd(image, "::/SYSTEM/SOUNDS")
     mmd(image, "::/SYSTEM/WALLPAPR")
     mmd(image, "::/SYSTEM/CURSORS")
+    mmd(image, "::/SYSTEM/DOCS")
+    for guest, source in documentation_payloads().items():
+        mcopy(image, source, "::" + guest)
     mmd(image, "::/SYSTEM/SDK")
     mmd(image, "::/SYSTEM/SDK/INCLUDE")
     mmd(image, "::/SYSTEM/SDK/LIB")
@@ -385,9 +398,10 @@ def main():
         }
         text_files["::/SYSTEM/SDK/README.TXT"] = (
             b"BlesKernOS native SDK\r\n"
-            b"INCLUDE/BLESKERNOS_API.H: public API 36\r\n"
+            b"INCLUDE/BLESKERNOS_API.H: public API 40\r\n"
             b"LIB/LIBBLESK.A: native syscall and printing library\r\n"
             b"LIB/LIBPOSIX.A: POSIX libc, pthreads, mmap and IPv4 sockets\r\n"
+            b"LIB/LIBLBS.A + LBSHOST.O: native dynamic LBS and startup\r\n"
             b"LIB/LIBSDL2.A: SDL2-compatible software graphics layer\r\n"
             b"LIB/LIBM.A: portable floating-point math library\r\n"
             b"Tools: gcc cc ld as ar ranlib objcopy objdump readelf nm size strip\r\n"
@@ -426,6 +440,7 @@ def main():
         mcopy(image, ROOT_DIR / "assets/fonts/LICENSE.txt", "::/SYSTEM/FONTS/LICENSE.TXT")
 
         native_programs = [
+            ("lbstri.o", ROOT_DIR / "build/tests/userland/LBSTRI.BEX", "LBS 3D demonstration"),
             ("font.o", ROOT_DIR / "build/programs/font.o", "Font viewer"),
             ("shell.o", shell_path, "Shell"),
             ("about.o", ROOT_DIR / "build" / "programs" / "about.o", "About"),
@@ -552,6 +567,10 @@ def main():
             if command_data is not None:
                 src = write_payload(tmpdir, filename, command_data)
                 mcopy(image, src, f"::/SYSTEM/COMMANDS/{filename}")
+        # The manifest is authoritative, including newer commands absent from
+        # the historical install list above. Keep its legacy aliases as well.
+        for guest, source in application_payloads(edition == "developer").items():
+            mcopy(image, source, "::" + guest)
         sdk_include = ROOT_DIR / "sdk" / "include"
         for directory in sorted(path for path in sdk_include.rglob("*")
                                 if path.is_dir()):
@@ -656,6 +675,14 @@ def main():
             ("::/SYSTEM/LIBS/MESA35/MESA35.A", mesa35_path, "Mesa 3.5 GFX3D/OSMesa library"),
             ("::/SYSTEM/LIBS/LIBC/LIBC.A", libc_path, "C library"),
         ]
+        system_files.extend([
+            ("::/SYSTEM/SDK/LIB/LIBBLESK.A", ROOT_DIR / "build/sdk/libblesk.a", "native SDK"),
+            ("::/SYSTEM/SDK/LIB/LIBPOSIX.A", ROOT_DIR / "build/sdk/libblesk_posix.a", "POSIX SDK with LBS loader"),
+            ("::/SYSTEM/SDK/LIB/LIBLBSPX.A", ROOT_DIR / "build/sdk/libblesk_lbs_posix.a", "LBS POSIX runtime"),
+            ("::/SYSTEM/SDK/LIB/LIBLBSNT.A", ROOT_DIR / "build/sdk/libblesk_lbs_native.a", "LBS native runtime"),
+            ("::/SYSTEM/SDK/LIB/LIBLBS.A", ROOT_DIR / "build/sdk/libblesk_lbs.a", "LBS startup SDK"),
+            ("::/SYSTEM/SDK/LIB/LBSHOST.O", ROOT_DIR / "build/sdk/lbs_host.o", "LBS Ring 3 imports"),
+        ])
         control_names = [
             ("CONTROL.BEX", "Control Panel"),
             ("APPEAR.CPL", "Appearance CPL"),
@@ -858,6 +885,18 @@ def main():
         mcopy(image,
               ROOT_DIR / "ports/tinyx/upstream/tinycorelinux-tinyx/COPYING",
               "::/DOCS/WINE/TINYX-COPYING.TXT")
+
+    # Keep the native 3D demos in normal ATA/USB/VMware builds for now.
+    if BFS_STAGING is not None:
+        stage_native_graphics_payloads(BFS_STAGING, graphics_files)
+    else:
+        existing_dirs = {Path('/'), Path('/SYSTEM'), Path('/SYSTEM/LIBS'),
+                         Path('/SYSTEM/PROGRAMS'), Path('/SYSTEM/SDK'), Path('/SYSTEM/DOCS'), Path('/SYSTEM/SCREENS')}
+        directories = {parent for name in graphics_files for parent in Path(name).parents}
+        for directory in sorted(directories - existing_dirs, key=lambda p: (len(p.parts), str(p))):
+            mmd(image, '::' + str(directory))
+        for guest, source in graphics_files.items():
+            mcopy(image, source, '::' + guest)
 
     if bfs_build:
         bfs4.build(image, BFS_STAGING, image_size_kb // 1024, "BLESKERNOS")

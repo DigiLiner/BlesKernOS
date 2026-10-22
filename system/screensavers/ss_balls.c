@@ -82,6 +82,7 @@ typedef struct {
     bool filled;
     uint32_t last_frame_ms;
     uint32_t last_spawn_ms;
+    uint32_t last_physics_ms;
     uint32_t filled_ms;
     uint32_t seed;
     uint32_t frames;
@@ -101,6 +102,8 @@ static ss_balls_state_t *g_ss_balls;
 static bool g_sphere_ready;
 static GLfloat g_sphere_vertices[SS_BALLS_STACKS + 1]
                                   [SS_BALLS_SLICES + 1][3];
+
+static GLushort g_sphere_indices[SS_BALLS_STACKS * SS_BALLS_SLICES * 6];
 
 static const GLfloat g_ball_colors[][3] = {
     {0.12f, 0.68f, 1.00f},
@@ -215,6 +218,15 @@ static void ss_balls_build_sphere(void) {
         }
     }
 
+    unsigned index = 0;
+    for (int stack=0;stack<SS_BALLS_STACKS;stack++)
+        for (int slice=0;slice<SS_BALLS_SLICES;slice++) {
+            GLushort b=stack*(SS_BALLS_SLICES+1)+slice;
+            GLushort a=b+SS_BALLS_SLICES+1;
+            g_sphere_indices[index++]=b;g_sphere_indices[index++]=a;
+            g_sphere_indices[index++]=b+1;g_sphere_indices[index++]=b+1;
+            g_sphere_indices[index++]=a;g_sphere_indices[index++]=a+1;
+        }
     g_sphere_ready = true;
 }
 
@@ -236,27 +248,18 @@ static void ss_balls_draw_sphere(const ss_ball_t *ball) {
 
     ss_balls_material(ball->color);
 
-    for (int stack = 0; stack < SS_BALLS_STACKS; stack++) {
-        glBegin(GL_QUAD_STRIP);
-
-        for (int slice = 0; slice <= SS_BALLS_SLICES; slice++) {
-            const GLfloat *a = g_sphere_vertices[stack + 1][slice];
-            const GLfloat *b = g_sphere_vertices[stack][slice];
-
-            /* Orden antihorario visto desde afuera: necesario con culling. */
-            glNormal3f(b[0], b[1], b[2]);
-            glVertex3f(ball->x + b[0] * ball->radius,
-                       ball->y + b[1] * ball->radius,
-                       ball->z + b[2] * ball->radius);
-
-            glNormal3f(a[0], a[1], a[2]);
-            glVertex3f(ball->x + a[0] * ball->radius,
-                       ball->y + a[1] * ball->radius,
-                       ball->z + a[2] * ball->radius);
+    GLfloat vertices[SS_BALLS_STACKS+1][SS_BALLS_SLICES+1][3];
+    for (int stack=0;stack<=SS_BALLS_STACKS;stack++)
+        for (int slice=0;slice<=SS_BALLS_SLICES;slice++) {
+            const GLfloat *normal=g_sphere_vertices[stack][slice];
+            vertices[stack][slice][0]=ball->x+normal[0]*ball->radius;
+            vertices[stack][slice][1]=ball->y+normal[1]*ball->radius;
+            vertices[stack][slice][2]=ball->z+normal[2]*ball->radius;
         }
-
-        glEnd();
-    }
+    glVertexPointer(3,GL_FLOAT,0,vertices);
+    glNormalPointer(GL_FLOAT,0,g_sphere_vertices);
+    glDrawElements(GL_TRIANGLES,SS_BALLS_STACKS*SS_BALLS_SLICES*6,
+                   GL_UNSIGNED_SHORT,g_sphere_indices);
 }
 
 static void ss_balls_draw_box(const ss_balls_state_t *st) {
@@ -514,6 +517,8 @@ static bool ss_balls_init_gl(ss_balls_state_t *st) {
     st->gl_ready = true;
 
     ss_balls_build_sphere();
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_NORMAL_ARRAY);
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glViewport(0, 0, st->render_w, st->render_h);
@@ -538,8 +543,41 @@ static bool ss_balls_init_gl(ss_balls_state_t *st) {
     glFrustum(-aspect, aspect, -1.0f, 1.0f,
               SS_BALLS_VIEW_NEAR, 80.0f);
 
-    ss_balls_reset_scene(st, bk_sys_uptime_ms());
+    uint32_t now = bk_sys_uptime_ms();
+    ss_balls_reset_scene(st, now);
+    st->last_physics_ms = now - SS_FRAME_MS;
     return true;
+}
+
+static void ss_balls_update(ss_balls_state_t *st, uint32_t now) {
+    uint32_t steps=ss_steps_due(now,&st->last_physics_ms,SS_FRAME_MS,8U);
+    uint32_t tick=st->last_physics_ms-steps*SS_FRAME_MS;
+    while(steps--) {
+        tick+=SS_FRAME_MS;
+        if (!st->filled && st->ball_count < SS_BALLS_MAX &&
+            (uint32_t)(tick - st->last_spawn_ms) >= SS_BALLS_SPAWN_MS) {
+            st->last_spawn_ms = tick;
+            ss_balls_spawn(st);
+        }
+
+        ss_balls_physics_step(st);
+
+        if (!st->filled) {
+            bool max_scene_settled =
+                st->ball_count >= SS_BALLS_MAX &&
+                st->balls[st->ball_count - 1U].age > 160U;
+
+            if (max_scene_settled || ss_balls_pile_reached_top(st)) {
+                st->filled = true;
+                st->filled_ms = tick;
+            }
+        }
+
+        if (st->filled &&
+            (uint32_t)(tick - st->filled_ms) >= SS_BALLS_RESET_MS) {
+            ss_balls_reset_scene(st, tick);
+        }
+    }
 }
 
 static void ss_balls_render_frame(ss_balls_state_t *st) {
@@ -552,29 +590,7 @@ static void ss_balls_render_frame(ss_balls_state_t *st) {
 
     now = bk_sys_uptime_ms();
 
-    if (!st->filled && st->ball_count < SS_BALLS_MAX &&
-        (uint32_t)(now - st->last_spawn_ms) >= SS_BALLS_SPAWN_MS) {
-        st->last_spawn_ms = now;
-        ss_balls_spawn(st);
-    }
-
-    ss_balls_physics_step(st);
-
-    if (!st->filled) {
-        bool max_scene_settled =
-            st->ball_count >= SS_BALLS_MAX &&
-            st->balls[st->ball_count - 1U].age > 160U;
-
-        if (max_scene_settled || ss_balls_pile_reached_top(st)) {
-            st->filled = true;
-            st->filled_ms = now;
-        }
-    }
-
-    if (st->filled &&
-        (uint32_t)(now - st->filled_ms) >= SS_BALLS_RESET_MS) {
-        ss_balls_reset_scene(st, now);
-    }
+    ss_balls_update(st, now);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -637,13 +653,7 @@ void ss_balls_preview_draw(gui_surface_t *surface, gui_rect_t screen) {
     }
 
     if (!preview->pixels) return;
-    for (uint16_t y = 0; y < preview->render_h; y++) {
-        for (uint16_t x = 0; x < preview->render_w; x++) {
-            bk_gui_gfx_putpixel(surface, screen.x + x, screen.y + y,
-                ss_mesa_pixel_to_rgb(
-                    preview->pixels[(uint32_t)y * preview->render_w + x]));
-        }
-    }
+    ss_blit_rgb(surface,preview->pixels,preview->render_w,preview->render_h,screen);
 }
 #endif
 

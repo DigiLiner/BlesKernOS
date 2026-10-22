@@ -28,6 +28,9 @@
  */
 
 #include "glheader.h"
+#ifdef MESA_BLESKERNOS
+#include "context.h"
+#endif
 #include "mtypes.h"
 #include "mem.h"
 
@@ -515,6 +518,11 @@ _swrast_DestroyContext( GLcontext *ctx )
       fprintf(stderr, "_swrast_DestroyContext\n");
    }
 
+#ifdef MESA_BLESKERNOS
+   FREE( swrast->SpanWorkspace );
+   FREE( swrast->CombineWorkspace );
+   FREE( swrast->TextureWorkspace );
+#endif
    FREE( swrast->PB );
    FREE( swrast );
 
@@ -555,3 +563,15 @@ _swrast_print_vertex( GLcontext *ctx, const SWvertex *v )
       fprintf(stderr, "\n");
    }
 }
+
+#ifdef MESA_BLESKERNOS
+struct bk_span_workspace *_swrast_bk_span_workspace(GLcontext *ctx)
+{
+   SWcontext *swrast = SWRAST_CONTEXT(ctx);
+   if (!swrast->SpanWorkspace)
+      swrast->SpanWorkspace = MALLOC(sizeof(struct bk_span_workspace));
+   if (!swrast->SpanWorkspace)
+      _mesa_error(ctx, GL_OUT_OF_MEMORY, "software span workspace");
+   return (struct bk_span_workspace *) swrast->SpanWorkspace;
+}
+#endif

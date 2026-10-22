@@ -1,0 +1,18 @@
+{
+  "build/system/libs/native/TINYGL.LBS": "65c9370452056c759a86855372475a0d7d9c72daa13be37de752c2b07e141295",
+  "build/system/libs/native/FONT.LBS": "5d2a5725b414eaf64a3b714a8d05c843260eb38504a32b29a4d07414ff298190",
+  "build/system/libs/native/MEDIA.LBS": "8962aac89546fd51873c96ca63127793d374af55aeb6aa0002c70d5b3367149c",
+  "build/system/libs/native/CRYPTO.LBS": "8d29dd0e9c5a1920ddcec049ee4db8e5b22c9c3523fa7f80d3db77081d68b266",
+  "build/system/libs/native/SECURITY.LBS": "7708d78df219c7ec0a3966e16c00f0ee80a592bd4efea9463619d2dd66c2a173",
+  "build/system/libs/native/SYSTEM.LBS": "83fceb81d6e4c004c30e21fd24a125732616e89a5998938db21195f8c2603c62",
+  "build/system/libs/native/NGS3D.LBS": "3864d15f026db5a114ffb8d4e555eecfcf3b65baef6932e4a6e7e6c7c01a0667",
+  "build/system/libs/native/SOUND.LBS": "483c46a65f3869d64a6e4c0b172aad239b6d36bf46d9e6d68afcbc7c46eb43f7",
+  "build/system/libs/native/VISION.LBS": "57293000ce28721ac9ed8ccdb73ab733859e7558f94425bef52df3c30240179c",
+  "build/system/libs/native/PRINT.LBS": "43b42a1cfcd71f744fa48d6269f8e120b402f47c6a0531137ce2ac9b370191ff",
+  "build/system/libs/native/NGS.LBS": "0dc8eec89c983c45b3d3b4035316c4821ee0c795dd133662490cfb98142d6c76",
+  "build/system/libs/native/INPUT.LBS": "aa522cc273f42ad5fec73c3643c5da2f0ee0cb920cf3d0274e456e32e70d08ab",
+  "build/system/libs/native/NETWORK.LBS": "da2e192804212ceea9e08e1f44e7816745c00ee015d8b75c3e197b191b3661b1",
+  "build/tests/userland/LBSTEST.BEX": "621a92087a2a0fb22e1d9a701db2709dd4c7d87be9336233510d3cd292853599",
+  "build/tests/userland/LBSTRI.BEX": "97dbf8cbed68856b7026bf202a2c08aba0fc0c2b27a5bf482a3b02f383bd6ee3",
+  "boot_area_sha256": "430986ebc1a11e3f3066dc5b973f0ca9c5bb79be4b8b0ac21fb92ce9b1b2c788"
+}

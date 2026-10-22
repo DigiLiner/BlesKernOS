@@ -36,6 +36,7 @@ typedef uint32_t gfx3d_surface_handle_t;
  * the driver. Consumers may defer fence waits until explicit completion. */
 #define GFX3D_CAP_ORDERED_SUBMIT        (1U << 20)
 #define GFX3D_CAP_BLEND_MULTIPLY        (1U << 21)
+#define GFX3D_CAP_BLEND_ADDITIVE_ONE    (1U << 22) /* ADDITIVE|PREMULTIPLIED = ONE,ONE */
 
 typedef enum {
     GFX3D_FORMAT_XRGB8888 = 1,

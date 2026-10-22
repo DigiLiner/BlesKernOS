@@ -1,0 +1,102 @@
+add symbol table from file "/home/lucas/Escritorio/BlesKernOS 0.10/tests/lbs/evidence/migration/std-512m-kvm-settle8000-shutdown-fixed-extras/types.o" at
+	.text_addr = 0x0
+0x00188c0d in read_sector ()
+  Id   Target Id                    Frame 
+* 1    Thread 1.1 (CPU#0 [running]) 0x00188c0d in read_sector ()
+  2    Thread 1.2 (CPU#1 [running]) 0x0011a560 in vga_putchar ()
+
+Thread 2 (Thread 1.2 (CPU#1 [running])):
+#0  0x0011a560 in vga_putchar ()
+#1  0x0011aac9 in kprintf ()
+#2  0x00143278 in bk_sys_log ()
+#3  0x00110d37 in elf_api_call_raw.push_arguments ()
+#4  0x039d13aa in ?? ()
+#5  0x00154ca2 in elf_user_api_dispatch ()
+#6  0x00142184 in syscall_dispatch ()
+#7  0x001105ac in syscall_common_stub.entry_saved ()
+#8  0x00000023 in ?? ()
+#9  0x00000023 in ?? ()
+#10 0x00000023 in ?? ()
+#11 0x00000023 in ?? ()
+#12 0x00000001 in debug_task ()
+#13 0x03c8b7d0 in ?? ()
+#14 0x039d0f49 in ?? ()
+#15 0x00286000 in ?? ()
+
+Thread 1 (Thread 1.1 (CPU#0 [running])):
+#0  0x00188c0d in read_sector ()
+#1  0x00000000 in ?? ()
+
+Thread 2 (Thread 1.2 (CPU#1 [running])):
+eax            0xd34               3380
+ebx            0xffff              65535
+ecx            0xa                 10
+edx            0x6e0               1760
+esi            0x202               514
+edi            0x0                 0
+eip            0x11a560            0x11a560 <vga_putchar+370>
+esp            0x35f07b8           0x35f07b8
+ebp            0x35f07d0           0x35f07d0
+eflags         0x83                [ IOPL=0 SF CF ]
+cr3            0x271000            [ PDBR=625 PCID=0 ]
+
+Thread 1 (Thread 1.1 (CPU#0 [running])):
+eax            0x31b644            3257924
+ebx            0x354e50            3493456
+ecx            0x3604340           56640320
+edx            0xc1                193
+esi            0x354e50            3493456
+edi            0x3604340           56640320
+eip            0x188c0d            0x188c0d <read_sector+38>
+esp            0x3604300           0x3604300
+ebp            0x3604328           0x3604328
+eflags         0x246               [ IOPL=0 IF ZF PF ]
+cr3            0x1108a000          [ PDBR=69770 PCID=0 ]
+$1 = {{owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 128}, {owner = 18, depth = 1, reserved = 0, waiters = 0, contentions = 131}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 11}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 0}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 0}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 0}, {owner = 14, depth = 1, reserved = 0, waiters = 0, contentions = 6}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 0}, {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 1}}
+$2 = {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 0}
+$3 = {owner = 0, depth = 0, reserved = 0, waiters = 0, contentions = 31}
+$4 = {state = 0, owner_cpu = 0, depth = 0, reserved = 0, contentions = 7}
+$5 = 24098
+$6 = 0
+$7 = 0
+
+TASK pid=1 process=1 state=3 exit=0 entry=0 thread=0 name=kernel-core api=(null)
+$8 = {gs = 16, fs = 4128784, es = 16, ds = 4128784, edi = 4193650, esi = 2657856, ebp = 4193692, esp_dummy = 4193600, ebx = 1, edx = 2952576, ecx = 1, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 4193650, ss = 4294967295}
+
+TASK pid=2 process=2 state=3 exit=0 entry=1128b6 thread=0 name=system-admin api=(null)
+$9 = {gs = 16, fs = 46923792, es = 16, ds = 46923792, edi = 46931146, esi = 2660148, ebp = 46931188, esp_dummy = 46931096, ebx = 75, edx = 2952576, ecx = 2, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 46931146, ss = 14}
+
+TASK pid=3 process=3 state=3 exit=0 entry=2cd2c7c thread=0 name=ac97-mixer api=(null)
+$10 = {gs = 16, fs = 47906832, es = 16, ds = 47906832, edi = 47914890, esi = 2662440, ebp = 47914932, esp_dummy = 47914840, ebx = 1, edx = 2952576, ecx = 3, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 47914890, ss = 1}
+
+TASK pid=4 process=4 state=3 exit=0 entry=2ccdafb thread=0 name=usb-ecm-rx api=(null)
+$11 = {gs = 16, fs = 48037904, es = 16, ds = 48037904, edi = 48058250, esi = 2664732, ebp = 48058292, esp_dummy = 48058200, ebx = 1, edx = 2952576, ecx = 4, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 48058250, ss = 1}
+
+TASK pid=5 process=5 state=3 exit=0 entry=2cd063a thread=0 name=rtl8139-rx api=(null)
+$12 = {gs = 16, fs = 48234512, es = 16, ds = 48234512, edi = 48295818, esi = 2667024, ebp = 48295860, esp_dummy = 48295768, ebx = 1, edx = 2952576, ecx = 5, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 48295818, ss = 2657856}
+
+TASK pid=6 process=6 state=3 exit=0 entry=2e5ab9c thread=0 name=usbclass-poll api=(null)
+$13 = {gs = 16, fs = 48758800, es = 16, ds = 48758800, edi = 48799210, esi = 2669316, ebp = 48799252, esp_dummy = 48799160, ebx = 3, edx = 2952576, ecx = 6, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 48799210, ss = 1}
+
+TASK pid=11 process=10 state=3 exit=0 entry=318ff95 thread=1 name=screensaverd api=bk_sys_sleep_ticks
+$14 = {gs = 16, fs = 49020944, es = 16, ds = 49020944, edi = 49072134, esi = 2671608, ebp = 49072176, esp_dummy = 49072084, ebx = 150, edx = 2952576, ecx = 11, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 49072134, ss = 49074176}
+
+TASK pid=8 process=8 state=3 exit=0 entry=110dc5 thread=0 name=cdrom-watch api=(null)
+$15 = {gs = 16, fs = 50200592, es = 16, ds = 50200592, edi = 50208634, esi = 2673900, ebp = 50208676, esp_dummy = 50208584, ebx = 600, edx = 2952576, ecx = 8, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 50208634, ss = 46940208}
+
+TASK pid=9 process=9 state=3 exit=0 entry=2e90242 thread=0 name=PRINTSPL.BEX api=bk_sys_sleep_ms
+$16 = {gs = 16, fs = 51445776, es = 16, ds = 51445776, edi = 51484678, esi = 2676192, ebp = 51484720, esp_dummy = 51484628, ebx = 600, edx = 2952576, ecx = 9, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 51484678, ss = 0}
+
+TASK pid=10 process=10 state=3 exit=0 entry=3181f6d thread=0 name=VISION.BEX api=bk_vision_ipc_wait
+$17 = {gs = 2621456, fs = 51576848, es = 16, ds = 51576848, edi = 518, esi = 9, ebp = 51640256, esp_dummy = 51640164, ebx = 2678484, edx = 2952576, ecx = 10, eax = 0, int_no = 128, err_code = 0, eip = 1201693, cs = 8, eflags = 582, useresp = 51640214, ss = 1164320}
+
+TASK pid=14 process=14 state=2 exit=0 entry=39d0d93 thread=0 name=LBSMIG.BEX api=bk_sys_log
+$18 = {gs = 1156225, fs = 2106432, es = 877134338, ds = 1144603190, edi = 3748401, esi = 2680776, ebp = 56559664, esp_dummy = 56559572, ebx = 1, edx = 0, ecx = 0, eax = 56559632, int_no = 1157833, err_code = 10, eip = 2680776, cs = 56559664, eflags = 1202196, useresp = 60625835, ss = 1688911}
+
+TASK pid=18 process=18 state=2 exit=1 entry=420b922 thread=0 name=QUAKE2.BEX api=bk_sys_uptime_ms
+$19 = {gs = 1235527, fs = 2952592, es = 16, ds = 16, edi = 514, esi = 1, ebp = 56641326, esp_dummy = 56641288, ebx = 1240273, edx = 2952592, ecx = 1, eax = 0, int_no = 0, err_code = 2683068, eip = 11, cs = 56641368, eflags = 1202039, useresp = 56641326, ss = 60599568}
+
+TASK pid=19 process=18 state=3 exit=1 entry=4217ecf thread=1 name=pthread api=bk_sys_sleep_ms
+$20 = {gs = 16, fs = 60555280, es = 16, ds = 60555280, edi = 60585990, esi = 2685360, ebp = 60586032, esp_dummy = 60585940, ebx = 15, edx = 2952576, ecx = 19, eax = 4, int_no = 128, err_code = 0, eip = 1202171, cs = 8, eflags = 582, useresp = 60585990, ss = 0}
+Heap headers inspected: 820
+[Inferior 1 (process 1) detached]

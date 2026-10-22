@@ -1357,7 +1357,7 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
      * expensive per-IRQ/per-frame counters. This also avoids stacking a deep
      * profiling syscall onto the launch/paint call chain. */
     state->last_sample_ms = bk_sys_uptime_ms();
-    while (bk_gui_window_is_open(state->window) && !state->closing) {
+    while (!bk_proc_exit_requested() && bk_gui_window_is_open(state->window) && !state->closing) {
         uint32_t now = bk_sys_uptime_ms();
         if (state->pending_reset && !state->busy) {
             state->pending_reset = false;

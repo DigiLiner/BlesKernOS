@@ -1,0 +1,21 @@
+{
+  "status": "pass",
+  "memory_mib": 512,
+  "vga": "std",
+  "accel": "kvm",
+  "applications": [
+    "/SYSTEM/PROGRAMS/CODEX.O",
+    "/SYSTEM/PROGRAMS/HYPERZIP.O",
+    "/SYSTEM/PROGRAMS/LEXINET.O",
+    "/SYSTEM/PROGRAMS/3DPMESA.O",
+    "/SYSTEM/PROGRAMS/3DPTINY.O",
+    "/SYSTEM/PROGRAMS/DOOM.O",
+    "/SYSTEM/PROGRAMS/QUAKE.O",
+    "/SYSTEM/PROGRAMS/FREECIV_CLIENT.O",
+    "/SYSTEM/PROGRAMS/QUAKE2.BEX"
+  ],
+  "elapsed_seconds": 137.5,
+  "settle_ms": 8000,
+  "scope": "resolved LBS imports, running process after settling interval, no live process threads after group exit; screenshots for UI review",
+  "visual_review": "Nine captures reviewed: native editor/archive/browser windows, Mesa/TinyGL cubes and game startup/loading windows; not complete gameplay."
+}

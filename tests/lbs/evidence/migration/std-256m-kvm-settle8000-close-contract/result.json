@@ -1,0 +1,18 @@
+{
+  "status": "pass",
+  "memory_mib": 256,
+  "vga": "std",
+  "accel": "kvm",
+  "applications": [
+    "/SYSTEM/PROGRAMS/HELP_CENTER.BEX",
+    "/SYSTEM/PROGRAMS/FIND_FILES.BEX",
+    "/SYSTEM/PROGRAMS/ARCHIVE_MANAGER.BEX",
+    "/SYSTEM/PROGRAMS/DISK_TOOLS.BEX",
+    "/SYSTEM/PROGRAMS/CLIPBOARD_VIEWER.BEX",
+    "/SYSTEM/PROGRAMS/PERFORMANCE_MONITOR.BEX",
+    "/SYSTEM/PROGRAMS/NETWORK_STATUS.BEX"
+  ],
+  "elapsed_seconds": 189.57,
+  "settle_ms": 8000,
+  "scope": "resolved LBS imports, running process after settling interval, no live process threads after group exit; screenshots for UI review"
+}

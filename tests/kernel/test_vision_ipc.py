@@ -36,6 +36,43 @@ static void kernel_domains_restore(const kernel_domain_snapshot_t *s){assert(dro
 static uint32_t pit_get_ticks(void){struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);return (uint32_t)(t.tv_sec*1000U+t.tv_nsec/1000000U);}
 static uint32_t pit_get_frequency_hz(void){return 1000;}
 static void task_sleep(uint32_t n){(void)n;assert(dropped);usleep(100);}
+/* Model the current two-phase event API, including signals latched between
+ * prepare and commit. Slots outlive client threads so a signal never walks
+ * stale thread-local storage after pthread_join(). */
+static pthread_mutex_t event_lock=PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t event_changed=PTHREAD_COND_INITIALIZER;
+static uint32_t event_keys[64],event_slots;
+static bool event_fired[64];
+static __thread int event_slot=-1;
+static bool task_event_wait_prepare(uint32_t key){
+ pthread_mutex_lock(&event_lock);
+ if(event_slot<0){assert(event_slots<64);event_slot=(int)event_slots++;}
+ event_keys[event_slot]=key;event_fired[event_slot]=false;
+ pthread_mutex_unlock(&event_lock);return true;
+}
+static bool task_event_wait_commit(uint32_t key,uint32_t ticks){
+ assert(dropped);pthread_mutex_lock(&event_lock);
+ assert(event_slot>=0 && event_keys[event_slot]==key);
+ if(!event_fired[event_slot]){
+  struct timespec deadline;clock_gettime(CLOCK_REALTIME,&deadline);
+  deadline.tv_nsec+=(ticks?ticks:1)*1000000U;
+  deadline.tv_sec+=deadline.tv_nsec/1000000000U;deadline.tv_nsec%=1000000000U;
+  pthread_cond_timedwait(&event_changed,&event_lock,&deadline);
+ }
+ bool fired=event_fired[event_slot];event_keys[event_slot]=0;
+ pthread_mutex_unlock(&event_lock);return fired;
+}
+static void task_event_wait_cancel(uint32_t key){
+ pthread_mutex_lock(&event_lock);
+ if(event_slot>=0 && event_keys[event_slot]==key)event_keys[event_slot]=0;
+ pthread_mutex_unlock(&event_lock);
+}
+static uint32_t task_event_signal(uint32_t key){
+ uint32_t matched=0;pthread_mutex_lock(&event_lock);
+ for(uint32_t i=0;i<event_slots;i++)if(event_keys[i]==key){event_fired[i]=true;matched++;}
+ pthread_cond_broadcast(&event_changed);pthread_mutex_unlock(&event_lock);return matched;
+}
+static bool linux_native_gpu_pending(void){return false;}
 '''+source+r'''
 static void *server(void *argument) {
  (void)argument;pid=900;tid=900;

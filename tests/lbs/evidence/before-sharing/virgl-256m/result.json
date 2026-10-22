@@ -1,0 +1,30 @@
+{
+  "status": "pass",
+  "fixture": "integration",
+  "memory_mib": 256,
+  "vga": "virgl",
+  "accel": "tcg",
+  "cpus": 2,
+  "elapsed_seconds": 60.85,
+  "udp_echo_packets": 1,
+  "checks": 274,
+  "measurements": [
+    "[LBSTEST] private_images_bytes=1781760 process_bytes=2128104",
+    "[LBSTEST] load_12_ms=4000",
+    "[LBSTEST] renderer=1 active=1 gpu=1 driver=Mesa 3.5 software rasterizer draws=0 triangles=0 fallbacks=9 downloads=0 frame_ms=310",
+    "[LBSTEST] renderer=0 active=2 gpu=1 driver=virtio_virgl draws=2 triangles=2 fallbacks=0 downloads=3 frame_ms=180",
+    "[LBSTEST] renderer=4 active=1 gpu=1 driver=TinyGL software rasterizer draws=0 triangles=0 fallbacks=0 downloads=0 frame_ms=140",
+    "[LBSTEST] renderer=5 active=2 gpu=1 driver=BlesKernOS GFX3D draws=2 triangles=2 fallbacks=0 downloads=3 frame_ms=540",
+    "[LBSTEST] ngs_fill_100_ms=590 ngs_present_ms=10",
+    "[LBSTEST] input_keys=1 input_mouse=1 key_state_verified=1",
+    "[LBSTEST] reference_100_ms=130",
+    "[LBSTEST] heap_live_before=0 heap_live_after=0 heap_arenas_before=262207 heap_arenas_after=262207 allocations_before=0 allocations_after=0",
+    "[LBSTEST] cold_cycles_5_ms=3040 process_before=387420 process_after=387420"
+  ],
+  "audio_capture": {
+    "frames": 1817538,
+    "channels": 2,
+    "sample_rate": 44100,
+    "peak": 8960
+  }
+}

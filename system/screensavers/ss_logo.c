@@ -1,5 +1,6 @@
 #include "kernel/include/api.h"
 #include "ss_timing.h"
+#include "ss_scale.h"
 
 #define SS_INPUT_GRACE_MS 500U
 
@@ -14,6 +15,7 @@ typedef struct {
     uint32_t last_motion_ms;
     uint32_t seed;
     uint32_t input_armed_ms;
+    uint32_t *logo_pixels;
 } ss_logo_state_t;
 
 static ss_logo_state_t *g_ss_logo;
@@ -30,7 +32,7 @@ static void draw_stars(gui_surface_t *surface, ss_logo_state_t *st) {
         int x = (int)(rand_next(st) % surface->width);
         int y = (int)(rand_next(st) % surface->height);
         uint32_t shade = 0x00404040 + ((i & 3U) * 0x00202020);
-        bk_gui_gfx_putpixel(surface, x, y, shade);
+        ss_putpixel_rgb(surface, x, y, shade);
     }
     st->seed = old_seed;
 }
@@ -48,6 +50,26 @@ static void draw_logo(gui_surface_t *surface, int x, int y) {
                          "Screen Saver", 0x0000C0FF, 0, false);
 }
 
+static void ss_logo_prepare(ss_logo_state_t *st) {
+    st->logo_pixels = bk_sys_alloc_zero(208U * 58U * 4U);
+    if (st->logo_pixels) {
+        gui_surface_t logo = {.pixels=st->logo_pixels,.width=208,.height=58,
+                             .pitch=208,.clip={0,0,208,58}};
+        draw_logo(&logo,0,0);
+    }
+}
+
+/* Reflect arbitrary elapsed motion without a per-step loop or dropped time. */
+static void ss_logo_move_axis(int *position, int *velocity, int limit, uint32_t steps) {
+    if (limit <= 0) { *position=0; return; }
+    uint32_t speed = *velocity < 0 ? -*velocity : *velocity;
+    uint32_t period = (uint32_t)limit * 2U;
+    uint32_t phase = *velocity >= 0 ? *position : period - *position;
+    phase = (phase + speed * steps) % period;
+    *position = phase <= (uint32_t)limit ? phase : period-phase;
+    *velocity = phase < (uint32_t)limit ? (int)speed : -(int)speed;
+}
+
 static void ss_logo_paint(gui_program_t *program, gui_desktop_t *desktop,
                           gui_surface_t *surface) {
     ss_logo_state_t *st = (ss_logo_state_t *)program->state;
@@ -60,32 +82,14 @@ static void ss_logo_paint(gui_program_t *program, gui_desktop_t *desktop,
     now = bk_sys_uptime_ms();
     uint32_t steps = (uint32_t)(now - st->last_motion_ms) / 10U;
     st->last_motion_ms += steps * 10U;
-    if (steps > 8U) steps = 8U;
-    while (steps--) {
-        st->x += st->dx;
-        st->y += st->dy;
-
-        if (st->x <= 0) {
-            st->x = 0;
-            st->dx = 2;
-        }
-        if (st->y <= 0) {
-            st->y = 0;
-            st->dy = 2;
-        }
-        if (st->x + logo_w >= surface->width) {
-            st->x = surface->width - logo_w - 1;
-            st->dx = -2;
-        }
-        if (st->y + logo_h >= surface->height) {
-            st->y = surface->height - logo_h - 1;
-            st->dy = -2;
-        }
-    }
+    ss_logo_move_axis(&st->x,&st->dx,surface->width-logo_w,steps);
+    ss_logo_move_axis(&st->y,&st->dy,surface->height-logo_h,steps);
 
     bk_gui_gfx_clear(surface, 0x00000000);
     draw_stars(surface, st);
-    draw_logo(surface, st->x, st->y);
+    if (st->logo_pixels)
+        ss_blit_rgb(surface,st->logo_pixels,208,58,(gui_rect_t){st->x,st->y,208,58});
+    else draw_logo(surface, st->x, st->y);
 }
 
 static bool ss_logo_is_input_event(const gui_event_t *event) {
@@ -108,6 +112,7 @@ static void ss_logo_close(gui_desktop_t *desktop, ss_logo_state_t *st) {
         st->program = NULL;
         bk_gui_desktop_unregister_program(desktop, program);
     }
+    if (st->logo_pixels) bk_sys_free(st->logo_pixels);
     bk_sys_free(st);
     bk_gui_gfx_invalidate_front();
     bk_gui_request_paint();
@@ -159,11 +164,13 @@ void ss_logo_open_from_desktop(gui_desktop_t *desktop) {
     st->seed = st->last_motion_ms ^ 0x516A0E0U;
     st->input_armed_ms = bk_sys_uptime_ms() + SS_INPUT_GRACE_MS;
 
+    ss_logo_prepare(st);
     st->program = bk_gui_desktop_register_program(desktop, "ss_logo", st,
                                                ss_logo_paint,
                                                ss_logo_event,
                                                NULL);
     if (!st->program) {
+        if (st->logo_pixels) bk_sys_free(st->logo_pixels);
         bk_sys_free(st);
         return;
     }

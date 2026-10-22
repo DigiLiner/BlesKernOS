@@ -251,8 +251,10 @@ registers_t *isr_handler(registers_t *regs) {
                 if(recovered)return regs;
             }
             if ((regs->cs & 3U) == 3U && (regs->err_code & 3U) == 3U &&
-                task_current_is_linux_abi()) {
-                /* Detaching cached private file pages may wait for VFS or
+                paging_cow_write_pending(fault_address)) {
+                /* Native and Linux VM clients use the same private-file COW
+                 * mappings. The PTE must explicitly authorize COW writes.
+                 * Detaching cached private file pages may wait for VFS or
                  * the pager's sleeping mutex. With IF=0 a lock owner on this
                  * CPU cannot run; Wine's loader then freezes during a COW
                  * write. Match the anonymous fault path's schedulable I/O. */

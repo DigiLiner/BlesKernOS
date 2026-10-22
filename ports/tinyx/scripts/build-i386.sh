@@ -30,6 +30,12 @@ bash "$tinyx_work/src/libfontenc-1.1.8/configure" --prefix="$tinyx_prefix" \
 make -j2
 make install
 
+# Regenerar Autotools de libXfont con la version local de Libtool
+(
+    cd "$tinyx_work/src/libXfont-1.5.4"
+    autoreconf -fiv
+)
+
 mkdir -p "$tinyx_work/build-Xfont"
 cd "$tinyx_work/build-Xfont"
 bash "$tinyx_work/src/libXfont-1.5.4/configure" --prefix="$tinyx_prefix" \

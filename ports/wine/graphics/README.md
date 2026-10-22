@@ -1,5 +1,9 @@
 # Puente gráfico Wine / Linux / GFX3D
 
+Gallium también tiene una integración independiente de Wine y TinyX:
+[runtime nativo, API y glmark2](../../../docs/graphics/NATIVE_GALLIUM.md).
+Ambas rutas reutilizan el winsys común de `ports/gallium/virgl-winsys.c`.
+
 El runtime incluye un backend GLX local (`libGL.so.1`) que selecciona Gallium
 VirGL (`libbkvirgl.so.8`) cuando el driver ofrece el transporte programable.
 En los demás drivers usa Mesa 3.5 (`libbkmesa.so.1`), que conserva el estado

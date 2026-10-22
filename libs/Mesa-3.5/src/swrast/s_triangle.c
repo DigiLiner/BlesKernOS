@@ -1603,9 +1603,25 @@ static void lin_persp_textured_triangle( GLcontext *ctx,
  * triangle span object.  Then call the span/fragment processsing
  * functions in s_span.[ch].
  */
+#ifdef MESA_BLESKERNOS
+/* This previously consumed over 300 KiB of stack even for a small viewport.
+ * Allocate once per context and reuse it for every span, not per pixel/row. */
+
+#endif
+
 static void
 rasterize_span(GLcontext *ctx, const struct triangle_span *span)
 {
+#ifdef MESA_BLESKERNOS
+   struct bk_span_workspace *workspace = _swrast_bk_span_workspace(ctx);
+   if (!workspace) return;
+   GLchan (*rgba)[4] = workspace->rgba, (*spec)[4] = workspace->spec;
+   GLuint *index = workspace->index, *z = workspace->z;
+   GLfloat *fog = workspace->fog, *sTex = workspace->sTex, *tTex = workspace->tTex;
+   GLfloat *rTex = workspace->rTex, *lambda = workspace->lambda;
+   GLfloat (*msTex)[MAX_WIDTH] = workspace->msTex, (*mtTex)[MAX_WIDTH] = workspace->mtTex;
+   GLfloat (*mrTex)[MAX_WIDTH] = workspace->mrTex, (*mLambda)[MAX_WIDTH] = workspace->mLambda;
+#else
    DEFMARRAY(GLchan, rgba, MAX_WIDTH, 4);
    DEFMARRAY(GLchan, spec, MAX_WIDTH, 4);
    DEFARRAY(GLuint, index, MAX_WIDTH);
@@ -1620,6 +1636,7 @@ rasterize_span(GLcontext *ctx, const struct triangle_span *span)
    DEFMARRAY(GLfloat, mrTex, MAX_TEXTURE_UNITS, MAX_WIDTH);
    DEFMARRAY(GLfloat, mLambda, MAX_TEXTURE_UNITS, MAX_WIDTH);
 
+#endif
    CHECKARRAY(rgba, return);
    CHECKARRAY(spec, return);
    CHECKARRAY(index, return);
@@ -1854,6 +1871,7 @@ rasterize_span(GLcontext *ctx, const struct triangle_span *span)
       _mesa_problem(ctx, "rasterize_span() should only be used for texturing");
    }
 
+#ifndef MESA_BLESKERNOS
    UNDEFARRAY(rgba);
    UNDEFARRAY(spec);
    UNDEFARRAY(index);
@@ -1867,6 +1885,7 @@ rasterize_span(GLcontext *ctx, const struct triangle_span *span)
    UNDEFARRAY(mtTex);
    UNDEFARRAY(mrTex);
    UNDEFARRAY(mLambda);
+#endif
 }
 
                 
@@ -1876,6 +1895,29 @@ rasterize_span(GLcontext *ctx, const struct triangle_span *span)
  * Render a smooth-shaded, textured, RGBA triangle.
  * Interpolate S,T,R with perspective correction, w/out mipmapping.
  */
+#ifdef MESA_BLESKERNOS
+#define BK_TEXTURE_SPAN_INPUTS \
+   struct bk_span_workspace *workspace = _swrast_bk_span_workspace(ctx); \
+   if (!workspace) return; \
+   GLfloat *sSpan = workspace->sTex, *tSpan = workspace->tTex, *uSpan = workspace->rTex;
+#define BK_TEXTURE_SPAN_OUTPUT \
+   GLdepth *zSpan = workspace->z; \
+   GLfloat *fogSpan = workspace->fog; \
+   GLchan (*rgbaSpan)[4] = workspace->rgba;
+#define BK_TEXTURE_SPAN_CLEANUP
+#else
+#define BK_TEXTURE_SPAN_INPUTS \
+   DEFARRAY(GLfloat, sSpan, MAX_WIDTH); \
+   DEFARRAY(GLfloat, tSpan, MAX_WIDTH); \
+   DEFARRAY(GLfloat, uSpan, MAX_WIDTH);
+#define BK_TEXTURE_SPAN_OUTPUT \
+   GLdepth zSpan[MAX_WIDTH]; \
+   GLfloat fogSpan[MAX_WIDTH]; \
+   GLchan rgbaSpan[MAX_WIDTH][4];
+#define BK_TEXTURE_SPAN_CLEANUP \
+   UNDEFARRAY(sSpan); UNDEFARRAY(tSpan); UNDEFARRAY(uSpan);
+#endif
+
 static void general_textured_triangle( GLcontext *ctx,
 				       const SWvertex *v0,
 				       const SWvertex *v1,
@@ -1893,9 +1935,7 @@ static void general_textured_triangle( GLcontext *ctx,
    const struct gl_texture_image *texImage = obj->Image[obj->BaseLevel];\
    const GLboolean flatShade = (ctx->Light.ShadeModel==GL_FLAT);	\
    GLfixed rFlat, gFlat, bFlat, aFlat;					\
-   DEFARRAY(GLfloat, sSpan, MAX_WIDTH);  /* mac 32k limitation */	\
-   DEFARRAY(GLfloat, tSpan, MAX_WIDTH);  /* mac 32k limitation */	\
-   DEFARRAY(GLfloat, uSpan, MAX_WIDTH);  /* mac 32k limitation */	\
+   BK_TEXTURE_SPAN_INPUTS \
    CHECKARRAY(sSpan, return);  /* mac 32k limitation */			\
    CHECKARRAY(tSpan, return);  /* mac 32k limitation */			\
    CHECKARRAY(uSpan, return);  /* mac 32k limitation */			\
@@ -1910,9 +1950,7 @@ static void general_textured_triangle( GLcontext *ctx,
    (void) fixedToDepthShift;
 
 #define RENDER_SPAN( span )						\
-   GLdepth zSpan[MAX_WIDTH];						\
-   GLfloat fogSpan[MAX_WIDTH];						\
-   GLchan rgbaSpan[MAX_WIDTH][4];					\
+   BK_TEXTURE_SPAN_OUTPUT \
    GLuint i;								\
    if (flatShade) {							\
       span.red = rFlat;    span.redStep = 0;				\
@@ -1948,9 +1986,7 @@ static void general_textured_triangle( GLcontext *ctx,
                             NULL, rgbaSpan, NULL, NULL, GL_POLYGON );
 
 #define CLEANUP_CODE				\
-   UNDEFARRAY(sSpan);  /* mac 32k limitation */	\
-   UNDEFARRAY(tSpan);				\
-   UNDEFARRAY(uSpan);
+   BK_TEXTURE_SPAN_CLEANUP
 
 #include "s_tritemp.h"
 }
@@ -1961,6 +1997,10 @@ static void general_textured_triangle( GLcontext *ctx,
  * color interpolation.
  * Interpolate texcoords with perspective correction, w/out mipmapping.
  */
+#undef BK_TEXTURE_SPAN_INPUTS
+#undef BK_TEXTURE_SPAN_OUTPUT
+#undef BK_TEXTURE_SPAN_CLEANUP
+
 static void general_textured_spec_triangle( GLcontext *ctx,
 					    const SWvertex *v0,
 					    const SWvertex *v1,

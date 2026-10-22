@@ -965,9 +965,14 @@ static bool compositor_has_gpu_frame_dirty(const gui_desktop_t *desktop) {
     return false;
 }
 
+static uint32_t gpu_content_presentations;
+uint32_t gui_compositor_gpu_content_presentations(void) {
+    return gpu_content_presentations;
+}
 static void compositor_clear_gpu_frame_dirty(gui_desktop_t *desktop) {
     gui_window_t *window;
     if (!desktop) return;
+    if(compositor_has_gpu_frame_dirty(desktop))gpu_content_presentations++;
     for (window = desktop->first_window; window; window = window->next)
         window->gpu_view_frame_dirty = false;
 }
@@ -990,6 +995,22 @@ void gui_compositor_paint(gui_desktop_t *desktop) {
     bool gpu_presented = false;
 
     if (!desktop) return;
+    /* The saver is an exclusive scanout owner. Normal GUI damage (Vision
+     * background, Deskbar, cursor and window placeholders) must NEVER reach
+     * the 2D presenter while it is visible: VirtIO GPU would change the
+     * scanout resource back from the VirGL target to the CPU framebuffer.
+     * That alternating ownership caused the grey screen / Jelly flashes.
+     * If a frame is not ready, preserve the last GPU scanout rather than
+     * overwriting it with a stale CPU scene. */
+    if (gui_gpu_compositor_saver_active(desktop)) {
+        if (gui_gpu_compositor_present_saver(desktop)) {
+            compositor_clear_gpu_frame_dirty(desktop);
+            desktop->cursor_valid = false;
+            desktop->cursor_paint_count = 0U;
+            desktop->paint_valid = true;
+        }
+        return;
+    }
     content_dirty = compositor_has_content_dirty(desktop);
     content_valid = compositor_content_dirty_rect(desktop, &content_rect);
     old_cursor_valid = desktop->cursor_valid;
@@ -1061,7 +1082,8 @@ gpu_cached_failed:
     } else if (!content_dirty && gui_gpu_compositor_needed(desktop) &&
                !desktop->cursor_trail_enabled) {
         desktop->paint_valid = true;
-        perfmon_gui_frame(0U, 0U, false, true, true);
+        /* No commands or present were submitted. Counting this as a GPU
+         * frame made redundant paint requests inflate measured frame rate. */
         return;
     }
     /* BLESKERNOS_SVGA3D_FULL_FRAME_BEGIN

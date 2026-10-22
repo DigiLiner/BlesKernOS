@@ -1,0 +1,49 @@
+{
+  "saver": "pipes",
+  "accel": "kvm",
+  "frames": 3,
+  "render_ms": 1230,
+  "blit_frames": 10,
+  "blit_ms": 66,
+  "changed_pixels": 183783,
+  "black_pixels": 403583,
+  "closed_black_pixels": 2296,
+  "live_samples": [
+    [
+      15,
+      1016,
+      390
+    ],
+    [
+      30,
+      2056,
+      750
+    ],
+    [
+      41,
+      3113,
+      1273
+    ],
+    [
+      48,
+      4246,
+      1693
+    ],
+    [
+      58,
+      5253,
+      1987
+    ],
+    [
+      70,
+      6343,
+      2379
+    ],
+    [
+      78,
+      7356,
+      2706
+    ]
+  ],
+  "status": "pass"
+}

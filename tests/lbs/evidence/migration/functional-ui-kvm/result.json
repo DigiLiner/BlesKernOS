@@ -1,0 +1,12 @@
+{
+  "status": "pass",
+  "ram_mib": 256,
+  "cpus": 2,
+  "accel": "kvm",
+  "lbs": true,
+  "saved_text": "alpha beta\rsecond line\r",
+  "time_format": 12,
+  "language": "ES",
+  "screenshots": 19,
+  "visual_review_required": true
+}

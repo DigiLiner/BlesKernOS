@@ -139,8 +139,12 @@ _tnl_DestroyContext( GLcontext *ctx )
    _tnl_imm_destroy( ctx );
    _tnl_destroy_pipeline( ctx );
 
-   FREE(tnl);
+   /* _tnl_imm_destroy caches the last immediate instead of freeing it.
+    * Remove the context first so _tnl_free_immediate releases that cache. */
    ctx->swtnl_context = 0;
+   if (tnl->freed_immediate)
+      _tnl_free_immediate(tnl->freed_immediate);
+   FREE(tnl);
 }
 
 

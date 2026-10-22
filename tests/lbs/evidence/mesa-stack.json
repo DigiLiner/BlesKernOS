@@ -1,0 +1,30 @@
+{
+  "max_bytes": 25024,
+  "functions_over_16k": [
+    {
+      "function": "flat_ci_triangle",
+      "bytes": 16720,
+      "source": "libs/Mesa-3.5/src/swrast/s_triangle.c"
+    },
+    {
+      "function": "flat_rgba_triangle",
+      "bytes": 16720,
+      "source": "libs/Mesa-3.5/src/swrast/s_triangle.c"
+    },
+    {
+      "function": "smooth_ci_triangle",
+      "bytes": 24944,
+      "source": "libs/Mesa-3.5/src/swrast/s_triangle.c"
+    },
+    {
+      "function": "smooth_rgba_triangle",
+      "bytes": 25024,
+      "source": "libs/Mesa-3.5/src/swrast/s_triangle.c"
+    },
+    {
+      "function": "affine_span",
+      "bytes": 24784,
+      "source": "libs/Mesa-3.5/src/swrast/s_triangle.c"
+    }
+  ]
+}

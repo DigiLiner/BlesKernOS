@@ -1,31 +1,18 @@
 #include "common.h"
-
-static uint32_t get32(const uint8_t *p) {
-    return (uint32_t)p[0]|((uint32_t)p[1]<<8)|((uint32_t)p[2]<<16)|((uint32_t)p[3]<<24);
-}
-
+#include <bleskernos_archive_lbs.h>
 static int run(int argc, char **argv) {
-    void *raw=NULL;
-    uint8_t *output;
-    uint32_t size=0, expected, in=8, out=0;
-    if(argc!=3)return command_error("extract","@H2F381EE4");
-    if(!bk_file_read_all(argv[1],&raw,&size)||size<8U) {if(raw)bk_sys_free(raw);return command_error("extract","cabecera incompleta");}
-    if(((uint8_t*)raw)[0]!='B'||((uint8_t*)raw)[1]!='K'||((uint8_t*)raw)[2]!='Z'||((uint8_t*)raw)[3]!='1'){
-        bk_sys_free(raw);return command_error("extract","@H34C8FFA9");
-    }
-    expected=get32((uint8_t*)raw+4);
-    output=(uint8_t*)bk_sys_alloc(expected?expected:1U);
-    if(!output){bk_sys_free(raw);return command_error("extract","@HBB0954F3");}
-    while(in+1U<size&&out<expected){
-        uint8_t count=((uint8_t*)raw)[in++],value=((uint8_t*)raw)[in++];
-        if(!count||count>expected-out){bk_sys_free(output);bk_sys_free(raw);return command_error("extract","@H84B760D1");}
-        for(uint32_t n=0;n<count;n++)output[out++]=value;
-    }
-    if(out!=expected||in!=size||!bk_file_write_all(argv[2],output,expected)){
-        bk_sys_free(output);bk_sys_free(raw);return command_error("extract","@H2E9E890F");
-    }
-    kprintf("%u bytes extraidos en %s\n",expected,argv[2]);
-    bk_sys_free(output);bk_sys_free(raw);return 0;
+    void *raw = NULL, *result = NULL;
+    uint32_t size = 0, result_size = 0;
+    if (argc != 3) return command_error("extract", "se requieren entrada y salida");
+    if (!bk_file_read_all(argv[1], &raw, &size))
+        return command_error("extract", "no se pudo leer la entrada");
+    int error = bk_archive_unpack(raw, size, &result, &result_size);
+    bk_sys_free(raw);
+    if (error) return command_error("extract", "archivo invalido, limite excedido o sin memoria");
+    bool written = bk_file_write_all(argv[2], result, result_size);
+    bk_sys_free(result);
+    if (!written) return command_error("extract", "no se pudo escribir la salida");
+    kprintf("%u -> %u bytes (%s)\n", size, result_size, argv[2]);
+    return 0;
 }
-
 BK_COMMAND_MAIN(run)

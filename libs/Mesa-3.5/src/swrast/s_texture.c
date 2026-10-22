@@ -1803,7 +1803,16 @@ texture_combine(const GLcontext *ctx,
    GLuint i, j;
    const GLuint RGBshift = textureUnit->CombineScaleShiftRGB;
    const GLuint Ashift   = textureUnit->CombineScaleShiftA;
+#ifdef MESA_BLESKERNOS
+   SWcontext *swrast = SWRAST_CONTEXT(ctx);
+   GLchan (*ccolor)[3 * MAX_WIDTH][4];
+   if (!swrast->CombineWorkspace)
+      swrast->CombineWorkspace = MALLOC(3 * 3 * MAX_WIDTH * 4 * sizeof(GLchan));
+   ccolor = (GLchan (*)[3 * MAX_WIDTH][4]) swrast->CombineWorkspace;
+   if (!ccolor) { _mesa_error((GLcontext *)ctx, GL_OUT_OF_MEMORY, "texture combine"); return; }
+#else
    DEFMNARRAY(GLchan, ccolor, 3, 3 * MAX_WIDTH, 4);  /* mac 32k limitation */
+#endif
    CHECKARRAY(ccolor, return);  /* mac 32k limitation */
 
    ASSERT(ctx->Extensions.EXT_texture_env_combine ||
@@ -2140,7 +2149,9 @@ texture_combine(const GLcontext *ctx,
 	 rgba[i][ACOMP] = rgba[i][RCOMP];
       }
    }
+#ifndef MESA_BLESKERNOS
    UNDEFARRAY(ccolor);  /* mac 32k limitation */
+#endif
 }
 #undef PROD
 
@@ -2792,7 +2803,16 @@ _swrast_texture_fragments( GLcontext *ctx, GLuint texUnit, GLuint n,
       const struct gl_texture_unit *textureUnit = &ctx->Texture.Unit[texUnit];
 
       if (textureUnit->_Current) {   /* XXX need this? */
+#ifdef MESA_BLESKERNOS
+         SWcontext *swrast = SWRAST_CONTEXT(ctx);
+         GLchan (*texel)[4];
+         if (!swrast->TextureWorkspace)
+            swrast->TextureWorkspace = MALLOC(PB_SIZE * 4 * sizeof(GLchan));
+         texel = (GLchan (*)[4]) swrast->TextureWorkspace;
+         if (!texel) { _mesa_error((GLcontext *)ctx, GL_OUT_OF_MEMORY, "texture fragments"); return; }
+#else
          GLchan texel[PB_SIZE][4];
+#endif
 
 	 if (textureUnit->LodBias != 0.0F) {
 	    /* apply LOD bias, but don't clamp yet */

@@ -181,6 +181,11 @@ static uint32_t g_fb_delete_token;
 static void fb_main(void *argument);
 static void fb_tree_set_open(fb_state_t *st, const char *path, bool open);
 
+static gui_rect_t fb_address_rect(const fb_state_t *st) {
+    gui_rect_t content = bk_gui_window_content_rect_raw(st->window);
+    return (gui_rect_t){content.x + 38, content.y + 4, content.w - 44, 22};
+}
+
 static gui_rect_t fb_list_rect(const fb_state_t *st) {
     gui_rect_t content;
     int list_top;
@@ -188,8 +193,8 @@ static gui_rect_t fb_list_rect(const fb_state_t *st) {
 
     if (!st || !st->window) return (gui_rect_t){0, 0, 0, 0};
     content = bk_gui_window_content_rect_raw(st->window);
-    list_top = content.y + FB_LIST_Y + 48;
-    list_h = content.h - 70;
+    list_top = content.y + 60;
+    list_h = content.h - 80;
     return (gui_rect_t){content.x + FB_LIST_X, list_top,
                         content.w - FB_LIST_X * 2, list_h};
 }
@@ -1825,21 +1830,22 @@ static void fb_content(gui_window_t *window UNUSED,
     fb_state_t *st = (fb_state_t *)context;
     if (st) {
         gui_rect_t content = bk_gui_window_content_rect_raw(st->window);
-        int x = content.x + 38;
-        int y = content.y + 4;
+        gui_rect_t address = fb_address_rect(st);
+        int x = address.x;
+        int y = address.y;
         bk_gui_gfx_fill_rect(surface,
-            (gui_rect_t){content.x + 2, content.y + 27, content.w - 4, 23},
+            (gui_rect_t){content.x + 2, content.y + 28, content.w - 4, 28},
             0x00C0C0C0);
-        bk_gui_gfx_draw_line(surface, content.x + 2, content.y + 50,
-                             content.x + content.w - 3, content.y + 50,
+        bk_gui_gfx_draw_line(surface, content.x + 2, content.y + 56,
+                             content.x + content.w - 3, content.y + 56,
                              0x00808080);
-        bk_gui_gfx_fill_rect(surface, (gui_rect_t){x, y, st->window->bounds.w - 47, 20},
+        bk_gui_gfx_fill_rect(surface, address,
                           st->editing_address ? 0x00FFF4C8 : 0x00FFFFFF);
-        bk_gui_gfx_draw_rect(surface, (gui_rect_t){x, y, st->window->bounds.w - 47, 20},
+        bk_gui_gfx_draw_rect(surface, address,
                           0x00606060);
         bk_gui_font_draw_string_clipped(surface, x + 4, y + 6,
             st->editing_address ? st->address : st->cwd, 0x00101010,
-            (gui_rect_t){x + 3, y + 2, st->window->bounds.w - 53, 16});
+            (gui_rect_t){x + 3, y + 2, content.w - 52, 18});
         fb_paint_list(surface, st);
         if (st->status[0]) {
             gui_rect_t list = fb_list_rect(st);
@@ -2092,11 +2098,7 @@ static bool fb_window_event(gui_window_t *window UNUSED,
     }
 
     if (event->type == GUI_EVENT_MOUSE_DOWN) {
-        gui_rect_t address_rect = {
-            bk_gui_window_content_rect_raw(st->window).x + 38,
-            bk_gui_window_content_rect_raw(st->window).y + 4,
-            st->window->bounds.w - 47, 20
-        };
+        gui_rect_t address_rect = fb_address_rect(st);
         if (event->button == MOUSE_LEFT_BUTTON &&
             fb_tree_click(st, event->x, event->y))
             return true;
@@ -2300,34 +2302,34 @@ static void fb_main(void *argument) {
             (void)bk_gui_widget_set_icon(btn, "Back");
         }
 
-        /* Toolbar compacto: una sola medida y arte React95. Los textos
+        /* Toolbar compacto: una sola medida e iconos de 16 px. Los textos
          * siguen disponibles en los menus; aca priorizamos espacio util. */
         btn = bk_gui_widget_create(st->desktop, st->window, GUI_WIDGET_BUTTON,
-            (gui_rect_t){6, 28, 26, 24}, "", fb_btn_copy_cb);
+            (gui_rect_t){6, 30, 26, 24}, "", fb_btn_copy_cb);
         if (btn) {
             st->btn_copy_id = btn->id;
             (void)bk_gui_widget_set_icon(btn, "Copy");
         }
         btn = bk_gui_widget_create(st->desktop, st->window, GUI_WIDGET_BUTTON,
-            (gui_rect_t){38, 28, 26, 24}, "", fb_btn_paste_cb);
+            (gui_rect_t){38, 30, 26, 24}, "", fb_btn_paste_cb);
         if (btn) {
             st->btn_paste_id = btn->id;
             (void)bk_gui_widget_set_icon(btn, "Paste");
         }
         btn = bk_gui_widget_create(st->desktop, st->window, GUI_WIDGET_BUTTON,
-            (gui_rect_t){70, 28, 26, 24}, "", fb_btn_new_cb);
+            (gui_rect_t){70, 30, 26, 24}, "", fb_btn_new_cb);
         if (btn) {
             st->btn_new_id = btn->id;
             (void)bk_gui_widget_set_icon(btn, "Folder");
         }
         btn = bk_gui_widget_create(st->desktop, st->window, GUI_WIDGET_BUTTON,
-            (gui_rect_t){102, 28, 26, 24}, "", fb_btn_refresh_cb);
+            (gui_rect_t){102, 30, 26, 24}, "", fb_btn_refresh_cb);
         if (btn) {
             st->btn_refresh_id = btn->id;
             (void)bk_gui_widget_set_icon(btn, "Refresh");
         }
         btn=bk_gui_widget_create(st->desktop,st->window,GUI_WIDGET_BUTTON,
-            (gui_rect_t){134,28,26,24},"",fb_btn_delete_cb);
+            (gui_rect_t){134,30,26,24},"",fb_btn_delete_cb);
         if(btn)(void)bk_gui_widget_set_icon(btn,"Delete");
         fb_update_title(st);
         st->window->dirty = true;

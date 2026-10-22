@@ -1,0 +1,101 @@
+{
+  "CODEX.O": {
+    "project": "Bles-Codex32-standalone",
+    "target": "build/CODEX.raw.o",
+    "input": "build/CODEX.raw.o",
+    "arguments": [
+      "BLESKERNOS_SDK=../../sdk"
+    ]
+  },
+  "HYPERZIP.O": {
+    "project": "HyperZip-BlesKernOS-Standalone",
+    "target": "build/obj/hyperzip.o",
+    "input": "build/obj/hyperzip.o",
+    "arguments": [
+      "SDK_INCLUDE=../../sdk/include"
+    ]
+  },
+  "LEXINET.O": {
+    "project": "LexiNet",
+    "target": "build/LEXINET.raw.o",
+    "input": "build/LEXINET.raw.o",
+    "arguments": [
+      "ROOT=../.."
+    ]
+  },
+  "3DPLUS.O": {
+    "project": "3D-Plus-Standalone",
+    "target": "lbs-inputs",
+    "input": "build/3dplus_launcher.raw.o",
+    "arguments": [
+      "BLESKERNOS_ROOT=../.."
+    ],
+    "forwarder": true
+  },
+  "3DPMESA.O": {
+    "project": "3D-Plus-Standalone",
+    "target": "lbs-inputs",
+    "input": "build/3dmesa.lbs.raw.o",
+    "arguments": [
+      "BLESKERNOS_ROOT=../.."
+    ]
+  },
+  "3DPTINY.O": {
+    "project": "3D-Plus-Standalone",
+    "target": "lbs-inputs",
+    "input": "build/3dtiny.lbs.raw.o",
+    "arguments": [
+      "BLESKERNOS_ROOT=../.."
+    ]
+  },
+  "DOOM.O": {
+    "project": "Doom-BlesKernOS-Standalone",
+    "target": "build/doom.lbs.raw.o",
+    "input": "build/doom.lbs.raw.o",
+    "arguments": [
+      "ROOT=../.."
+    ]
+  },
+  "QUAKE.O": {
+    "project": "Quake-BlesKernOS-Standalone",
+    "target": "lbs-input",
+    "input": "build/quake.lbs.raw.o",
+    "arguments": [
+      "ROOT=../.."
+    ]
+  },
+  "FREECIV_CLIENT.O": {
+    "project": "Freeciv-BlesKernOS-Standalone",
+    "target": "lbs-inputs",
+    "input": "build-bles/FREECIV_CLIENT.raw.o",
+    "arguments": [
+      "-f",
+      "Makefile.bles",
+      "ROOT=../.."
+    ],
+    "headless": false,
+    "private_runtime": true
+  },
+  "FREECIV_SERVER.O": {
+    "project": "Freeciv-BlesKernOS-Standalone",
+    "target": "lbs-inputs",
+    "input": "build-bles/FREECIV_SERVER.raw.o",
+    "arguments": [
+      "-f",
+      "Makefile.bles",
+      "ROOT=../.."
+    ],
+    "headless": true,
+    "private_runtime": true
+  },
+  "QUAKE2.BEX": {
+    "project": "quake2",
+    "target": "lbs-input",
+    "input": "build/quake2.lbs.raw.o",
+    "arguments": [],
+    "host_modules": [
+      "NGS3D"
+    ],
+    "launch_args": "quake2 +set basedir /ata1/EXTRAS/QUAKE2"
+  }
+}

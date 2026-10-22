@@ -6,6 +6,7 @@ Outputs the programmable VirGL backend alongside the classic Mesa backend.
 """
 import argparse
 import hashlib
+import json
 import shutil
 import re
 import subprocess
@@ -49,6 +50,9 @@ def main():
     p.add_argument('--cache', type=Path, default=(Path.home()/'.cache/bleskernos-gallium' if str(ROOT).startswith('/mnt/') else ROOT/'build/wine/gallium'))
     p.add_argument('-j', type=int, default=2)
     p.add_argument('--package', action='store_true', help='install the GPU backend and runtime dependencies into the Wine package')
+    p.add_argument('--runtime-path', default='/WINEGATE/lib', help='runtime library search path')
+    p.add_argument('--output', type=Path, help='output library')
+    p.add_argument('--build-dir', default='build', help='build directory within the source cache')
     a = p.parse_args()
     cache = a.cache.resolve(); cache.mkdir(parents=True, exist_ok=True)
     archive = cache/'mesa.tar.xz'
@@ -68,21 +72,34 @@ struct pipe_screen *bles_virgl_create_screen(void);
 struct pipe_screen *osmesa_create_screen(void);
 struct pipe_screen *osmesa_create_screen(void) { return bles_virgl_create_screen(); }
 ''')
-    shutil.copyfile(ROOT/'ports/wine/graphics/virgl-winsys.c', target/'bles_virgl.c')
+    shutil.copyfile(ROOT/'ports/gallium/virgl-winsys.c', target/'bles_virgl.c')
+    shutil.copyfile(ROOT/'ports/gallium/include/blesgfx-native.h', target/'blesgfx-native.h')
     shutil.copyfile(ROOT/'ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesvirgl.h', target/'blesvirgl.h')
+    shutil.copyfile(ROOT/'ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesgfx.h', target/'blesgfx.h')
     meson = target/'meson.build'
     text = meson.read_text().replace("  'osmesa_target.c',", "  ['osmesa_target.c', 'bles_virgl.c'],")
     text = text.replace('dep_unwind, driver_swrast,', 'dep_unwind, driver_virgl,')
+    text = text.replace('driver_virgl, idep_mesautil,', 'driver_virgl, idep_mesautil, idep_nir_headers,')
     text = text.replace('    inc_gallium_drivers,\n', '    inc_gallium_drivers, inc_virtio,\n')
+    if "include_directories('../../../compiler')" not in text:
+        text=text.replace('inc_gallium_drivers, inc_virtio,',"inc_gallium_drivers, inc_virtio, include_directories('../../../compiler'),")
+    if 'builtin_types_h,' not in text:
+        text=text.replace("['osmesa_target.c', 'bles_virgl.c'],", "['osmesa_target.c', 'bles_virgl.c'], builtin_types_h,")
     text = text.replace('libmesa, libgallium, libws_null,', 'libmesa, libgallium, libgalliumvl, libws_null,')
     if 'build_rpath' not in text:
         text = text.replace('  install : true,', "  install : true,\n  build_rpath : '/WINEGATE/lib',\n  install_rpath : '/WINEGATE/lib',")
+    text=re.sub(r"(build_rpath|install_rpath) : '[^']*'", lambda m: m[1]+" : '"+a.runtime_path+"'",text)
     meson.write_text(text)
     # Apply the frontend extension to the verified upstream file each time.
     frontend = source/'src/gallium/frontends/osmesa/osmesa.c'
     with tarfile.open(archive) as tar:
         frontend.write_bytes(tar.extractfile(f'mesa-{VERSION}/src/gallium/frontends/osmesa/osmesa.c').read())
     subprocess.run(['patch', '--batch', '-p1', '-i', str(ROOT/'ports/wine/graphics/mesa-blesk-frontend.patch')], cwd=source, check=True)
+    native=ROOT/'ports/gallium/osmesa-native.inc'
+    if native.exists():
+        text=frontend.read_text().replace('   bool external_buffer;', '   bool external_buffer;\n   bool native_present;')
+        text=text.replace('   if (osmesa->pp) {', '   if (osmesa->native_present) return true;\n\n   if (osmesa->pp) {',1)
+        frontend.write_text(text+'\n'+native.read_text())
     with tarfile.open(archive) as tar:
         for name in ['virgl_winsys.h', 'virgl_resource.c']:
             relative = f'src/gallium/drivers/virgl/{name}'
@@ -90,7 +107,7 @@ struct pipe_screen *osmesa_create_screen(void) { return bles_virgl_create_screen
     subprocess.run(['patch', '--batch', '-p1', '-i', str(ROOT/'ports/wine/graphics/mesa-blesk-staging.patch')], cwd=source, check=True)
     symbols = target/'osmesa.sym'
     text = symbols.read_text()
-    for symbol in ['OSMesaBleskCreateContextAttribs', 'OSMesaBleskSwapBuffers', 'OSMesaBleskCreateDrawable', 'OSMesaBleskDestroyDrawable', 'OSMesaBleskMakeContextCurrent']:
+    for symbol in ['OSMesaBleskCreateContextAttribs', 'OSMesaBleskSwapBuffers', 'OSMesaBleskCreateDrawable', 'OSMesaBleskDestroyDrawable', 'OSMesaBleskMakeContextCurrent', 'OSMesaBleskPresentNative', 'OSMesaBleskNativeMode', 'OSMesaBleskNativeEvent', 'OSMesaBleskNativeReady', 'OSMesaBleskNativePoll']:
         if symbol+';' not in text:
             text = text.replace('OSMesaCreateContextAttribs;', 'OSMesaCreateContextAttribs;\n\t\t'+symbol+';')
     symbols.write_text(text)
@@ -140,17 +157,26 @@ pkg_config_libdir = ['/usr/lib/i386-linux-gnu/pkgconfig', '/usr/share/pkgconfig'
 c_args = ['-march=pentium3', '-mfpmath=387']
 cpp_args = ['-march=pentium3', '-mfpmath=387']
 ''')
-    build = cache/'build'
+    meson_command=[str(venv/'bin/python'),'-m','mesonbuild.mesonmain']
+    build = cache/a.build_dir
+    cached_sources=build/'meson-info/intro-buildsystem_files.json'
+    if cached_sources.exists():
+        original=json.loads(cached_sources.read_text())[0]
+        if original!=str(source/'meson.build'):
+            # Meson build trees cannot be relocated. Preserve the old cache;
+            # reuse the correctly located shared build instead of executing
+            # stale absolute paths or destroying the previous artifacts.
+            build=cache/'build-native'
     if not (build/'build.ninja').exists():
-        subprocess.run([str(venv/'bin/meson'), 'setup', str(build), str(source), '--cross-file', str(cross), *OPTIONS], check=True)
+        subprocess.run([*meson_command, 'setup', str(build), str(source), '--cross-file', str(cross), *OPTIONS], check=True)
     subprocess.run(['ninja', '-C', str(build), f'-j{a.j}', 'src/gallium/targets/osmesa/libbkvirgl.so.8.0.0'], check=True)
     staging = cache/'install'
-    subprocess.run([str(venv/'bin/meson'), 'install', '-C', str(build), '--no-rebuild',
+    subprocess.run([*meson_command, 'install', '-C', str(build), '--no-rebuild',
                     '--skip-subprojects', '--tags', 'runtime', '--destdir', str(staging)], check=True)
     installed = list(staging.rglob('libbkvirgl.so.8.0.0'))
     if len(installed) != 1:
         raise SystemExit('Expected exactly one installed VirGL library')
-    out = ROOT/'build/wine/graphics/libbkvirgl.so.8'
+    out = a.output.resolve() if a.output else ROOT/'build/wine/graphics/libbkvirgl.so.8'
     out.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(installed[0], out)
     subprocess.run(['strip', '--strip-unneeded', str(out)], check=True)

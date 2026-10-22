@@ -126,9 +126,12 @@ static uint32_t g_process_completion_sequence;
 #define TASK_KERNEL_STACK_EMERGENCY_RESERVE 8192U
 #define TASK_STACK_GUARD_PROBE_BYTES 32U
 
-/* Small CPL3-only gates. They live in the shared user heap because Phase 1
- * correctly marks kernel .text and .bss supervisor-only. */
+/* Small CPL3-only gates. Publish only their dedicated page to userspace;
+ * ordinary kernel .text and .bss remain supervisor-only. */
 #define TASK_USER_GATE_SIZE 32U
+/* Dedicated immutable code page: heap-root metadata remains supervisor-only
+ * in private CR3s. The gates must never share that guarded allocator page. */
+static uint8_t g_user_gate_page[PAGING_PAGE_SIZE] __attribute__((aligned(PAGING_PAGE_SIZE)));
 static uint8_t *g_user_process_exit_gate;
 static uint8_t *g_user_upcall_return_gate;
 
@@ -947,15 +950,8 @@ static bool task_user_gates_init(void) {
     uint8_t *upcall_gate;
 
     if (g_user_process_exit_gate && g_user_upcall_return_gate) return true;
-    exit_gate = (uint8_t *)kmalloc(TASK_USER_GATE_SIZE);
-    upcall_gate = (uint8_t *)kmalloc(TASK_USER_GATE_SIZE);
-    if (!exit_gate || !upcall_gate) {
-        if (exit_gate) kfree(exit_gate);
-        if (upcall_gate) kfree(upcall_gate);
-        return false;
-    }
-    (void)mm_set_allocation_owner(exit_gate, 0U);
-    (void)mm_set_allocation_owner(upcall_gate, 0U);
+    exit_gate = g_user_gate_page;
+    upcall_gate = g_user_gate_page + TASK_USER_GATE_SIZE;
     kmemset(exit_gate, 0x90, TASK_USER_GATE_SIZE);
     kmemset(upcall_gate, 0x90, TASK_USER_GATE_SIZE);
 
@@ -979,6 +975,8 @@ static bool task_user_gates_init(void) {
     upcall_gate[11] = 0xEB; upcall_gate[12] = 0xFE;
 
     __asm__ volatile ("" : : : "memory");
+    if (!paging_set_range((uint32_t)(uintptr_t)g_user_gate_page,
+                          PAGING_PAGE_SIZE, true, true, false)) return false;
     g_user_process_exit_gate = exit_gate;
     g_user_upcall_return_gate = upcall_gate;
     return true;

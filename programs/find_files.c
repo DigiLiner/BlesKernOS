@@ -122,7 +122,7 @@ static void find_run_search(find_state_t *state) {
     st_copy(directories[queue_tail++], BK_PATH_MAX, root);
     find_set_status(state, "Buscando...");
 
-    while (queue_head < queue_tail && state->result_count < FIND_MAX_RESULTS) {
+    while (!bk_proc_exit_requested() && queue_head < queue_tail && state->result_count < FIND_MAX_RESULTS) {
         bk_file_entry_t entries[BK_DIRECTORY_MAX];
         uint32_t count = 0;
         char current[BK_PATH_MAX];
@@ -353,7 +353,7 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     bk_gui_set_window_min_size(state->window, 540, 360);
     bk_gui_window_set_owner(state->window, bk_sys_getpid());
 
-    while (bk_gui_window_is_open(state->window)) {
+    while (!bk_proc_exit_requested() && bk_gui_window_is_open(state->window)) {
         if (state->pending_search && !state->searching)
             find_run_search(state);
         bk_sys_sleep_ms(10);

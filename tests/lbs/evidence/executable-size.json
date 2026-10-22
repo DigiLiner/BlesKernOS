@@ -1,0 +1,8 @@
+{
+  "application": "Network Status",
+  "before_bytes": 8900,
+  "after_bytes": 102980,
+  "difference_bytes": 94080,
+  "baseline": "HEAD source, unmodified in initial working tree; same SDK compiler options",
+  "scope": "ET_REL file size; runtime/bootstrap overhead is not physically shared"
+}

@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 ROOT = Path(__file__).resolve().parents[2]
-s = (ROOT/'ports/wine/graphics/virgl-winsys.c').read_text()
+s = (ROOT/'ports/gallium/virgl-winsys.c').read_text()
 functions = s[s.index('static int bk_ioctl('):s.index('static void bk_destroy(')]
 functions += s[s.index('static int bk_transfer('):s.index('static int bk_put(')]
 functions += s[s.index('static int bk_submit('):s.index('static int bk_caps(')]
@@ -21,7 +21,7 @@ code = r'''
 #include "ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesvirgl.h"
 enum {PIPE_BUFFER,PIPE_TEXTURE_2D};
 struct virgl_winsys {int unused;};
-struct bk_winsys {struct virgl_winsys base;int fd;pthread_mutex_t lock;bool async,failed;uint64_t submitted,completed;};
+struct bk_winsys {struct virgl_winsys base;int fd;pthread_mutex_t lock;bool async,failed;uint64_t submitted,completed,readbacks;};
 struct virgl_hw_res {uint32_t id,size,target;void *map;uint64_t last_submit,last_use;};
 struct pipe_box {int x,y,z,width,height,depth;};
 struct virgl_cmd_buf {uint32_t *buf,cdw;};

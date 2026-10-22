@@ -1,0 +1,2 @@
+* CPU #0: thread_id=116025
+  CPU #1: thread_id=116026

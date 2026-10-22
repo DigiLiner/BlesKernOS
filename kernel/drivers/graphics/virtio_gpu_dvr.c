@@ -7,6 +7,7 @@
 #include "../../include/pic.h"
 #include "../../include/pit.h"
 #include "../../include/task.h"
+#include "../../include/perfmon.h"
 
 const bk_driver_module_t *bleskernos_driver_query(void);
 
@@ -55,9 +56,14 @@ const bk_driver_module_t *bleskernos_driver_query(void);
 #define VIRTIO_GPU_CONTROLQ                 0U
 #define VIRTIO_GPU_CURSORQ                  1U
 #define VIRTIO_GPU_MAX_QUEUE_SIZE          64U
+#define VIRTIO_GPU_DEFERRED_SLOTS           32U
 #define VIRTIO_GPU_QUEUE_SPIN_LIMIT 100000000U
 #define VIRTIO_GPU_QUEUE_TIMEOUT_SECONDS    3U
 #define VIRTIO_GPU_QUEUE_IOWAIT_INTERVAL 1024U
+/* Batch a scene before crossing the host control queue. VBO ranges still
+ * remain reserved until vg_sync observes a real completed GPU fence. */
+#define VIRTIO_GPU_VIRGL_COMMAND_WORDS (256U * 1024U)
+#define VIRTIO_GPU_VIRGL_VBO_BYTES (1024U * 1024U)
 #define VIRTIO_GPU_MAX_DIRTY_RECTS         32U
 #define VIRTIO_GPU_MAX_SURFACES            32U
 #define VIRTIO_GPU_CURSOR_SIZE             64U
@@ -192,7 +198,9 @@ typedef struct PACKED {
 
 typedef struct {
     bool ready;
-    bool busy;
+    volatile uint32_t owner;
+    uint32_t deferred_count;
+    struct {void *storage,*response;uint32_t fence;} deferred[VIRTIO_GPU_DEFERRED_SLOTS];
     uint16_t index;
     uint16_t size;
     uint16_t notify_off;
@@ -476,9 +484,9 @@ typedef struct {
     gfx3d_surface_handle_t virgl_target;
     uint32_t virgl_vbo_resource[3],virgl_vbo_capacity;
     void *virgl_vbo_raw[3],*virgl_vbo[3];
-    uint32_t virgl_vbo_index,virgl_vbo_used[3];
+    uint32_t virgl_vbo_index,virgl_vbo_used[3],virgl_vbo_fence[3];
     uint32_t virgl_vbo_hash[3],virgl_vbo_uploaded[3];
-    uint32_t virgl_frame_commands[16384];
+    uint32_t virgl_frame_commands[VIRTIO_GPU_VIRGL_COMMAND_WORDS];
     uint32_t virgl_frame_command_count;
     uint32_t virgl_alpha_flags;
     bool virgl_alpha_created;
@@ -682,6 +690,9 @@ static uint16_t virtio_queue_choose_size(uint16_t offered) {
 
 static void virtio_queue_release(virtio_queue_t *queue) {
     if (!queue) return;
+    /* Called only before publication or after a successful device reset. */
+    for(uint32_t i=0;i<VIRTIO_GPU_DEFERRED_SLOTS;i++)
+        if(queue->deferred[i].storage)kfree(queue->deferred[i].storage);
     if (queue->desc_raw) kfree(queue->desc_raw);
     if (queue->avail_raw) kfree(queue->avail_raw);
     if (queue->used_raw) kfree(queue->used_raw);
@@ -741,6 +752,8 @@ static bool virtio_queue_setup(virtio_queue_t *queue, uint16_t index) {
     return true;
 }
 
+static bool virtio_queue_complete_deferred(virtio_queue_t *queue,uint32_t head);
+static void vg_raw_fence_complete(uint32_t context,uint32_t fence);
 static bool virtio_queue_wait_used(virtio_queue_t *queue, uint32_t expected_id) {
     uint32_t spins = 0U;
     uint32_t start_tick;
@@ -753,6 +766,7 @@ static bool virtio_queue_wait_used(virtio_queue_t *queue, uint32_t expected_id) 
     }
     start_tick = pit_get_ticks();
     timeout_ticks = pit_get_frequency_hz() * VIRTIO_GPU_QUEUE_TIMEOUT_SECONDS;
+next_completion:
     while (queue->used->idx == queue->used_shadow) {
         spins++;
         if ((spins % VIRTIO_GPU_QUEUE_IOWAIT_INTERVAL) == 0U) {
@@ -779,12 +793,117 @@ static bool virtio_queue_wait_used(virtio_queue_t *queue, uint32_t expected_id) 
     elem = queue->used->ring[queue->used_shadow % queue->size];
     queue->used_shadow++;
     queue->last_used_id = elem.id;
-    if (elem.id != expected_id) {
+    /* A GPU fence can return between an ordinary control packet and its
+     * ACK. Retire it by descriptor ID instead of blocking all new control
+     * commands until every asynchronous GPU fence has completed. */
+    if(expected_id!=0xffffffffU && elem.id>=4U) {
+        if(!virtio_queue_complete_deferred(queue,elem.id))return false;
+        goto next_completion;
+    }
+    if (expected_id!=0xffffffffU && elem.id != expected_id) {
         queue->last_error = VIRTQ_ERROR_BAD_USED_ID;
         return false;
     }
     queue->last_error = VIRTQ_ERROR_NONE;
+#ifdef VIRTIO_GPU_PACING_TRACE
+    if(pit_get_ticks()-start_tick>pit_get_frequency_hz()/20U) {
+        uint32_t head=expected_id==0xffffffffU?elem.id:expected_id;
+        virtio_gpu_ctrl_hdr_t *hdr=(void *)(uintptr_t)queue->desc[head].addr;
+        kprintf("[VIRTIO:PACING] wait_ticks=%u expected=%u type=%x flags=%x ctx=%u deferred=%u\n",
+            pit_get_ticks()-start_tick,expected_id,hdr->type,hdr->flags,hdr->ctx_id,queue->deferred_count);
+    }
+#endif
     return true;
+}
+
+/* A small bounded FIFO keeps command packets immutable while the host reads
+ * them. Slots 0/1 and 2/3 remain reserved for synchronous controls and pairs.
+ * Used IDs select a slot: completion need not arrive in submission order. */
+static bool virtio_queue_lock(virtio_queue_t *queue) {
+    uint32_t start=pit_get_ticks();
+    uint32_t timeout=pit_get_frequency_hz()*VIRTIO_GPU_QUEUE_TIMEOUT_SECONDS;
+    if(!queue || !queue->ready)return false;
+    while(!__sync_bool_compare_and_swap(&queue->owner,0U,1U)) {
+        if(timeout && pit_get_ticks()-start>=timeout) {
+            queue->last_error=VIRTQ_ERROR_BUSY;return false;
+        }
+        task_yield();
+    }
+    if(queue->ready)return true;
+    __atomic_store_n(&queue->owner,0U,__ATOMIC_RELEASE);return false;
+}
+static void virtio_queue_unlock(virtio_queue_t *queue) {
+    __atomic_store_n(&queue->owner,0U,__ATOMIC_RELEASE);
+}
+static bool virtio_queue_complete_deferred(virtio_queue_t *queue,uint32_t head) {
+    if(head<4U || (head&1U) || (head-4U)/2U>=VIRTIO_GPU_DEFERRED_SLOTS)goto failed;
+    uint32_t slot=(head-4U)/2U;
+    if(!queue->deferred[slot].storage || !queue->deferred_count)goto failed;
+    virtio_gpu_ctrl_hdr_t *reply=queue->deferred[slot].response;
+    uint32_t response=reply->type,fence=queue->deferred[slot].fence;
+    bool ok=response==VIRTIO_GPU_RESP_OK_NODATA;
+    if(fence)ok=ok && (reply->flags&VIRTIO_GPU_FLAG_FENCE) && reply->fence_id==fence;
+    uint32_t context=((virtio_gpu_ctrl_hdr_t *)queue->deferred[slot].storage)->ctx_id;
+    if(ok && fence) {
+        if(context>1U)vg_raw_fence_complete(context,fence);
+        else if((int32_t)(fence-g_virtio.completed_fence)>0)g_virtio.completed_fence=fence;
+    }
+    kfree(queue->deferred[slot].storage);
+    queue->deferred[slot].storage=NULL;queue->deferred[slot].response=NULL;
+    queue->deferred[slot].fence=0U;queue->deferred_count--;
+    if(ok)return true;
+    kprintf("[VIRTIOGPU.DVR] deferred response=%x expected_fence=%u\n",response,fence);
+failed:
+    /* Unreturned packets may still be accessed by DMA. Quarantine them until
+     * a successful device reset; never free them on timeout or an invalid ID. */
+    queue->ready=false;return false;
+}
+static bool virtio_queue_reap_deferred(virtio_queue_t *queue) {
+    if(!virtio_queue_wait_used(queue,0xffffffffU)) {
+        queue->ready=false;return false;
+    }
+    return virtio_queue_complete_deferred(queue,queue->last_used_id);
+}
+static bool virtio_queue_acquire(virtio_queue_t *queue) {
+    if(!virtio_queue_lock(queue))return false;
+    while(queue->deferred_count && queue->used->idx!=queue->used_shadow)if(!virtio_queue_reap_deferred(queue)) {
+        virtio_queue_unlock(queue);return false;
+    }
+    return true;
+}
+static uint32_t virtio_queue_deferred_limit(const virtio_queue_t *queue) {
+    uint32_t n=queue->size>4U?(queue->size-4U)/2U:0U;
+    return n<VIRTIO_GPU_DEFERRED_SLOTS?n:VIRTIO_GPU_DEFERRED_SLOTS;
+}
+/* Ownership transfers only on success. Storage must have driver owner 0:
+ * its submitting process can exit before the device returns this packet. */
+static bool virtio_queue_submit_deferred(virtio_queue_t *queue,void *storage,
+        const void *request,uint32_t bytes,void *response,uint32_t response_bytes,uint32_t fence) {
+    if(!request || !response || !storage || !bytes ||
+       response_bytes<sizeof(virtio_gpu_ctrl_hdr_t) ||
+       !virtio_queue_lock(queue))return false;
+    uint32_t limit=virtio_queue_deferred_limit(queue),slot;
+    if(!limit)goto failed;
+    while(queue->deferred_count && queue->used->idx!=queue->used_shadow)
+        if(!virtio_queue_reap_deferred(queue))goto failed;
+    if(queue->deferred_count==limit && !virtio_queue_reap_deferred(queue))goto failed;
+    for(slot=0;slot<limit;slot++)if(!queue->deferred[slot].storage)break;
+    if(slot==limit)goto failed;
+    uint16_t head=(uint16_t)(4U+slot*2U);
+    queue->desc[head]=(virtq_desc_t){(uint64_t)(uint32_t)(uintptr_t)request,
+        bytes,VIRTQ_DESC_F_NEXT,(uint16_t)(head+1U)};
+    queue->desc[head+1U]=(virtq_desc_t){(uint64_t)(uint32_t)(uintptr_t)response,
+        response_bytes,VIRTQ_DESC_F_WRITE,0U};
+    queue->deferred[slot].storage=storage;queue->deferred[slot].response=response;
+    queue->deferred[slot].fence=fence;
+    queue->deferred_count++;
+    queue->avail->ring[queue->avail_shadow%queue->size]=head;
+    virtio_barrier();queue->avail_shadow++;
+    queue->avail->idx=queue->avail_shadow;virtio_barrier();
+    *queue->notify=queue->index;
+    virtio_queue_unlock(queue);return true;
+failed:
+    virtio_queue_unlock(queue);return false;
 }
 
 static bool virtio_queue_submit_control(virtio_queue_t *queue,
@@ -798,25 +917,7 @@ static bool virtio_queue_submit_control(virtio_queue_t *queue,
         if (queue) queue->last_error = VIRTQ_ERROR_NOT_READY;
         return false;
     }
-    {
-        uint32_t start_tick = pit_get_ticks();
-        uint32_t timeout = pit_get_frequency_hz() *
-                           VIRTIO_GPU_QUEUE_TIMEOUT_SECONDS;
-        for (;;) {
-            task_preempt_disable();
-            if (!queue->busy) {
-                queue->busy = true;
-                task_preempt_enable();
-                break;
-            }
-            task_preempt_enable();
-            if (timeout && pit_get_ticks() - start_tick >= timeout) {
-                queue->last_error = VIRTQ_ERROR_BUSY;
-                return false;
-            }
-            task_yield();
-        }
-    }
+    if(!virtio_queue_acquire(queue))return false;
     queue->desc[0].addr = (uint64_t)(uint32_t)(uintptr_t)request;
     queue->desc[0].len = request_size;
     queue->desc[0].flags = VIRTQ_DESC_F_NEXT;
@@ -835,10 +936,8 @@ static bool virtio_queue_submit_control(virtio_queue_t *queue,
     *queue->notify = queue->index;
     {
         bool completed = virtio_queue_wait_used(queue, 0U);
-        task_preempt_disable();
-        queue->busy = false;
-        task_preempt_enable();
         if (!completed) queue->ready = false;
+        virtio_queue_unlock(queue);
         return completed;
     }
 }
@@ -855,21 +954,7 @@ static bool virtio_queue_submit_control_pair(
     bool first,second;
     if(!queue||!queue->ready||queue->size<4U||
        !request_a||!request_b||!response_a||!response_b)return false;
-    {
-        uint32_t start_tick=pit_get_ticks();
-        uint32_t timeout=pit_get_frequency_hz()*
-                         VIRTIO_GPU_QUEUE_TIMEOUT_SECONDS;
-        for(;;){
-            task_preempt_disable();
-            if(!queue->busy){queue->busy=true;task_preempt_enable();break;}
-            task_preempt_enable();
-            if(timeout&&pit_get_ticks()-start_tick>=timeout){
-                queue->last_error=VIRTQ_ERROR_BUSY;
-                return false;
-            }
-            task_yield();
-        }
-    }
+    if(!virtio_queue_acquire(queue))return false;
     queue->desc[0]=(virtq_desc_t){
         (uint64_t)(uint32_t)(uintptr_t)request_a,request_a_size,
         VIRTQ_DESC_F_NEXT,1U};
@@ -894,10 +979,8 @@ static bool virtio_queue_submit_control_pair(
     *queue->notify=queue->index;
     first=virtio_queue_wait_used(queue,0U);
     second=first&&virtio_queue_wait_used(queue,2U);
-    task_preempt_disable();
-    queue->busy=false;
-    task_preempt_enable();
     if(!second)queue->ready=false;
+    virtio_queue_unlock(queue);
     return second;
 }
 
@@ -909,25 +992,7 @@ static bool virtio_queue_submit_cursor(virtio_queue_t *queue,
         if (queue) queue->last_error = VIRTQ_ERROR_NOT_READY;
         return false;
     }
-    {
-        uint32_t start_tick = pit_get_ticks();
-        uint32_t timeout = pit_get_frequency_hz() *
-                           VIRTIO_GPU_QUEUE_TIMEOUT_SECONDS;
-        for (;;) {
-            task_preempt_disable();
-            if (!queue->busy) {
-                queue->busy = true;
-                task_preempt_enable();
-                break;
-            }
-            task_preempt_enable();
-            if (timeout && pit_get_ticks() - start_tick >= timeout) {
-                queue->last_error = VIRTQ_ERROR_BUSY;
-                return false;
-            }
-            task_yield();
-        }
-    }
+    if(!virtio_queue_acquire(queue))return false;
     queue->desc[0].addr = (uint64_t)(uint32_t)(uintptr_t)request;
     queue->desc[0].len = request_size;
     queue->desc[0].flags = 0U;
@@ -941,10 +1006,8 @@ static bool virtio_queue_submit_cursor(virtio_queue_t *queue,
     *queue->notify = queue->index;
     {
         bool completed = virtio_queue_wait_used(queue, 0U);
-        task_preempt_disable();
-        queue->busy = false;
-        task_preempt_enable();
         if (!completed) queue->ready = false;
+        virtio_queue_unlock(queue);
         return completed;
     }
 }
@@ -1005,7 +1068,10 @@ static bool virtio_gpu_control_command(void *request, uint32_t request_size,
         return false;
     }
     if (fenced) {
-        g_virtio.completed_fence = fence;
+        /* A completed raw Gallium context does not complete earlier work in
+         * the desktop context. Only its own fences may retire desktop VBOs
+         * and GFX3D resources; the contexts have independent GPU ordering. */
+        if(request_hdr->ctx_id<=1U)g_virtio.completed_fence = fence;
         if (fence_out) *fence_out = fence;
     }
     return true;
@@ -1149,6 +1215,22 @@ static bool virtio_gpu_flush_resource(uint32_t resource_id,gfx_rect_t rect,
     flush.r=(virtio_gpu_rect_t){(uint32_t)rect.x,(uint32_t)rect.y,
         (uint32_t)rect.w,(uint32_t)rect.h};
     flush.resource_id=resource_id;
+    if(!fence_out && virtio_queue_deferred_limit(&g_virtio.controlq)) {
+        /* SDL's scanout flush may wait for the host's swap. Keep its packet
+         * alive, but release the guest compositor so the next scene can be
+         * prepared while that update is processed. The next control request
+         * drains this response before reusing descriptors or resources. */
+        uint32_t bytes=sizeof(flush)+sizeof(response);
+        uint8_t *packet=kmalloc(bytes);
+        if(!packet)return false;
+        kmemcpy(packet,&flush,sizeof(flush));
+        kmemset(packet+sizeof(flush),0,sizeof(response));
+        if(!mm_set_allocation_owner(packet,0U)){kfree(packet);return false;}
+        bool queued=virtio_queue_submit_deferred(&g_virtio.controlq,packet,
+            packet,sizeof(flush),packet+sizeof(flush),sizeof(response),0U);
+        if(!queued)kfree(packet);
+        return queued;
+    }
     if(fence_out){fence=virtio_gpu_next_fence();
         flush.hdr.flags=VIRTIO_GPU_FLAG_FENCE;flush.hdr.fence_id=fence;}
     if(!virtio_gpu_control_command(&flush,sizeof(flush),&response,
@@ -1293,21 +1375,81 @@ static bool virtio_gpu_submit_3d_sync(const uint32_t *commands,
     uint32_t bytes,total;
     bool ok;
     if(!g_virtio.virgl_context_ready||!commands||!dword_count||
-       dword_count>16384U)return false;
+       dword_count>VIRTIO_GPU_VIRGL_COMMAND_WORDS)return false;
     bytes=dword_count*4U;
     total=(uint32_t)sizeof(*request)+bytes;
-    request=(virtio_gpu_cmd_submit_t *)kmalloc(total);
+    request=(virtio_gpu_cmd_submit_t *)kmalloc(total+sizeof(response));
     if(!request)return false;
     kmemset(request,0,sizeof(*request));
     request->hdr.type=VIRTIO_GPU_CMD_SUBMIT_3D;
     request->hdr.ctx_id=g_virtio.virgl_context_id;
     request->size=bytes;
     kmemcpy((uint8_t *)request+sizeof(*request),commands,bytes);
-    ok=virtio_gpu_control_command(request,total,&response,sizeof(response),
-        VIRTIO_GPU_RESP_OK_NODATA,fenced,NULL);
-    if(ok)g_virtio.virgl_pending=!fenced;
-    kfree(request);
+    if(!fenced && virtio_queue_deferred_limit(&g_virtio.controlq)) {
+        virtio_gpu_ctrl_hdr_t *reply=(void *)((uint8_t *)request+total);
+        kmemset(reply,0,sizeof(*reply));
+        if(!mm_set_allocation_owner(request,0U)){kfree(request);return false;}
+        ok=virtio_queue_submit_deferred(&g_virtio.controlq,request,request,
+            total,reply,sizeof(*reply),0U);
+        if(!ok)kfree(request);
+    } else {
+        ok=virtio_gpu_control_command(request,total,&response,sizeof(response),
+            VIRTIO_GPU_RESP_OK_NODATA,fenced,NULL);
+        kfree(request);
+    }
+    if(ok && g_virtio.virgl_context_id==1U)g_virtio.virgl_pending=!fenced;
     return ok;
+}
+
+/* These fences belong to the fixed-function host context, not raw Gallium
+ * clients. Their response is retired by ID before completed_fence advances. */
+static bool virtio_gpu_submit_fenced_async(const uint32_t *commands,uint32_t count,uint32_t *fence_out) {
+    if(!commands || !count || count>VIRTIO_GPU_VIRGL_COMMAND_WORDS)return false;
+    if(!virtio_queue_deferred_limit(&g_virtio.controlq)) {
+        virtio_gpu_cmd_submit_t *request=kmalloc(sizeof(*request)+count*4U);
+        if(!request)return false;
+        virtio_gpu_ctrl_hdr_t response;kmemset(request,0,sizeof(*request));
+        request->hdr.type=VIRTIO_GPU_CMD_SUBMIT_3D;request->hdr.ctx_id=g_virtio.virgl_context_id;
+        request->size=count*4U;kmemcpy((uint8_t *)request+sizeof(*request),commands,count*4U);
+        bool ok=virtio_gpu_control_command(request,sizeof(*request)+count*4U,&response,sizeof(response),
+                                           VIRTIO_GPU_RESP_OK_NODATA,true,fence_out);
+        if(ok && g_virtio.virgl_context_id>1U)vg_raw_fence_complete(g_virtio.virgl_context_id,*fence_out);
+        kfree(request);return ok;
+    }
+    uint32_t total=sizeof(virtio_gpu_cmd_submit_t)+count*4U;
+    virtio_gpu_cmd_submit_t *packet=kmalloc(total+sizeof(virtio_gpu_ctrl_hdr_t));
+    if(!packet)return false;
+    if(!mm_set_allocation_owner(packet,0U)){kfree(packet);return false;}
+    kmemset(packet,0,total+sizeof(virtio_gpu_ctrl_hdr_t));
+    uint32_t fence=virtio_gpu_next_fence();
+    packet->hdr.type=VIRTIO_GPU_CMD_SUBMIT_3D;packet->hdr.flags=VIRTIO_GPU_FLAG_FENCE;
+    packet->hdr.ctx_id=g_virtio.virgl_context_id;packet->hdr.fence_id=fence;
+    packet->size=count*4U;kmemcpy((uint8_t *)packet+sizeof(*packet),commands,count*4U);
+    void *response=(uint8_t *)packet+total;
+    if(!virtio_queue_submit_deferred(&g_virtio.controlq,packet,packet,total,
+                                    response,sizeof(virtio_gpu_ctrl_hdr_t),fence)) {
+        kfree(packet);return false;
+    }
+    if(g_virtio.virgl_context_id==1U)g_virtio.virgl_pending=true;
+    *fence_out=fence;return true;
+}
+static bool virtio_gpu_seal_vbo(uint32_t *fence_out) {
+    const uint32_t barrier[]={VIRGL_CMD0(VIRGL_CCMD_SET_FRAMEBUFFER_STATE,0U,2U),0U,0U};
+    return virtio_gpu_submit_fenced_async(barrier,3U,fence_out);
+}
+static bool virtio_gpu_wait_vbo(uint32_t fence) {
+    if(fence && (int32_t)(g_virtio.completed_fence-fence)>=0)return true;
+    uint64_t started=perfmon_scope_begin();bool ok=false;
+    if(!fence || !virtio_queue_lock(&g_virtio.controlq))goto done;
+    while((int32_t)(g_virtio.completed_fence-fence)<0) {
+        if(!g_virtio.controlq.deferred_count ||
+           !virtio_queue_reap_deferred(&g_virtio.controlq))goto unlock;
+    }
+    ok=true;
+unlock:
+    virtio_queue_unlock(&g_virtio.controlq);
+done:
+    perfmon_scope_end(PERF_SCOPE_3D_WAIT,started);return ok;
 }
 
 static bool virtio_gpu_submit_3d(const uint32_t *commands,uint32_t count){
@@ -1423,8 +1565,12 @@ static void virtio_gpu_probe_capsets(void) {
 }
 
 static void virtio_gpu_device_stop(void) {
-    if (g_virtio.common && !virtio_gpu_reset_status())
+    if (g_virtio.common && !virtio_gpu_reset_status()) {
         kprintf("[VIRTIOGPU.DVR] timeout al resetear el dispositivo\n");
+        /* A failed reset does not revoke DMA access to queued packets. */
+        g_virtio.controlq.ready=false;g_virtio.cursorq.ready=false;
+        g_virtio.device_ready=false;return;
+    }
     virtio_queue_release(&g_virtio.controlq);
     virtio_queue_release(&g_virtio.cursorq);
     g_virtio.device_ready = false;
@@ -2215,6 +2361,7 @@ static bool virgl_shader(virgl_builder_t *b,uint32_t handle,uint32_t type,
 #define VG_OBJ_BLEND_ADDITIVE 12U
 #define VG_OBJ_BLEND_PREMULT 13U
 #define VG_OBJ_BLEND_MULTIPLY 14U
+#define VG_OBJ_BLEND_ADDITIVE_ONE 15U
 #define VG_OBJ_DSA_OFF 20U
 #define VG_OBJ_DSA_BASE 21U
 #define VG_OBJ_DSA_WRITE_BASE 29U
@@ -2266,17 +2413,17 @@ static bool virtio_gpu_virgl_init_pipeline(void) {
     virgl_put(&b,32U);virgl_put(&b,0U);virgl_put(&b,0U);
     virgl_put(&b,VIRGL_FORMAT_R32G32B32A32_FLOAT);
     /* Opaque, source-alpha and additive source-alpha blend objects. */
-    for(uint32_t blend=0;blend<5U;blend++){
+    for(uint32_t blend=0;blend<6U;blend++){
         uint32_t handle=blend==0U?VG_OBJ_BLEND_OPAQUE:
             (blend==1U?VG_OBJ_BLEND_ALPHA:
              (blend==2U?VG_OBJ_BLEND_ADDITIVE:
-              (blend==3U?VG_OBJ_BLEND_PREMULT:VG_OBJ_BLEND_MULTIPLY)));
+              (blend==3U?VG_OBJ_BLEND_PREMULT:(blend==4U?VG_OBJ_BLEND_MULTIPLY:VG_OBJ_BLEND_ADDITIVE_ONE))));
         virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_CREATE_OBJECT,
         VIRGL_OBJECT_BLEND,11U));virgl_put(&b,handle);
         virgl_put(&b,0U);virgl_put(&b,0U);
         rt=15U<<27;
-        if(blend){uint32_t dst=blend==2U?1U:0x13U;
-            rt|=1U|((blend==3U?1U:3U)<<4)|(dst<<9)|(1U<<17)|(dst<<22);}
+        if(blend){uint32_t dst=(blend==2U || blend==5U)?1U:0x13U;
+            rt|=1U|(((blend==3U || blend==5U)?1U:3U)<<4)|(dst<<9)|(1U<<17)|(dst<<22);}
         /* Quake lightmaps: dst.rgb *= src.rgb, dst.a *= src.a.
          * Gallium factors: ZERO=0x11, SRC_COLOR=2, SRC_ALPHA=3. */
         if(blend==4U)rt=(15U<<27)|1U|(0x11U<<4)|(2U<<9)|
@@ -2317,7 +2464,7 @@ static bool virtio_gpu_virgl_init_pipeline(void) {
        !virgl_shader(&b,VG_SHADER_FS_TEXTURE,1U,fs_tex)||
        !virgl_shader(&b,VG_SHADER_FS_DECAL,1U,fs_decal)||
        !virtio_gpu_submit_3d(b.d,b.n))return false;
-    g_virtio.virgl_vbo_capacity=256U*1024U;
+    g_virtio.virgl_vbo_capacity=VIRTIO_GPU_VIRGL_VBO_BYTES;
     for(uint32_t slot=0U;slot<3U;slot++){
         g_virtio.virgl_vbo[slot]=virtio_alloc_aligned(
             g_virtio.virgl_vbo_capacity,4096U,
@@ -2370,7 +2517,7 @@ static void vg_destroy_resource(uint32_t resource){
     GFX3D_CAP_TEXTURE_REGION_UPLOAD | GFX3D_CAP_SCALE | \
     GFX3D_CAP_TRANSFORM | GFX3D_CAP_WINDOW_SURFACES | GFX3D_CAP_GLYPH_ATLAS | \
     GFX3D_CAP_ALPHA_TEST | GFX3D_CAP_TEXTURE_DECAL | GFX3D_CAP_TEXTURE_MIPMAPS | \
-    GFX3D_CAP_ORDERED_SUBMIT | GFX3D_CAP_BLEND_MULTIPLY)
+    GFX3D_CAP_ORDERED_SUBMIT | GFX3D_CAP_BLEND_MULTIPLY | GFX3D_CAP_BLEND_ADDITIVE_ONE)
 
 static bool vg_probe(gfx3d_info_t *info){
     if(!virtio_gpu_device_start()||!g_virtio.virgl_commands_ready)return false;
@@ -2395,11 +2542,11 @@ static void vg_reset(void){
       const uint32_t handles[]={VG_OBJ_VE,VG_OBJ_BLEND_OPAQUE,
         VG_OBJ_BLEND_ALPHA,VG_OBJ_BLEND_ADDITIVE,VG_OBJ_DSA_OFF,VG_OBJ_RS,
         VG_SHADER_VS,VG_SHADER_FS_COLOR,VG_SHADER_FS_TEXTURE,
-        VG_SHADER_FS_DECAL,VG_OBJ_BLEND_PREMULT,VG_OBJ_RS_CLIPPED,VG_OBJ_BLEND_MULTIPLY};
+        VG_SHADER_FS_DECAL,VG_OBJ_BLEND_PREMULT,VG_OBJ_RS_CLIPPED,VG_OBJ_BLEND_MULTIPLY,VG_OBJ_BLEND_ADDITIVE_ONE};
       const uint32_t objects[]={VIRGL_OBJECT_VERTEX_ELEMENTS,VIRGL_OBJECT_BLEND,
         VIRGL_OBJECT_BLEND,VIRGL_OBJECT_BLEND,VIRGL_OBJECT_DSA,
         VIRGL_OBJECT_RASTERIZER,VIRGL_OBJECT_SHADER,VIRGL_OBJECT_SHADER,
-        VIRGL_OBJECT_SHADER,VIRGL_OBJECT_SHADER,VIRGL_OBJECT_BLEND,VIRGL_OBJECT_RASTERIZER,VIRGL_OBJECT_BLEND};
+        VIRGL_OBJECT_SHADER,VIRGL_OBJECT_SHADER,VIRGL_OBJECT_BLEND,VIRGL_OBJECT_RASTERIZER,VIRGL_OBJECT_BLEND,VIRGL_OBJECT_BLEND};
       for(uint32_t i=0;i<sizeof(handles)/sizeof(handles[0]);i++){
         virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_DESTROY_OBJECT,objects[i],1U));
         virgl_put(&b,handles[i]);
@@ -2511,35 +2658,20 @@ static bool vg_surface_destroy(gfx3d_surface_handle_t h){
     {uint8_t generation=s->generation;kmemset(s,0,sizeof(*s));s->generation=generation;}
     return true;
 }
-static bool vg_upload_rect(virtio_gpu_3d_surface_t *s,gfx_rect_t r){
-    virtio_gpu_transfer_host_3d_t transfer;
-    virtio_gpu_ctrl_hdr_t response;
-    kmemset(&transfer,0,sizeof(transfer));
-    transfer.hdr.type=VIRTIO_GPU_CMD_TRANSFER_TO_HOST_3D;
-    transfer.hdr.ctx_id=g_virtio.virgl_context_id;
-    transfer.resource_id=s->resource;
-    transfer.box.x=r.x;transfer.box.y=r.y;
-    transfer.box.w=r.w;transfer.box.h=r.h;transfer.box.d=1U;
-    transfer.stride=(uint32_t)s->width*4U;
-    transfer.layer_stride=transfer.stride*s->height;
-    transfer.offset=(uint64_t)((uint32_t)r.y*transfer.stride+(uint32_t)r.x*4U);
-    return virtio_gpu_control_command(&transfer,sizeof(transfer),&response,
-        sizeof(response),VIRTIO_GPU_RESP_OK_NODATA,true,NULL);
-}
+static bool vg_upload_inline(virtio_gpu_3d_surface_t *s,const uint32_t *pixels,
+        uint32_t pitch,uint32_t level,uint32_t dx,uint32_t dy,uint32_t width,uint32_t height);
 
 static bool vg_surface_upload(gfx3d_surface_handle_t h,const uint32_t *pixels,
         uint32_t pitch,const gfx_rect_t *rect){
     virtio_gpu_3d_surface_t *s=vg_surface(h);gfx_rect_t r;
-    if(!vg_flush())return false;
     if(!s||!pixels||pitch<s->width)return false;
     r=rect?*rect:(gfx_rect_t){0,0,s->width,s->height};
     if(r.x<0||r.y<0||r.w<=0||r.h<=0||r.x+r.w>s->width||r.y+r.h>s->height)return false;
-    for(int y=0;y<r.h;y++)kmemcpy(s->pixels+(uint32_t)(r.y+y)*s->width+r.x,
-        pixels+(uint32_t)(r.y+y)*pitch+r.x,(uint32_t)r.w*4U);
-    return vg_upload_rect(s,r);
+    return vg_upload_inline(s,pixels+(uint32_t)r.y*pitch+(uint32_t)r.x,
+        pitch,0U,(uint32_t)r.x,(uint32_t)r.y,(uint32_t)r.w,(uint32_t)r.h);
 }
-/* Level transfers reuse the base-sized staging allocation only after the
- * preceding fenced transfer completed; the host owns independent mip images. */
+/* Copy each mip's data into the command stream, not a shared base-level
+ * staging buffer that would require a fence before reusing it. */
 static bool vg_surface_upload_mip(gfx3d_surface_handle_t h,uint32_t level,
         const uint32_t *pixels,uint32_t pitch){
     virtio_gpu_3d_surface_t *s=vg_surface(h);uint32_t w,height;
@@ -2547,22 +2679,49 @@ static bool vg_surface_upload_mip(gfx3d_surface_handle_t h,uint32_t level,
     w=s->width>>level;height=s->height>>level;
     if(!w)w=1U;
     if(!height)height=1U;
-    if(pitch<w||!vg_flush())return false;
-    for(uint32_t y=0;y<height;y++)kmemcpy(s->pixels+y*w,pixels+y*pitch,w*4U);
-    return virtio_gpu_transfer_host_3d_level(VIRTIO_GPU_CMD_TRANSFER_TO_HOST_3D,
-        s->resource,w,height,w*4U,level);
+    return vg_upload_inline(s,pixels,pitch,level,0U,0U,w,height);
 }
 
+/* RESOURCE_INLINE_WRITE copies region data into the ordered VirGL command
+ * stream. Unlike a fenced TRANSFER_TO_HOST per lightmap patch, this preserves
+ * draw/update/draw ordering without a guest/host round trip for every patch.
+ * Protocol layout: virglrenderer src/vrend_decode.c resource_inline_write. */
+static bool vg_upload_inline(virtio_gpu_3d_surface_t *s,
+        const uint32_t *pixels,uint32_t pitch,uint32_t level,uint32_t dx,uint32_t dy,
+        uint32_t width,uint32_t height){
+    if(!s||level>=s->mip_levels)return false;
+    uint32_t mip_w=s->width>>level,mip_h=s->height>>level;
+    if(!mip_w)mip_w=1U;
+    if(!mip_h)mip_h=1U;
+    if(!pixels||!width||!height||pitch<width||dx>=mip_w||dy>=mip_h||
+       width>mip_w-dx||height>mip_h-dy)return false;
+    /* Each command's length field is 16 bits, even in a larger submit buffer. */
+    uint32_t max_rows=(65535U-11U)/width;
+    if(!max_rows)return false;
+    for(uint32_t first=0U;first<height;){
+        uint32_t rows=height-first;if(rows>max_rows)rows=max_rows;
+        uint32_t words=12U+width*rows;
+        if(g_virtio.virgl_frame_command_count+words>VIRTIO_GPU_VIRGL_COMMAND_WORDS&&
+           !vg_flush())return false;
+        uint32_t *out=&g_virtio.virgl_frame_commands[g_virtio.virgl_frame_command_count];
+        out[0]=VIRGL_CMD0(VIRGL_CCMD_RESOURCE_INLINE_WRITE,0U,words-1U);
+        out[1]=s->resource;out[2]=level;out[3]=2U; /* PIPE_MAP_WRITE */
+        out[4]=width*4U;out[5]=width*rows*4U;
+        out[6]=dx;out[7]=dy+first;out[8]=0U;
+        out[9]=width;out[10]=rows;out[11]=1U;
+        for(uint32_t y=0U;y<rows;y++){
+            const uint32_t *src=pixels+(first+y)*pitch;
+            kmemcpy(out+12U+y*width,src,width*4U);
+            if(!level)kmemcpy(s->pixels+(dy+first+y)*s->width+dx,src,width*4U);
+        }
+        g_virtio.virgl_frame_command_count+=words;first+=rows;
+    }
+    return true;
+}
 static bool vg_surface_upload_region(gfx3d_surface_handle_t h,
         const uint32_t *pixels,uint32_t pitch,uint32_t dx,uint32_t dy,
         uint32_t width,uint32_t height){
-    virtio_gpu_3d_surface_t *s=vg_surface(h);
-    if(!vg_flush())return false;
-    if(!s||!pixels||!pitch||pitch<width||!width||!height||
-       dx+width>s->width||dy+height>s->height)return false;
-    for(uint32_t y=0U;y<height;y++)
-        kmemcpy(s->pixels+(dy+y)*s->width+dx,pixels+y*pitch,width*4U);
-    return vg_upload_rect(s,(gfx_rect_t){dx,dy,width,height});
+    return vg_upload_inline(vg_surface(h),pixels,pitch,0U,dx,dy,width,height);
 }
 
 static bool vg_surface_download(gfx3d_surface_handle_t h,uint32_t *pixels,
@@ -2614,7 +2773,7 @@ static bool vg_depth_download(gfx3d_surface_handle_t h,uint16_t *depth,
 static bool vg_clear_internal(virtio_gpu_3d_surface_t *s,uint32_t color,
                               float depth,uint32_t flags){
     virgl_builder_t b={{0},0U};uint32_t buffers=0U;
-    if(!s||!vg_flush())return false;
+    if(!s)return false;
     if(!(flags&(GFX3D_DRAW_CLEAR_COLOR|GFX3D_DRAW_CLEAR_DEPTH)))return true;
     virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_SET_FRAMEBUFFER_STATE,0U,3U));
     virgl_put(&b,1U);virgl_put(&b,s->depth_surface_object);virgl_put(&b,s->surface_object);
@@ -2631,7 +2790,13 @@ static bool vg_clear_internal(virtio_gpu_3d_surface_t *s,uint32_t color,
       union {double value;uint32_t word[2];} z;
       z.value=depth<0.0f?0.0:(depth>1.0f?1.0:(double)depth);
       virgl_put(&b,z.word[0]);virgl_put(&b,z.word[1]);virgl_put(&b,0U);}
-    return virtio_gpu_submit_3d(b.d,b.n);
+    /* Clears and subsequent draws share the same ordered command stream.
+     * Submitting/waiting on the host queue for each clear serializes both the
+     * application's frame and the compositor's snapshot/desktop targets. */
+    if(g_virtio.virgl_frame_command_count+b.n>VIRTIO_GPU_VIRGL_COMMAND_WORDS && !vg_flush())return false;
+    kmemcpy(g_virtio.virgl_frame_commands+g_virtio.virgl_frame_command_count,b.d,b.n*4U);
+    g_virtio.virgl_frame_command_count+=b.n;
+    return true;
 }
 static bool vg_surface_clear(gfx3d_surface_handle_t h,uint32_t color,uint32_t *f){
     bool ok=vg_clear_internal(vg_surface(h),color,0.0f,GFX3D_DRAW_CLEAR_COLOR);
@@ -2640,6 +2805,7 @@ static bool vg_surface_clear(gfx3d_surface_handle_t h,uint32_t color,uint32_t *f
 }
 static bool vg_surface_present(gfx3d_surface_handle_t h,const gfx_rect_t *r,
                                uint32_t *f){
+    static bool direct_reported,fallback_reported;
     if(!vg_flush())return false;
     virtio_gpu_3d_surface_t *s=vg_surface(h);gfx_rect_t full;
     if(f)*f=0U;
@@ -2651,6 +2817,7 @@ static bool vg_surface_present(gfx3d_surface_handle_t h,const gfx_rect_t *r,
         virtio_gpu_set_scanout_resource(s->resource,s->width,s->height))){
         g_virtio.scanout_resource=s->resource;
         if(virtio_gpu_flush_resource(s->resource,full,NULL)){
+            if(!direct_reported){direct_reported=true;kprintf("[VIRTIOGPU:SCANOUT] GPU direct %ux%u\n",s->width,s->height);}
             /* Publication is ordered; explicit wait_fence still waits on GPU. */
             g_virtio.virgl_pending=true;
             if(f)*f=virtio_gpu_next_fence();
@@ -2659,6 +2826,7 @@ static bool vg_surface_present(gfx3d_surface_handle_t h,const gfx_rect_t *r,
     }
     /* Compatibility fallback for hosts that reject scanout-capable VirGL
        resources. This is intentionally not used on a working virglrenderer. */
+    if(!fallback_reported){fallback_reported=true;kprintf("[VIRTIOGPU:SCANOUT] CPU fallback\n");}
     if(!vg_surface_download(h,g_virtio.framebuffer,g_virtio.width,&full))return false;
     return virtio_gpu_upload_scanout_rect(g_virtio.display_resource,
                                           g_virtio.pitch,full,f);
@@ -2695,8 +2863,13 @@ static bool vg_draw_clipped(gfx3d_surface_handle_t target,gfx3d_surface_handle_t
        sizeof(g_virtio.virgl_frame_commands)/sizeof(uint32_t)&&!vg_flush())return false;
     if(bytes>g_virtio.virgl_vbo_capacity-
        g_virtio.virgl_vbo_used[g_virtio.virgl_vbo_index]){
-        uint32_t next=(g_virtio.virgl_vbo_index+1U)%3U;
-        if(g_virtio.virgl_vbo_used[next]&&!vg_sync())return false;
+        uint32_t current=g_virtio.virgl_vbo_index;
+        if(!vg_flush() || !virtio_gpu_seal_vbo(&g_virtio.virgl_vbo_fence[current]))return false;
+        uint32_t next=(current+1U)%3U;
+        if(g_virtio.virgl_vbo_used[next]) {
+            if(!virtio_gpu_wait_vbo(g_virtio.virgl_vbo_fence[next]))return false;
+            g_virtio.virgl_vbo_used[next]=0U;g_virtio.virgl_vbo_fence[next]=0U;
+        }
         g_virtio.virgl_vbo_index=next;
     }
     offset=g_virtio.virgl_vbo_used[g_virtio.virgl_vbo_index];
@@ -2720,7 +2893,8 @@ static bool vg_draw_clipped(gfx3d_surface_handle_t target,gfx3d_surface_handle_t
     virgl_put(&b,VIRGL_CMD0(VIRGL_CCMD_BIND_OBJECT,VIRGL_OBJECT_BLEND,1U));
     virgl_put(&b,(flags&GFX3D_DRAW_BLEND_MULTIPLY)?VG_OBJ_BLEND_MULTIPLY:
         (flags&GFX3D_DRAW_BLEND)?
-        ((flags&GFX3D_DRAW_BLEND_ADDITIVE)?VG_OBJ_BLEND_ADDITIVE:
+        ((flags&GFX3D_DRAW_BLEND_ADDITIVE)?
+         ((flags&GFX3D_DRAW_PREMULTIPLIED)?VG_OBJ_BLEND_ADDITIVE_ONE:VG_OBJ_BLEND_ADDITIVE):
          ((flags&GFX3D_DRAW_PREMULTIPLIED)?VG_OBJ_BLEND_PREMULT:VG_OBJ_BLEND_ALPHA)):
         VG_OBJ_BLEND_OPAQUE);
     uint32_t dsa=(flags&GFX3D_DRAW_DEPTH_TEST)?
@@ -2811,11 +2985,15 @@ static bool vg_flush(void){
     return true;
 }
 static bool vg_sync(void){
+    uint64_t started=perfmon_scope_begin();
     const uint32_t barrier[]={VIRGL_CMD0(VIRGL_CCMD_SET_FRAMEBUFFER_STATE,0U,2U),0U,0U};
-    if(!vg_flush()||(g_virtio.virgl_pending&&
-        !virtio_gpu_submit_3d_sync(barrier,3U,true)))return false;
-    for(uint32_t slot=0U;slot<3U;slot++)g_virtio.virgl_vbo_used[slot]=0U;
-    return true;
+    bool ok=vg_flush()&&(!g_virtio.virgl_pending||
+        virtio_gpu_submit_3d_sync(barrier,3U,true));
+    if(ok)for(uint32_t slot=0U;slot<3U;slot++) {
+        g_virtio.virgl_vbo_used[slot]=0U;g_virtio.virgl_vbo_fence[slot]=0U;
+    }
+    perfmon_scope_end(PERF_SCOPE_3D_WAIT,started);
+    return ok;
 }
 static bool vg_end(gfx3d_surface_handle_t h,uint32_t *f){
     if(f)*f=0U;
@@ -3023,21 +3201,21 @@ static bool vg_vbo_lifetime_test(void){
     bool ok=false;uint32_t bad=0;
     if(!vertices||!pixels||!vg_surface_create(&desc,&target))goto done;
     if(!vg_begin(target,0xFF000000U,0,GFX3D_DRAW_CLEAR_COLOR))goto done;
-    for(uint32_t draw=0;draw<64U;draw++){
-        uint32_t tile=draw%16U;
-        float x=(float)((tile%4U)*64U),y=(float)((tile/4U)*64U);
+    for(uint32_t draw=0;draw<192U;draw++){
+        uint32_t tile=draw;
+        float x=(float)((tile%16U)*16U),y=(float)((tile/16U)*16U);
         uint32_t color=0xFF000000U|((draw+1U)*0x030507U);
         gfx3d_vertex_t quad[6]={{x,y,0.5f,1,color,0,0},
-            {x+64,y,0.5f,1,color,0,0},{x+64,y+64,0.5f,1,color,0,0},
-            {x,y,0.5f,1,color,0,0},{x+64,y+64,0.5f,1,color,0,0},
-            {x,y+64,0.5f,1,color,0,0}};
+            {x+16,y,0.5f,1,color,0,0},{x+16,y+16,0.5f,1,color,0,0},
+            {x,y,0.5f,1,color,0,0},{x+16,y+16,0.5f,1,color,0,0},
+            {x,y+16,0.5f,1,color,0,0}};
         for(uint32_t i=0;i<600U;i++)vertices[i]=quad[i%6U];
         if(!vg_draw(target,0,vertices,600U,0,NULL)||!vg_end(target,NULL))goto done;
     }
     if(!vg_surface_download(target,pixels,256,NULL))goto done;
-    for(uint32_t tile=0;tile<16U;tile++){
-        uint32_t expected=0xFF000000U|((49U+tile)*0x030507U);
-        uint32_t actual=pixels[((tile/4U)*64U+32U)*256U+(tile%4U)*64U+32U];
+    for(uint32_t tile=0;tile<192U;tile++){
+        uint32_t expected=0xFF000000U|((1U+tile)*0x030507U);
+        uint32_t actual=pixels[((tile/16U)*16U+8U)*256U+(tile%16U)*16U+8U];
         if(actual!=expected)bad++;
     }
     ok=!bad;
@@ -3045,7 +3223,7 @@ done:
     if(target)vg_surface_destroy(target);
     if(vertices)kfree(vertices);
     if(pixels)kfree(pixels);
-    kprintf("[VIRGL:TEST] VBO lifetime submissions=64 bad_tiles=%u %s\n",bad,ok?"PASS":"FAIL");
+    kprintf("[VIRGL:TEST] VBO lifetime submissions=192 bad_tiles=%u %s\n",bad,ok?"PASS":"FAIL");
     return ok;
 }
 

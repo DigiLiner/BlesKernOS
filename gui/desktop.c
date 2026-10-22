@@ -245,7 +245,7 @@ void gui_desktop_init(gui_desktop_t *desktop, gui_surface_t surface) {
 gui_program_t *gui_desktop_register_program(gui_desktop_t *desktop, const char *name, void *state, gui_program_paint_t paint, gui_program_event_t handle_event, gui_program_destroy_t destroy) {
     gui_program_t *program;
 
-    if (!desktop || !paint) return NULL;
+    if (!desktop || (!paint && !handle_event)) return NULL;
 
     program = (gui_program_t *)kzalloc(sizeof(gui_program_t));
     if (!program) return NULL;
@@ -259,8 +259,8 @@ gui_program_t *gui_desktop_register_program(gui_desktop_t *desktop, const char *
     program->paint = paint;
     program->handle_event = handle_event;
     program->destroy = destroy;
-    program->paint_requested = true;
-    if ((uint32_t)(uintptr_t)paint >= HEAP_START && task_current_is_user()) {
+    program->paint_requested = paint != NULL;
+    if ((uint32_t)(uintptr_t)(paint ? (void *)paint : (void *)handle_event) >= HEAP_START && task_current_is_user()) {
         program->callback_pid = task_current_pid();
         /* Native desktop paint/event callbacks still serialize with the CPU0
          * compositor.  Only this owner thread is pinned; process workers are

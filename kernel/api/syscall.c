@@ -2933,7 +2933,14 @@ static registers_t *syscall_dispatch(registers_t *regs) {
                 linux_device *device=linux_device_for(resource_fd(resource,regs->ebx));
                 regs->eax=device && (device->kind==4 || device->kind==5)
                     ? (uint32_t)linux_oss_ioctl(device,regs->ecx,regs->edx) : (uint32_t)-BK_ENOTTY;
-            } else if (regs->ecx >= BLES_GFX_OPEN && regs->ecx <= BLES_GFX_LAUNCH_BUSY) {
+            } else if ((regs->ecx >= BLES_GFX_OPEN && regs->ecx <= BLES_GFX_LAUNCH_BUSY) ||
+                       regs->ecx == BLES_GFX_NATIVE_FULLSCREEN ||
+                       regs->ecx == BLES_GFX_NATIVE_EXIT_REQUEST) {
+                /* Native Gallium screensavers use two ioctls after the
+                 * original 0xB100..0xB110 graphics range. Both are checked
+                 * by bles_gfx_ioctl_pinned(), but must pass this dispatcher
+                 * first. Otherwise their calls always return ENOTTY and
+                 * a cancelled Jelly renderer keeps running forever. */
                 syscall_resources_t *resource=resource_for(task_current_process_id(),false);
                 int raw=resource_fd(resource,regs->ebx);
                 linux_device *device=linux_device_for(raw);

@@ -1,0 +1,12 @@
+{
+  "status": "pass",
+  "memory_mib": 512,
+  "vga": "std",
+  "accel": "kvm",
+  "applications": [
+    "/SYSTEM/PROGRAMS/QUAKE2.BEX"
+  ],
+  "elapsed_seconds": 61.2,
+  "settle_ms": 8000,
+  "scope": "resolved LBS imports, running process after settling interval, no live process threads after group exit; screenshots for UI review"
+}

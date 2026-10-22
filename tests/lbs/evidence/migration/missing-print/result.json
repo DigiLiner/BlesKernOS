@@ -1,0 +1,7 @@
+{
+  "status": "pass",
+  "missing": "/SYSTEM/PRINT.LBS",
+  "application": "TEXTEDITOR.BEX",
+  "exit_status": 127,
+  "scope": "explicit startup error, no application entry/fallback, waitpid confirms termination after partial module load"
+}

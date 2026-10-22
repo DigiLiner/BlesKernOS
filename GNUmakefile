@@ -12,3 +12,6 @@ ATIR128_DVR ?= build/system/drivers/ATIR128.DVR
 ATIR1283D_DVR ?= build/system/drivers/ATIR1283D.DVR
 
 $(ATA_IMG): $(ATIR128_DVR) $(ATIR1283D_DVR)
+
+include mk/lbs.mk
+include mk/gallium.mk

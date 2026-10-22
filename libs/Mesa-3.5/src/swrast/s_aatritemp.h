@@ -44,6 +44,10 @@
 
 /*void triangle( GLcontext *ctx, GLuint v0, GLuint v1, GLuint v2, GLuint pv )*/
 {
+#ifdef MESA_BLESKERNOS
+   struct bk_span_workspace *workspace = _swrast_bk_span_workspace(ctx);
+   if (!workspace) return;
+#endif
    const GLfloat *p0 = v0->win;
    const GLfloat *p1 = v1->win;
    const GLfloat *p2 = v2->win;
@@ -55,46 +59,106 @@
 
 #ifdef DO_Z
    GLfloat zPlane[4];
+#ifdef MESA_BLESKERNOS
+   GLdepth *z = workspace->z;
+#else
    GLdepth z[MAX_WIDTH];
+#endif
 #endif
 #ifdef DO_FOG
    GLfloat fogPlane[4];
+#ifdef MESA_BLESKERNOS
+   GLfloat *fog = workspace->fog;
+#else
    GLfloat fog[MAX_WIDTH];
+#endif
 #else
    GLfloat *fog = NULL;
 #endif
 #ifdef DO_RGBA
    GLfloat rPlane[4], gPlane[4], bPlane[4], aPlane[4];
+#ifdef MESA_BLESKERNOS
+   GLchan (*rgba)[4] = workspace->rgba;
+#else
    DEFMARRAY(GLchan, rgba, MAX_WIDTH, 4);  /* mac 32k limitation */
+#endif
 #endif
 #ifdef DO_INDEX
    GLfloat iPlane[4];
+#ifdef MESA_BLESKERNOS
+   GLuint *index = workspace->index;
+#else
    GLuint index[MAX_WIDTH];
+#endif
+#ifdef MESA_BLESKERNOS
+   GLint *icoverageSpan = workspace->icoverage;
+#else
    GLint icoverageSpan[MAX_WIDTH];
+#endif
+#else
+#ifdef MESA_BLESKERNOS
+   GLfloat *coverageSpan = workspace->coverage;
 #else
    GLfloat coverageSpan[MAX_WIDTH];
 #endif
+#endif
 #ifdef DO_SPEC
    GLfloat srPlane[4], sgPlane[4], sbPlane[4];
+#ifdef MESA_BLESKERNOS
+   GLchan (*spec)[4] = workspace->spec;
+#else
    DEFMARRAY(GLchan, spec, MAX_WIDTH, 4);
+#endif
 #endif
 #ifdef DO_TEX
    GLfloat sPlane[4], tPlane[4], uPlane[4], vPlane[4];
    GLfloat texWidth, texHeight;
+#ifdef MESA_BLESKERNOS
+   GLfloat *s = workspace->sTex;
+#else
    DEFARRAY(GLfloat, s, MAX_WIDTH);  /* mac 32k limitation */
+#endif
+#ifdef MESA_BLESKERNOS
+   GLfloat *t = workspace->tTex;
+#else
    DEFARRAY(GLfloat, t, MAX_WIDTH);
+#endif
+#ifdef MESA_BLESKERNOS
+   GLfloat *u = workspace->rTex;
+#else
    DEFARRAY(GLfloat, u, MAX_WIDTH);
+#endif
+#ifdef MESA_BLESKERNOS
+   GLfloat *lambda = workspace->lambda;
+#else
    DEFARRAY(GLfloat, lambda, MAX_WIDTH);
+#endif
 #elif defined(DO_MULTITEX)
    GLfloat sPlane[MAX_TEXTURE_UNITS][4];
    GLfloat tPlane[MAX_TEXTURE_UNITS][4];
    GLfloat uPlane[MAX_TEXTURE_UNITS][4];
    GLfloat vPlane[MAX_TEXTURE_UNITS][4];
    GLfloat texWidth[MAX_TEXTURE_UNITS], texHeight[MAX_TEXTURE_UNITS];
+#ifdef MESA_BLESKERNOS
+   GLfloat (*s)[MAX_WIDTH] = workspace->msTex;
+#else
    DEFMARRAY(GLfloat, s, MAX_TEXTURE_UNITS, MAX_WIDTH);  /* mac 32k limit */
+#endif
+#ifdef MESA_BLESKERNOS
+   GLfloat (*t)[MAX_WIDTH] = workspace->mtTex;
+#else
    DEFMARRAY(GLfloat, t, MAX_TEXTURE_UNITS, MAX_WIDTH);
+#endif
+#ifdef MESA_BLESKERNOS
+   GLfloat (*u)[MAX_WIDTH] = workspace->mrTex;
+#else
    DEFMARRAY(GLfloat, u, MAX_TEXTURE_UNITS, MAX_WIDTH);
+#endif
+#ifdef MESA_BLESKERNOS
+   GLfloat (*lambda)[MAX_WIDTH] = workspace->mLambda;
+#else
    DEFMARRAY(GLfloat, lambda, MAX_TEXTURE_UNITS, MAX_WIDTH);
+#endif
 #endif
    GLfloat bf = SWRAST_CONTEXT(ctx)->_backface_sign;
 
@@ -547,6 +611,7 @@
       }
    }
 
+#ifndef MESA_BLESKERNOS
 #ifdef DO_RGBA
    UNDEFARRAY(rgba);  /* mac 32k limitation */
 #endif
@@ -558,6 +623,7 @@
    UNDEFARRAY(t);
    UNDEFARRAY(u);
    UNDEFARRAY(lambda);
+#endif
 #endif
 }
 

@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/luqui10alcaraz-prog/BlesKernOS-Programs",
+  "commit": "0b0b7c6dde2e78cfc87bf625040abc56dc66a0f1",
+  "imported": [
+    "Bles-Codex32-standalone",
+    "HyperZip-BlesKernOS-Standalone",
+    "LexiNet",
+    "3D-Plus-Standalone",
+    "Doom-BlesKernOS-Standalone",
+    "Quake-BlesKernOS-Standalone"
+  ],
+  "unavailable": "No directory named Civ2; the local Freeciv 3.2.5 client and server are included under their original names.",
+  "local_source": "/home/lucas/Escritorio/lucas/BlesKErnOS 0.9/BlesKernOS 0.9/BlesKernOS 0.9/extras",
+  "local_preferred": [
+    "Bles-Codex32-standalone",
+    "3D-Plus-Standalone",
+    "Bles3D-Core",
+    "Freeciv-BlesKernOS-Standalone"
+  ]
+}

@@ -1,4 +1,5 @@
 #include "bleskernos.h"
+#include "bleskernos_heap.h"
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -696,6 +697,23 @@ void free(void *pointer) {
     posix_heap_unlock();
     if (release_chunk) (void)bk_free(chunk);
 }
+int bk_posix_heap_statistics(bk_posix_heap_statistics_t *out) {
+    posix_heap_chunk_t *chunk;
+    posix_heap_block_t *block;
+    if (!out || out->size < sizeof(*out)) return -1;
+    posix_heap_lock();
+    out->live_bytes = out->reserved_bytes = out->allocations = out->free_bytes = 0;
+    for (chunk = posix_heap_chunks; chunk; chunk = chunk->next) {
+        out->reserved_bytes += chunk->allocation_size;
+        for (block = chunk->first; block; block = block->next) {
+            if (block->is_free) out->free_bytes += block->size;
+            else { out->live_bytes += block->size; out->allocations++; }
+        }
+    }
+    posix_heap_unlock();
+    return 0;
+}
+
 void exit(int status) { bk_exit(status); }
 void abort(void) { bk_exit(134); }
 int abs(int value) { return value < 0 ? -value : value; }

@@ -236,10 +236,11 @@ static bool network_event(bk_gui_window_t *window UNUSED,
 void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     network_state_t *state;
     if (bk_sys_api_version() < NETWORK_MIN_API) return;
+    bk_sys_log("[LBS:MIGRATION] Network Status uses NETWORK.LBS\n");
     if (!desktop) desktop = bk_gui_desktop();
-    if (!desktop) return;
+    if (!desktop) { return; }
     state = (network_state_t *)bk_sys_alloc(sizeof(*state));
-    if (!state) return;
+    if (!state) { return; }
     st_zero(state, sizeof(*state));
     state->desktop = desktop;
     state->have_icon = bk_graphics_icon_load("Network", &state->icon);
@@ -273,7 +274,7 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     bk_gui_window_set_owner(state->window, bk_sys_getpid());
     state->pending_refresh = true;
 
-    while (bk_gui_window_is_open(state->window)) {
+    while (!bk_proc_exit_requested() && bk_gui_window_is_open(state->window)) {
         if (state->pending_refresh && !state->busy) network_refresh(state);
         if (state->pending_dhcp && !state->busy) network_dhcp(state);
         if (state->pending_ping && !state->busy) network_ping(state);

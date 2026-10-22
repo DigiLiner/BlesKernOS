@@ -1,0 +1,21 @@
+{
+  "result": "PASS",
+  "first_surface_ms": 40773,
+  "ram_mib": 512,
+  "window": {
+    "handle": 65477240,
+    "bounds": [
+      35,
+      69,
+      420,
+      475
+    ],
+    "title": "winecfg.exe",
+    "visible": true,
+    "listed": true,
+    "owner": 12,
+    "controller": 11
+  },
+  "lbs_launcher": "cpl",
+  "method": "first winecfg surface through native launcher/CPL; no property-page changes"
+}

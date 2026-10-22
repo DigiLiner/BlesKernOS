@@ -1,0 +1,1821 @@
+[
+  {
+    "destination": "/SYSTEM/PROGRAMS/FILE.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NGS",
+      "SOUND",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 85,
+    "original_bytes": 59164,
+    "input_bytes": 59164,
+    "migrated_bytes": 194312,
+    "sha256": "72fa26e0576a716a3f95f1ae375519d3c37dbfe647ffc6e2c7ef06f550f34e2f"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/TEXTEDITOR.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "PRINT",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 44,
+    "original_bytes": 21696,
+    "input_bytes": 16924,
+    "migrated_bytes": 145532,
+    "sha256": "35fcefc13026cb188e3abe33e3e9022416e868cb4327a9bb5b06b7d5ca3be98e"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/CALCULATOR.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 24,
+    "original_bytes": 7056,
+    "input_bytes": 7056,
+    "migrated_bytes": 132296,
+    "sha256": "7ed66d5ca4376ff04c432ff5344144556f09c16ddd88236f127b482e9925eaeb"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/FONT.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 34,
+    "original_bytes": 13632,
+    "input_bytes": 13632,
+    "migrated_bytes": 139972,
+    "sha256": "0b1868ddbff62d40c30a36b677448eff6b879c83ca3f7f1336c95d7ee9610789"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/MIDAMP.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NGS",
+      "SOUND",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 56,
+    "original_bytes": 27588,
+    "input_bytes": 27588,
+    "migrated_bytes": 159864,
+    "sha256": "5462bbc3f7c99a7646b3a6b3f9d50ab6a1ea39829b91f2aa2e09c75f6c9231c3"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/PROCESSMANAGER.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 55,
+    "original_bytes": 24176,
+    "input_bytes": 24176,
+    "migrated_bytes": 152452,
+    "sha256": "65d04e3d40ba6a3b0d77c25c30c8c9eedc7fb05b4949d8d22345444807783df4"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/CALENDAR.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 26,
+    "original_bytes": 11252,
+    "input_bytes": 11252,
+    "migrated_bytes": 136708,
+    "sha256": "c64e624d73215772ebec5020a024eca3399b6b8bf95ba98f2649ee0fde1ed22b"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/ABOUT.BEX",
+    "modules": [
+      "FONT",
+      "MEDIA",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 29,
+    "original_bytes": 7816,
+    "input_bytes": 7816,
+    "migrated_bytes": 137404,
+    "sha256": "0bc3fd4b1569352c3cd21b9b951c781391444ebacd4ffdf871dd16edd449f47d"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/RUNBOX.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 39,
+    "original_bytes": 12828,
+    "input_bytes": 12828,
+    "migrated_bytes": 143368,
+    "sha256": "88ae7f54e2e3597741caf7a9a3e184c0f6dc004924be0dde5f6c4de663f85679"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/IMAGEVIEWER.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 37,
+    "original_bytes": 16332,
+    "input_bytes": 16332,
+    "migrated_bytes": 146768,
+    "sha256": "5b0188101b7719b74a4f67ed54d473748e878dcc83de660754ab4f8683f8cbce"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/VIEWER.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NGS",
+      "SOUND",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 61,
+    "original_bytes": 15620,
+    "input_bytes": 15620,
+    "migrated_bytes": 148536,
+    "sha256": "9248c22fcc1cb606e4c4f265c557b87e9ff4cbd697533353e5c4bbe1856030f2"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/PAINT.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 30,
+    "original_bytes": 19572,
+    "input_bytes": 19572,
+    "migrated_bytes": 149048,
+    "sha256": "0009ebe7aebc5f9ce63fed6abbc3c3d15e11dbc7ceb50faaa545cde2ed8b3ee2"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/SCANDISK.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 29,
+    "original_bytes": 7864,
+    "input_bytes": 7864,
+    "migrated_bytes": 137240,
+    "sha256": "eec4271d1635082ac69fc7ae19b10a9471d1f12729b2b89155ac11c7b57e81e9"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/WINE.BEX",
+    "modules": [
+      "SYSTEM"
+    ],
+    "imports": 3,
+    "original_bytes": 1116,
+    "input_bytes": 1116,
+    "migrated_bytes": 104344,
+    "sha256": "540b9a249e36de43651ad3fead3c1b729fbe53f73d39545d714f5987138d7132"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/CONTROL.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 32,
+    "original_bytes": 12504,
+    "input_bytes": 12504,
+    "migrated_bytes": 138444,
+    "sha256": "3690c285b542ac45e2209fbf0414aad860356de1c0d5f6b302bd539bc49b1138"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/APPEAR.CPL",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "NGS3D",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 113,
+    "original_bytes": 2303220,
+    "input_bytes": 56012,
+    "migrated_bytes": 200836,
+    "sha256": "9a200b62ba5762f99b33039d1f2412ae8882f9e5f56236b58a712a476ec23c8c"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/DISPLAY.CPL",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "NGS3D",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 113,
+    "original_bytes": 2303220,
+    "input_bytes": 56012,
+    "migrated_bytes": 200832,
+    "sha256": "1f8708c1b9719216d97f822c851fa56aed40cb9312ad20fc191ed73c3c0a1173"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/SOUND.CPL",
+    "modules": [
+      "FONT",
+      "NGS",
+      "SOUND",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 40,
+    "original_bytes": 11088,
+    "input_bytes": 11088,
+    "migrated_bytes": 140152,
+    "sha256": "206659e63bfd5d5dbeccbf8a10e2ebbefddce0caab05a02e1eb44faaaa7e0ce1"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/DATETIME.CPL",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 43,
+    "original_bytes": 18968,
+    "input_bytes": 18968,
+    "migrated_bytes": 149860,
+    "sha256": "703a4b49f6195b873dfc40cc4d559a88ee9e4d80b7e70de62f2b141463526bb1"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/MOUSE.CPL",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 44,
+    "original_bytes": 19952,
+    "input_bytes": 19952,
+    "migrated_bytes": 147036,
+    "sha256": "f8b13cd6dd79d690a297a34238d0267512c51f70cee28257a9bb5c5a443b228e"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/KEYBOARD.CPL",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 37,
+    "original_bytes": 12952,
+    "input_bytes": 12952,
+    "migrated_bytes": 139352,
+    "sha256": "ecf880526fb3e42f84b1ea5fca77b342d8131de77b989791786e500d28ed4e71"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/SYSTEM.CPL",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SOUND",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 53,
+    "original_bytes": 22608,
+    "input_bytes": 22608,
+    "migrated_bytes": 153092,
+    "sha256": "6f294ae9cc6a6c6b55dd68c9561248c07f9c16f644c56fd9f7a5f834cdd3c64e"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/DEVMGR.CPL",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SOUND",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 54,
+    "original_bytes": 127672,
+    "input_bytes": 127672,
+    "migrated_bytes": 258252,
+    "sha256": "632b75c47a48be1f05ac60da3b223ec4c0bc439348499f70d32906dc63903ae3"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/INTERNET.CPL",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NETWORK",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 49,
+    "original_bytes": 19992,
+    "input_bytes": 19992,
+    "migrated_bytes": 149740,
+    "sha256": "44571010585a2af2e82d511cef61f63ce830244bb4655ea775ee90ee31f875a6"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/MODEM.CPL",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 41,
+    "original_bytes": 21160,
+    "input_bytes": 21160,
+    "migrated_bytes": 147948,
+    "sha256": "1ddb817916de2d1d31d5010a79962e7c9ded91071a9674439f69868ffc5a7cf0"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/LANGUAGE.CPL",
+    "modules": [
+      "FONT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 27,
+    "original_bytes": 6652,
+    "input_bytes": 6652,
+    "migrated_bytes": 132116,
+    "sha256": "49adf719ea0c5a44d803e7a160bee9ecc47f4777a83370bab20d02f95b8d5c56"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/WINE.CPL",
+    "modules": [
+      "SYSTEM"
+    ],
+    "imports": 3,
+    "original_bytes": 1088,
+    "input_bytes": 1088,
+    "migrated_bytes": 104272,
+    "sha256": "e1ff1858cde9aa5bfaaee7cfb826b312aef461e16f4d669a42c23538bd46e10f"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/NETSURF.BEX",
+    "modules": [
+      "ARCHIVE",
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NETWORK",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 74,
+    "original_bytes": 909340,
+    "input_bytes": 908220,
+    "migrated_bytes": 1043652,
+    "sha256": "e73a1b7722ed79dd467c1a553a84b37df30a51e9c3ec3e8ad4000a6fdb37276b"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/HELP_CENTER.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 25,
+    "original_bytes": 8412,
+    "input_bytes": 8412,
+    "migrated_bytes": 137304,
+    "sha256": "6ce16c7a7851853371a0eae99dc4e1daaa9294822d173af08f72c745cf145347"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/FIND_FILES.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 29,
+    "original_bytes": 9464,
+    "input_bytes": 9464,
+    "migrated_bytes": 134940,
+    "sha256": "4b6b22cefbf9edfc2d350bea4dbe391c1f2c126e283da55c4974b6edb2f890e0"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/ARCHIVE_MANAGER.BEX",
+    "modules": [
+      "ARCHIVE",
+      "FONT",
+      "MEDIA",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 33,
+    "original_bytes": 9824,
+    "input_bytes": 9824,
+    "migrated_bytes": 139812,
+    "sha256": "e44da1c828e925e77d7bd367415dd35656088dd9f3d9a3c237cba1b529aa2163"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/DISK_TOOLS.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 34,
+    "original_bytes": 12296,
+    "input_bytes": 12296,
+    "migrated_bytes": 138292,
+    "sha256": "df2f5e18941ce03f2eb3654d8a992b7afc433009881098db920c9791b3f901fe"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/CLIPBOARD_VIEWER.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 31,
+    "original_bytes": 6600,
+    "input_bytes": 6600,
+    "migrated_bytes": 132268,
+    "sha256": "ac53d2bc5423eeddce24673e20c17f03ef72e47871438397ad71217f0a0840ce"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/DEFRAG.BEX",
+    "modules": [
+      "FONT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 27,
+    "original_bytes": 8616,
+    "input_bytes": 8616,
+    "migrated_bytes": 133760,
+    "sha256": "6ed84122d8f23cf120ce59d1ffdb71a0cee27a0b440db0fccb8fc1d381627035"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/EVENT_VIEWER.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 34,
+    "original_bytes": 10476,
+    "input_bytes": 10476,
+    "migrated_bytes": 136360,
+    "sha256": "fb058127a58b158bc70a7897583b94482f3470e14600a3fe8b97a7ab0d691f3d"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/PERFORMANCE_MONITOR.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 40,
+    "original_bytes": 29832,
+    "input_bytes": 29832,
+    "migrated_bytes": 156356,
+    "sha256": "a44b09317c0ce2a86a8565e630cf4c8ed84f43bfecae779523d9f6b5b2c0b159"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/SHELL.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 38,
+    "original_bytes": 10232,
+    "input_bytes": 10232,
+    "migrated_bytes": 136948,
+    "sha256": "742299c46c3923bb698f7f350b47b39fd31503d35d505c8d71f2bd5c0ea25329"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/NETWORK_STATUS.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NETWORK",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 34,
+    "original_bytes": 112852,
+    "input_bytes": 9068,
+    "migrated_bytes": 140948,
+    "sha256": "1ab57286e896dd66f9751dadeed4928a2639f2725a49093850cd16d67d84c60c"
+  },
+  {
+    "destination": "/SYSTEM/SCREENS/SSLOGO.SCV",
+    "modules": [
+      "FONT",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 12,
+    "original_bytes": 5544,
+    "input_bytes": 5544,
+    "migrated_bytes": 129724,
+    "sha256": "a748a8f8c33be983ebc7ea8314c7b395c16e53a661d04b44954dd0e372b56402"
+  },
+  {
+    "destination": "/SYSTEM/SCREENS/SSPIPES.SCV",
+    "modules": [
+      "NGS3D",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 37,
+    "original_bytes": 2258696,
+    "input_bytes": 11128,
+    "migrated_bytes": 147836,
+    "sha256": "f940e6525bee93ef740accdb80b1984ca5624edde8ffa2842e80bfe218bb06a1"
+  },
+  {
+    "destination": "/SYSTEM/SCREENS/SSBALLS.SCV",
+    "modules": [
+      "NGS3D",
+      "SYSTEM",
+      "VISION"
+    ],
+    "imports": 40,
+    "original_bytes": 2259620,
+    "input_bytes": 12196,
+    "migrated_bytes": 149248,
+    "sha256": "5217f478730e1dd3c44da820fd2b857a44e54cab6a42f665770bc17266684bf2"
+  },
+  {
+    "destination": "/SYSTEM/TESTS/NATIVE/GEARS.BEX",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NGS",
+      "SYSTEM",
+      "TINYGL",
+      "VISION"
+    ],
+    "imports": 61,
+    "original_bytes": 14328,
+    "input_bytes": 14328,
+    "migrated_bytes": 149448,
+    "sha256": "c5879a8511576e8e25cfce49795be81bd8432bc3f5a827c1a74b841bcfade364"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/help.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1156,
+    "migrated_bytes": 107100,
+    "sha256": "5f848369c09ad77bb832aa82d6e0269a9886a86e426c624bd89579547929e4c3"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/echo.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 46900,
+    "input_bytes": 1248,
+    "migrated_bytes": 107264,
+    "sha256": "9ae391220ae1102d16a635b6203b5a36f60c34f88a56b2e007648f010f566e60"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/sh.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 12,
+    "original_bytes": 49260,
+    "input_bytes": 3852,
+    "migrated_bytes": 110396,
+    "sha256": "100430f78d7d39ecdcf28e3f1a452c4d6cc9eaa528491fb9bf365fae15e06ac5"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/about.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 4,
+    "original_bytes": 46860,
+    "input_bytes": 1192,
+    "migrated_bytes": 106996,
+    "sha256": "1b390efdc54df28334cfc5ec3f443950c1d9ee56b316d3e1377191a1b79810ee"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/uname.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46904,
+    "input_bytes": 1236,
+    "migrated_bytes": 107136,
+    "sha256": "7ef43c0022dcee076cb2967b3db023fc33e6ebdbeef49233d26a2d69f701ce74"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/hostname.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 11,
+    "original_bytes": 47640,
+    "input_bytes": 2184,
+    "migrated_bytes": 108672,
+    "sha256": "457a21887d5c977f96905152c04c9a8529b00d7d2311dfcfa9bd5909a3e6285f"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/uptime.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46968,
+    "input_bytes": 1300,
+    "migrated_bytes": 107168,
+    "sha256": "3b547f9479f125f426fbb83a01a0e755306eaa939d508f31e9eb8db056c58a90"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/date.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 46988,
+    "input_bytes": 1352,
+    "migrated_bytes": 107336,
+    "sha256": "34ef514e52db24d105947d9f96a6f6a8ba0ea35b1812d915cd6e6199866856b4"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/time.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 46988,
+    "input_bytes": 1352,
+    "migrated_bytes": 107336,
+    "sha256": "83d726d5248a443434d437786cdded911b5a46f2ea4449cfe68bac96df4a40f3"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/shutdown.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 46872,
+    "input_bytes": 1216,
+    "migrated_bytes": 107236,
+    "sha256": "f8d7ba16df656a0b0c3043aaf0dbd66c9d5ef5962e4d9c0b5e692d4a40fb4543"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/reboot.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 46868,
+    "input_bytes": 1216,
+    "migrated_bytes": 107236,
+    "sha256": "f1281e03e4154b9bbe5b33e85c965ad8bde0fadd28225ae179861fe572f6e743"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/sleep.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 7,
+    "original_bytes": 47020,
+    "input_bytes": 1404,
+    "migrated_bytes": 107548,
+    "sha256": "5b463817f3a5b4496619eb596376060f0e29f6c04e833647220f9f54d55a1f30"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/label.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 47004,
+    "input_bytes": 1368,
+    "migrated_bytes": 107344,
+    "sha256": "859d159d62a4475cd92416e98f9158e55fbfd33816d681686778ce2019c343bf"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/checkdisk.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 15,
+    "original_bytes": 52008,
+    "input_bytes": 6620,
+    "migrated_bytes": 113452,
+    "sha256": "243ac40bd6277559f53e9b151dd0555b56fc8a8f13e06470634b450ac874990a"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/fsinfo.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 7,
+    "original_bytes": 48396,
+    "input_bytes": 2764,
+    "migrated_bytes": 108860,
+    "sha256": "a0ca5ad0c3273044e2ca3c9946c2cbf88ab13cd38f3aa978bcb4206d40cf762a"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/backup.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 14,
+    "original_bytes": 53472,
+    "input_bytes": 8100,
+    "migrated_bytes": 114868,
+    "sha256": "35f0bd6149a8e8b3f5e4a5794954042ef3515cf40028a2479879ed512f6de513"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/dir.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "2dc79bda18625bff71d7d3d27bc7de6a79912e520dbfbfd8ce5a8be9340715f5"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ls.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107096,
+    "sha256": "153dffd4bd8bbdaae445dee7183d52933233a3631c1902fc67498b9b8bd5dbd2"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/copy.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "13cc3532e9c6c6839c52779e04122297a21afc0d11ca10a15d151112195f3991"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/cp.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107100,
+    "sha256": "3dcf5b3a30ea76523d53faffe041aeaeff9b8c8b2575856d1c0f0ea594d81ee3"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/move.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "d4073808e0a2d501658763a89ff7eef0c5b78dd375f539d086983b49ca6fb265"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/delete.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 46880,
+    "input_bytes": 1264,
+    "migrated_bytes": 107288,
+    "sha256": "ecf2e819ce1d170b2944e3be97d94a9ac55a32afd148cee1d9eab7b017d662ea"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/rm.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 7,
+    "original_bytes": 47180,
+    "input_bytes": 1572,
+    "migrated_bytes": 107720,
+    "sha256": "ff9575dffb44020d6a2d6e7a5f1369e96aec7943d16378148f4c32dafb90fe2d"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/mkdir.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 9,
+    "original_bytes": 47420,
+    "input_bytes": 1844,
+    "migrated_bytes": 108160,
+    "sha256": "13a5327ecc8745d0d60da44ec7bbf4124c5d1db1590c97d24fa32afa58b61aaf"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/rmdir.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1164,
+    "migrated_bytes": 107104,
+    "sha256": "fe06f66458adaffcfd4d8f4f9245f50b1244fd42b5f6db36a90857723c3aaf23"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/rename.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 46912,
+    "input_bytes": 1264,
+    "migrated_bytes": 107320,
+    "sha256": "6bfb55ef208cb8ac7840ed89eb3a2cc0c89c54e488e46f6854e6425f8df86b3a"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/touch.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1164,
+    "migrated_bytes": 107104,
+    "sha256": "470c6202a3421bbff06b3ed97d1469fab6f07c75544b405180cf7c52a3861c87"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/tree.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "3c541a50b2cc5044f9375388f0fd1ee7880fb6c7ac9e38a90d42c81bf3baa253"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/find.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "6b4e84090a349ee2f8220e71d31162582128df75e4507ee482c7f6f3605ecd90"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/attrib.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46856,
+    "input_bytes": 1164,
+    "migrated_bytes": 107104,
+    "sha256": "5463cad34fc6e7c892b8c38ab69234f50fb7df3506508adf55913b4310e1ae9b"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/chmod.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1164,
+    "migrated_bytes": 107104,
+    "sha256": "8e66323ee8828cffc66c5881133b829cd1a224d32683a746d945a56aaa91b35f"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/type.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107096,
+    "sha256": "8989beab0f990b0d9b8cc2cc47b90d6164242e16243f55f703c138d4a184bffb"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/more.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "6d082117fd774679b82ce5bfca0f3cd29f82078e20c2fd944e6fa16d3e6bd56f"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/cat.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "d7876e287f32e26f830b54b2809223a3e6c57f948544ca4662a98425448e7d28"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/diff.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "76e69e5bcef941bbf1972c2768dc79a73b754882ea8a0d431b8ef45689b14950"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ps.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46820,
+    "input_bytes": 1152,
+    "migrated_bytes": 107108,
+    "sha256": "66a69e20588c4ddd93fd312c9e9865eb78dd672340b85f66d1d1403ef01785be"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/kill.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 7,
+    "original_bytes": 46984,
+    "input_bytes": 1340,
+    "migrated_bytes": 107472,
+    "sha256": "8d47e8e97dce219bc6d14f44f49b1c2e44da6ce44145c2a92ebfdb0abb6a1843"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/tasklist.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46824,
+    "input_bytes": 1160,
+    "migrated_bytes": 107112,
+    "sha256": "83cfac3eba1fdff2ccb5a34b0fdccd033949ba5764eb84f2e8b3658c364138f5"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/taskkill.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 7,
+    "original_bytes": 46988,
+    "input_bytes": 1348,
+    "migrated_bytes": 107508,
+    "sha256": "075e51bfff711a10896b7e09db14dc5d9faed544de0862a1f6f283729f0449d7"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/top.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 10,
+    "original_bytes": 47656,
+    "input_bytes": 2124,
+    "migrated_bytes": 108528,
+    "sha256": "ce81dbd2687efe115645309274c6b16377f3e426fb8e6df4fe69d47af86d8979"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/nice.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "257aec8fa78219799529f93ae53f583cebd42e9c2ed64970bcbf6eb666dbbafd"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/pci.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46820,
+    "input_bytes": 1148,
+    "migrated_bytes": 107104,
+    "sha256": "91abc8b0d6c22ad5163d5ad40ae1d21186fb1675d083a7ff366a87e96475c821"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/usb.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 7,
+    "original_bytes": 47316,
+    "input_bytes": 1700,
+    "migrated_bytes": 107772,
+    "sha256": "bfe47747c231528908b31c4189105b7ae3f217159e217edbbba32edbc30680c1"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/lspci.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46820,
+    "input_bytes": 1152,
+    "migrated_bytes": 107104,
+    "sha256": "72b1f51849fbabf4dde8917926f317ef0239d9b72980e184c6b3ab0989b313ab"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/lsusb.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 7,
+    "original_bytes": 47316,
+    "input_bytes": 1704,
+    "migrated_bytes": 107772,
+    "sha256": "02739aa6d5c9de11dcf62f6f48c3e6bff6eb69770589514eb4e4f4cdd884c36c"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/cpuinfo.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 4,
+    "original_bytes": 46896,
+    "input_bytes": 1228,
+    "migrated_bytes": 107032,
+    "sha256": "2b60384c104e1d3b88fb9e44ea835cab14bf1d135245e84497f6ee7942c8a6d0"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/mem.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 47760,
+    "input_bytes": 2136,
+    "migrated_bytes": 108104,
+    "sha256": "2b1943c6aa3bb2b17176c55cde869680532561a83958b1cf99be4c0afde2ffde"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/soundtest.BEX",
+    "modules": [
+      "COMMAND",
+      "SOUND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 46944,
+    "input_bytes": 1288,
+    "migrated_bytes": 109692,
+    "sha256": "e371627666a303e190a6ec2e46d6c13283f05f2da61526b6ed16661187efd1d1"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ipconfig.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46856,
+    "input_bytes": 1164,
+    "migrated_bytes": 107108,
+    "sha256": "d7f136cf4a7ea4a006f9eb062f9e82d70af1769b4feb43b9171d60b8552afbe5"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ping.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "07f953980214c0f2b4312c3ed22bbde8dd5067dee0f11be1c4e2d76e38f0ff41"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/netstat.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46856,
+    "input_bytes": 1164,
+    "migrated_bytes": 107104,
+    "sha256": "553c75a91e00b87cc796bfdc77f4840001231e3c2866073fe7cd878d54defdb8"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ftp.BEX",
+    "modules": [
+      "COMMAND",
+      "NETWORK",
+      "SYSTEM"
+    ],
+    "imports": 26,
+    "original_bytes": 50404,
+    "input_bytes": 5284,
+    "migrated_bytes": 113220,
+    "sha256": "8329b5943fae559cf4acaefd117357247d90899f241ce202dee641056e767061"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/wget.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "6810b286c836f669b7a1cd9adfd0f43e3eb4bc89f80a3e510279e58d7f155a79"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/curl.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "f88685fe753f861e69e6054f09ea643c1f9fad47e5a393eef69fbfda2dd191fe"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/compile.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46912,
+    "input_bytes": 1308,
+    "migrated_bytes": 107232,
+    "sha256": "12ed4faeb5cbd74f8b10ec60c83e606be471882579f286a3d9f5f8110010ed8e"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/link.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46940,
+    "input_bytes": 1320,
+    "migrated_bytes": 107228,
+    "sha256": "2cb7e2c40c7a34bea89e2b0543af12e1bb963a7e0a8b535fa38afbf3740c89e1"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/gcc.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 47196,
+    "input_bytes": 1572,
+    "migrated_bytes": 107484,
+    "sha256": "d53ffeb7c0afc3c86b83554e9673670362146da5d61fa40edd180cd5404f547e"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/cc.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 47092,
+    "input_bytes": 1472,
+    "migrated_bytes": 107524,
+    "sha256": "af1c2e43d6becd371c9f10d54bd723c1d2d638e3e8d66b0242853d6cb21d3008"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ld.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 47044,
+    "input_bytes": 1420,
+    "migrated_bytes": 107444,
+    "sha256": "0fa5084603f8d37223327db643f6c905e1d634b841be5a115bd6dcd52da45e49"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/as.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 46948,
+    "input_bytes": 1316,
+    "migrated_bytes": 107348,
+    "sha256": "04a2013e00ac15e82b4fae8b3eba6b6a1f08a69d6cfcc934d9cd06202fba1ba3"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ar.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 47044,
+    "input_bytes": 1424,
+    "migrated_bytes": 107476,
+    "sha256": "38d8abf1767cc0f66157a853d99b632f8c972bbf440a7c851b65441f3fb1ad39"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ranlib.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46896,
+    "input_bytes": 1216,
+    "migrated_bytes": 107152,
+    "sha256": "b9f4084f85e0accf66c88c1e5a9875231d3eb8f94e5c3ac722b0a173c1c4df1a"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/build.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46980,
+    "input_bytes": 1356,
+    "migrated_bytes": 107268,
+    "sha256": "3fbdfdcebbf708c1bb43f6603c77fdd8d1200de7631b45b7256fa5bc954faac6"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/nasm.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46892,
+    "input_bytes": 1208,
+    "migrated_bytes": 107148,
+    "sha256": "20da9976f00633280670799fac0d0b46a5d2bb236ec6b12b95e9bcf3baec3b83"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ndisasm.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46896,
+    "input_bytes": 1212,
+    "migrated_bytes": 107152,
+    "sha256": "9e75d45386d61a3fcf38337286ac013222da0d13a8459de11bcecd94be86505e"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/make.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46996,
+    "input_bytes": 1332,
+    "migrated_bytes": 107284,
+    "sha256": "ab4535f8a6daa6c9b5b0b4e1b3951c112177a9f81662749422c3e36a78a93005"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/fatpack.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46896,
+    "input_bytes": 1216,
+    "migrated_bytes": 107152,
+    "sha256": "3447b58cde69ff8d6420aada6c851a727c344d308c49dad18f582b3be191f6ec"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/addr2line.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46896,
+    "input_bytes": 1220,
+    "migrated_bytes": 107152,
+    "sha256": "c44e3a231e44887394790063321750a973c4ad60abdaa1f3750f7f5f0d5b3eba"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/cxxfilt.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46896,
+    "input_bytes": 1216,
+    "migrated_bytes": 107152,
+    "sha256": "b6845a5a3d51e0531395aa52350f6a6d35a65210699d851e778215d9eaa0a03c"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/elfedit.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46896,
+    "input_bytes": 1216,
+    "migrated_bytes": 107152,
+    "sha256": "82839a174197e823c755cda159015b1f45f159d1e91c542dc3e08059df3d3993"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/objcopy.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46896,
+    "input_bytes": 1216,
+    "migrated_bytes": 107152,
+    "sha256": "7d332a18c99eb7e1be9ccdbce9309be02c3bbaf478a75b3b92f1b1aaa8f43b16"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/objdump.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46896,
+    "input_bytes": 1216,
+    "migrated_bytes": 107152,
+    "sha256": "31dac173e748f7838df2159164118075fcaa1265bd4a9fd4cf84ea3947018559"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/readelf.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46896,
+    "input_bytes": 1216,
+    "migrated_bytes": 107152,
+    "sha256": "f644ca290e4770df47728fcbe3dbfca10529fd4731f2da24a942d368eb780d0d"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/nm.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46892,
+    "input_bytes": 1208,
+    "migrated_bytes": 107148,
+    "sha256": "8e8ae418775ff7e3bd8332561802d0cc7b92137f746606582108ce236c2324c3"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/size.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46892,
+    "input_bytes": 1212,
+    "migrated_bytes": 107148,
+    "sha256": "623b41935cb7628b841cd4acb0e5b39687f1644acb1d77b5d9d075d4a660dd8d"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/strip.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46892,
+    "input_bytes": 1212,
+    "migrated_bytes": 107148,
+    "sha256": "6d4f5579c3f63b527233cfb8d45f2a96e6e7104b70ec3b01957f46d1f301da68"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/hexdump.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 46880,
+    "input_bytes": 1256,
+    "migrated_bytes": 107308,
+    "sha256": "574281a1e40f3ddc3ce773c93e603b8df796fa695daf999a8db98c97172e38b8"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/strings.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46896,
+    "input_bytes": 1216,
+    "migrated_bytes": 107152,
+    "sha256": "e61c4cc4ed4ad7bf1f435ad0820069386f86a126474dcb2d80c917be3ce3a60a"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/calc.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 47840,
+    "input_bytes": 2216,
+    "migrated_bytes": 108232,
+    "sha256": "8e35cf54919435f838118da132241f7025ccdb8a32b05cba4cd544d99d4cae2a"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/hexedit.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 10,
+    "original_bytes": 47328,
+    "input_bytes": 1852,
+    "migrated_bytes": 108260,
+    "sha256": "5d05a8ec62a6863aa0140857121b24b6a17c27ed0a43af36fc46228d70b85dc1"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/compress.BEX",
+    "modules": [
+      "ARCHIVE",
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 9,
+    "original_bytes": 47472,
+    "input_bytes": 1820,
+    "migrated_bytes": 108456,
+    "sha256": "a7b9e21375d733a2d6fe5b98f908b14c840ab537342c8b4edb991343a9a843c3"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/extract.BEX",
+    "modules": [
+      "ARCHIVE",
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 9,
+    "original_bytes": 47568,
+    "input_bytes": 1820,
+    "migrated_bytes": 108456,
+    "sha256": "ab5b313cdf7b527798202e792c930a5fee3ae32844507d0e45a8ef3aa9f69fe5"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/checksum.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 6,
+    "original_bytes": 46880,
+    "input_bytes": 1260,
+    "migrated_bytes": 107308,
+    "sha256": "f03ce1f76d08e22de8e8777a4c6deb6cd3d488e071cf9ff7a54ef4630ae40ce0"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/benchmark.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46944,
+    "input_bytes": 1288,
+    "migrated_bytes": 107180,
+    "sha256": "3975914ff6637c8f4f3bb3090b732d450a60522aa454dc7e7d7ae6ac1be66ada"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/start.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 10,
+    "original_bytes": 47936,
+    "input_bytes": 2440,
+    "migrated_bytes": 108808,
+    "sha256": "2726e45963220da1a7cbf642d465c50ea51075606a795d57f329f2bf47bf530e"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/run.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 9,
+    "original_bytes": 48356,
+    "input_bytes": 2860,
+    "migrated_bytes": 109128,
+    "sha256": "1ba1de952b1b8470a8d96bdde2f709b2090497971c4e17d7b1522d1ebe5304a2"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/head.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "a48350ef68a35623e0a36a4762fda7217d9dffbae32a1bd84178b1f0e92e5cc3"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/tail.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "cd698ca8c522fe51ca76bd31c1dc31477948c224b4063231615e0af0d114f7d4"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/wc.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107100,
+    "sha256": "8af6f37603f9d013ff6c63d5048daf48d1900ecbb05b4258c98c270a55ec5082"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/grep.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "4b4e42327946f9e681a94a95a58b39e1f831e7d06fb20fca2d939120628ee29e"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/stat.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "06d41ebc6033e248841808d73064cfb61e2c9dbc8e7c7a43914f48738ddab1f6"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/df.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107100,
+    "sha256": "fb5a2aa42b4ad6ced9141245bf5defad1540c860ac32bbe62507ae95f9c3e596"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/du.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107100,
+    "sha256": "2bfefd4f48dbce6e99c048823b1b043c0ca60214f33d543f50754b7ed7527a5c"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/cmp.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "b22e1737d56722fe7481945e27c3a5b51de6d66f468d5547b5873aac639412c2"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/which.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1164,
+    "migrated_bytes": 107104,
+    "sha256": "613ad7ff6668519b1b7cd3b73100cce375a4928fb1f640412e1492b2cd7aee19"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/sync.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "7838c54ad6ff24726dbb25e3a06dcbf3a3d157c96152969483d79d055716bd3d"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/true.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1160,
+    "migrated_bytes": 107104,
+    "sha256": "5ade7b46b177ea20ce32e0931546b88f415d6ca139e77b135505bedcd374d9ec"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/false.BEX",
+    "modules": [
+      "COMMAND",
+      "SYSTEM"
+    ],
+    "imports": 5,
+    "original_bytes": 46852,
+    "input_bytes": 1164,
+    "migrated_bytes": 107104,
+    "sha256": "cb4ba1d216e133baf1b66a8fc07d75513cd8f23665dc1b19cebb22b5d45b9aea"
+  }
+]

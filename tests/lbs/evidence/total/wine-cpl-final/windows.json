@@ -1,0 +1,30 @@
+[
+  {
+    "handle": 58132576,
+    "bounds": [
+      600,
+      100,
+      300,
+      177
+    ],
+    "title": "Wine y Vision",
+    "visible": true,
+    "listed": true,
+    "owner": 8,
+    "controller": 8
+  },
+  {
+    "handle": 69612824,
+    "bounds": [
+      35,
+      69,
+      420,
+      475
+    ],
+    "title": "winecfg.exe",
+    "visible": true,
+    "listed": true,
+    "owner": 12,
+    "controller": 11
+  }
+]

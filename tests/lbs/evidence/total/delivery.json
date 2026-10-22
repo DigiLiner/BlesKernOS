@@ -1,0 +1,18 @@
+{
+  "status": "pass",
+  "source": "/home/lucas/Escritorio/BlesKernOS 0.10/build/bleskernos-lbs-user.img",
+  "usb": "/home/lucas/Escritorio/BlesKernOS 0.10/build/bleskernos-usb-user.img",
+  "usb_partition_identical_except_required_bpb_hidden_sectors": true,
+  "vmware": "/home/lucas/Escritorio/BlesKernOS 0.10/build/bleskernos-vmware-user.vmdk",
+  "vmware_capacity_mib": 4096,
+  "vmware_partition_mib": 4095,
+  "vmware_all_inodes_checked": 5657,
+  "vmware_files_checked": 5367,
+  "vmware_file_bytes_checked": 591848413,
+  "modes_owners_timestamps_preserved": true,
+  "expected_usb_partition_sha256": "6bc38519fad4a5c057e0f18333cd8049cfa182e2303d608c4428e0221e2eff16",
+  "source_partition_sha256": "df7ed1c797d3a9edf88f4ee36fa0391799b7083895338e9279b1d0300a97209e",
+  "primary": "/home/lucas/Escritorio/BlesKernOS 0.10/build/bleskernos-ata-user.img",
+  "backup": "/home/lucas/Escritorio/BlesKernOS 0.10/build/bleskernos-ata-user.pre-lbs-total.img",
+  "primary_identical_to_reference": true
+}

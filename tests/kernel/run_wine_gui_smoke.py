@@ -2,7 +2,7 @@
 """Notepad/TinyX input and clipboard through a real restarted Ring-3 compositor."""
 import argparse,json,re,socket,struct,subprocess,sys,time
 from pathlib import Path
-from PIL import Image
+from PIL import Image,ImageChops
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
 from bfs4_update import Editor
@@ -13,6 +13,8 @@ p.add_argument('--ram',type=int,default=512);p.add_argument('--smp',type=int,def
 p.add_argument('--wine-debug',default='err+all');p.add_argument('--vga',default='std')
 p.add_argument('--disk-bus',choices=['ide','ahci'],default='ide',help='isolate storage transport while keeping the same disk contents')
 p.add_argument('--kernel-dir',type=Path,help='use saved kernel.bin/kernel.elf/stage2.bin for reproducible comparisons')
+p.add_argument('--lbs-launcher',choices=['program','cpl'],help='launch through migrated native WINE.BEX or WINE.CPL in the base image')
+p.add_argument('--winecfg',action='store_true',help='measure real winecfg property-page repaint instead of Notepad')
 p.add_argument('--tinyx',type=Path,help='install this TinyX only in the disposable image')
 p.add_argument('--latency-samples',type=int,default=0,help='measure key to displayed glyph before the functional checks (1-32)')
 p.add_argument('--latency-only',action='store_true',help='finish after the latency measurements')
@@ -31,14 +33,18 @@ if a.launch_failure and not a.startup_probe:p.error('--launch-failure requires -
 if a.startup_only and (a.latency_samples or a.launch_failure):p.error('--startup-only cannot measure typing or launch failure')
 if a.load_latency and (a.startup_probe or a.launch_failure):p.error('--load-latency must run separately from busy cursor checks')
 if a.load_probe and not a.load_latency:p.error('--load-probe requires --load-latency')
+if a.lbs_launcher=='cpl' and not a.winecfg:p.error('--lbs-launcher cpl requires --winecfg')
 subprocess.run(['make',*([] if a.kernel_dir else ['build/stage2.bin']),'build/system/services/vision.o','build/system/drivers/PS2MOUSE.DVR'],cwd=ROOT,check=True)
 kernel_dir=a.kernel_dir.resolve() if a.kernel_dir else ROOT/'build'
 obj=out/'wine_gui_smoke.o'
 fixture=ROOT/'tests/userland/wine_gui_smoke.c'
-if a.launch_failure:
+if a.launch_failure or a.winecfg:
  fixture=out/'wine_gui_smoke.c'
- fixture.write_text((ROOT/'tests/userland/wine_gui_smoke.c').read_text().replace('/SYSTEM/WINE/WINDOWS/SYSTEM32/NOTEPAD.EXE','/WINEGATE/no-such-startup-test.exe'))
-subprocess.run(['gcc','-m32','-march=pentium3','-mfpmath=387','-mno-sse','-mno-sse2','-ffreestanding','-fno-builtin','-nostdlib','-nostdinc','-Os','-DWINE_UI_LOAD_PROBE='+str(int(a.load_latency)),'-DWINE_UI_QUIET='+str(int(bool(a.latency_samples or a.startup_probe or a.startup_only or a.load_latency))),'-fno-pic','-fno-pie','-fno-stack-protector','-I'+str(ROOT),'-I'+str(ROOT/'kernel/libc/include'),'-iquote',str(ROOT/'tests/userland'),'-c',str(fixture),'-o',str(obj)],check=True)
+ fixture.write_text((ROOT/'tests/userland/wine_gui_smoke.c').read_text().replace('/SYSTEM/WINE/WINDOWS/SYSTEM32/NOTEPAD.EXE','winecfg' if a.winecfg else '/WINEGATE/no-such-startup-test.exe'))
+if a.lbs_launcher:
+ fixture_source=fixture.read_text().replace('/WINEGATE/bin/wine-phase4.ELF','/SYSTEM/PROGRAMS/WINE.BEX' if a.lbs_launcher=='program' else '/SYSTEM/CONTROL/WINE.CPL')
+ fixture=out/'wine_gui_lbs.c';fixture.write_text(fixture_source)
+subprocess.run(['gcc','-m32','-march=pentium3','-mfpmath=387','-mno-sse','-mno-sse2','-ffreestanding','-fno-builtin','-nostdlib','-nostdinc','-Os','-DWINE_UI_LOAD_PROBE='+str(int(a.load_latency)),'-DWINE_UI_QUIET='+str(int(bool(a.latency_samples or a.startup_probe or a.startup_only or a.load_latency or a.winecfg))),'-fno-pic','-fno-pie','-fno-stack-protector','-I'+str(ROOT),'-I'+str(ROOT/'kernel/libc/include'),'-iquote',str(ROOT/'tests/userland'),'-c',str(fixture),'-o',str(obj)],check=True)
 # Compile structure offsets from the actual production headers. Observation is
 # through QMP physical RAM in the disposable VM, not a new guest debug syscall.
 offsets=out/'offsets.c';offsets.write_text('''#include "gui/gui.h"
@@ -63,6 +69,8 @@ with image.open('r+b') as f:
  f.seek(512);f.write((kernel_dir/'stage2.bin').read_bytes())
  kernel=(kernel_dir/'kernel.bin').read_bytes();f.seek(9*512);f.write(kernel.ljust(1280*1024,b'\0'))
 e=Editor(image);e.update('/SYSTEM/DRIVERS/PS2MOUSE.DVR',(ROOT/'build/system/drivers/PS2MOUSE.DVR').read_bytes());e.update('/WINEGATE/bin/wine-phase4.ELF',launcher.read_bytes());e.update('/SYSTEM/SERVICES/VISION.BEX',(ROOT/'build/system/services/vision.o').read_bytes());e.update('/SYSTEM/PROGRAMS/WINEUITEST.BEX',obj.read_bytes());e.update('/SYSTEM/USER/CONFIG/STARTUP.INI',b'4|1|1|10|0|1|30000|Wine UI test|/SYSTEM/PROGRAMS/WINEUITEST.BEX||Disposable Notepad test\n');e.update('/SYSTEM/USER/CONFIG/SCREENSV.INI',b'enabled=0\ntimeout=3600\npath=/SYSTEM/SCREENS/SSPIPES.SCV\n');e.finish()
+if a.lbs_launcher:
+ e=Editor(image);e.update('/WINEGATE/bin/wine-launch.ELF',launcher.read_bytes());e.finish()
 if a.tinyx:
  e=Editor(image);e.update('/WINEGATE/bin/XFBDEV',a.tinyx.read_bytes());e.finish()
 sock=Path('/tmp/bk-wine-ui-'+str(__import__('os').getpid())+'.sock');serial=out/'boot.log';serial.unlink(missing_ok=True)
@@ -249,7 +257,7 @@ try:
  if a.load_latency:
   monitor=find_window('Wine y Vision')
   mx,my,mw,mh=monitor['bounds']
-  modes=re.findall(r'ACTIVATE OK[^\n]*mode=(\d+)x(\d+)x32 pitch=(\d+) fb=(0x[0-9a-fA-F]+)',log())
+  modes=re.findall(r'(?:ACTIVATE OK|FALLBACK VESA OK)[^\n]*mode=(\d+)x(\d+)x32 pitch=(\d+) fb=(0x[0-9a-fA-F]+)',log())
   if not modes:raise RuntimeError('Load latency needs a 32-bit framebuffer')
   _,_,pitch,fb=modes[-1];pitch,fb=int(pitch),int(fb,16)
   pixel_address=fb+(my+100)*pitch+(mx+40)*4
@@ -316,6 +324,47 @@ try:
    (out/'result.json').write_text(json.dumps(result,indent=2)+'\n')
    shot('startup-failure-cleared');cmd('quit');proc.wait(timeout=10);s.close();print(json.dumps(result));sys.exit(0)
  wait_marker('[WINE:TIME] first-surface');surface_observed_host=time.monotonic()
+ if a.lbs_launcher:
+  assert '[LBS:APP] /SYSTEM/PROGRAMS/WINE.BEX modules=SYSTEM' in log()
+  if a.lbs_launcher=='cpl':assert '[LBS:APP] /SYSTEM/CONTROL/WINE.CPL modules=SYSTEM' in log()
+ if a.winecfg:
+  time.sleep(3)
+  items,_=windows();candidates=[w for w in items if w['visible'] and w['listed'] and w['title']!='Wine y Vision']
+  print('Winecfg windows:',candidates,flush=True)
+  config=next(w for w in candidates if 'wine' in w['title'].lower())
+  x,y,w,h=config['bounds'];shot('winecfg-first')
+  if a.startup_only:
+   result={'result':'PASS','first_surface_ms':int(re.search(r'\[WINE:TIME\] first-surface ms=(\d+)',log())[1]),'ram_mib':a.ram,'window':config,'lbs_launcher':a.lbs_launcher,'method':'first winecfg surface through native launcher/CPL; no property-page changes'}
+   (out/'result.json').write_text(json.dumps(result,indent=2)+'\n')
+   cmd('quit');proc.wait(timeout=10);s.close();print(json.dumps(result,indent=2));sys.exit(0)
+  click(x+w//2,y+75);move(550,430)
+  modes=re.findall(r'(?:ACTIVATE OK|FALLBACK VESA OK)[^\n]*mode=(\d+)x(\d+)x32 pitch=(\d+) fb=(0x[0-9a-fA-F]+)',log())
+  fw,fh,pitch,fb=modes[-1];fw,fh,pitch,fb=int(fw),int(fh),int(pitch),int(fb,16)
+  def config_pixels():
+   target=out/'config-vram.bin';top=max(0,y+85);bottom=min(fh,y+h-65)
+   cmd('pmemsave',{'val':fb+top*pitch,'size':pitch*(bottom-top),'filename':str(target)})
+   return Image.frombytes('RGB',(pitch//4,bottom-top),target.read_bytes(),'raw','BGRX').crop((max(0,x+8),0,min(fw,x+w-8),bottom-top)).tobytes()
+  (out/'result.json').unlink(missing_ok=True)
+  rows=[]
+  for sample in range(14):
+   time.sleep(.4);old=config_pixels();old_image=Image.frombytes('RGB',(min(fw,x+w-8)-max(0,x+8),min(fh,y+h-65)-max(0,y+85)),old);start=time.monotonic()
+   cmd('send-key',{'keys':[{'type':'qcode','data':'ctrl'},{'type':'qcode','data':'tab'}],'hold-time':30})
+   first=None;last=old;steady=start;until=start+30
+   while time.monotonic()<until:
+    current=config_pixels();now=time.monotonic()
+    if current!=last:steady=now;last=current
+    if first is None:
+     bounds=ImageChops.difference(old_image,Image.frombytes('RGB',old_image.size,current)).getbbox()
+     if bounds and (bounds[2]-bounds[0])*(bounds[3]-bounds[1])>256:first=now
+    if first is not None and now-steady>.15:break
+    time.sleep(.01)
+   else:shot('winecfg-timeout');raise TimeoutError('winecfg page '+str(sample))
+   rows.append({'sample':sample,'first_change_ms':(first-start)*1000,'settled_ms':(now-start)*1000})
+   shot('winecfg-page-'+str(sample))
+   (out/'config-partial.json').write_text(json.dumps(rows,indent=2)+'\n')
+  result={'result':'PASS','window':config,'samples':rows,'method':'QMP Ctrl+Tab to changed body pixels and 150ms stable display, includes observation cost'}
+  (out/'result.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result),flush=True)
+  cmd('quit');proc.wait(timeout=10);s.close();sys.exit(0)
  notepad=find_window('Notepad');print('Notepad mapped:',notepad,flush=True);shot('notepad-first-surface')
  if profile_before:
   after,clock,now=profile_snapshot();before,old_clock,then=profile_before;rows=[]
@@ -342,7 +391,7 @@ try:
   import statistics
   key('ctrl-a');key('backspace');time.sleep(1)
   samples=[];capture_ms=[]
-  modes=re.findall(r'ACTIVATE OK[^\n]*mode=(\d+)x(\d+)x32 pitch=(\d+) fb=(0x[0-9a-fA-F]+)',log())
+  modes=re.findall(r'(?:ACTIVATE OK|FALLBACK VESA OK)[^\n]*mode=(\d+)x(\d+)x32 pitch=(\d+) fb=(0x[0-9a-fA-F]+)',log())
   if not modes:raise RuntimeError('Latency measurement requires a logged linear 32-bit framebuffer')
   fw,fh,pitch,fb=modes[-1];fw,fh,pitch,fb=int(fw),int(fh),int(pitch),int(fb,16)
   def capture_mask():

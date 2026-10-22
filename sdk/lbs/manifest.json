@@ -1,0 +1,51 @@
+{
+  "SYSTEM": [
+    "bk_sys_",
+    "bk_file_",
+    "bk_proc_",
+    "bk_time_",
+    "bk_device_",
+    "bk_console_",
+    "bk_memory_",
+    "bk_string_"
+  ],
+  "VISION": [
+    "bk_gui_",
+    "bk_graphics_icon_",
+    "bk_file_dialog_open"
+  ],
+  "SOUND": [
+    "bk_sound_"
+  ],
+  "NETWORK": [
+    "bk_net_"
+  ],
+  "NGS": [
+    "bk_gui_surface_",
+    "bk_gui_window_present_xrgb",
+    "bk_gui_window_set_streaming"
+  ],
+  "NGS3D": [],
+  "MEDIA": [
+    "bk_gui_image_"
+  ],
+  "INPUT": [
+    "bk_input_",
+    "bk_gui_cursor_",
+    "bk_gui_set_window_event_handler",
+    "bk_gui_window_set_extended_events"
+  ],
+  "FONT": [
+    "bk_font_",
+    "bk_gui_text_width",
+    "bk_gui_surface_draw_text"
+  ],
+  "PRINT": [
+    "bk_print_"
+  ],
+  "CRYPTO": [],
+  "SECURITY": [],
+  "TINYGL": [],
+  "ARCHIVE": [],
+  "COMMAND": []
+}

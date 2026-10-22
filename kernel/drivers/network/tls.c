@@ -374,6 +374,12 @@ static bool tls_connection_open(tls_connection_t *connection,
         return false;
     }
     tls = (tls_context_t *)kmalloc(sizeof(*tls));
+    /* Keep-alive slots persist after the requesting process exits. Their
+     * BearSSL state must have the same lifetime as this service's cache. */
+    if (tls && !mm_set_allocation_owner(tls, 0U)) {
+        kfree(tls);
+        tls = NULL;
+    }
     if(tls)(void)mm_set_allocation_subsystem(tls,MM_SUBSYSTEM_NETWORK);
     if (!tls) {
         g_last_error = TLS_ERROR_MEMORY;

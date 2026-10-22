@@ -1,0 +1,12 @@
+{
+  "status": "pass",
+  "memory_mib": 256,
+  "vga": "std",
+  "accel": "kvm",
+  "applications": [
+    "/SYSTEM/PROGRAMS/NETSURF.BEX"
+  ],
+  "elapsed_seconds": 30.21,
+  "settle_ms": 8000,
+  "scope": "resolved LBS imports, running process after settling interval, no live process threads after group exit; screenshots for UI review"
+}

@@ -2,6 +2,7 @@
 #define BLESKERNOS_DISPLAY_PROPS_SHARED_H
 
 #include "control_common.h"
+#include "system/screensavers/jelly_settings.h"
 #include "kernel/include/api.h"
 #include <math.h>
 #include "system/screensavers/ss_mesa.h"
@@ -33,7 +34,7 @@
 #define DISPLAY_PREVIEW_PIPE_CELL  1.15f
 #define DISPLAY_PREVIEW_PIPE_RADIUS 0.18f
 #define DISPLAY_PREVIEW_PIPE_SIDES    12
-#define DISPLAY_PREVIEW_FRAME_TICKS   10U
+#define DISPLAY_PREVIEW_FRAME_MS      SS_FRAME_MS
 #define DISPLAY_PREVIEW_MONITOR_PATH   "/ICONS/MONITOR.BMP"
 #define DISPLAY_SAVER_DIR             "/SYSTEM/SCREENS"
 #define DISPLAY_WALLPAPER_DIR         "/SYSTEM/WALLPAPR"
@@ -103,7 +104,7 @@ typedef struct {
     int logo_y;
     int logo_dx;
     int logo_dy;
-    uint32_t last_logo_tick;
+    uint32_t last_logo_ms;
 
     uint32_t pipe_seed;
     int pipe_cursor_x;
@@ -112,8 +113,9 @@ typedef struct {
     uint8_t pipe_last_dir;
     uint8_t pipe_color_index;
     uint8_t pipe_segment_count;
-    uint32_t last_pipe_grow_tick;
-    uint32_t last_pipe_frame_tick;
+    uint32_t last_pipe_grow_ms;
+    uint32_t last_pipe_frame_ms;
+    uint32_t last_pipe_motion_ms;
     display_preview_pipe_segment_t pipe_segments[DISPLAY_PREVIEW_PIPE_MAX];
 
     ss_mesa_surface_t pipe_mesa;
@@ -227,6 +229,10 @@ static bool display_props_saver_is_pipes(void) {
     return display_props_text_contains_ci(display_props_saver_path_local(), "PIPES");
 }
 
+static bool display_props_saver_is_jelly(void) {
+    return display_props_text_contains_ci(display_props_saver_path_local(), "SSJELLY");
+}
+
 static void display_props_saver_label_from_name(const char *name,
                                                 char *label,
                                                 size_t label_size) {
@@ -239,6 +245,11 @@ static void display_props_saver_label_from_name(const char *name,
     while (*base) {
         if (*base == '/' || *base == '\\') name = base + 1;
         base++;
+    }
+    if (display_props_text_contains_ci(name, "SSJELLY")) {
+        bk_runtime_strncpy(label, "Medusa (Gallium)", label_size - 1);
+        label[label_size - 1] = '\0';
+        return;
     }
     if (display_props_text_contains_ci(name, "SSPIPES")) {
         bk_runtime_strncpy(label, "Pipes 3D", label_size - 1);
@@ -427,7 +438,7 @@ static void display_props_reset_logo_preview(display_props_state_t *st) {
     st->logo_y = 10;
     st->logo_dx = 2;
     st->logo_dy = 2;
-    st->last_logo_tick = bk_sys_ticks();
+    st->last_logo_ms = bk_sys_uptime_ms();
 }
 
 static bool display_props_pipe_inside(int x, int y, int z) {
@@ -513,8 +524,9 @@ static void display_props_reset_pipe_preview(display_props_state_t *st) {
     st->pipe_last_dir = 0;
     st->pipe_color_index = 0;
     st->pipe_segment_count = 0;
-    st->last_pipe_grow_tick = bk_sys_ticks();
-    st->last_pipe_frame_tick = 0;
+    st->last_pipe_grow_ms = bk_sys_uptime_ms();
+    st->last_pipe_motion_ms = bk_sys_uptime_ms();
+    st->last_pipe_frame_ms = st->last_pipe_motion_ms - SS_FRAME_MS;
     st->pipe_rot_x = 25.0f;
     st->pipe_rot_y = 0.0f;
     st->pipe_rot_z = 0.0f;
@@ -581,6 +593,36 @@ static void display_props_load_monitor_asset(display_props_state_t *st) {
     st->monitor_pixels = bk_app_load_wallpaper(
         DISPLAY_PREVIEW_MONITOR_PATH,
         DISPLAY_PREVIEW_MONITOR_W, DISPLAY_PREVIEW_MONITOR_H);
+    /* Quitar solo el fondo conectado al borde, conservando los grises del
+       monitor y el hueco magenta que se rellena en la vista previa. */
+    if (st->monitor_pixels) {
+        const uint32_t width = DISPLAY_PREVIEW_MONITOR_W;
+        const uint32_t count = width * DISPLAY_PREVIEW_MONITOR_H;
+        uint32_t *queue = bk_sys_alloc(count * sizeof(uint32_t));
+        if (queue) {
+            uint32_t key = st->monitor_pixels[0];
+            uint32_t head = 0, tail = 0;
+            queue[tail++] = 0;
+            st->monitor_pixels[0] = 0;
+            while (head < tail) {
+                uint32_t pos = queue[head++];
+                uint32_t neighbors[4] = {
+                    pos % width ? pos - 1 : count,
+                    pos % width + 1 < width ? pos + 1 : count,
+                    pos >= width ? pos - width : count,
+                    pos + width < count ? pos + width : count
+                };
+                for (uint32_t i = 0; i < 4; i++) {
+                    uint32_t next = neighbors[i];
+                    if (next < count && st->monitor_pixels[next] == key) {
+                        st->monitor_pixels[next] = 0;
+                        queue[tail++] = next;
+                    }
+                }
+            }
+            bk_sys_free(queue);
+        }
+    }
 }
 
 static void display_props_refresh_modes(display_props_state_t *st) {
@@ -1120,6 +1162,10 @@ typedef struct {
     int spawn_y;
     gui_widget_t *enabled_buttons[2];
     gui_widget_t *timeout_dropdown;
+    gui_widget_t *jelly_count_dropdown;
+    gui_widget_t *jelly_variety_dropdown;
+    bk_jelly_settings_t jelly;
+    bool jelly_selected;
     gui_widget_t *preview_button;
     gui_widget_t *close_button;
     int layout_w;
@@ -1148,7 +1194,33 @@ static void display_saver_config_sync(display_saver_config_state_t *cfg) {
     bk_gui_widget_set_selected(cfg->enabled_buttons[1], !bk_screensaver_is_enabled());
     snprintf(value, sizeof(value), "%u", timeout);
     (void)bk_gui_widget_dropdown_set_selected_by_value(cfg->timeout_dropdown, value);
+    if (cfg->jelly_selected) {
+        char number[12];
+        snprintf(number,sizeof(number),"%u",cfg->jelly.count);
+        (void)bk_gui_widget_dropdown_set_selected_by_value(cfg->jelly_count_dropdown,number);
+        snprintf(number,sizeof(number),"%u",cfg->jelly.variation);
+        (void)bk_gui_widget_dropdown_set_selected_by_value(cfg->jelly_variety_dropdown,number);
+    }
     if (cfg->window) cfg->window->dirty = true;
+}
+
+static void display_saver_config_jelly_changed(gui_window_t *window,uint32_t id) {
+    display_saver_config_state_t *cfg=(display_saver_config_state_t *)window->content_context;
+    (void)id;
+    if(!cfg || !cfg->jelly_selected)return;
+    const char *count_value=bk_gui_widget_dropdown_get_selected_value(cfg->jelly_count_dropdown);
+    const char *variety_value=bk_gui_widget_dropdown_get_selected_value(cfg->jelly_variety_dropdown);
+    if(!count_value || !variety_value)return;
+    cfg->jelly.count=bk_jelly_clamp(display_props_timeout_from_value(count_value),1,10);
+    cfg->jelly.variation=variety_value[0]>='0' && variety_value[0]<='3' &&
+        variety_value[1]=='\0' ? (uint32_t)(variety_value[0]-'0') : 2U;
+    bool saved=bk_jelly_save(&cfg->jelly);
+    snprintf(cfg->status,sizeof(cfg->status),saved ?
+        "Jelly: %u medusas, variedad %u. Guardado." :
+        "Jelly: %u medusas, variedad %u. Error al guardar.",
+        cfg->jelly.count,cfg->jelly.variation);
+    display_saver_config_sync(cfg);
+    display_props_force_full_refresh(cfg->desktop);
 }
 
 static void display_saver_config_toggle(gui_window_t *window, uint32_t id) {
@@ -1265,6 +1337,12 @@ static void display_saver_config_layout(display_saver_config_state_t *cfg) {
     bk_gui_widget_set_bounds(cfg->window, cfg->timeout_dropdown,
                              cpl_local_rect(row, client));
 
+    if(cfg->jelly_selected) {
+        row=(gui_rect_t){extra_group.x+14,extra_group.y+50,extra_group.w-28,22};
+        bk_gui_widget_set_bounds(cfg->window,cfg->jelly_count_dropdown,cpl_local_rect(row,client));
+        row.y=extra_group.y+114;
+        bk_gui_widget_set_bounds(cfg->window,cfg->jelly_variety_dropdown,cpl_local_rect(row,client));
+    }
     row = (gui_rect_t){extra_group.x + 14,
                        extra_group.y + extra_group.h - 30,
                        extra_group.w - 28, 22};
@@ -1299,12 +1377,20 @@ static void display_saver_config_paint(gui_window_t *window,
         (gui_rect_t){inner.x, inner.y + 4, inner.w, 24},
         "Elegir demora antes de activarse.", CPL_TEXT, 10, 2);
 
-    cpl_draw_group(surface, extra_group, "Extra");
+    cpl_draw_group(surface, extra_group,cfg && cfg->jelly_selected ? "Medusa (Gallium)" : "Extra");
     inner = cpl_group_inner(extra_group);
-    cpl_draw_text_wrapped(surface,
-        (gui_rect_t){inner.x, inner.y + 4, inner.w,
-                     extra_group.h - 48},
-        "Puede probar el protector completo.", CPL_TEXT, 10, 2);
+    if(cfg && cfg->jelly_selected) {
+        cpl_draw_text_wrapped(surface,(gui_rect_t){inner.x,inner.y+5,inner.w,18},
+                              "Cantidad de medusas (1 a 10)",CPL_TEXT,11,1);
+        cpl_draw_text_wrapped(surface,(gui_rect_t){inner.x,inner.y+70,inner.w,18},
+                              "Variedad de tamanos",CPL_TEXT,11,1);
+        cpl_draw_text_wrapped(surface,(gui_rect_t){inner.x,extra_group.y+extra_group.h-61,inner.w,14},
+                              "Ascienden y reaparecen por abajo.",CPL_TEXT,10,1);
+    } else {
+        cpl_draw_text_wrapped(surface,
+            (gui_rect_t){inner.x, inner.y + 4, inner.w,extra_group.h - 48},
+            "Puede probar el protector completo.", CPL_TEXT, 10, 2);
+    }
 
     cpl_draw_bevel(surface, status, CPL_FACE, true);
     bk_gui_font_draw_string_clipped(surface, status.x + 4, status.y + 4,
@@ -1346,15 +1432,19 @@ static void display_saver_config_main(void *arg) {
         bk_proc_exit();
     }
 
+    cfg->jelly_selected=display_props_saver_is_jelly();
+    if(cfg->jelly_selected)bk_jelly_load(&cfg->jelly);
     cfg->window = bk_gui_create_window(cfg->desktop,
         cfg->spawn_x + 34, cfg->spawn_y + 48,
-        300, 310, "Configurar protector");
+        cfg->jelly_selected?340:300,cfg->jelly_selected?440:310,
+        "Configurar protector");
     if (!cfg->window) {
         bk_sys_free(cfg);
         bk_proc_exit();
     }
 
-    bk_gui_set_window_min_size(cfg->window, 300, 310);
+    bk_gui_set_window_min_size(cfg->window,
+        cfg->jelly_selected?340:300,cfg->jelly_selected?440:310);
     bk_gui_set_window_content(cfg->window, display_saver_config_paint, cfg);
     bk_gui_set_window_event_handler(cfg->window, display_saver_config_event, cfg);
     cfg->window->bg_color = 0x00C0C0C0;
@@ -1374,6 +1464,22 @@ static void display_saver_config_main(void *arg) {
     (void)bk_gui_widget_dropdown_add_item(cfg->timeout_dropdown, "5 minutos", "300");
     (void)bk_gui_widget_dropdown_add_item(cfg->timeout_dropdown, "10 minutos", "600");
     (void)bk_gui_widget_dropdown_add_item(cfg->timeout_dropdown, "15 minutos", "900");
+    if(cfg->jelly_selected) {
+        cfg->jelly_count_dropdown=bk_gui_widget_create_dropdown(
+            cfg->desktop,cfg->window,(gui_rect_t){26,225,260,22},display_saver_config_jelly_changed);
+        for(unsigned n=1;n<=10;n++) {
+            char value[12],label[32];
+            snprintf(value,sizeof(value),"%u",n);
+            snprintf(label,sizeof(label),"%u %s",n,n==1?"medusa":"medusas");
+            (void)bk_gui_widget_dropdown_add_item(cfg->jelly_count_dropdown,label,value);
+        }
+        cfg->jelly_variety_dropdown=bk_gui_widget_create_dropdown(
+            cfg->desktop,cfg->window,(gui_rect_t){26,290,260,22},display_saver_config_jelly_changed);
+        (void)bk_gui_widget_dropdown_add_item(cfg->jelly_variety_dropdown,"Uniformes","0");
+        (void)bk_gui_widget_dropdown_add_item(cfg->jelly_variety_dropdown,"Poca variedad","1");
+        (void)bk_gui_widget_dropdown_add_item(cfg->jelly_variety_dropdown,"Variedad media","2");
+        (void)bk_gui_widget_dropdown_add_item(cfg->jelly_variety_dropdown,"Mucha variedad","3");
+    }
     cfg->preview_button = bk_gui_widget_create_button(
         cfg->desktop, cfg->window, (gui_rect_t){26, 242, 110, 22},
         "Probar", display_saver_config_preview);
@@ -1573,7 +1679,7 @@ static void display_props_logo_draw_stars(gui_surface_t *surface, gui_rect_t rec
         int x = rect.x + (int)(display_props_rand_next(&seed) % (uint32_t)rect.w);
         int y = rect.y + (int)(display_props_rand_next(&seed) % (uint32_t)rect.h);
         uint32_t shade = 0x00303030 + ((i & 3U) * 0x00181818);
-        bk_gui_gfx_putpixel(surface, x, y, shade);
+        ss_putpixel_rgb(surface, x, y, shade);
     }
 }
 
@@ -1596,24 +1702,21 @@ static void display_props_draw_logo_box(gui_surface_t *surface,
 static void display_props_draw_saver_logo(display_props_state_t *st,
                                           gui_surface_t *surface,
                                           gui_rect_t screen) {
-    uint32_t now = bk_sys_ticks();
+    uint32_t now = bk_sys_uptime_ms();
     int logo_w = screen.w > 78 ? 78 : screen.w - 8;
     int logo_h = screen.h > 30 ? 30 : screen.h - 8;
-
-    if ((uint32_t)(now - st->last_logo_tick) >= 3U) {
+    uint32_t steps = ss_steps_due(now, &st->last_logo_ms, 30U, 8U);
+    while (steps--) {
         st->logo_x += st->logo_dx;
         st->logo_y += st->logo_dy;
         if (st->logo_x <= 2) { st->logo_x = 2; st->logo_dx = 2; }
         if (st->logo_y <= 2) { st->logo_y = 2; st->logo_dy = 2; }
         if (st->logo_x + logo_w >= screen.w - 2) {
-            st->logo_x = screen.w - logo_w - 3;
-            st->logo_dx = -2;
+            st->logo_x = screen.w - logo_w - 3; st->logo_dx = -2;
         }
         if (st->logo_y + logo_h >= screen.h - 2) {
-            st->logo_y = screen.h - logo_h - 3;
-            st->logo_dy = -2;
+            st->logo_y = screen.h - logo_h - 3; st->logo_dy = -2;
         }
-        st->last_logo_tick = now;
     }
 
     bk_gui_gfx_fill_rect(surface, screen, 0x00000000);
@@ -1815,18 +1918,18 @@ static void display_props_draw_saver_pipes(display_props_state_t *st,
         return;
     }
 
-    now = bk_sys_ticks();
-    if ((uint32_t)(now - st->last_pipe_frame_tick) >= DISPLAY_PREVIEW_FRAME_TICKS) {
-        st->last_pipe_frame_tick = now;
+    now = bk_sys_uptime_ms();
+    uint32_t elapsed = now - st->last_pipe_motion_ms;
+    if (ss_frame_due(now, &st->last_pipe_frame_ms)) {
+        st->last_pipe_motion_ms = now;
         if (!ss_mesa_surface_make_current(&st->pipe_mesa)) return;
-        if ((uint32_t)(now - st->last_pipe_grow_tick) >= 10U) {
-            st->last_pipe_grow_tick = now;
-            display_props_pipe_grow(st);
-        }
-        st->pipe_rot_y += 1.2f;
-        st->pipe_rot_z += 0.25f;
-        if (st->pipe_rot_y >= 360.0f) st->pipe_rot_y -= 360.0f;
-        if (st->pipe_rot_z >= 360.0f) st->pipe_rot_z -= 360.0f;
+        uint32_t steps=ss_steps_due(now,&st->last_pipe_grow_ms,100U,8U);
+        while(steps--) display_props_pipe_grow(st);
+        if (elapsed>250U) elapsed=250U;
+        st->pipe_rot_y += 1.2f * (GLfloat)elapsed / (GLfloat)SS_FRAME_MS;
+        st->pipe_rot_z += 0.25f * (GLfloat)elapsed / (GLfloat)SS_FRAME_MS;
+        while (st->pipe_rot_y >= 360.0f) st->pipe_rot_y -= 360.0f;
+        while (st->pipe_rot_z >= 360.0f) st->pipe_rot_z -= 360.0f;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glMatrixMode(GL_MODELVIEW);
@@ -1842,12 +1945,7 @@ static void display_props_draw_saver_pipes(display_props_state_t *st,
     }
 
     if (!st->pipe_pixels) return;
-    for (int y = 0; y < screen.h; y++) {
-        const uint32_t *src = st->pipe_pixels + (uint32_t)y * st->pipe_render_w;
-        for (int x = 0; x < screen.w; x++)
-            bk_gui_gfx_putpixel(surface, screen.x + x, screen.y + y,
-                                ss_mesa_pixel_to_rgb(src[x]));
-    }
+    ss_blit_rgb(surface,st->pipe_pixels,st->pipe_render_w,st->pipe_render_h,screen);
 }
 
 static void display_props_draw_monitor_preview(display_props_state_t *st,
@@ -1871,7 +1969,11 @@ static void display_props_draw_monitor_preview(display_props_state_t *st,
             display_props_draw_preview_background(st, surface, screen);
             break;
         case DISPLAY_TAB_SAVER:
-            if (display_props_saver_is_balls())
+            if (display_props_saver_is_jelly()) {
+                bk_gui_gfx_fill_rect(surface, screen, 0x00000000);
+                bk_gui_font_draw_string(surface, screen.x+8, screen.y+screen.h/2,
+                    "Medusa (Gallium)", 0x00FFFFFF, 0, false);
+            } else if (display_props_saver_is_balls())
                 display_props_draw_saver_balls(st, surface, screen);
             else if (display_props_saver_is_pipes())
                 display_props_draw_saver_pipes(st, surface, screen);
@@ -2192,10 +2294,10 @@ void bleskernos_program_main(gui_desktop_t *desktop) {
             st->count,bk_gui_display_color_depth(),bk_sys_uptime_ms());
 
     {
-        uint32_t last_preview_tick = bk_sys_ticks();
+        uint32_t last_preview_ms = bk_sys_uptime_ms();
 
         while (!bk_proc_exit_requested() && st->window->listed) {
-            uint32_t now = bk_sys_ticks();
+            uint32_t now = bk_sys_uptime_ms();
 
             /*
              * Los callbacks de contenido Ring 3 solo vuelven a ejecutarse si la
@@ -2205,13 +2307,11 @@ void bleskernos_program_main(gui_desktop_t *desktop) {
              * de movimientos del mouse o de clicks.
              */
             if (st->current_tab == DISPLAY_TAB_SAVER) {
-                if ((uint32_t)(now - last_preview_tick) >=
-                    DISPLAY_PREVIEW_FRAME_TICKS) {
-                    last_preview_tick = now;
+                if (ss_frame_due(now, &last_preview_ms)) {
                     bk_gui_window_invalidate(st->window);
                 }
             } else {
-                last_preview_tick = now;
+                last_preview_ms = now;
             }
 
             bk_sys_sleep_ticks(1);

@@ -1,0 +1,135 @@
+{
+  "status": "pass",
+  "payloads": [
+    {
+      "path": "/SYSTEM/PROGRAMS/CODEX.O",
+      "bytes": 191852,
+      "sha256": "0d67c33aab4c0f0d1bd12b474e2a48fc69c2251edb43dae2dc76cb321b56ae07"
+    },
+    {
+      "path": "/SYSTEM/PROGRAMS/HYPERZIP.O",
+      "bytes": 152272,
+      "sha256": "a1d3e671b417d35497fb007cf57a8d493341510088667581a3025333421e9ba9"
+    },
+    {
+      "path": "/SYSTEM/PROGRAMS/LEXINET.O",
+      "bytes": 166976,
+      "sha256": "15e2c19019fc91fa464c90be2bcc24d75e88527f08cb874b56fb63e56afc7b8d"
+    },
+    {
+      "path": "/SYSTEM/PROGRAMS/3DPLUS.O",
+      "bytes": 105664,
+      "sha256": "e2f68934370512b7d9bcba7fa0048fa719905d0ceda81362d64ab39f616f7c34"
+    },
+    {
+      "path": "/SYSTEM/PROGRAMS/3DPMESA.O",
+      "bytes": 782768,
+      "sha256": "d84b9b3c3f30be7c9dc45433f5379d079a562c604a7896b13b854897617d3208"
+    },
+    {
+      "path": "/SYSTEM/PROGRAMS/3DPTINY.O",
+      "bytes": 777752,
+      "sha256": "413c8029d36f42f623f2708e3a7542a0e5504511526a7badd0685e529c29c933"
+    },
+    {
+      "path": "/SYSTEM/PROGRAMS/DOOM.O",
+      "bytes": 600364,
+      "sha256": "612bfca450a03fdd4c4a50f6d7190a78ede22c365aa4d15805cfdbd93ab1d282"
+    },
+    {
+      "path": "/SYSTEM/PROGRAMS/QUAKE.O",
+      "bytes": 665188,
+      "sha256": "bcb728feb85c836679507a64e7ac20a170a1912af393d0d091fd9e876760cc0d"
+    },
+    {
+      "path": "/SYSTEM/PROGRAMS/FREECIV_CLIENT.O",
+      "bytes": 4226984,
+      "sha256": "50a3cedc88f00b6bee7d58947002690fda28aa799f062c4f4cb3477a41ea4df4"
+    },
+    {
+      "path": "/SYSTEM/PROGRAMS/FREECIV_SERVER.O",
+      "bytes": 5459792,
+      "sha256": "deefb76d3ccbc674e5e8775d7c4e2db1b7a870f30a5228b8df3ca0dd7320ce16"
+    },
+    {
+      "path": "/SYSTEM/PROGRAMS/QUAKE2.BEX",
+      "bytes": 1786560,
+      "sha256": "a1d58a4d5273e115d45157c9024173c972f53268a072e810dc4de9cfec8a4906"
+    },
+    {
+      "path": "/SYSTEM/TINYGL.LBS",
+      "bytes": 170696,
+      "sha256": "65c9370452056c759a86855372475a0d7d9c72daa13be37de752c2b07e141295"
+    },
+    {
+      "path": "/SYSTEM/FONT.LBS",
+      "bytes": 14540,
+      "sha256": "8cf65face115f4110b1cdc4f0be30f6cb3fa8ab20e89ea7050d6eef162f20150"
+    },
+    {
+      "path": "/SYSTEM/MEDIA.LBS",
+      "bytes": 69380,
+      "sha256": "77c066b9d8c6cdf2b73eeec69b9206781c5576f0050f063e1d0590edbed268a4"
+    },
+    {
+      "path": "/SYSTEM/CRYPTO.LBS",
+      "bytes": 19008,
+      "sha256": "8d29dd0e9c5a1920ddcec049ee4db8e5b22c9c3523fa7f80d3db77081d68b266"
+    },
+    {
+      "path": "/SYSTEM/SECURITY.LBS",
+      "bytes": 13808,
+      "sha256": "7708d78df219c7ec0a3966e16c00f0ee80a592bd4efea9463619d2dd66c2a173"
+    },
+    {
+      "path": "/SYSTEM/SYSTEM.LBS",
+      "bytes": 35688,
+      "sha256": "7ba58c4161e72b0830516e5a90d4e42b64ae7a7d1f2c8d3545892ca3f8c84538"
+    },
+    {
+      "path": "/SYSTEM/NGS3D.LBS",
+      "bytes": 1641488,
+      "sha256": "feb9e043aafc0337d496696a5fca10ad117ef65ca3df9a52fa07793129c279ef"
+    },
+    {
+      "path": "/SYSTEM/SOUND.LBS",
+      "bytes": 14976,
+      "sha256": "848b72b171d3428cfe9dcb6f5c7501a2690837040bb0e009ccf6b5e3040c996d"
+    },
+    {
+      "path": "/SYSTEM/VISION.LBS",
+      "bytes": 34080,
+      "sha256": "e467e7c8b2d4b272e91442d8d390ca31ff2818ae9f00f59855ab18c95d08299c"
+    },
+    {
+      "path": "/SYSTEM/PRINT.LBS",
+      "bytes": 15860,
+      "sha256": "43b42a1cfcd71f744fa48d6269f8e120b402f47c6a0531137ce2ac9b370191ff"
+    },
+    {
+      "path": "/SYSTEM/NGS.LBS",
+      "bytes": 15664,
+      "sha256": "2adb9948da09cac105ff98b3e67e2b5e410dfebb214a588c0945d0a27f398793"
+    },
+    {
+      "path": "/SYSTEM/COMMAND.LBS",
+      "bytes": 49824,
+      "sha256": "63c480d88fbe3455c2d214937d51a885218a858ba5bdc3773cc6df7dc57fe130"
+    },
+    {
+      "path": "/SYSTEM/INPUT.LBS",
+      "bytes": 14896,
+      "sha256": "9821223516613753a5faefa626f9a815ab106e5b45b5ae0fe85e3b5f9524edc8"
+    },
+    {
+      "path": "/SYSTEM/ARCHIVE.LBS",
+      "bytes": 19548,
+      "sha256": "94af766bccbc74b6aa8d63ef0929fbb0b1c2ba3e958973827e5acacd671c8ff3"
+    },
+    {
+      "path": "/SYSTEM/NETWORK.LBS",
+      "bytes": 14772,
+      "sha256": "da2e192804212ceea9e08e1f44e7816745c00ee015d8b75c3e197b191b3661b1"
+    }
+  ]
+}

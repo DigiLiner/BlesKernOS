@@ -1,0 +1,13 @@
+{
+  "frames": 10,
+  "render_ms": 40,
+  "icons_alive": 5,
+  "probe_failures": 0,
+  "ram_mib": 256,
+  "cpus": 2,
+  "accel": "kvm",
+  "saved_bmp": "pass",
+  "toolbar_after_draw_and_move": "pass",
+  "stroke_continuity": "pass",
+  "status": "pass"
+}

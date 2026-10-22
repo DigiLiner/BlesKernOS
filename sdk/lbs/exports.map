@@ -1,0 +1,5 @@
+{
+ global: /* LEGACY_EXPORTS */
+ hzip_*; hz_*; command_*; bk_*; print_*; gl*; tgl*; OSMesa*;
+ local: bk_lbs_print_begin_inner; bk_lbs_print_cancel_inner; bk_lbs_print_submit_inner; *;
+};

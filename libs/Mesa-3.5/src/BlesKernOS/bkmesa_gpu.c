@@ -71,6 +71,8 @@ typedef struct __attribute__((packed)) {
 #define BK_DRAW_BLEND          (1U << 2)
 #define BK_DRAW_TEXTURED       (1U << 3)
 #define BK_CAP_TEXTURE_MIPMAPS (1U << 19)
+#define BK_CAP_BLEND_ADDITIVE_ONE (1U << 22)
+#define BK_DRAW_PREMULTIPLIED (1U << 8)
 #define BK_CAP_ORDERED_SUBMIT (1U << 20)
 #define BK_CAP_BLEND_MULTIPLY (1U << 21)
 #define BK_DRAW_BLEND_MULTIPLY (1U << 30)
@@ -274,6 +276,7 @@ static void destroy_target(bkmesa_gpu_context *gpu)
    gpu->depth_staging = NULL;
    gpu->depth_staging_count = 0;
    gpu->supported = GL_FALSE;
+   gpu->capabilities = 0;
    gpu->gpu_dirty = GL_FALSE;
    gpu->cpu_dirty = GL_TRUE;
    gpu->gpu_depth_dirty = GL_FALSE;
@@ -306,7 +309,12 @@ static GLboolean create_target(bkmesa_gpu_context *gpu)
    desc.format = BK_FORMAT_ARGB8888;
    desc.flags = BK_SURFACE_RENDER_TARGET | BK_SURFACE_TEXTURE |
                 BK_SURFACE_DYNAMIC;
-   if (!gfx3d_surface_create(&desc, &gpu->target)) return GL_FALSE;
+   if (!gfx3d_surface_create(&desc, &gpu->target)) {
+      /* Texture storage survives drawable rebinding. Under VRAM pressure,
+       * evict that cache once so a larger render target can still fit. */
+      destroy_textures(gpu);
+      if (!gfx3d_surface_create(&desc, &gpu->target)) return GL_FALSE;
+   }
    gpu->supported = GL_TRUE;
    gpu->cpu_dirty = GL_TRUE;
    gpu->cpu_depth_dirty = GL_TRUE;
@@ -503,7 +511,7 @@ static void before_cpu_reason(bkmesa_gpu_context *gpu, GLint reason)
    gpu->cpu_dirty = GL_TRUE;
    gpu->cpu_depth_dirty = GL_TRUE;
    gpu->software_locked =
-      (gfx3d_capabilities() & BK_CAP_DEPTH_SURFACE_IO) ? GL_FALSE : GL_TRUE;
+      (gpu->capabilities & BK_CAP_DEPTH_SURFACE_IO) ? GL_FALSE : GL_TRUE;
 }
 
 static void before_cpu(bkmesa_gpu_context *gpu)
@@ -529,7 +537,10 @@ static GLboolean blend_supported(const GLcontext *ctx, bk_u32 caps)
               ctx->Color.BlendSrcA == GL_ZERO &&
               ctx->Color.BlendDstA == GL_SRC_COLOR &&
               (caps & BK_CAP_BLEND_MULTIPLY);
-   return normal || additive || multiply;
+   return normal || additive || multiply ||
+      ((caps & BK_CAP_BLEND_ADDITIVE_ONE) && ctx->Color.BlendSrcRGB==GL_ONE &&
+       ctx->Color.BlendDstRGB==GL_ONE && ctx->Color.BlendSrcA==GL_ONE &&
+       ctx->Color.BlendDstA==GL_ONE);
 }
 
 static GLboolean texture_supported(const GLcontext *ctx)
@@ -587,8 +598,7 @@ static GLboolean state_supported(bkmesa_gpu_context *gpu, GLcontext *ctx)
        ctx->Color.ColorLogicOpEnabled || ctx->Color.IndexLogicOpEnabled ||
        ctx->Color.MultiDrawBuffer || ctx->Polygon.SmoothFlag ||
        ctx->Polygon.StippleFlag ||
-       (ctx->_TriangleCaps & (DD_TRI_LIGHT_TWOSIDE |
-                             DD_SEPARATE_SPECULAR | DD_TRI_SMOOTH |
+       (ctx->_TriangleCaps & (DD_SEPARATE_SPECULAR | DD_TRI_SMOOTH |
                              DD_TRI_STIPPLE | DD_TRI_CULL_FRONT_BACK)) ||
        ctx->Line.SmoothFlag || ctx->Line.StippleFlag ||
        ctx->Point.SmoothFlag || ctx->Point._Attenuated ||
@@ -626,7 +636,7 @@ static void convert_vertex(const bkmesa_gpu_context *gpu,
 {
    GLfloat z = ctx->DepthMaxF ? in->win[2] / ctx->DepthMaxF : 0.0F;
    out->x = in->win[0];
-   out->y = (GLfloat)(gpu->height - 1) - in->win[1];
+   out->y = (GLfloat)gpu->height - in->win[1];
    out->z = CLAMP(z, 0.0F, 1.0F);
    out->rhw = in->win[3];
    out->color = force_color ? forced_color : color_to_argb(in->color);
@@ -701,7 +711,10 @@ static bk_u32 draw_flags(const GLcontext *ctx)
    if (ctx->Depth.Test && ctx->Depth.Mask) flags |= BK_DRAW_DEPTH_WRITE;
    if (ctx->Color.BlendEnabled) {
       flags |= BK_DRAW_BLEND;
-      if (ctx->Color.BlendDstRGB == GL_ONE) flags |= BK_DRAW_BLEND_ADDITIVE;
+      if (ctx->Color.BlendDstRGB == GL_ONE) {
+         flags |= BK_DRAW_BLEND_ADDITIVE;
+         if (ctx->Color.BlendSrcRGB == GL_ONE) flags |= BK_DRAW_PREMULTIPLIED;
+      }
       if (ctx->Color.BlendSrcRGB == GL_ZERO &&
           ctx->Color.BlendDstRGB == GL_SRC_COLOR)
          flags |= BK_DRAW_BLEND_MULTIPLY;
@@ -1017,7 +1030,7 @@ static void apply_polygon_offset(const GLcontext *ctx, bk_vertex v[3])
    if (dzdx < 0.0F) dzdx = -dzdx;
    if (dzdy < 0.0F) dzdy = -dzdy;
    offset = ctx->Polygon.OffsetFactor * (dzdx > dzdy ? dzdx : dzdy) +
-            ctx->Polygon.OffsetMRD;
+            (ctx->DepthMaxF ? ctx->Polygon.OffsetMRD / ctx->DepthMaxF : 0.0F);
    for (GLuint i = 0U; i < 3U; i++)
       v[i].z = CLAMP(v[i].z + offset, 0.0F, 1.0F);
 }
@@ -1183,6 +1196,11 @@ static GLboolean submit_triangle(GLcontext *ctx, const SWvertex *a,
    }
    n = clip_triangle_scissor(gpu, ctx, v, clipped);
    if (n < 3U) return GL_TRUE;
+   if (n == 3U) {
+      if (!append_vertices(gpu, texture, flags, clipped, 3U)) return GL_FALSE;
+      gpu->stats.triangles++;
+      return GL_TRUE;
+   }
    for (GLuint i = 1U; i + 1U < n; i++) {
       fan[out++] = clipped[0]; fan[out++] = clipped[i]; fan[out++] = clipped[i + 1U];
    }
@@ -1191,12 +1209,44 @@ static GLboolean submit_triangle(GLcontext *ctx, const SWvertex *a,
    return GL_TRUE;
 }
 
+/* TNL computes both lighting results on CPU. Replace only the three RGBA
+ * colors for a back face, then restore them before adjacent primitives or
+ * software fallback. Copying full SWvertices also copied every texture unit
+ * and unused attributes for every morph3d triangle. */
+static GLboolean triangle_colors(GLcontext *ctx, SWvertex *v,
+                                 GLuint i0, GLuint i1, GLuint i2,
+                                 GLchan saved[3][4])
+{
+   GLuint indices[3]={i0,i1,i2};
+   if (!(ctx->_TriangleCaps & DD_TRI_LIGHT_TWOSIDE)) return GL_FALSE;
+   GLfloat ex=v[i0].win[0]-v[i2].win[0], ey=v[i0].win[1]-v[i2].win[1];
+   GLfloat fx=v[i1].win[0]-v[i2].win[0], fy=v[i1].win[1]-v[i2].win[1];
+   if (((ex*fy-ey*fx < 0.0F) ^ ctx->Polygon._FrontBit) == 0) return GL_FALSE;
+   struct vertex_buffer *vb=&TNL_CONTEXT(ctx)->vb;
+   GLfloat (*colors)[4]=(GLfloat (*)[4])vb->ColorPtr[1]->Ptr;
+   /* Save every original before modifying any potentially aliased index. */
+   for (GLuint i=0;i<3;i++) MEMCPY(saved[i],v[indices[i]].color,sizeof(saved[i]));
+   for (GLuint i=0;i<3;i++) UNCLAMPED_FLOAT_TO_RGBA_CHAN(v[indices[i]].color,colors[indices[i]]);
+   return GL_TRUE;
+}
+static void triangle_colors_restore(SWvertex *v, GLuint i0, GLuint i1, GLuint i2,
+                                    GLchan saved[3][4])
+{
+   GLuint indices[3]={i0,i1,i2};
+   for (GLuint i=0;i<3;i++) MEMCPY(v[indices[i]].color,saved[i],sizeof(saved[i]));
+}
 static void gpu_triangle(GLcontext *ctx, GLuint i0, GLuint i1, GLuint i2)
 {
    SWvertex *v = SWSETUP_CONTEXT(ctx)->verts;
    bkmesa_gpu_context *gpu = lookup(ctx);
-   if (!gpu || !gpu->render_gpu ||
-       !submit_triangle(ctx, &v[i0], &v[i1], &v[i2])) {
+   GLboolean ok=GL_FALSE;
+   if (gpu && gpu->render_gpu) {
+      GLchan saved[3][4];
+      GLboolean back=triangle_colors(ctx,v,i0,i1,i2,saved);
+      ok=submit_triangle(ctx,&v[i0],&v[i1],&v[i2]);
+      if (back) triangle_colors_restore(v,i0,i1,i2,saved);
+   }
+   if (!ok) {
       if (gpu && gpu->last_fallback == BKMESA_FALLBACK_NONE)
          mark_fallback(gpu, BKMESA_FALLBACK_DRAW_FAILED);
       if (strict_mode(gpu)) return;
@@ -1353,7 +1403,6 @@ void bkmesa_gpu_bind(GLcontext *ctx, void *buffer, GLint width, GLint height,
        gpu->rowlength == rowlength && gpu->format == format && gpu->yup == yup)
       return;
    (void)resolve_color(gpu);
-   destroy_textures(gpu);
    destroy_target(gpu);
    gpu->buffer = buffer;
    gpu->width = width;
@@ -1585,7 +1634,11 @@ GLuint bkmesa_gpu_surface(GLcontext *ctx)
    bkmesa_gpu_context *gpu = lookup(ctx);
    if (!gpu || !gpu->supported || !policy_allows_gpu(gpu) ||
        gpu->strict_failed) return 0;
-   if (gpu->draw_open) (void)end_draw(gpu);
+   if (gpu->draw_open && !end_draw(gpu)) return 0;
+   /* AUTO can finish its last operation in software. Publish those pixels
+    * before handing the target to a GPU compositor, even without a later
+    * hardware draw to trigger the usual upload. */
+   if (!upload_color(gpu)) return 0;
    return gpu->target;
 }
 

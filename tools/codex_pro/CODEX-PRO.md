@@ -52,3 +52,11 @@ explorer, multiple source files, build profile, output name, diagnostics panel,
 line/column status, autosave and future symbol navigation.  Those UI controls
 must be wired to the current `src/codex.c` implementation; this patch does not
 pretend to modify an unavailable version of that file.
+
+## Native LBS projects
+
+The development image includes a PROJECTS/LBS starter, the LBS host bridge,
+namespace-isolated native/POSIX archives, and SYSTEM/*.LBS. `USE_LBS=1` selects
+the dynamic startup CRT. Implement bk_lbs_program_main and bk_lbs_requirements;
+resolve the requested API with dlsym as in the starter. Existing static projects
+keep USE_LBS=0. This build integration is independent of the IDE version.

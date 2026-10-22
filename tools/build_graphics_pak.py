@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 import re
 import struct
 import tarfile
@@ -164,6 +165,29 @@ def build_package(selected: list[Candidate], output: Path,
         manifest.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def selected_retro_icons() -> list[Candidate]:
+    """Include the explicitly selected React95 assets alongside KDE icons."""
+    from PIL import Image
+    directory = Path(__file__).resolve().parents[1] / "third_party/react95/selected"
+    metadata = json.loads((directory / "sources.json").read_text())
+    result = []
+    for name, filename in metadata["icons"].items():
+        source = Image.open(directory / filename).convert("RGBA")
+        for size in (32, 16):
+            mini = metadata["mini_icons"].get(name) if size == 16 else None
+            image = Image.open(directory / mini).convert("RGBA") if mini else source
+            if image.size != (size, size):
+                image = image.resize((size, size), Image.Resampling.NEAREST)
+            output = io.BytesIO()
+            image.save(output, format="PNG")
+            origin = "third_party/react95/selected/" + (mini or filename)
+            item = Candidate(f"{size}/{name}", size, size, 32, origin, output.getvalue())
+            result.append(item)
+            if size == 32:
+                result.append(Candidate(name, size, size, 32, origin, item.data))
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -183,7 +207,7 @@ def main() -> int:
 
     if not (args.png_dir or args.tarball or args.download):
         from kde1_graphics import candidates as kde_candidates, source_bundle
-        build_package(kde_candidates(Candidate), args.output, args.manifest,
+        build_package(kde_candidates(Candidate) + selected_retro_icons(), args.output, args.manifest,
                       "KDE 1 historical kdebase + kdelibs; third_party/kde1/*-source.json")
         source_bundle(args.output.with_name('KDE1SRC.TGZ'))
         return 0

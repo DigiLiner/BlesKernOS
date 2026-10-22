@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT/'ports/wine/graphics/virgl-winsys.c').read_text()
+source = (ROOT/'ports/gallium/virgl-winsys.c').read_text()
 transfer = source[source.index('static int bk_transfer('):source.index('static int bk_put(')]
 wait = source[source.index('static void bk_wait_resource('):source.index('static bool bk_busy(')]
 code = r'''

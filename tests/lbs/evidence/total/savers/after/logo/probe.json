@@ -1,0 +1,26 @@
+{
+  "destination": "/SYSTEM/PROGRAMS/SAVERPROBE.BEX",
+  "source": "/home/lucas/Escritorio/BlesKernOS 0.10/tests/lbs/evidence/total/savers/after/logo/probe.raw.o",
+  "output": "/home/lucas/Escritorio/BlesKernOS 0.10/tests/lbs/evidence/total/savers/after/logo/probe.o",
+  "modules": [
+    "FONT",
+    "NGS",
+    "SYSTEM",
+    "VISION"
+  ],
+  "imports": {
+    "bk_gui_desktop": "VISION",
+    "bk_gui_invalidate_all": "VISION",
+    "bk_gui_request_paint": "VISION",
+    "bk_proc_exit_requested": "SYSTEM",
+    "bk_sys_alloc_zero": "SYSTEM",
+    "bk_sys_free": "SYSTEM",
+    "bk_sys_sleep_ms": "SYSTEM",
+    "bk_sys_uptime_ms": "SYSTEM",
+    "gui_font_draw_string": "FONT",
+    "gui_font_draw_string_scaled": "FONT",
+    "gui_gfx_draw_rect": "NGS",
+    "gui_gfx_fill_rect": "NGS"
+  },
+  "process_lifetime_pin": true
+}

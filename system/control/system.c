@@ -7,7 +7,7 @@
 #define SYSTEM_TAB_TOP            6
 #define SYSTEM_TAB_COUNT          6
 #define SYSTEM_BUILD_VERSION    "0.9"
-#define SYSTEM_LABEL_W          104
+#define SYSTEM_LABEL_W          168
 
 #if defined(BLES_ARCH_ARM32_RPI3)
 #define SYSTEM_ARCH_NAME        "ARM32 (Raspberry Pi)"
@@ -180,15 +180,15 @@ static gui_rect_t system_draw_header_box(gui_surface_t *s,
                                          const char *subtitle) {
     gui_rect_t header = {page.x + 12, page.y + 12, page.w - 24, 48};
     gui_rect_t icon_box = {header.x + 8, header.y + 8, 32, 32};
-    gui_rect_t text_clip = {header.x + 52, header.y + 6,
-                            header.w - 60, 26};
+    gui_rect_t text_clip = {header.x + 52, header.y + 29,
+                            header.w - 60, 14};
 
     cpl_draw_bevel(s, header, CPL_FACE, true);
     cpl_draw_bevel(s, icon_box, CPL_WHITE, true);
     system_draw_logo(s, st, icon_box.x, icon_box.y, icon_box.w);
     bk_gui_font_draw_string_scaled(s, header.x + 52, header.y + 7,
                                    title, CPL_TEXT, 2);
-    bk_gui_font_draw_string_clipped(s, header.x + 53, header.y + 23,
+    bk_gui_font_draw_string_clipped(s, header.x + 52, header.y + 29,
                                     subtitle, CPL_TEXT, text_clip);
     return header;
 }
@@ -237,7 +237,8 @@ static int system_draw_value_row(gui_surface_t *s, gui_rect_t inner,
 
     if (y + 12 > inner.y + inner.h) return y;
     value_clip = (gui_rect_t){value_x, y, inner.x + inner.w - value_x, 13};
-    bk_gui_font_draw_string(s, inner.x + 8, y, label, CPL_TEXT, 0, false);
+    bk_gui_font_draw_string_clipped(s, inner.x + 8, y, label, CPL_TEXT,
+        (gui_rect_t){inner.x + 8, y, SYSTEM_LABEL_W - 16, 13});
     bk_gui_font_draw_string_clipped(s, value_x, y,
                                     value ? value : "",
                                     CPL_TEXT, value_clip);

@@ -313,15 +313,15 @@ static void editor_delete_forward(editor_state_t *st) {
     editor_delete_range(st, st->cursor, st->cursor + 1);
 }
 
-static void editor_copy_selection(editor_state_t *st) {
+static bool editor_copy_selection(editor_state_t *st) {
     uint32_t start;
     uint32_t end;
     uint32_t size;
 
-    if (!st) return;
+    if (!st) return false;
     if (!editor_has_selection(st)) {
         editor_status(st, "@H7A65B595");
-        return;
+        return false;
     }
 
     editor_selection_bounds(st, &start, &end);
@@ -333,10 +333,11 @@ static void editor_copy_selection(editor_state_t *st) {
         copy[size] = '\0';
         if (!bk_clipboard_set_text(copy)) {
             editor_status(st, "No se pudo copiar");
-            return;
+            return false;
         }
     }
     editor_status(st, "@HAD5496C9");
+    return true;
 }
 
 static void editor_paste_clipboard(editor_state_t *st) {
@@ -360,6 +361,31 @@ static void editor_select_all(editor_state_t *st) {
     st->selection_anchor = 0;
     st->cursor = st->length;
     editor_status(st, "@HAFB3FA6E");
+}
+
+enum {
+    EDITOR_CUT = 10, EDITOR_COPY, EDITOR_PASTE, EDITOR_DELETE, EDITOR_SELECT_ALL
+};
+
+static void editor_edit_menu(gui_window_t *window UNUSED, uint32_t item_id,
+                             void *context) {
+    editor_state_t *st = (editor_state_t *)context;
+    if (!st) return;
+    switch (item_id) {
+        case EDITOR_CUT:
+            if (editor_copy_selection(st)) {
+                editor_delete_selection(st);
+                editor_status(st, "Texto cortado");
+            }
+            break;
+        case EDITOR_COPY: editor_copy_selection(st); break;
+        case EDITOR_PASTE: editor_paste_clipboard(st); break;
+        case EDITOR_DELETE: editor_delete_forward(st); break;
+        case EDITOR_SELECT_ALL: editor_select_all(st); break;
+        default: return;
+    }
+    editor_ensure_cursor_visible(st);
+    if (st->window) st->window->dirty = true;
 }
 
 static void editor_move_vertical(editor_state_t *st, int delta,
@@ -626,12 +652,14 @@ static bool editor_event(gui_window_t *window UNUSED,
 
     if (event->type != GUI_EVENT_KEY) return false;
 
-    if (event->alt && (key == 'a' || key == 'A')) {
+    if ((event->ctrl || event->alt) && (key == 'a' || key == 'A')) {
         editor_select_all(st);
-    } else if (event->alt && (key == 'c' || key == 'C')) {
+    } else if ((event->ctrl || event->alt) && (key == 'c' || key == 'C')) {
         editor_copy_selection(st);
-    } else if (event->alt && (key == 'v' || key == 'V')) {
+    } else if ((event->ctrl || event->alt) && (key == 'v' || key == 'V')) {
         editor_paste_clipboard(st);
+    } else if (event->ctrl && (key == 'x' || key == 'X')) {
+        editor_edit_menu(st->window, EDITOR_CUT, st);
     } else if (key == KEY_LEFT) {
         if (st->cursor > 0) editor_set_cursor(st, st->cursor - 1, event->shift);
         else if (!event->shift) st->selection_anchor = st->cursor;
@@ -781,13 +809,23 @@ static void editor_main(void *argument) {
                                  editor_file_menu, st);
         bk_gui_add_menu_item(st->window, file_menu, 3, "Imprimir",
                                  editor_file_menu, st);
-        (void)bk_gui_add_menu(st->window, "@HC2C76CB1");
+        int edit_menu = bk_gui_add_menu(st->window, "@HC2C76CB1");
+        bk_gui_add_menu_item(st->window, edit_menu, EDITOR_CUT,
+                            "@H79C25276", editor_edit_menu, st);
+        bk_gui_add_menu_item(st->window, edit_menu, EDITOR_COPY,
+                            "@HAFCCD5E7", editor_edit_menu, st);
+        bk_gui_add_menu_item(st->window, edit_menu, EDITOR_PASTE,
+                            "@H0362F7D4", editor_edit_menu, st);
+        bk_gui_add_menu_item(st->window, edit_menu, EDITOR_DELETE,
+                            "@H79252B86", editor_edit_menu, st);
+        bk_gui_add_menu_item(st->window, edit_menu, EDITOR_SELECT_ALL,
+                            "Seleccionar todo", editor_edit_menu, st);
         (void)bk_about_attach(st->window, st->desktop, &(bk_about_info_t){
             "@H4968BF98", "@H1C1E4EC2", "@H6F966C44",
             "@H7A28E1E5", "/ICONS/EDITOR.BMP"});
         bk_gui_set_window_content(st->window, editor_content, st);
         bk_gui_set_window_event_handler(st->window, editor_event, st);
-        bk_gui_set_window_min_size(st->window, 260, 160);
+        bk_gui_set_window_min_size(st->window, 320, 160);
         st->window->owner_pid = bk_sys_getpid();
         bk_proc_bind_window(st->window);
         for (int i = 0; i < 4; i++) {

@@ -1,0 +1,627 @@
+[
+  {
+    "destination": "/SYSTEM/PROGRAMS/FILE.BEX",
+    "bytes": 59164,
+    "sha256": "db5d4bf2e64fd3a534346f6eee736b67b3439c86b9bb95aa60e9ebf581356950"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/TEXTEDITOR.BEX",
+    "bytes": 21696,
+    "sha256": "e3415f80384b46ca9aa6027501980ddeb17b65af582986a61e9db4edb5bc15d8"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/CALCULATOR.BEX",
+    "bytes": 7056,
+    "sha256": "e9f5aa23a4e8e5a422c6e08d09daeeb853cbbf797962edabbe56a67016319f7f"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/FONT.BEX",
+    "bytes": 13632,
+    "sha256": "f65f8c42ad215a3b2a6cafee5f668f1e21f2d4459b38c5cfebf0e477aa11f195"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/MIDAMP.BEX",
+    "bytes": 27588,
+    "sha256": "af48ae4d7ca85f4e052f6585b3a68372abdef92c02e87a7cf6bb6b3254f8bd22"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/PROCESSMANAGER.BEX",
+    "bytes": 24176,
+    "sha256": "d62a42afe42a630b4247d5504c808d93ecaac66ce30ea8c86d22e6bcf716f35b"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/CALENDAR.BEX",
+    "bytes": 11252,
+    "sha256": "ffad48bd644dcacc76068e09749751380aae44c0f0f8200ce17c1675304a75fd"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/ABOUT.BEX",
+    "bytes": 7816,
+    "sha256": "7e697b63433057f8bfb03238a99f467c490c99e815d0d92e8523d9ca19139620"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/RUNBOX.BEX",
+    "bytes": 12828,
+    "sha256": "41a50472579ddc932ec45227778ebd56d91578be2a430c08a1605e553da40829"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/IMAGEVIEWER.BEX",
+    "bytes": 16916,
+    "sha256": "e16913a4169e98d9ef322d76c0e5b743d5de4b34765789d62f81176a9837627a"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/VIEWER.BEX",
+    "bytes": 91900,
+    "sha256": "63d739cf08b36ac4fd86e369cb924f1bef75cf27fff4be9c1c096ec29a074114"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/PAINT.BEX",
+    "bytes": 19572,
+    "sha256": "4d52edeed6230517cb4ad2035c496b7922c839f830dce9046ae612b3a9dcaffa"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/SCANDISK.BEX",
+    "bytes": 7864,
+    "sha256": "549d91a54b0cda53abc7dedc4766587c41776d0d2666f832d0a8f5e4af9e11b5"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/WINE.BEX",
+    "bytes": 1116,
+    "sha256": "6a08db006e7aa4ddfb70e8c51fd57289eaf2c1188284e24f0d82354b911fd25c"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/CONTROL.BEX",
+    "bytes": 12504,
+    "sha256": "3eed6771d4fa477763495a9398a0199029d14b206c9f98757b30beb54118eac3"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/APPEAR.CPL",
+    "bytes": 2303220,
+    "sha256": "a036bee824f3361460db08ec0aadc26ddf7cc8ec2d2b74d3b7013316b73d6067"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/DISPLAY.CPL",
+    "bytes": 2303220,
+    "sha256": "0f3799451fd9295369ceee5a9dfd488e58a6a1005aeb0401ea8b1fb74ef46098"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/SOUND.CPL",
+    "bytes": 11088,
+    "sha256": "40aa5749c6daa941c6c85514d733fa3759b056a92875449aea8f4b262ab67f82"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/DATETIME.CPL",
+    "bytes": 18968,
+    "sha256": "80ea60799222054fb68f76f6a0e0a619a6dc652f7ec38da92822fe06b1c531a9"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/MOUSE.CPL",
+    "bytes": 19952,
+    "sha256": "113eec0dd972f9fc91ef3e5f12bea63f0161ce0ffbac24f3f6f5a9309fb21173"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/KEYBOARD.CPL",
+    "bytes": 12952,
+    "sha256": "9d8f80e767a8edbdbbbf16126d6462a1ab6f52bec2a6ed8b7c53422cf7905ca1"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/SYSTEM.CPL",
+    "bytes": 22608,
+    "sha256": "694297fd6a89a08592fa31bbf1a5ffa100dca335f3d8ee5dd177d9b4b26b95d5"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/DEVMGR.CPL",
+    "bytes": 127672,
+    "sha256": "bbbd43145950c0af09810ccb33eba6ddaf80b5e3ba3be5f9d5b9124279782763"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/INTERNET.CPL",
+    "bytes": 19992,
+    "sha256": "040ae45ebcce4a65e61c07c2ff86acd522c809dbcc489c57621e14f196d86a31"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/MODEM.CPL",
+    "bytes": 21160,
+    "sha256": "b3c4279b242e84bdae5bcd0d3e5648157ff57125da6ad9e0ee8a71103e28d97a"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/LANGUAGE.CPL",
+    "bytes": 6652,
+    "sha256": "6626f17f112f6722fc6509e741e50afe7fefba5050c28b71e93870dc46cfb3e2"
+  },
+  {
+    "destination": "/SYSTEM/CONTROL/WINE.CPL",
+    "bytes": 1088,
+    "sha256": "a2b8e414cb900c163ae682557830386ba3b74b8f5de834144670f6bae85a8137"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/NETSURF.BEX",
+    "bytes": 909340,
+    "sha256": "997ac212b149b7865d73324ae55451a0f07204be8e4115c94d6511271b182066"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/HELP_CENTER.BEX",
+    "bytes": 8364,
+    "sha256": "36662d332a7d0d4b4967f198182b01a710ce3a9995e914d17fcfaa30839d35b4"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/FIND_FILES.BEX",
+    "bytes": 9380,
+    "sha256": "1322d5bdf579c85d94b444c1abebb2b906f6f2eb0bf78cfe0ea9ac1d0086c822"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/ARCHIVE_MANAGER.BEX",
+    "bytes": 9976,
+    "sha256": "476dedef9e19c53c688cc3213ef677e2c4264cdcb7a2df6726e878b481a16985"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/DISK_TOOLS.BEX",
+    "bytes": 12236,
+    "sha256": "e17b6ce20a0b28f8f0e15e16a50f2fbd6590c5a38369f0e1fb3c2b73c60386db"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/CLIPBOARD_VIEWER.BEX",
+    "bytes": 6544,
+    "sha256": "9873218f2d2ae496fd71f8a1f7f2ef448e9b043072629086290763b40d4daddd"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/DEFRAG.BEX",
+    "bytes": 8616,
+    "sha256": "d95d5de089b5ad295aaaec02f9a1a05df98190dce878a5cd0f9b918fb045a455"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/EVENT_VIEWER.BEX",
+    "bytes": 10476,
+    "sha256": "157fa1c5909ece6323e89537a4bf07915b2943695b183a875df44b568a9e8910"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/PERFORMANCE_MONITOR.BEX",
+    "bytes": 29780,
+    "sha256": "34d86d0ca5bd8ac038ed56da1aef9b8c48d7dc95cf3ae04cc46796e296dc1e0d"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/SHELL.BEX",
+    "bytes": 10232,
+    "sha256": "104453ce5fca8081a84ae52b2881b5627c6f366700b1eb133c5394dd04a551f6"
+  },
+  {
+    "destination": "/SYSTEM/PROGRAMS/NETWORK_STATUS.BEX",
+    "bytes": 112520,
+    "sha256": "f4c78f1a36d8b954370e0eb5fadcc4190b3fafc6340852b39e9377544dc19200"
+  },
+  {
+    "destination": "/SYSTEM/SCREENS/SSLOGO.SCV",
+    "bytes": 5544,
+    "sha256": "85913b250f88163d4789529f4e445c18d5349211477e7ba0e6a985e110e3e0a3"
+  },
+  {
+    "destination": "/SYSTEM/SCREENS/SSPIPES.SCV",
+    "bytes": 2258696,
+    "sha256": "998cfe407674af3fc38ac36da1a71811007bcd7ea5bd037a9e8e492ae8370729"
+  },
+  {
+    "destination": "/SYSTEM/SCREENS/SSBALLS.SCV",
+    "bytes": 2259620,
+    "sha256": "28c5824ef9fb51980f497b585ce5c25691f4e739df824fc54daf0ab365ac146e"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/help.BEX",
+    "bytes": 46852,
+    "sha256": "3e9d956932e28186bc225af7704f7df8a2f64f8f4b4b0330c8a05581a06c3626"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/echo.BEX",
+    "bytes": 46900,
+    "sha256": "c8b437d72f166331cd341973038b818e14c544223991f2dd38b9a9f7a4cfabf9"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/about.BEX",
+    "bytes": 46860,
+    "sha256": "722d873649dbc3b1be3ccfc964853c98e1353f12a0cc9b171ad9010f3ad820a4"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/uname.BEX",
+    "bytes": 46904,
+    "sha256": "4bf5fa334e0cb7ea111ea54b21652ca2a4418931cb2fc417d89f2e9a3d9f8815"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/hostname.BEX",
+    "bytes": 47640,
+    "sha256": "9221c37912dc7d4081547a8a27b7367792bae16b40a961508e76c8b6087c362f"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/uptime.BEX",
+    "bytes": 46968,
+    "sha256": "f5ce42d1585a6bee613d2a95f79a97d85c88825b72dcbb87c153bec9e0074cf8"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/date.BEX",
+    "bytes": 46988,
+    "sha256": "0d6aea63c450477c5a3d5653b809833dda5787438e39cb972afb3a6a6f1441ad"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/time.BEX",
+    "bytes": 46988,
+    "sha256": "8ed3fa4c5302fcc65ff90c32884e3dc4e7a9a2bbce485f41aeca1e2bd2b2df2a"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/shutdown.BEX",
+    "bytes": 46872,
+    "sha256": "f1de8afd3d4468bc142f84110124e2f69d617bd3b82d6017830667be326ac8a6"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/reboot.BEX",
+    "bytes": 46868,
+    "sha256": "9a8d7c0dd917025bf6bc36ac9017070c1910c35185755c1f79336dbb40799e5f"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/sleep.BEX",
+    "bytes": 47020,
+    "sha256": "a99d35044b2d299369c461680e55b4607fd8072b4c9c80d8117fe09f58e29fb7"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/label.BEX",
+    "bytes": 47004,
+    "sha256": "6c4c0e7b97f20ae42d53e0a9d54b362046a241c4176692f2ae6d906ca8e9a2ef"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/checkdisk.BEX",
+    "bytes": 52008,
+    "sha256": "26ed00d9995461fffb1cfe44863af8c369b51ad61b7909c2c904f8578989d964"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/fsinfo.BEX",
+    "bytes": 48396,
+    "sha256": "00f92ed1961759d7c90b8bffd3e8f1931bc403645e96c80febd67db2ec641244"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/backup.BEX",
+    "bytes": 53472,
+    "sha256": "7e0e77f4caec4930f8fe00d5b044055c0358b50b3536d026d1e27c0521284805"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/dir.BEX",
+    "bytes": 46852,
+    "sha256": "f4940499f80237dc81a39dd701887a2e52b31984bd53162e799123a08cb2e424"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ls.BEX",
+    "bytes": 46852,
+    "sha256": "cd512c361210e142861fca7d6e9fa008bccc0c1cef8e15c444c3504a26a350fc"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/copy.BEX",
+    "bytes": 46852,
+    "sha256": "c183864d65defbc2cd6bd9497530777f60b01da4b37f7e4c5d80a6a015825561"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/cp.BEX",
+    "bytes": 46852,
+    "sha256": "b89b901dfde6143be905bd4325072903a7098ae8b6edd2483060bdf10dae4967"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/move.BEX",
+    "bytes": 46852,
+    "sha256": "77aec8eaa820a8541b18da632e2deee3982053400783fe41c5e8f46cd9453c9c"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/delete.BEX",
+    "bytes": 46880,
+    "sha256": "212cf9716b29626dc06986efe85bd4983e2b2f1a435f8f5a7b9ee28e73a4f2bd"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/rm.BEX",
+    "bytes": 47180,
+    "sha256": "d566ab0af955788cb43de599edccf575a5a5ac601e0b2db291226251a56a9045"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/mkdir.BEX",
+    "bytes": 47420,
+    "sha256": "a0e8eb13c4f49ae961fb753ae5f3bab8d83c26119508ff5f98047a1687ede20d"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/rmdir.BEX",
+    "bytes": 46852,
+    "sha256": "63e5a4686dfd5baf17eea5a619a45aac3454422d805ab4c3a37bf6b71e457b98"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/rename.BEX",
+    "bytes": 46912,
+    "sha256": "345282e35228d1dc17a1d3fb474a86c4753f67824d8d87f886e2d5db2df6b4fb"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/touch.BEX",
+    "bytes": 46852,
+    "sha256": "121fe3fb7b5a6b0ec9395c392ef6740ec7a55221359f49d074d0541cc5a67440"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/tree.BEX",
+    "bytes": 46852,
+    "sha256": "830b0f1fcfe53d298b5acbd2ffbabefe548f6b03e2f340811ca9f8b19568630b"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/find.BEX",
+    "bytes": 46852,
+    "sha256": "221313a3f2ec965878a4a6f3c049f31d3682986c02b8f616e09b20897cbf2b1b"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/attrib.BEX",
+    "bytes": 46856,
+    "sha256": "d44ef1934fd52e5e18611a3ee6a28475e926051cce5388f8c23df911bd6162a9"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/chmod.BEX",
+    "bytes": 46852,
+    "sha256": "0ca63b2d12bc890d959c084fe659c12d3eb878aa5f2a0f8ac52d90ca3ef59fcc"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/type.BEX",
+    "bytes": 46852,
+    "sha256": "33dc7b1c7a015309504213708cdb85ba2e517452a57226fa354eee635df86e8c"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/more.BEX",
+    "bytes": 46852,
+    "sha256": "d3f510cbc21e0d86edf0748188379ec8f60823ac395e0af9546c52968e36be00"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/cat.BEX",
+    "bytes": 46852,
+    "sha256": "80e22e4c9d4b315c58d084c721ce5ca7dc9ac18047116d32629ad2b0c802b804"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/diff.BEX",
+    "bytes": 46852,
+    "sha256": "ececb45820d6c0cc75d32aa32b95a8e2502e9332f6058ae08d9b867b93d443ae"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ps.BEX",
+    "bytes": 46820,
+    "sha256": "fbdd1616594762450d294dbae5e2bfd94b7eb07dad9bd94defa788371b0638a5"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/kill.BEX",
+    "bytes": 46984,
+    "sha256": "16ebff7901dd01d4172752225dafc401d0c60b1bb17825fc3ced8806303313cc"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/tasklist.BEX",
+    "bytes": 46824,
+    "sha256": "1c3c0d5258bf10449673f477bc6b7b215b18058de9a55641fc08b4b0c375deb9"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/taskkill.BEX",
+    "bytes": 46988,
+    "sha256": "c1db7adb81fa9f3dd1ca8cd49e428ed12b655b3afb223e89ec5864b83ba16906"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/top.BEX",
+    "bytes": 47656,
+    "sha256": "23770e7c16fae38682a5f760295257c5220eb122cfb5d7736050fc3501f57f88"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/nice.BEX",
+    "bytes": 46852,
+    "sha256": "8a1e2e79d63243ace927154026dbe5b5faf391e3f96f6019a7c78feffad53c29"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/pci.BEX",
+    "bytes": 46820,
+    "sha256": "f715a707f9a40ede8cd579e7385c93418d0a3f0c161cfa52c9fabf2df2522437"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/usb.BEX",
+    "bytes": 47316,
+    "sha256": "62b9d8f327fff906cb054848d9e1493e4df0a06836c8ed36670ad8db03d27835"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/lspci.BEX",
+    "bytes": 46820,
+    "sha256": "d63f5f639216dbfce10a342161c979529b2bc596843b86d1e523a40ceb761bfe"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/lsusb.BEX",
+    "bytes": 47316,
+    "sha256": "b418ab56b7dfa9aea9381e29ae02e3f1ae643d6633a600dd50a867fec6bd89a8"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/cpuinfo.BEX",
+    "bytes": 46896,
+    "sha256": "8930a28ae5e75a38343c5412bbc451e46c12a2148c8967b30fdbbd652752d85e"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/mem.BEX",
+    "bytes": 47760,
+    "sha256": "10369f4b489abb69626594be48a2ae009144b907e3be6410d27f516003dbd2bc"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/soundtest.BEX",
+    "bytes": 46944,
+    "sha256": "15a9f56e47fd91ac0bc33a0927d1c66d937d7772521fc850e55f25006404e73a"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ipconfig.BEX",
+    "bytes": 46856,
+    "sha256": "90af4df991242be30d1b2dd4724a64da8b003006c382edb64595906f986cc8f1"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ping.BEX",
+    "bytes": 46852,
+    "sha256": "55d26594fcbb027d7dbacbc1eab5fb6b5412b0b1b28da1414314180e256dc9a7"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/netstat.BEX",
+    "bytes": 46856,
+    "sha256": "77551bc036c0fb224c240f06929ff0d41b29bc3246df80fa742e4fef4d6fe5df"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ftp.BEX",
+    "bytes": 50404,
+    "sha256": "cfe45c1045c5e1f5323dd0f5a5db5b3f6128ed41510c612cd7ce46ad0bd95459"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/wget.BEX",
+    "bytes": 46852,
+    "sha256": "e18941b5a6161ebdd74daa7a06e479a534bddd248985cd9d66255137ccaaa747"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/curl.BEX",
+    "bytes": 46852,
+    "sha256": "8bf9fe6a9371b06e7bfc5cab5ed2baf93e1f8644d992259c5992ed2569b3f2b9"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/compile.BEX",
+    "bytes": 46912,
+    "sha256": "e3e5f0040a1735494f12132cce704541b4e4d4245935a35bcc54c11aa38d0806"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/link.BEX",
+    "bytes": 46940,
+    "sha256": "257b4456333f0def268f28017ff2159463fa254556b8a7b1b0a7ae57abeaeb9f"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/gcc.BEX",
+    "bytes": 47196,
+    "sha256": "47f50e5585e22a59dc1195daacd8d401ed7395fb01d21c67bb4edfa286817751"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/cc.BEX",
+    "bytes": 47092,
+    "sha256": "10ecd4e0bcd36be8ee86464a9a305ea739ca675470943609368493befda09662"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ld.BEX",
+    "bytes": 47044,
+    "sha256": "a81fddc49c19244274b0f8ee1b7a59dbfaf0ea1c3f298b85aebfcd9b5a741d39"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/as.BEX",
+    "bytes": 46948,
+    "sha256": "c7fc8f652e5f1f39aaabd0e0199ac80d3ee8cb41f9a76b77f0af30b964f8e119"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ar.BEX",
+    "bytes": 47044,
+    "sha256": "911b3f590001ad85586482b909eec9af28b92f1eb566a5edcbf9180793178ba2"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ranlib.BEX",
+    "bytes": 46896,
+    "sha256": "fa9eb0f6ad057d4e559c24c6b33353c397cf9210d653579559754d76e7f4ac8c"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/build.BEX",
+    "bytes": 46980,
+    "sha256": "d9566c4ecd311e8265f1eebc146b59edfca7e9b0ed0224d0e6706c53437cdc93"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/nasm.BEX",
+    "bytes": 46892,
+    "sha256": "8b724132934841b3250ddf0ca3db46c3cd963cb6e4220bf28e8afb7a20aeee90"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/ndisasm.BEX",
+    "bytes": 46896,
+    "sha256": "6ed0001f1142068a806ec8b52d00b3310c8ee6e2c5f9c2550ef55455ab4bf6fc"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/make.BEX",
+    "bytes": 46996,
+    "sha256": "d84f6e6628bdbcd5856fc413dd37a698dbe88f5c0c6bb590e54dbe15439e08d2"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/fatpack.BEX",
+    "bytes": 46896,
+    "sha256": "e52e1a7dbf7dd7911e4bdbefa71d5613cda6661fd9adcf7a90156d15d4e4a2fb"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/addr2line.BEX",
+    "bytes": 46896,
+    "sha256": "242261bf4672d5f2903ed8c337c844a534394a869e31d147e29ad3091be38d19"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/cxxfilt.BEX",
+    "bytes": 46896,
+    "sha256": "5768242f4064993d2ef382d6474ad75aa08994fc802b5266ed398d5db9643246"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/elfedit.BEX",
+    "bytes": 46896,
+    "sha256": "af875accb2b558e2d58be188cfa36593765d1c9664e50d55bad0383454c3607c"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/objcopy.BEX",
+    "bytes": 46896,
+    "sha256": "9512811e2162b2ef9d7a6f0b3a58e82d9a2550c68fb53373498ba6e223c1c385"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/objdump.BEX",
+    "bytes": 46896,
+    "sha256": "51c7727fb49e3838b65c41f712521e3dfdaa0ca9c0f30c6743e89b7c01ce854b"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/readelf.BEX",
+    "bytes": 46896,
+    "sha256": "25cd4634da73c28dbfeb47235fe10c5adb7ccad8b1d508d020324a519e924d79"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/nm.BEX",
+    "bytes": 46892,
+    "sha256": "aa78e4f86d67d8ec06fd56b3cabae24204696efa85dff649b501da75f6194742"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/size.BEX",
+    "bytes": 46892,
+    "sha256": "0f448cfa00b6cecc926dc7e991bc5c273baec95ea7a5c2ed733adba98e0798ec"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/strip.BEX",
+    "bytes": 46892,
+    "sha256": "9f77a3b11d5dbefeda4d443b4a0712665b6cc5a8f15f6feaf1a2316261e09766"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/hexdump.BEX",
+    "bytes": 46880,
+    "sha256": "af2051278ea3b7bb2b5bb3874b9aebd010f69eaf1b94cdb3cf120d23a173c125"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/strings.BEX",
+    "bytes": 46896,
+    "sha256": "f500072bd25df98a6265ea99c4d542099143759061e7ac9ef1459e997b11d491"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/calc.BEX",
+    "bytes": 47840,
+    "sha256": "72a0e599c26710dd05dc86fe16a15e74b851ce139bc5a645723ddbbe4adb549d"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/hexedit.BEX",
+    "bytes": 47328,
+    "sha256": "35bd62a8340348906423936e43396cd6f69c6f4c9a914be41132a9886f832047"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/compress.BEX",
+    "bytes": 47472,
+    "sha256": "f8f6bc6229c67ffb949a8c02d3e4299fd0cb9ee32d4995a9ecbb3e1eb863575d"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/extract.BEX",
+    "bytes": 47568,
+    "sha256": "cf4804f92666260b4c77fe00cef13d4c1ee775975f684f77fad7b65e2d0b5ea0"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/checksum.BEX",
+    "bytes": 46880,
+    "sha256": "0c948e824d59358ae727f9811a1ff540e5b17f84c700939a30539f0576d03102"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/benchmark.BEX",
+    "bytes": 46944,
+    "sha256": "2b10001a1110369ea206bda8bc9ba7433994a275167bee3397547b4c55dcf7d8"
+  },
+  {
+    "destination": "/SYSTEM/COMMANDS/start.BEX",
+    "bytes": 47936,
+    "sha256": "5f194b7728147b88454113b38abe163178574a581d70e7faa3298744906dfb9b"
+  }
+]

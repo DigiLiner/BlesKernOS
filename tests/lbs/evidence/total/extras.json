@@ -1,0 +1,142 @@
+[
+  {
+    "name": "CODEX.O",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NGS",
+      "SOUND",
+      "SYSTEM",
+      "VISION"
+    ],
+    "bytes": 191852,
+    "sha256": "0d67c33aab4c0f0d1bd12b474e2a48fc69c2251edb43dae2dc76cb321b56ae07"
+  },
+  {
+    "name": "HYPERZIP.O",
+    "modules": [
+      "ARCHIVE",
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "bytes": 152272,
+    "sha256": "a1d3e671b417d35497fb007cf57a8d493341510088667581a3025333421e9ba9"
+  },
+  {
+    "name": "LEXINET.O",
+    "modules": [
+      "ARCHIVE",
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NETWORK",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "bytes": 166976,
+    "sha256": "15e2c19019fc91fa464c90be2bcc24d75e88527f08cb874b56fb63e56afc7b8d"
+  },
+  {
+    "name": "3DPLUS.O",
+    "modules": [
+      "SYSTEM"
+    ],
+    "bytes": 105664,
+    "sha256": "e2f68934370512b7d9bcba7fa0048fa719905d0ceda81362d64ab39f616f7c34"
+  },
+  {
+    "name": "3DPMESA.O",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NGS",
+      "NGS3D",
+      "SYSTEM",
+      "VISION"
+    ],
+    "bytes": 782768,
+    "sha256": "d84b9b3c3f30be7c9dc45433f5379d079a562c604a7896b13b854897617d3208"
+  },
+  {
+    "name": "3DPTINY.O",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NGS",
+      "SYSTEM",
+      "TINYGL",
+      "VISION"
+    ],
+    "bytes": 777752,
+    "sha256": "413c8029d36f42f623f2708e3a7542a0e5504511526a7badd0685e529c29c933"
+  },
+  {
+    "name": "DOOM.O",
+    "modules": [
+      "FONT",
+      "NGS",
+      "SOUND",
+      "SYSTEM",
+      "VISION"
+    ],
+    "bytes": 600364,
+    "sha256": "612bfca450a03fdd4c4a50f6d7190a78ede22c365aa4d15805cfdbd93ab1d282"
+  },
+  {
+    "name": "QUAKE.O",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "NETWORK",
+      "NGS",
+      "SYSTEM",
+      "VISION"
+    ],
+    "bytes": 665188,
+    "sha256": "bcb728feb85c836679507a64e7ac20a170a1912af393d0d091fd9e876760cc0d"
+  },
+  {
+    "name": "FREECIV_CLIENT.O",
+    "modules": [
+      "FONT",
+      "INPUT",
+      "MEDIA",
+      "NETWORK",
+      "NGS",
+      "SOUND",
+      "SYSTEM",
+      "VISION"
+    ],
+    "bytes": 4226984,
+    "sha256": "50a3cedc88f00b6bee7d58947002690fda28aa799f062c4f4cb3477a41ea4df4"
+  },
+  {
+    "name": "FREECIV_SERVER.O",
+    "modules": [
+      "NETWORK",
+      "SYSTEM"
+    ],
+    "bytes": 5459792,
+    "sha256": "deefb76d3ccbc674e5e8775d7c4e2db1b7a870f30a5228b8df3ca0dd7320ce16"
+  },
+  {
+    "name": "QUAKE2.BEX",
+    "modules": [
+      "INPUT",
+      "NGS",
+      "SOUND",
+      "SYSTEM",
+      "VISION"
+    ],
+    "bytes": 1786560,
+    "sha256": "a1d58a4d5273e115d45157c9024173c972f53268a072e810dc4de9cfec8a4906"
+  }
+]

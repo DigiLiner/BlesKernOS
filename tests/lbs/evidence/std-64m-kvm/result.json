@@ -1,0 +1,31 @@
+{
+  "status": "pass",
+  "fixture": "integration",
+  "memory_mib": 64,
+  "vga": "std",
+  "accel": "kvm",
+  "cpus": 2,
+  "elapsed_seconds": 66.83,
+  "udp_echo_packets": 1,
+  "checks": 308,
+  "measurements": [
+    "[LBSTEST] virtual_images_bytes=1794048 process_bytes=372484",
+    "[LBSTEST] file_readonly_bytes=1638400 private_mapping_bytes=155648",
+    "[LBSTEST] load_12_ms=5317",
+    "[LBSTEST] renderer=1 active=1 gpu=0 driver=Mesa 3.5 software rasterizer draws=0 triangles=0 fallbacks=9 downloads=0 frame_ms=843",
+    "[LBSTEST] renderer=0 active=1 gpu=0 driver=Mesa 3.5 software rasterizer draws=0 triangles=0 fallbacks=8 downloads=0 frame_ms=936",
+    "[LBSTEST] renderer=4 active=1 gpu=0 driver=TinyGL software rasterizer draws=0 triangles=0 fallbacks=0 downloads=0 frame_ms=490",
+    "[LBSTEST] renderer=5 active=1 gpu=0 driver=TinyGL software rasterizer draws=0 triangles=0 fallbacks=0 downloads=0 frame_ms=400",
+    "[LBSTEST] ngs_fill_100_ms=67 ngs_present_ms=6",
+    "[LBSTEST] input_keys=1 input_mouse=1 key_state_verified=1",
+    "[LBSTEST] reference_100_ms=90",
+    "[LBSTEST] heap_live_before=0 heap_live_after=0 heap_arenas_before=262207 heap_arenas_after=262207 allocations_before=0 allocations_after=0",
+    "[LBSTEST] cold_cycles_5_ms=1680 process_before=372484 process_after=372484"
+  ],
+  "audio_capture": {
+    "frames": 1834797,
+    "channels": 2,
+    "sample_rate": 44100,
+    "peak": 8960
+  }
+}

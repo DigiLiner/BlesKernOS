@@ -189,6 +189,12 @@ y video surface). Esto permite portar programas SDL conservando
 su `main()` y su bucle de eventos; no integra estructuras GUI privadas en el
 programa.
 
+`<SDL2/SDL_blesk.h>` ofrece `SDL_BleskGetWindow(SDL_Window *)`: devuelve la
+ventana nativa opaca prestada, válida hasta `SDL_DestroyWindow()`. Permite
+publicar con `bk_gui_window_present_xrgb` sin copiar primero a una superficie
+SDL. SDL conserva la propiedad y entrega los eventos. Presentar superficies
+GPU sin descarga requiere además soporte real del compositor de ventanas.
+
 ```sh
 gcc -m32 -ffreestanding -fno-builtin -nostdlib -nostdinc -fno-pic \
   -fno-pie -fno-stack-protector -Isdk/include -c game.c -o game.raw.o
@@ -357,3 +363,34 @@ información de dispositivos USB y snapshots de sockets nativos.
 grueso del kernel. Los nuevos DTO de sockets están en
 `include/bleskernos_socket_info.h`. Ver `docs/terminal.md` para los comandos,
 los formatos admitidos y las pruebas.
+
+## Bibliotecas dinámicas nativas LBS
+
+`make lbs` construye las doce bibliotecas nativas y el backend TinyGL opcional
+como ELF32/i386 ET_DYN. Se instalan en `/SYSTEM/`; el cargador
+`dlopen` del SDK conserva las SO y añade dependencias, ABI, controles de
+recursos, serialización y diagnóstico para las LBS. El cargador Linux/Wine
+permanece independiente.
+
+Ver [guía LBS](../docs/native/LBS.md), [auditoría](../docs/native/LBS-AUDIT.md),
+[catálogo de exportaciones](../docs/native/LBS-EXPORTS.md) y
+[resultados](../docs/native/LBS-REPORT.md). Los ejemplos están en
+`examples/lbs_demo.c` y `examples/lbs_startup_demo.c`.
+
+La migración de aplicaciones/CPL y el enlace dinámico automático se describen en
+[`docs/native/LBS-MIGRATION.md`](../docs/native/LBS-MIGRATION.md). Las LBS se instalan directamente en `/SYSTEM`.
+
+Las LBS PIC cargadas con el SDK actual comparten páginas físicas de código y
+constantes entre procesos, con datos/GOT privados. Requiere el kernel actualizado
+y volver a enlazar clientes que incorporaban el cargador anterior.
+[Mecanismo, pruebas y límites](../docs/native/LBS-SHARING.md).
+
+### Runtime LBS y descriptores
+
+Para clientes LBS usar `libblesk_lbs_posix.a` y `libblesk_lbs_native.a`, además
+del puente/CRT requerido. Sus helpers de FD POSIX están aislados de los símbolos
+nativos homónimos `bk_file_size` y `bk_file_write`. Las aplicaciones migradas y
+las plantillas Codex con `USE_LBS=1` seleccionan estas variantes automáticamente.
+Headers añadidos: `bleskernos_archive_lbs.h`, `bleskernos_hyperzip_lbs.h`,
+`bleskernos_inflate_lbs.h`, `bleskernos_command_lbs.h`, `bleskernos_widgets_lbs.h`
+y `bleskernos_raster_lbs.h`. Ver docs/native/LBS-MIGRATION-PLAN.md.

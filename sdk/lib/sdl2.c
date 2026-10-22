@@ -1,5 +1,5 @@
 #include "bleskernos_api.h"
-#include <SDL2/SDL.h>
+#include <SDL2/SDL_blesk.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -156,3 +156,8 @@ int SDL_Flip(SDL_Surface*s){return s&&s->window?SDL_UpdateWindowSurface(s->windo
 void SDL_WM_SetCaption(const char*t,const char*i){(void)i;if(legacy_window)SDL_SetWindowTitle(legacy_window,t);}
 int SDL_EnableKeyRepeat(int delay,int interval){(void)delay;(void)interval;return 0;}
 void SDL_WarpMouse(Uint16 x,Uint16 y){if(legacy_window){legacy_window->last_mouse_x=x;legacy_window->last_mouse_y=y;}}
+
+/* Native presentation interoperability; ownership stays with SDL. */
+bk_gui_window_t *SDL_BleskGetWindow(SDL_Window *window) {
+    return window ? window->native : NULL;
+}

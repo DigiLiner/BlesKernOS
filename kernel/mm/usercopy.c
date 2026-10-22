@@ -21,6 +21,29 @@ bool copy_from_user(void *destination, const void *source, uint32_t length) {
     pager_unpin(pid,(uint32_t)(uintptr_t)source,length);paging_process_unpin(pid);return ok;
 }
 
+/* Pin a strided image once. Per-scanline pin/unpin repeatedly walks the
+ * process and pager state while publishing a rootless X11 window. */
+bool copy_rows_from_user(void *destination, const void *source,
+                         uint32_t row_bytes, uint32_t rows, uint32_t source_stride) {
+    if (!rows || !row_bytes) return true;
+    if (!destination || !source || source_stride < row_bytes ||
+        (rows - 1U) > (0xffffffffU - row_bytes) / source_stride) return false;
+    uint32_t span = (rows - 1U) * source_stride + row_bytes;
+    if ((uintptr_t)source > (uintptr_t)0xffffffffU - (span - 1U)) return false;
+    uint32_t pid = task_current_process_id();
+    if (!paging_process_pin(pid)) return false;
+    if (!pager_pin(pid, (uint32_t)(uintptr_t)source, span, false)) {
+        paging_process_unpin(pid);return false;
+    }
+    bool ok = user_access_ok(source, span, false);
+    if (ok) for (uint32_t row = 0; row < rows; row++)
+        kmemcpy((uint8_t *)destination + row * row_bytes,
+                (const uint8_t *)source + row * source_stride, row_bytes);
+    pager_unpin(pid, (uint32_t)(uintptr_t)source, span);
+    paging_process_unpin(pid);
+    return ok;
+}
+
 bool copy_to_user(void *destination, const void *source, uint32_t length) {
     if ((!destination && length) || !source) return false;
     if (!length) return true;

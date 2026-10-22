@@ -344,6 +344,16 @@ static bool language_load_descriptor(const language_descriptor_t *descriptor,
         }
     }
 
+    /* El catalogo es global: debe sobrevivir al panel que cambio el idioma.
+     * Si conserva el PID del llamador, el cierre de LANGUAGE.CPL lo libera
+     * y deja las traducciones apuntando a memoria reutilizada. */
+    if (!mm_set_allocation_owner(buffer, 0U) ||
+        (table && !mm_set_allocation_owner(table, 0U))) {
+        language_free_catalog(table, buffer);
+        g_loading = false;
+        return false;
+    }
+
     language_entry_t *old_table = g_table;
     char *old_buffer = g_catalog_buffer;
     g_table = table;

@@ -249,6 +249,7 @@ void _ac_DestroyContext( GLcontext *ctx )
    ACcontext *ac = AC_CONTEXT(ctx);
    GLint i;
 
+   if (!ac) return;
    if (ac->Cache.Vertex.Ptr) FREE( ac->Cache.Vertex.Ptr );
    if (ac->Cache.Normal.Ptr) FREE( ac->Cache.Normal.Ptr );
    if (ac->Cache.Color.Ptr) FREE( ac->Cache.Color.Ptr );
@@ -263,6 +264,9 @@ void _ac_DestroyContext( GLcontext *ctx )
    }
 
    if (ac->Elts) FREE( ac->Elts );
+
+   FREE( ac );
+   ctx->acache_context = 0;
 }
 
 void _ac_InvalidateState( GLcontext *ctx, GLuint new_state )

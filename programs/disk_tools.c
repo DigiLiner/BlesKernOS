@@ -456,7 +456,7 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     bk_gui_window_set_owner(state->window, bk_sys_getpid());
     state->pending_refresh = true;
 
-    while (bk_gui_window_is_open(state->window)) {
+    while (!bk_proc_exit_requested() && bk_gui_window_is_open(state->window)) {
         uint32_t now = bk_sys_uptime_ms();
         if ((state->confirm_format || state->confirm_repair) &&
             (int32_t)(now - state->confirm_until) >= 0) {

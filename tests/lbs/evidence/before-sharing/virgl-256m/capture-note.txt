@@ -1,0 +1,1 @@
+QMP screendump unavailable: EGL headless guest has no CPU scanout surface.

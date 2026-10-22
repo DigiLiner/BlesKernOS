@@ -60,13 +60,15 @@ APP ?= APP.BEX
 SRC ?= main.c
 OBJ := $(SRC:.c=.o)
 PROFILE ?= debug
+# LBS sources implement bk_lbs_program_main and bk_lbs_requirements.
+USE_LBS ?= 0
 
 ARCH_FLAGS := -m32 -march=i486 -mtune=pentium -mfpmath=387 -mno-sse -mno-sse2
 BASE_FLAGS := $(ARCH_FLAGS) -ffreestanding -fno-builtin -nostdlib -nostdinc \
               -fno-pic -fno-pie -fno-stack-protector \
               -fno-asynchronous-unwind-tables -fno-unwind-tables \
               -D__BLESKERNOS__=1 -DBLESKERNOS=1 \
-              -I$(SDKROOT)/INCLUDE -Wall -Wextra
+              -I"$(SDKROOT)/INCLUDE" -Wall -Wextra
 
 ifeq ($(PROFILE),release)
 MODE_FLAGS := -Os
@@ -81,9 +83,16 @@ CFLAGS ?= -std=gnu11 $(BASE_FLAGS) $(MODE_FLAGS)
 # contains private imports such as language_translate/vga_putchar.
 # --start-group rescans POSIX/libm/libblesk until their circular references
 # are resolved while leaving only the published BlesKernOS API as imports.
-LIBS := $(SDKROOT)/LIB/libblesk_posix.a \
-        $(SDKROOT)/LIB/libm.a \
-        $(SDKROOT)/LIB/libblesk.a
+LIBS := "$(SDKROOT)/LIB/libblesk_posix.a" \
+        "$(SDKROOT)/LIB/libm.a" \
+        "$(SDKROOT)/LIB/libblesk.a"
+
+ifeq ($(USE_LBS),1)
+LBS_RUNTIME := "$(SDKROOT)/LIB/libblesk_lbs.a" "$(SDKROOT)/LIB/lbs_host.o"
+LIBS := "$(SDKROOT)/LIB/libblesk_lbs_posix.a" "$(SDKROOT)/LIB/libm.a" "$(SDKROOT)/LIB/libblesk_lbs_native.a"
+else
+LBS_RUNTIME :=
+endif
 
 .PHONY: all debug release clean check
 all: $(APP)
@@ -99,7 +108,7 @@ release:
 
 $(APP): $(OBJ)
 	$(LD) -m elf_i386 -r -u bleskernos_program_main --allow-multiple-definition \
-		$(OBJ) --start-group $(LIBS) --end-group -o $@
+		$(OBJ) $(LBS_RUNTIME) --start-group $(LIBS) --end-group -o $@
 
 check: $(APP)
 	@echo "[CODEX] build OK: $(APP)"
@@ -180,6 +189,12 @@ def main() -> int:
             copytree(lib, stage / "SDK" / "LIB" / lib.name)
             copied.append(f"build/sdk/{lib.name}")
 
+        for obj in ('lbs.o', 'lbs_host.o'):
+            copytree(root/'build/sdk'/obj, stage/'SDK/LIB'/obj)
+        for lib in sorted((root/'build/system/libs/native').glob('*.LBS')):
+            copytree(lib, stage/'SYSTEM'/lib.name)
+        copytree(root/'sdk/examples/lbs_startup_demo.c', stage/'PROJECTS/LBS/main.c')
+
         # Runtime libraries that current native ports commonly need.
         extra_libs = [
             (root / "build/system/libs/libc/libc.a", "libc.a"),
@@ -212,6 +227,9 @@ def main() -> int:
         for project in (stage / "PROJECTS").iterdir():
             if project.is_dir():
                 write_project_makefile(project / "Makefile")
+                if project.name == 'LBS':
+                    recipe = project/'Makefile'
+                    recipe.write_text(recipe.read_text().replace('USE_LBS ?= 0', 'USE_LBS ?= 1'))
 
         if not args.no_toolchain:
             toolchain = root / "build" / "selfhost" / "toolchain"

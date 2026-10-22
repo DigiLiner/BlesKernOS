@@ -1,0 +1,81 @@
+{
+  "libraries": [
+    {
+      "library": "SYSTEM.LBS",
+      "bytes": 35688,
+      "exports": 165
+    },
+    {
+      "library": "INPUT.LBS",
+      "bytes": 14896,
+      "exports": 20
+    },
+    {
+      "library": "FONT.LBS",
+      "bytes": 14540,
+      "exports": 20
+    },
+    {
+      "library": "NGS.LBS",
+      "bytes": 15664,
+      "exports": 36
+    },
+    {
+      "library": "SOUND.LBS",
+      "bytes": 14976,
+      "exports": 25
+    },
+    {
+      "library": "NETWORK.LBS",
+      "bytes": 14772,
+      "exports": 24
+    },
+    {
+      "library": "VISION.LBS",
+      "bytes": 34080,
+      "exports": 122
+    },
+    {
+      "library": "NGS3D.LBS",
+      "bytes": 1641488,
+      "exports": 693
+    },
+    {
+      "library": "MEDIA.LBS",
+      "bytes": 69380,
+      "exports": 33
+    },
+    {
+      "library": "PRINT.LBS",
+      "bytes": 15860,
+      "exports": 23
+    },
+    {
+      "library": "CRYPTO.LBS",
+      "bytes": 19008,
+      "exports": 12
+    },
+    {
+      "library": "SECURITY.LBS",
+      "bytes": 13808,
+      "exports": 7
+    },
+    {
+      "library": "TINYGL.LBS",
+      "bytes": 170696,
+      "exports": 272
+    },
+    {
+      "library": "ARCHIVE.LBS",
+      "bytes": 19548,
+      "exports": 23
+    },
+    {
+      "library": "COMMAND.LBS",
+      "bytes": 49824,
+      "exports": 26
+    }
+  ],
+  "total_bytes": 2144228,
+  "status": "pass"
+}

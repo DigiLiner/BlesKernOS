@@ -1,0 +1,25 @@
+{
+  "early_boot_services": {
+    "VISION.BEX": "Owns private server ABI; client wrappers must not call back into the provider.",
+    "PRINTSPL.BEX": "Spooler owns execution; PRINT.LBS remains its client.",
+    "SCREENSV.BEX": "Service lifecycle and trusted ABI remain separate."
+  },
+  "recovery_commands": [
+    "bosrecovery",
+    "fdisk",
+    "format",
+    "diskpart",
+    "mount",
+    "unmount"
+  ],
+  "external_sources_missing": [],
+  "optional_later": [
+    "SDL2.LBS"
+  ],
+  "compatibility": "Linux/Wine use their existing ABI; native LBS are not replacements for Linux SO.",
+  "self_contained_installers": {
+    "extras/quake2/INSTALL.BEX": "Can repair/install from older native systems without requiring the runtime it is installing."
+  },
+  "civilization_port": "Local source is Freeciv 3.2.5, not a directory named Civ2; preserve original client/server program names.",
+  "source_inventory": "tests/lbs/evidence/total/local-extras-inventory.json records additional ports and original/prototype sources, outside the initial extra application manifest."
+}

@@ -772,6 +772,7 @@ bool bk_gui_window_present_xrgb(bk_gui_window_t *window,
                                 uint16_t width, uint16_t height);
 void bk_gui_set_window_min_size(bk_gui_window_t *window, int min_w, int min_h);
 void bk_gui_close_window(bk_gui_window_t *window);
+void bk_gui_focus_window(bk_gui_desktop_t *desktop, bk_gui_window_t *window);
 int bk_gui_add_menu(bk_gui_window_t *window, const char *label);
 bool bk_gui_add_menu_item(bk_gui_window_t *window, int menu, uint32_t id,
                           const char *label, bk_gui_menu_callback_t callback,

@@ -49,6 +49,7 @@ typedef struct {
     bool gl_ready;
     uint32_t last_frame_ms;
     uint32_t last_grow_ms;
+    uint32_t last_motion_ms;
     uint32_t seed;
     uint32_t frames;
     uint32_t input_armed_ms;
@@ -367,6 +368,7 @@ static bool ss_pipes_init_gl(ss_pipes_state_t *st) {
     st->rot_y = 0.0f;
     st->rot_z = 0.0f;
     for (uint32_t i = 0; i < 18; i++) ss_pipes_grow(st);
+    st->last_motion_ms = st->last_grow_ms = bk_sys_uptime_ms();
     return true;
 }
 
@@ -377,15 +379,15 @@ static void ss_pipes_render_frame(ss_pipes_state_t *st) {
     if (!ss_mesa_surface_make_current(&st->mesa)) return;
 
     now = bk_sys_uptime_ms();
-    if ((uint32_t)(now - st->last_grow_ms) >= SS_FRAME_MS) {
-        st->last_grow_ms = now;
-        ss_pipes_grow(st);
-    }
-
-    st->rot_y += 1.2f;
-    st->rot_z += 0.25f;
-    if (st->rot_y >= 360.0f) st->rot_y -= 360.0f;
-    if (st->rot_z >= 360.0f) st->rot_z -= 360.0f;
+    uint32_t steps=ss_steps_due(now,&st->last_grow_ms,SS_FRAME_MS,8U);
+    while(steps--) ss_pipes_grow(st);
+    uint32_t elapsed=now-st->last_motion_ms;
+    st->last_motion_ms=now;
+    if (elapsed>250U) elapsed=250U;
+    st->rot_y += 1.2f * (GLfloat)elapsed / (GLfloat)SS_FRAME_MS;
+    st->rot_z += 0.25f * (GLfloat)elapsed / (GLfloat)SS_FRAME_MS;
+    while (st->rot_y >= 360.0f) st->rot_y -= 360.0f;
+    while (st->rot_z >= 360.0f) st->rot_z -= 360.0f;
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

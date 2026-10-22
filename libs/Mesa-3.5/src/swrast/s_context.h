@@ -98,6 +98,19 @@ typedef void (*swrast_tri_func)( GLcontext *ctx, const SWvertex *,
 
 
 
+#ifdef MESA_BLESKERNOS
+struct bk_span_workspace {
+   GLchan rgba[MAX_WIDTH][4], spec[MAX_WIDTH][4];
+   GLuint index[MAX_WIDTH], z[MAX_WIDTH];
+   GLint icoverage[MAX_WIDTH];
+   GLfloat coverage[MAX_WIDTH];
+   GLfloat fog[MAX_WIDTH], sTex[MAX_WIDTH], tTex[MAX_WIDTH], rTex[MAX_WIDTH], lambda[MAX_WIDTH];
+   GLfloat msTex[MAX_TEXTURE_UNITS][MAX_WIDTH], mtTex[MAX_TEXTURE_UNITS][MAX_WIDTH];
+   GLfloat mrTex[MAX_TEXTURE_UNITS][MAX_WIDTH], mLambda[MAX_TEXTURE_UNITS][MAX_WIDTH];
+};
+struct bk_span_workspace *_swrast_bk_span_workspace(GLcontext *ctx);
+#endif
+
 typedef struct
 {
    /* Driver interface:
@@ -126,6 +139,12 @@ typedef struct
 
    /* Working values:
     */
+#ifdef MESA_BLESKERNOS
+   /* Reused software-texturing scratch; native Ring 3 stacks are bounded. */
+   void *SpanWorkspace;
+   void *CombineWorkspace;
+   void *TextureWorkspace;
+#endif
    struct pixel_buffer* PB;
    GLuint StippleCounter;    /* Line stipple counter */
    GLuint NewState;

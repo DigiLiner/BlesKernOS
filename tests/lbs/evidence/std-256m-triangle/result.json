@@ -1,0 +1,18 @@
+{
+  "status": "pass",
+  "fixture": "triangle",
+  "memory_mib": 256,
+  "vga": "std",
+  "accel": "tcg",
+  "cpus": 2,
+  "elapsed_seconds": 12.65,
+  "udp_echo_packets": 0,
+  "checks": 0,
+  "measurements": [],
+  "audio_capture": {
+    "frames": 192687,
+    "channels": 2,
+    "sample_rate": 44100,
+    "peak": 8960
+  }
+}

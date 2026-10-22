@@ -309,7 +309,7 @@ static int wine_prefix_lock(void)
 #define BLES_PREFIX_DRIVE_C "/WINEGATE/prefix/drive_c"
 #define BLES_DOSDEV_C "/WINEGATE/prefix/dosdevices/c:"
 #define BLES_DOSDEV_Z "/WINEGATE/prefix/dosdevices/z:"
-#define BLES_THEME_MARKER  "/WINEGATE/prefix/.bles-vision-theme-v5"
+#define BLES_THEME_MARKER  "/WINEGATE/prefix/.bles-vision-theme-v6"
 #define BLES_THEME_UNIX    "/SYSTEM/WINE/windows/temp/BLESVIS.REG"
 #define BLES_THEME_WIN     "C:\\windows\\temp\\BLESVIS.REG"
 
@@ -568,19 +568,19 @@ static int write_bles_theme_reg(void)
         "\r\n"
         "[HKEY_CURRENT_USER\\Control Panel\\Colors]\r\n"
         "\"ActiveTitle\"=\"75 147 168\"\r\n"
-        "\"InactiveTitle\"=\"169 160 160\"\r\n"
-        "\"ButtonFace\"=\"196 179 171\"\r\n"
-        "\"ButtonHilight\"=\"241 229 223\"\r\n"
-        "\"ButtonLight\"=\"216 199 191\"\r\n"
-        "\"ButtonShadow\"=\"127 116 110\"\r\n"
-        "\"ButtonDkShadow\"=\"77 76 79\"\r\n"
-        "\"ButtonText\"=\"26 23 22\"\r\n"
-        "\"Menu\"=\"196 179 171\"\r\n"
-        "\"MenuText\"=\"26 23 22\"\r\n"
-        "\"Hilight\"=\"75 147 168\"\r\n"
+        "\"InactiveTitle\"=\"153 153 153\"\r\n"
+        "\"ButtonFace\"=\"192 192 192\"\r\n"
+        "\"ButtonHilight\"=\"255 255 255\"\r\n"
+        "\"ButtonLight\"=\"223 223 223\"\r\n"
+        "\"ButtonShadow\"=\"128 128 128\"\r\n"
+        "\"ButtonDkShadow\"=\"64 64 64\"\r\n"
+        "\"ButtonText\"=\"16 16 16\"\r\n"
+        "\"Menu\"=\"192 192 192\"\r\n"
+        "\"MenuText\"=\"16 16 16\"\r\n"
+        "\"Hilight\"=\"0 0 128\"\r\n"
         "\"HilightText\"=\"255 255 255\"\r\n"
         "\"Window\"=\"255 255 255\"\r\n"
-        "\"WindowText\"=\"26 23 22\"\r\n"
+        "\"WindowText\"=\"16 16 16\"\r\n"
         "\r\n"
         "[HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\ThemeManager]\r\n"
         "\"ThemeActive\"=\"0\"\r\n"
@@ -606,7 +606,20 @@ static int write_bles_theme_reg(void)
     mkdir(BLES_WINE_C_ROOT "/windows/temp", 0755);
     fd = open(BLES_THEME_UNIX, O_CREAT | O_TRUNC | O_WRONLY, 0644);
     if (fd < 0) return -1;
-    if (write_all(fd, registry, sizeof(registry) - 1) < 0) {
+    const char *payload = registry;
+    size_t length = sizeof(registry) - 1;
+    /* Existing v5 prefixes only need the palette migration. Keep their
+     * audio, associations and other preferences as the user left them. */
+    if (access("/WINEGATE/prefix/.bles-vision-theme-v5", F_OK) == 0) {
+        static const char header[] = "Windows Registry Editor Version 5.00\r\n\r\n";
+        payload = strstr(registry, "[HKEY_CURRENT_USER\\Control Panel\\Colors]");
+        const char *end = strstr(payload, "\r\n[HKEY_CURRENT_USER\\Software\\Microsoft");
+        length = (size_t)(end - payload);
+        if (write_all(fd, header, sizeof(header) - 1) < 0) {
+            close(fd);return -1;
+        }
+    }
+    if (write_all(fd, payload, length) < 0) {
         close(fd);
         return -1;
     }

@@ -349,6 +349,9 @@ typedef struct gui_window {
      * Appending preserves offsets used by historical native binaries. */
     uint32_t controller_pid;
     struct {char name[48],version[24],description[128],copyright[64],icon_path[64];bool valid;} about;
+    /* Dedicated GPU screensaver surface: composed above the desktop/deskbar.
+     * Append only; earlier public gui_window_t member offsets stay intact. */
+    bool native_gpu_saver;
 } gui_window_t;
 
 struct gui_program {
@@ -518,6 +521,7 @@ void gui_gpu_compositor_capture_window(gui_window_t *window,
 bool gui_gpu_compositor_publish_viewport(gui_window_t *window,
                                          uint32_t source,
                                          uint16_t width, uint16_t height);
+uint32_t gui_gpu_compositor_native_viewport(gui_window_t *window,uint16_t *width,uint16_t *height);
 void gui_gpu_compositor_clear_viewport(gui_window_t *window);
 void gui_gpu_compositor_forget_window(gui_window_t *window);
 bool gui_gpu_compositor_present(gui_desktop_t *desktop,
@@ -525,6 +529,10 @@ bool gui_gpu_compositor_present(gui_desktop_t *desktop,
                                 bool draw_cursor);
 bool gui_gpu_compositor_present_cached(gui_desktop_t *desktop,
                                        bool draw_cursor);
+/* Native Gallium saver: the compositor must not switch back to 2D scanout
+ * while a full-screen GPU frame owns the visible desktop. */
+bool gui_gpu_compositor_saver_active(const gui_desktop_t *desktop);
+bool gui_gpu_compositor_present_saver(gui_desktop_t *desktop);
 void gui_gpu_compositor_shutdown(void);
 bool gui_compositor_cursor_argb(const gui_desktop_t *desktop,
                                 uint32_t *pixels,

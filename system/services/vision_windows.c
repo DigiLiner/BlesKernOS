@@ -27,6 +27,46 @@ static bool set_bounds(gui_desktop_t *desktop,gui_window_t *window,gui_rect_t bo
     gui_desktop_invalidate_rect(desktop,old);gui_desktop_invalidate_rect(desktop,bounds);
     gui_request_paint();return true;
 }
+/* Called with Vision's frame/desktop lock held. A queued GPU copy makes the
+ * published frame immutable before the producer can clear its render target.
+ * Keep the snapshot in this service's compositor, where it is displayed. */
+static bool publish_gpu_frame(gui_desktop_t *desktop,gui_window_t *window,const bk_vision_request_t *r) {
+    uint32_t source=r->values[0],width=r->values[1],height=r->values[2];
+    if(!source || !width || !height || width>65535U || height>65535U ||
+       r->bounds.w<=0 || r->bounds.h<=0)return false;
+    bool changed=!window->gpu_view_visible ||
+        window->gpu_view_width!=width || window->gpu_view_height!=height ||
+        window->gpu_view_rect.x!=r->bounds.x || window->gpu_view_rect.y!=r->bounds.y ||
+        window->gpu_view_rect.w!=r->bounds.w || window->gpu_view_rect.h!=r->bounds.h;
+    if(!gui_gpu_compositor_publish_viewport(window,source,(uint16_t)width,(uint16_t)height))return false;
+    window->gpu_view_surface=source;window->gpu_view_width=(uint16_t)width;
+    window->gpu_view_height=(uint16_t)height;window->gpu_view_rect=r->bounds;
+    window->gpu_view_visible=true;window->gpu_view_frame_dirty=true;
+    if(changed){
+        window->dirty=true;gui_desktop_invalidate_all(desktop);gui_request_paint();
+        kprintf("[VISION:GPU] attached owner=%u surface=%u size=%ux%u\n",window->owner_pid,source,width,height);
+    }
+    return true;
+}
+void vision_native_frames_dispatch(gui_desktop_t *desktop) {
+    if(!bk_vision_native_pending())return;
+    for(gui_window_t *window=desktop->first_window;window;window=window->next) {
+        uint16_t width=0,height=0;
+        uint32_t surface=gui_gpu_compositor_native_viewport(window,&width,&height);
+        if(!surface)continue;
+        gui_rect_t bounds=gui_window_content_rect(window);
+        bool changed=!window->gpu_view_visible || window->gpu_view_width!=width ||
+            window->gpu_view_height!=height || window->gpu_view_rect.x!=bounds.x ||
+            window->gpu_view_rect.y!=bounds.y || window->gpu_view_rect.w!=bounds.w || window->gpu_view_rect.h!=bounds.h;
+        window->gpu_view_surface=surface;window->gpu_view_width=width;window->gpu_view_height=height;
+        window->gpu_view_rect=bounds;window->gpu_view_visible=true;window->gpu_view_frame_dirty=true;
+        /* First attachment changes the GPU scene, even when all cached CPU
+         * shell pixels are valid. Request the shell's background capture
+         * once; otherwise initial scanout depended on an unrelated clock or
+         * mouse invalidation before the GPU scene became usable. */
+        if(changed){window->dirty=true;gui_desktop_invalidate_all(desktop);gui_request_paint();}
+    }
+}
 void vision_windows_dispatch(gui_desktop_t *desktop) {
     bk_vision_request_t request;
     for(uint32_t count=0;count<32U && bk_vision_ipc_take(&request);count++) {
@@ -63,6 +103,12 @@ void vision_windows_dispatch(gui_desktop_t *desktop) {
             }
         } else if(window) {
             switch(request.operation) {
+            case VISION_IPC_GPU_FRAME:result=publish_gpu_frame(desktop,window,&request);break;
+            case VISION_IPC_GPU_CLEAR:
+                gui_gpu_compositor_clear_viewport(window);
+                window->gpu_view_surface=0U;window->gpu_view_width=window->gpu_view_height=0U;
+                window->gpu_view_rect=(gui_rect_t){0};window->gpu_view_visible=false;
+                window->gpu_view_frame_dirty=false;window->dirty=true;gui_request_paint();result=1U;break;
             case VISION_IPC_MENU_ADD:
                 request.title[63]=0;{int menu=gui_window_add_menu(window,request.title);result=menu<0?0:(uint32_t)menu+1U;}break;
             case VISION_IPC_MENU_ITEM:
@@ -92,6 +138,13 @@ void vision_windows_dispatch(gui_desktop_t *desktop) {
             case VISION_IPC_FOCUS:gui_desktop_focus_window(desktop,window);result=1U;break;
             case VISION_IPC_BOUNDS:result=set_bounds(desktop,window,request.bounds);break;
             case VISION_IPC_MIN_SIZE:gui_window_set_min_size(window,(int)request.values[0],(int)request.values[1]);result=1U;break;
+            case VISION_IPC_GPU_SAVER:
+                /* Only this window's owner may mark it as an exclusive saver.
+                 * Vision owns the gui_window object, not the client process. */
+                window->native_gpu_saver=request.values[0]!=0U;
+                window->dirty=true;
+                gui_desktop_invalidate_all(desktop);
+                gui_request_paint();result=1U;break;
             case VISION_IPC_BORDERLESS:gui_window_set_borderless(window,request.values[0]!=0U,(uint8_t)request.values[1]);gui_request_paint();result=1U;break;
             default:break;
             }

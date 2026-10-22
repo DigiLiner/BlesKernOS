@@ -13,6 +13,7 @@ struct bk_print_job {
     uint32_t command_count;
     uint32_t page_count;
     uint32_t sequence;
+    uint16_t path_left, path_right;
     bool page_open;
     bool failed;
 };
@@ -159,9 +160,9 @@ static void append_hex4(char *output, uint16_t value) {
 }
 
 static void make_job_path(char *path, const char *extension,
-                          uint32_t sequence) {
-    uint16_t left = (uint16_t)(bk_sys_ticks() ^ (bk_sys_getpid() << 5));
-    uint16_t right = (uint16_t)(sequence ^ (bk_sys_getpid() * 257U));
+                          const bk_print_job_t *job) {
+    uint16_t left = job->path_left;
+    uint16_t right = job->path_right;
     const char prefix[] = "/TEMP/SPOOL/J";
     uint32_t i = 0;
     while (prefix[i]) { path[i] = prefix[i]; i++; }
@@ -185,7 +186,9 @@ bk_print_job_t *print_begin(const char *title, const char *printer_id) {
     job = (bk_print_job_t *)bk_sys_alloc(sizeof(*job));
     if (!job) return NULL;
     bytes_zero(job, sizeof(*job));
-    job->sequence = ++g_print_sequence;
+    job->sequence = __sync_add_and_fetch(&g_print_sequence, 1U);
+    job->path_left = (uint16_t)(bk_sys_ticks() ^ (bk_sys_getpid() << 5));
+    job->path_right = (uint16_t)(job->sequence ^ (bk_sys_getpid() * 257U));
     if (!job_reserve(job, BK_PRINT_JOB_HEADER_SIZE)) {
         print_cancel(job);
         return NULL;
@@ -314,6 +317,12 @@ bool print_end_page(bk_print_job_t *job) {
     return true;
 }
 
+bool print_job_path(const bk_print_job_t *job, char *buffer, uint32_t capacity) {
+    if (!job || !buffer || capacity < 26U) return false;
+    make_job_path(buffer, "BPJ", job);
+    return true;
+}
+
 bool print_submit(bk_print_job_t *job) {
     char temporary[40];
     char queued[40];
@@ -336,8 +345,8 @@ bool print_submit(bk_print_job_t *job) {
     put_u32(job->data + 20, job->command_count);
     (void)bk_file_mkdir("/TEMP");
     (void)bk_file_mkdir("/TEMP/SPOOL");
-    make_job_path(temporary, "TMP", job->sequence);
-    make_job_path(queued, "BPJ", job->sequence);
+    make_job_path(temporary, "TMP", job);
+    make_job_path(queued, "BPJ", job);
     if (bk_file_write_all(temporary, job->data, job->size)) {
         if (bk_file_rename(temporary, queued)) ok = true;
         else (void)bk_file_remove(temporary);

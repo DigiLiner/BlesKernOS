@@ -1,0 +1,17 @@
+{
+  "status": "pass",
+  "boots": [
+    {
+      "format": "usb",
+      "status": "pass",
+      "seconds": 18.09,
+      "method": "QEMU/KVM IDE snapshot, std VGA, MBR to Ring-3 desktop; not VMware hardware validation"
+    },
+    {
+      "format": "vmware",
+      "status": "pass",
+      "seconds": 20.62,
+      "method": "QEMU/KVM IDE snapshot, std VGA, MBR to Ring-3 desktop; not VMware hardware validation"
+    }
+  ]
+}

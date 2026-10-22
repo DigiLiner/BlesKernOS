@@ -1,6 +1,6 @@
 # GRAPHICS.PAK resource catalog
 # Source: KDE 1 historical kdebase + kdelibs; third_party/kde1/*-source.json
-# Entries: 1083
+# Entries: 1110
 # name,width,height,source
 16/Appwiz1500,16,16,kdebase/pics/mini-package.xpm
 16/ArrowLeft,16,16,kdebase/pics/mini-kfm_home.xpm
@@ -19,8 +19,10 @@
 16/Date,16,16,kdebase/kappfinder/pics/mini/xclock.xpm
 16/Delete,16,16,kdebase/pics/mini-trash.xpm
 16/Desktop,16,16,kdebase/pics/mini-desktop.xpm
+16/DisplaySettings,16,16,kdebase/kmenuedit/icons/mini-display.xpm
 16/Dpmodemx701,16,16,kdebase/pics/mini-network_package.xpm
 16/FileFind,16,16,kdebase/kfind/mini-kfind.xpm
+16/FileManager,16,16,kdebase/pics/mini-kfm.xpm
 16/FilePencil,16,16,kdebase/kappfinder/pics/mini/xedit.xpm
 16/Files,16,16,kdebase/pics/mini-folder.xpm
 16/FileText,16,16,kdebase/pics/mini-document.xpm
@@ -36,11 +38,14 @@
 16/Help,16,16,kdebase/kdehelp/mini-kdehelp.xpm
 16/HelpBook,16,16,kdebase/kdehelp/mini-kdehelp.xpm
 16/InfoBubble,16,16,kdebase/pics/mini-info.xpm
+16/InternetSettings,16,16,kdebase/kcontrol/kcontrol/pics/mini/network_settings.xpm
 16/Intl101,16,16,kdebase/kcontrol/locale/mini-locale.xpm
 16/Keyboard,16,16,kdebase/kcontrol/input/mini-keyboard.xpm
 16/KeyboardMouse,16,16,kdebase/kcontrol/input/mini-keyboard.xpm
 16/Logo,16,16,kdebase/pics/mini-desktop.xpm
 16/MediaAudio,16,16,kdebase/pics/mini-sound.xpm
+16/Memory,16,16,kdebase/kcontrol/info/pics/mini-kcmmemory.xpm
+16/MidiFile,16,16,kdebase/pics/mini-midi.xpm
 16/Mmsys100,16,16,kdebase/pics/mini-sound.xpm
 16/Mouse,16,16,kdebase/kcontrol/input/mini-mouse.xpm
 16/Mplayer10,16,16,kdebase/kfm/pics/close.xpm
@@ -55,13 +60,15 @@
 16/Packager,16,16,kdebase/pics/mini-package.xpm
 16/Paste,16,16,kdebase/kappfinder/pics/mini/xclipboard.xpm
 16/Pbrush1,16,16,kdebase/kappfinder/pics/mini/xpaint.xpm
+16/PciBus,16,16,kdebase/kcontrol/info/pics/mini-kcmpci.xpm
 16/Playp16,16,16,kdebase/pics/mini-sound.xpm
 16/PowerOff,16,16,kdebase/kpanel/pics/mini-exit.xpm
+16/Processor,16,16,kdebase/kcontrol/info/pics/mini-kcmprocessor.xpm
 16/Qfecheck111,16,16,kdebase/kmenuedit/icons/mini.checkmark.xpm
 16/ReaderCd,16,16,kdebase/pics/mini-cdrom_unmount.xpm
 16/ReaderDisket,16,16,kdebase/pics/mini-3floppy_unmount.xpm
 16/ReaderOpened,16,16,kdebase/pics/mini-folder_open.xpm
-16/RecycleEmpty,16,16,kdebase/pics/mini-trash.xpm
+16/RecycleEmpty,16,16,kdebase/pics/mini-kfm_trash.xpm
 16/Refresh,16,16,kdebase/pics/mini-kfm_refresh.xpm
 16/Runonce106,16,16,kdebase/pics/mini-exec.xpm
 16/Save,16,16,kdebase/pics/mini-3floppy_unmount.xpm
@@ -90,8 +97,10 @@
 32/Date,32,32,kdebase/kappfinder/pics/xclock.xpm
 32/Delete,32,32,kdebase/pics/shredder.xpm
 32/Desktop,32,32,kdebase/pics/desktop.xpm
+32/DisplaySettings,32,32,kdebase/kscreensaver/kscreensaver.xpm
 32/Dpmodemx701,32,32,kdebase/pics/network_package.xpm
 32/FileFind,32,32,kdelibs/toolbar/find.xpm
+32/FileManager,32,32,kdebase/pics/kfm.xpm
 32/FilePencil,32,32,kdelibs/toolbar/pencil.xpm
 32/Files,32,32,kdebase/pics/folder.xpm
 32/FileText,32,32,kdebase/pics/document.xpm
@@ -107,11 +116,14 @@
 32/Help,32,32,kdelibs/toolbar/help.xpm
 32/HelpBook,32,32,kdelibs/toolbar/help.xpm
 32/InfoBubble,32,32,kdebase/pics/info.xpm
+32/InternetSettings,32,32,kdebase/kcontrol/kcontrol/pics/network_settings.xpm
 32/Intl101,32,32,kdebase/kcontrol/locale/locale.xpm
 32/Keyboard,32,32,kdebase/kcontrol/input/keyboard.xpm
 32/KeyboardMouse,32,32,kdebase/kcontrol/input/keyboard.xpm
 32/Logo,32,32,kdebase/kcontrol/display/pics/logo.xpm
 32/MediaAudio,32,32,kdebase/pics/sound.xpm
+32/Memory,32,32,kdebase/kcontrol/info/pics/kcmmemory.xpm
+32/MidiFile,32,32,kdebase/pics/midi.xpm
 32/Mmsys100,32,32,kdebase/pics/sound.xpm
 32/Mouse,32,32,kdebase/kcontrol/input/mouse.xpm
 32/Mplayer10,32,32,kdelibs/toolbar/start.xpm
@@ -126,13 +138,15 @@
 32/Packager,32,32,kdebase/pics/package.xpm
 32/Paste,32,32,kdelibs/toolbar/editpaste.xpm
 32/Pbrush1,32,32,kdelibs/toolbar/paintbrush.xpm
+32/PciBus,32,32,kdebase/kcontrol/info/pics/kcmpci.xpm
 32/Playp16,32,32,kdebase/pics/sound.xpm
 32/PowerOff,32,32,kdelibs/toolbar/exit.xpm
+32/Processor,32,32,kdebase/kcontrol/info/pics/kcmprocessor.xpm
 32/Qfecheck111,32,32,kdelibs/toolbar/tick.xpm
 32/ReaderCd,32,32,kdebase/pics/cdrom_unmount.xpm
 32/ReaderDisket,32,32,kdebase/pics/3floppy_unmount.xpm
 32/ReaderOpened,32,32,kdebase/pics/folder_open.xpm
-32/RecycleEmpty,32,32,kdebase/pics/trash.xpm
+32/RecycleEmpty,32,32,kdebase/pics/kfm_trash.xpm
 32/Refresh,32,32,kdelibs/toolbar/reload.xpm
 32/Runonce106,32,32,kdelibs/toolbar/fileopen.xpm
 32/Save,32,32,kdebase/pics/3floppy_unmount.xpm
@@ -161,8 +175,10 @@ Copy,22,22,kdelibs/toolbar/editcopy.xpm
 Date,32,32,kdebase/kappfinder/pics/xclock.xpm
 Delete,34,34,kdebase/pics/shredder.xpm
 Desktop,34,34,kdebase/pics/desktop.xpm
+DisplaySettings,32,32,kdebase/kscreensaver/kscreensaver.xpm
 Dpmodemx701,32,32,kdebase/pics/network_package.xpm
 FileFind,22,22,kdelibs/toolbar/find.xpm
+FileManager,32,32,kdebase/pics/kfm.xpm
 FilePencil,22,22,kdelibs/toolbar/pencil.xpm
 Files,32,32,kdebase/pics/folder.xpm
 FileText,32,32,kdebase/pics/document.xpm
@@ -178,6 +194,7 @@ HardwareDiag,32,32,kdebase/kcontrol/info/pics/kcmdevices.xpm
 Help,22,22,kdelibs/toolbar/help.xpm
 HelpBook,22,22,kdelibs/toolbar/help.xpm
 InfoBubble,32,32,kdebase/pics/info.xpm
+InternetSettings,32,32,kdebase/kcontrol/kcontrol/pics/network_settings.xpm
 Intl101,32,32,kdebase/kcontrol/locale/locale.xpm
 KDE1/base/applnk/Settings/Information/network,32,32,kdebase/applnk/Settings/Information/network.xpm
 KDE1/base/applnk/Settings/Informati~9fd4b62baf0,32,32,kdebase/applnk/Settings/Information/information.xpm
@@ -1053,6 +1070,8 @@ Keyboard,32,32,kdebase/kcontrol/input/keyboard.xpm
 KeyboardMouse,32,32,kdebase/kcontrol/input/keyboard.xpm
 Logo,22,22,kdebase/kcontrol/display/pics/logo.xpm
 MediaAudio,32,32,kdebase/pics/sound.xpm
+Memory,32,32,kdebase/kcontrol/info/pics/kcmmemory.xpm
+MidiFile,34,34,kdebase/pics/midi.xpm
 Mmsys100,32,32,kdebase/pics/sound.xpm
 Mouse,34,34,kdebase/kcontrol/input/mouse.xpm
 Mplayer10,22,22,kdelibs/toolbar/start.xpm
@@ -1067,13 +1086,15 @@ Open,32,32,kdebase/pics/folder_open.xpm
 Packager,32,32,kdebase/pics/package.xpm
 Paste,22,22,kdelibs/toolbar/editpaste.xpm
 Pbrush1,22,22,kdelibs/toolbar/paintbrush.xpm
+PciBus,32,32,kdebase/kcontrol/info/pics/kcmpci.xpm
 Playp16,32,32,kdebase/pics/sound.xpm
 PowerOff,22,22,kdelibs/toolbar/exit.xpm
+Processor,32,32,kdebase/kcontrol/info/pics/kcmprocessor.xpm
 Qfecheck111,22,22,kdelibs/toolbar/tick.xpm
 ReaderCd,32,32,kdebase/pics/cdrom_unmount.xpm
 ReaderDisket,32,32,kdebase/pics/3floppy_unmount.xpm
 ReaderOpened,32,32,kdebase/pics/folder_open.xpm
-RecycleEmpty,34,34,kdebase/pics/trash.xpm
+RecycleEmpty,32,32,kdebase/pics/kfm_trash.xpm
 Refresh,22,22,kdelibs/toolbar/reload.xpm
 Runonce106,22,22,kdelibs/toolbar/fileopen.xpm
 Save,32,32,kdebase/pics/3floppy_unmount.xpm
@@ -1085,3 +1106,9 @@ Timedate,32,32,kdebase/kappfinder/pics/xclock.xpm
 Warning,51,50,kdelibs/kdeui/exclamation.xpm
 WebOpen,32,32,kdebase/pics/www.xpm
 WindowsExplorer,32,32,kdebase/pics/folder_open.xpm
+32/ExecutableWindow,32,32,third_party/react95/selected/Progman8_32x32_4.png
+ExecutableWindow,32,32,third_party/react95/selected/Progman8_32x32_4.png
+16/ExecutableWindow,16,16,third_party/react95/selected/Progman8_32x32_4.png
+32/ModemFax,32,32,third_party/react95/selected/Fax_32x32_4.png
+ModemFax,32,32,third_party/react95/selected/Fax_32x32_4.png
+16/ModemFax,16,16,third_party/react95/selected/Fax_16x16_4.png

@@ -34,6 +34,9 @@
 #include "image.h"
 #include "histogram.h"
 #include "macros.h"
+/* Packing temporaries exceed native Ring 3 stacks, including optimized reads
+ * whose general branch still reserves a full compiler stack frame. */
+#define BKMESA_HEAP_ARRAYS 1
 #include "mem.h"
 #include "mmath.h"
 #include "pixel.h"

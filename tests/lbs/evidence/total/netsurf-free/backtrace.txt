@@ -1,0 +1,6 @@
+0x0000a787 in ?? ()
+Hardware assisted breakpoint 1 at 0x121ea3
+[Inferior 1 (process 1) exited normally]
+The program has no registers now.
+No registers.
+The program is not being run.

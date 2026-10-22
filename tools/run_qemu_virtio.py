@@ -22,10 +22,11 @@ def main():
     parser.add_argument('--image', type=Path, required=True)
     parser.add_argument('--gl', action='store_true')
     parser.add_argument('--display', choices=['sdl', 'gtk'],
-                        help='window backend (default: SDL for GL, GTK for 2D)')
+                        help='window backend (default: GTK)')
     parser.add_argument('--qemu', default='qemu-system-i386')
     parser.add_argument('--memory', type=int, default=1536, help='guest RAM in MiB (Wine default: 1536)')
     parser.add_argument('--smp', type=int, default=2)
+    parser.add_argument('--no-ioeventfd',action='store_true',help='disable KVM eventfd queue notifications for comparison')
     parser.add_argument('--disk-interface', choices=['ide','ahci'], default='ide',
                         help='system disk controller (use ahci for faster installation/loading)')
     parser.add_argument('--cdrom', type=Path, help='optional test/application ISO')
@@ -39,15 +40,17 @@ def main():
     if not args.image.is_file():
         parser.error('build the disk image first')
     device = 'virtio-vga-gl' if args.gl else 'virtio-vga'
-    display = args.display or ('sdl' if args.gl else 'gtk')
+    display = args.display or 'gtk'
     display_options = display
     if args.gl:
         display_options += ',gl=on'
         if display == 'gtk':
             display_options += ',zoom-to-fit=off,show-cursor=on'
     kvm = os.access('/dev/kvm', os.R_OK | os.W_OK)
+    device_options=device+(',ioeventfd=on' if kvm and args.gl and not args.no_ioeventfd else '')
     print('QEMU: ' + ('KVM, CPU host' if kvm else 'TCG: sin acceso a /dev/kvm; rendimiento reducido') +
-          ('; VirGL 3D' if args.gl else '; Virtio 2D') + '; display=' + display, flush=True)
+          ('; VirGL 3D' if args.gl else '; Virtio 2D') + '; display=' + display +
+          ('; ioeventfd=on' if kvm and args.gl and not args.no_ioeventfd else ''), flush=True)
     command = [args.qemu]
     command += ['-enable-kvm', '-cpu', 'host'] if kvm else ['-cpu', 'qemu32,+rdrand']
     if args.disk_interface == 'ahci':
@@ -56,7 +59,7 @@ def main():
     else:
         command += ['-drive', f'file={args.image},format=raw,if=ide']
     command += ['-vga', 'none',
-                '-device', device, '-display', display_options,
+                '-device', device_options, '-display', display_options,
                 '-boot', 'c', '-m', str(args.memory), '-smp', str(args.smp), '-serial', 'stdio', '-no-reboot', '-no-shutdown']
     if args.audio != 'none':
         command += ['-audiodev',f'{args.audio},id=blesaudio','-device','AC97,audiodev=blesaudio']

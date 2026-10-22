@@ -36,7 +36,8 @@ enum {
     BLES_3D_CAPS = 1, BLES_3D_CREATE, BLES_3D_DESTROY,
     BLES_3D_UPLOAD, BLES_3D_DOWNLOAD, BLES_3D_UPLOAD_MIP,
     BLES_3D_UPLOAD_REGION, BLES_3D_DEPTH_UPLOAD, BLES_3D_DEPTH_DOWNLOAD,
-    BLES_3D_BEGIN, BLES_3D_DRAW, BLES_3D_END, BLES_3D_WAIT
+    BLES_3D_BEGIN, BLES_3D_DRAW, BLES_3D_END, BLES_3D_WAIT,
+    BLES_3D_PRESENT /* p[0]: owned color target; native GPU window required */
 };
 typedef struct { uint32_t op, p[12]; } bles_gfx_3d_t;
 
@@ -50,6 +51,9 @@ typedef struct { uint32_t op, p[12]; } bles_gfx_3d_t;
 #define BLES_GFX_SURFACE_MOVE     5U
 
 #define BLES_GFX_OPEN_ROOTLESS    0x00000001U
+#define BLES_GFX_OPEN_GALLIUM     0x00000002U
+#define BLES_GFX_OPEN_NATIVE      0x00000004U /* CPU buffer, native client dimensions */
+#define BLES_GFX_OPEN_PIPELINED   0x00000008U /* opt-in GPU throughput: up to 3 captures */
 
 typedef struct {
     uint32_t width, height, flags;

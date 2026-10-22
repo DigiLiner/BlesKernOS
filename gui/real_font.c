@@ -197,6 +197,18 @@ static font_cache_t *load_strike(uint32_t id, uint16_t size) {
         }
     }
     if (!valid) { kfree(data); return NULL; }
+    /* Strikes belong to the global font cache, not to the application that
+     * happened to request this face/size first. Process teardown must leave
+     * cached glyph data valid for subsequent clients. */
+#ifndef BLES_VISION_SERVICE
+    /* The kernel cache outlives requesting clients. The private Ring-3
+     * service cache instead retains its service owner for restart cleanup. */
+    if (!mm_set_allocation_owner(data, 0U)) {
+        kfree(data);
+        return NULL;
+    }
+#endif
+    (void)mm_set_allocation_subsystem(data, MM_SUBSYSTEM_GUI);
     font_cache_t *slot = &cache[oldest];
     kfree(slot->data);
     *slot = (font_cache_t){id, ++stamp, count, size, s->line, s->ascent, data};

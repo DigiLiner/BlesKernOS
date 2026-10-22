@@ -399,24 +399,26 @@ static void datetime_paint_zone_tab(datetime_state_t *st,
     char line[48];
 
     cpl_draw_group(surface, zone_group, "@H9E102D33");
-    bk_gui_font_draw_string(surface, zone_group.x + 16, zone_group.y + 24,
-                         "@HE95578E6",
-                         CPL_TEXT, 0, false);
-    bk_gui_font_draw_string(surface, zone_group.x + 16, zone_group.y + 76,
-                         "@HACEF1B03", CPL_SHADOW, 0, false);
-    bk_gui_font_draw_string_clipped(surface, zone_group.x + 96, zone_group.y + 76,
-                                 zone->label, CPL_BLUE,
-                                 (gui_rect_t){zone_group.x + 96, zone_group.y + 76,
-                                 zone_group.w - 112, 14});
+    cpl_draw_text_clipped(surface,
+        (gui_rect_t){zone_group.x + 16, zone_group.y + 22, zone_group.w - 32, 16},
+        "@HE95578E6", CPL_TEXT);
+    int label_w = bk_gui_font_text_width("@HACEF1B03");
+    cpl_draw_text_clipped(surface,
+        (gui_rect_t){zone_group.x + 16, zone_group.y + 82, label_w, 16},
+        "@HACEF1B03", CPL_SHADOW);
+    cpl_draw_text_clipped(surface,
+        (gui_rect_t){zone_group.x + 24 + label_w, zone_group.y + 82,
+                     zone_group.w - 40 - label_w, 16}, zone->label, CPL_BLUE);
 
     cpl_draw_group(surface, format_group, "@HA0A19AA7");
     snprintf(line, sizeof(line), "@H1C08892A",
-             st->prefs.format_24h ? "@H73E2C92E" : "@H0205D18B");
-    bk_gui_font_draw_string(surface, format_group.x + 16, format_group.y + 24,
-                         line, CPL_TEXT, 0, false);
-    bk_gui_font_draw_string(surface, format_group.x + 16, format_group.y + 56,
-                         "@HDEA92D77",
-                         CPL_SHADOW, 0, false);
+             bk_lang_translate(st->prefs.format_24h ? "@H73E2C92E" : "@H0205D18B"));
+    cpl_draw_text_clipped(surface,
+        (gui_rect_t){format_group.x + 16, format_group.y + 18, format_group.w - 32, 16},
+        line, CPL_TEXT);
+    cpl_draw_text_clipped(surface,
+        (gui_rect_t){format_group.x + 16, format_group.y + 66, format_group.w - 32, 16},
+        "@HDEA92D77", CPL_SHADOW);
 }
 
 static void datetime_paint(gui_window_t *window,
@@ -552,7 +554,7 @@ void bleskernos_program_main(gui_desktop_t *desktop) {
         "@H7CC1E2B3", datetime_refresh_button);
     (void)bk_gui_widget_set_icon(st->refresh_button, "Refresh");
     st->timezone_dropdown = bk_gui_widget_create_dropdown(
-        desktop, st->window, (gui_rect_t){38, 72, 254, 22},
+        desktop, st->window, (gui_rect_t){42, 94, DATETIME_WINDOW_W - 94, 24},
         datetime_timezone_changed);
     for (int i = 0; i < bk_timezone_count(); i++) {
         const bk_timezone_option_t *zone = bk_timezone_option(i);
@@ -561,10 +563,10 @@ void bleskernos_program_main(gui_desktop_t *desktop) {
     }
 
     st->format_buttons[0] = bk_gui_widget_create_selectable_button(
-        desktop, st->window, (gui_rect_t){46, 198, 88, 22},
+        desktop, st->window, (gui_rect_t){42, 214, 100, 24},
         "@H73E2C92E", datetime_format_button);
     st->format_buttons[1] = bk_gui_widget_create_selectable_button(
-        desktop, st->window, (gui_rect_t){142, 198, 88, 22},
+        desktop, st->window, (gui_rect_t){150, 214, 100, 24},
         "@H0205D18B", datetime_format_button);
 
     datetime_sync_widgets(st);

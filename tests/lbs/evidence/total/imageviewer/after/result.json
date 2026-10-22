@@ -1,0 +1,47 @@
+{
+  "status": "pass",
+  "accel": "kvm",
+  "ram_mib": 256,
+  "cpus": 2,
+  "samples": [
+    {
+      "media": 0,
+      "mode": 0,
+      "render_ms": 40,
+      "hash": 2201486197
+    },
+    {
+      "media": 0,
+      "mode": 1,
+      "render_ms": 10,
+      "hash": 3623766137
+    },
+    {
+      "media": 0,
+      "mode": 2,
+      "render_ms": 30,
+      "hash": 2807524005
+    },
+    {
+      "media": 1,
+      "mode": 0,
+      "render_ms": 10,
+      "hash": 2101404525
+    },
+    {
+      "media": 1,
+      "mode": 1,
+      "render_ms": 20,
+      "hash": 1782249309
+    },
+    {
+      "media": 1,
+      "mode": 2,
+      "render_ms": 50,
+      "hash": 3244949205
+    }
+  ],
+  "zoom": true,
+  "pan": true,
+  "fit": true
+}

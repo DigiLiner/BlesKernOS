@@ -177,7 +177,7 @@ void bleskernos_program_main(bk_gui_desktop_t *desktop) {
     bk_gui_window_set_owner(state->window, bk_sys_getpid());
     clipboard_refresh(state, true);
 
-    while (bk_gui_window_is_open(state->window)) {
+    while (!bk_proc_exit_requested() && bk_gui_window_is_open(state->window)) {
         uint32_t generation = bk_clipboard_generation();
         if (generation != state->generation) clipboard_refresh(state, false);
         bk_sys_sleep_ms(25);

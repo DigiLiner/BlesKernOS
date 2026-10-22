@@ -115,11 +115,23 @@ struct bles_gfx_context {
     uint16_t width, height;
     uint16_t view_x, view_y, view_width, view_height;
     bool force_present;
+    bool gallium_window;
+    bool native_window;
+    bool saver_window;
+    bool saver_close_reported;
     bool launch_busy;
     kmutex_t launch_lock;
+    kmutex_t virgl_lock;
+    bool gallium_failed;
     struct { uint32_t handle, width, height, flags; } gpu_surfaces[128];
     uint32_t gpu_fence;
     uint32_t virgl_context;
+    uint32_t gallium_surfaces[BLES_VIRGL_NATIVE_SLOTS], gallium_readers[BLES_VIRGL_NATIVE_SLOTS], gallium_next;
+    uint32_t gallium_serial[BLES_VIRGL_NATIVE_SLOTS], gallium_sequence;
+    uint32_t native_wait_limit,native_wait_readers,native_wait_ready;
+    uint32_t native_queue_limit;
+    uint8_t gallium_states[BLES_VIRGL_NATIVE_SLOTS]; /* 0 free, 1 GPU capture, 2 desktop readers */
+    volatile uint32_t native_consumers;
     bles_gfx_surface surfaces[BLES_GFX_MAX_SURFACES];
     bles_gfx_event_t events[64];
     uint8_t read_pos, write_pos;
@@ -232,15 +244,20 @@ static void bles_gfx_push_surface_event(bles_gfx_surface *surface,
 
 static bool bles_gfx_on_event(gui_window_t *window,const gui_event_t *event,void *opaque) {
     bles_gfx_context *gfx=(bles_gfx_context *)opaque;
+    bool handled=false;
     uint32_t lock=kspin_lock_irqsave(&linux_io_lock);
     if(gfx && gfx->window==window) {
         gui_rect_t content=gui_window_content_rect(window);
         bles_gfx_push_input(gfx,event,
                             gfx->view_x-content.x,
                             gfx->view_y-content.y);
+        /* The owner drains CLOSE and releases its descriptor/window. Keep
+         * the window alive until then, just like the rootless surface path. */
+        handled=gfx->native_window && event->type==GUI_EVENT_CLOSE;
+        if(handled)kprintf("[GFX:NATIVE] CLOSE owner=%u\n",gfx->instance_id);
     }
     kspin_unlock_irqrestore(&linux_io_lock,lock);
-    return false;
+    return handled;
 }
 
 static bool bles_gfx_surface_on_event_locked(gui_window_t *window,
@@ -353,6 +370,16 @@ static void bles_gfx_preserve_occluded(bles_gfx_context *gfx,
 }
 
 #include "i386_gfx3d.inc"
+#include "../../ports/gallium/include/blesgfx-native.h"
+
+static int32_t bles_gfx_native_fullscreen(bles_gfx_context *gfx,uint32_t argument) {
+    gui_desktop_t *desktop=gui_get_desktop();
+    if(argument || !gfx->native_window || !gfx->window || !desktop ||
+       desktop->surface.width<64 || desktop->surface.height<64)return -BK_EINVAL;
+    bk_gui_window_set_borderless(gfx->window,true,0);
+    return bk_gui_window_set_bounds(gfx->window,(gui_rect_t){0,0,
+        desktop->surface.width,desktop->surface.height})?0:-BK_EINVAL;
+}
 
 /* The control descriptor owns its busy reference, including failure/exit.
  * Called outside linux_io_lock: cursor invalidation may enter the GUI. */
@@ -366,9 +393,21 @@ static void bles_gfx_launch_busy(bles_gfx_context *gfx, bool busy) {
     kmutex_unlock(&gfx->launch_lock);
 }
 
-static int32_t bles_gfx_ioctl(linux_device *device,uint32_t request,uint32_t argument) {
+static int32_t bles_gfx_ioctl_pinned(linux_device *device,uint32_t request,uint32_t argument) {
     bles_gfx_context *gfx=device->gfx;
     if(!gfx)return -BK_ENOTTY;
+    if(request==BLES_GFX_NATIVE_FULLSCREEN)return bles_gfx_native_fullscreen(gfx,argument);
+    if(request==BLES_GFX_NATIVE_EXIT_REQUEST) {
+        /* glmark2 calls this from its own render thread each frame. The
+         * cancellation request must be observed by that task; this trace
+         * differentiates a failed stop from a presentation/cleanup problem. */
+        bool stop = gfx->saver_window && task_exit_requested();
+        if(stop && !gfx->saver_close_reported) {
+            gfx->saver_close_reported=true;
+            kprintf("[GALLIUM:SAVER] renderer observed exit pid=%u\n",task_current_pid());
+        }
+        return stop?1:0;
+    }
     if(request==BLES_GFX_LAUNCH_BUSY) {
         if(argument>1U)return -BK_EINVAL;
         bles_gfx_launch_busy(gfx,argument!=0U);
@@ -471,12 +510,16 @@ static int32_t bles_gfx_ioctl(linux_device *device,uint32_t request,uint32_t arg
         bles_gfx_open_t args;
         if(!copy_from_user(&args,(const void *)(uintptr_t)argument,sizeof(args)))return -BK_EFAULT;
         if(gfx->width || args.width<160U || args.height<90U || args.width>1024U || args.height>768U ||
-           (args.flags & ~BLES_GFX_OPEN_ROOTLESS))return -BK_EINVAL;
+           (args.flags & ~(BLES_GFX_OPEN_ROOTLESS|BLES_GFX_OPEN_GALLIUM|BLES_GFX_OPEN_NATIVE|BLES_GFX_OPEN_PIPELINED|BLES_GFX_OPEN_SAVER)) ||
+           ((args.flags&BLES_GFX_OPEN_SAVER) && !(args.flags&BLES_GFX_OPEN_GALLIUM)) ||
+           ((args.flags&BLES_GFX_OPEN_PIPELINED) && !(args.flags&BLES_GFX_OPEN_GALLIUM)) ||
+           ((args.flags&BLES_GFX_OPEN_ROOTLESS) && args.flags!=BLES_GFX_OPEN_ROOTLESS))return -BK_EINVAL;
         uint32_t bytes=args.width*args.height*4U;
         bool rootless=(args.flags&BLES_GFX_OPEN_ROOTLESS)!=0U;
-        uint32_t *pixels=rootless?NULL:(uint32_t *)kmalloc(bytes);
-        uint32_t *scratch=rootless?NULL:(uint32_t *)kmalloc(bytes);
-        if(!rootless && (!pixels || !scratch)) {
+        bool gpu_native=(args.flags&BLES_GFX_OPEN_GALLIUM)!=0U;
+        uint32_t *pixels=(rootless||gpu_native)?NULL:(uint32_t *)kmalloc(bytes);
+        uint32_t *scratch=(rootless||gpu_native)?NULL:(uint32_t *)kmalloc(bytes);
+        if(!rootless && !gpu_native && (!pixels || !scratch)) {
             if(pixels)kfree(pixels);
             if(scratch)kfree(scratch);
             return -BK_ENOMEM;
@@ -485,15 +528,58 @@ static int32_t bles_gfx_ioctl(linux_device *device,uint32_t request,uint32_t arg
         if(scratch)kmemset(scratch,0,bytes);
         gui_window_t *window=NULL;
         if(!(args.flags&BLES_GFX_OPEN_ROOTLESS)) {
-            window=bk_gui_create_window(NULL,32,40,(int)args.width,(int)args.height,"TinyX / BlesKernOS");
+            window=bk_gui_create_window(NULL,32,40,(int)args.width,(int)args.height,
+                (args.flags&(BLES_GFX_OPEN_GALLIUM|BLES_GFX_OPEN_NATIVE))?"OpenGL / BlesKernOS":"TinyX / BlesKernOS");
             if(!window){kfree(pixels);kfree(scratch);return -BK_ENOMEM;}
+            if(args.flags&(BLES_GFX_OPEN_GALLIUM|BLES_GFX_OPEN_NATIVE)) {
+                gui_rect_t bounds,content;
+                if(bk_gui_window_bounds(window,&bounds) && bk_gui_window_content_rect(window,&content)) {
+                    bounds.w+=(int)args.width-content.w;
+                    bounds.h+=(int)args.height-content.h;
+                    /* Keep the requested client pixels at 1:1 when the
+                     * decorated window fits; larger images may still scale. */
+                    (void)bk_gui_window_set_bounds(window,bounds);
+                }
+            }
         }
         gfx->width=(uint16_t)args.width;gfx->height=(uint16_t)args.height;
         gfx->view_x=0;gfx->view_y=0;
         gfx->view_width=(uint16_t)args.width;gfx->view_height=(uint16_t)args.height;
         gfx->instance_id=task_current_process_id();
-        gfx->pixels=pixels;gfx->scratch=scratch;gfx->scratch_capacity=rootless?0U:bytes;gfx->window=window;
+        gfx->pixels=pixels;gfx->scratch=scratch;gfx->scratch_capacity=(rootless||gpu_native)?0U:bytes;gfx->window=window;
         gfx->force_present=true;
+        gfx->gallium_window=(args.flags&BLES_GFX_OPEN_GALLIUM)!=0U;
+        gfx->native_queue_limit=(args.flags&BLES_GFX_OPEN_PIPELINED)?3U:1U;
+        gfx->native_window=(args.flags&(BLES_GFX_OPEN_GALLIUM|BLES_GFX_OPEN_NATIVE))!=0U;
+        gfx->saver_window=(args.flags&BLES_GFX_OPEN_SAVER)!=0U;
+        /* Fullscreen is part of window creation, not a second best-effort
+         * ioctl after the GPU has already published its first grey window. */
+        if(gfx->saver_window && window) {
+            gui_desktop_t *desktop=gui_get_desktop();
+            if(!desktop || !desktop->surface.width || !desktop->surface.height) {
+                kprintf("[GALLIUM:SAVER] no desktop geometry\n");
+                return -BK_EINVAL;
+            }
+            bk_gui_window_set_borderless(window,true,0U);
+            if(!bk_gui_window_set_bounds(window,(gui_rect_t){0,0,
+                     desktop->surface.width,desktop->surface.height})) {
+                kprintf("[GALLIUM:SAVER] fullscreen bounds failed\n");
+                return -BK_EINVAL;
+            }
+            /* The gui_window belongs to Vision in Ring 3.  Never write its
+             * fields from the Linux syscall context: communicate via IPC. */
+            bk_vision_request_t saver_request={0};
+            uint32_t saver_result=0U;
+            saver_request.operation=VISION_IPC_GPU_SAVER;
+            saver_request.window=(uint32_t)(uintptr_t)window;
+            saver_request.values[0]=1U;
+            if(!vision_ipc_call(&saver_request,&saver_result) || !saver_result) {
+                kprintf("[GALLIUM:SAVER] Vision saver ownership failed\n");
+                return -BK_EIO;
+            }
+            kprintf("[GALLIUM:SAVER] fullscreen %ux%u (GPU canvas %ux%u)\n",
+                    desktop->surface.width,desktop->surface.height,args.width,args.height);
+        }
         for(unsigned i=0;i<BLES_GFX_MAX_SURFACES;i++)gfx->surfaces[i].owner=gfx;
         if(window) {
             bk_gui_window_set_streaming(window,true);
@@ -722,6 +808,7 @@ static int32_t bles_gfx_ioctl(linux_device *device,uint32_t request,uint32_t arg
         return copy_to_user((void *)(uintptr_t)argument,&event,sizeof(event))?1:-BK_EFAULT;
     }
     if(request==BLES_GFX_PRESENT) {
+        if(gfx->gallium_window)return -BK_EINVAL;
         bles_gfx_present_t args;
         bool have_rootless=false;
         if(!copy_from_user(&args,(const void *)(uintptr_t)argument,sizeof(args)))return -BK_EFAULT;
@@ -764,11 +851,17 @@ static int32_t bles_gfx_ioctl(linux_device *device,uint32_t request,uint32_t arg
                 if(gfx->scratch)kfree(gfx->scratch);
                 gfx->scratch=scratch;gfx->scratch_capacity=surface_bytes;
             }
-            for(uint32_t row=0;row<sh;row++) {
-                uint32_t offset=((sy+row)*(uint32_t)gfx->width+sx)*4U;
-                if(gfx->pixels)kmemcpy(gfx->scratch+row*sw,(uint8_t *)gfx->pixels+offset,sw*4U);
-                else if(!copy_from_user(gfx->scratch+row*sw,
-                        (const void *)(uintptr_t)(args.pixels+offset),sw*4U))return -BK_EFAULT;
+            uint32_t offset=(sy*(uint32_t)gfx->width+sx)*4U;
+            if(gfx->pixels) {
+                for(uint32_t row=0;row<sh;row++)
+                    kmemcpy(gfx->scratch+row*sw,
+                            (uint8_t *)gfx->pixels+offset+row*gfx->width*4U,sw*4U);
+            } else if(!copy_rows_from_user(gfx->scratch,
+                    (const void *)(uintptr_t)(args.pixels+offset),sw*4U,sh,gfx->width*4U)) {
+                /* Under memory pressure retain the bounded per-row path. */
+                for(uint32_t row=0;row<sh;row++)
+                    if(!copy_from_user(gfx->scratch+row*sw,
+                        (const void *)(uintptr_t)(args.pixels+offset+row*gfx->width*4U),sw*4U))return -BK_EFAULT;
             }
             bles_gfx_preserve_occluded(gfx,surface,window,sx,sy,sw,sh,z_index);
             (void)bk_gui_window_present_xrgb(window,gfx->scratch,(uint16_t)sw,(uint16_t)sh);
@@ -809,6 +902,18 @@ static int32_t bles_gfx_ioctl(linux_device *device,uint32_t request,uint32_t arg
     return -BK_ENOTTY;
 }
 
+static int32_t bles_gfx_ioctl(linux_device *device,uint32_t request,uint32_t argument) {
+    uint32_t lock=kspin_lock_irqsave(&linux_io_lock);
+    bles_gfx_context *gfx=device->gfx;
+    if(!device->refs || device->refs==0xffffffffU || device->kind!=3U || !gfx) {
+        kspin_unlock_irqrestore(&linux_io_lock,lock);return -BK_EBADF;
+    }
+    __sync_add_and_fetch(&gfx->native_consumers,1U);
+    kspin_unlock_irqrestore(&linux_io_lock,lock);
+    int32_t result=bles_gfx_ioctl_pinned(device,request,argument);
+    __sync_sub_and_fetch(&gfx->native_consumers,1U);
+    return result;
+}
 static bool sys_raw_retain(int fd) {
     linux_device *d=linux_device_for(fd);
     if(d) {

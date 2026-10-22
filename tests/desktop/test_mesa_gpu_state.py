@@ -18,6 +18,15 @@ int main(void) {
     GLcontext ctx={0}; bkmesa_gpu_context gpu={0}; SWvertex in={0}; bk_vertex out;
     gpu.height=32; ctx.DepthMaxF=65535.0f;
     in.color[0]=255; in.color[3]=255;
+    in.win[1]=0.5f;
+    convert_vertex(&gpu,&ctx,&out,&in,0,GL_FALSE);
+    assert(out.y==31.5f); /* Pixel centers map h-y, without a row shift. */
+    bk_vertex offset_vertices[3]={{0,0,.5f,1,0,0,0},{1,0,.5f,1,0,0,0},{0,1,.5f,1,0,0,0}};
+    ctx.Polygon._OffsetAny=GL_TRUE;ctx.Polygon.OffsetMRD=-1;
+    apply_polygon_offset(&ctx,offset_vertices);
+    assert(fabsf(offset_vertices[0].z-(.5f-1.f/65535.f))<1.e-7f);
+    ctx.Polygon._OffsetAny=GL_FALSE;ctx.Polygon.OffsetMRD=0;
+
     ctx.Texture._ReallyEnabled=TEXTURE0_2D;
     ctx.Texture.Unit[0].EnvMode=GL_REPLACE;
     convert_vertex(&gpu,&ctx,&out,&in,0xff00ff00U,GL_TRUE);
@@ -36,6 +45,12 @@ int main(void) {
     ctx.Color.BlendSrcRGB=ctx.Color.BlendSrcA=GL_SRC_ALPHA;
     ctx.Color.BlendDstRGB=ctx.Color.BlendDstA=GL_ONE_MINUS_SRC_ALPHA;
     assert(blend_supported(&ctx,caps));
+    ctx.Color.BlendSrcRGB=ctx.Color.BlendSrcA=GL_ONE;
+    ctx.Color.BlendDstRGB=ctx.Color.BlendDstA=GL_ONE;
+    assert(!blend_supported(&ctx,caps));
+    caps|=BK_CAP_BLEND_ADDITIVE_ONE;
+    assert(blend_supported(&ctx,caps));
+    assert((draw_flags(&ctx)&(BK_DRAW_BLEND_ADDITIVE|BK_DRAW_PREMULTIPLIED))==(BK_DRAW_BLEND_ADDITIVE|BK_DRAW_PREMULTIPLIED));
     struct gl_texture_object obj={0}; struct gl_texture_image image={0};
     GLchan rgb[6]={255,0,0, 0,255,32}; GLchan rgba[8]={0,0,0,0, 32,64,255,128};
     image.Format=GL_COLOR_INDEX;image.FetchTexel=index_texel;
@@ -57,6 +72,32 @@ int main(void) {
     assert(!find_texture(&gpu,&obj,&image));
     gpu.textures[0].palette=&obj.Palette;
     assert(find_texture(&gpu,&obj,&image)==&gpu.textures[0]);
+    /* Back-face colors must follow winding, preserve flat provoking vertex,
+     * and leave shared SW vertices intact. */
+    TNLcontext tnl={0};
+    struct gl_client_array back={0};
+    GLfloat back_colors[3][4]={{0,1,0,1},{0,0,1,1},{1,1,0,1}};
+    SWvertex vertices[3]={0}; GLchan saved[3][4];
+    ctx.swtnl_context=&tnl;tnl.vb.ColorPtr[1]=&back;back.Ptr=back_colors;
+    vertices[0].win[0]=0;vertices[0].win[1]=0;
+    vertices[1].win[0]=0;vertices[1].win[1]=1;
+    vertices[2].win[0]=1;vertices[2].win[1]=0;
+    vertices[0].color[0]=vertices[1].color[0]=vertices[2].color[0]=255;
+    ctx._TriangleCaps=DD_TRI_LIGHT_TWOSIDE;ctx.Polygon._FrontBit=0;
+    assert(triangle_colors(&ctx,vertices,0,1,2,saved));
+    assert(vertices[0].color[1]==255 && vertices[0].color[0]==0);
+    assert(vertices[1].color[2]==255 && vertices[2].color[0]==255 && vertices[2].color[1]==255);
+    triangle_colors_restore(vertices,0,1,2,saved);
+    assert(vertices[0].color[0]==255 && vertices[0].color[1]==0);
+    assert(!triangle_colors(&ctx,vertices,0,2,1,saved));
+    ctx.Polygon._FrontBit=1;
+    assert(triangle_colors(&ctx,vertices,0,2,1,saved));
+    assert(vertices[0].color[1]==255 && vertices[2].color[1]==255 && vertices[1].color[2]==255);
+    triangle_colors_restore(vertices,0,2,1,saved);
+    assert(triangle_colors(&ctx,vertices,0,0,1,saved));
+    triangle_colors_restore(vertices,0,0,1,saved);
+    assert(vertices[0].color[0]==255 && vertices[0].color[1]==0 && vertices[1].color[2]==0);
+    puts("PASS two-sided lighting winding, provoking vertex and shared vertex preservation");
     puts("PASS indexed texture RGB/RGBA/shared palettes and updates");
     puts("PASS GL_REPLACE ignores primary color; MODULATE/flat colors preserved; lightmap blend gated by capability");
 }

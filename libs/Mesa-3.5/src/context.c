@@ -1357,20 +1357,10 @@ alloc_proxy_textures( GLcontext *ctx )
       }
    }
    if (out_of_memory) {
-      for (i=0;i<MAX_TEXTURE_LEVELS;i++) {
-         if (ctx->Texture.Proxy1D->Image[i]) {
-            _mesa_free_texture_image(ctx->Texture.Proxy1D->Image[i]);
-         }
-         if (ctx->Texture.Proxy2D->Image[i]) {
-            _mesa_free_texture_image(ctx->Texture.Proxy2D->Image[i]);
-         }
-         if (ctx->Texture.Proxy3D->Image[i]) {
-            _mesa_free_texture_image(ctx->Texture.Proxy3D->Image[i]);
-         }
-      }
       _mesa_free_texture_object(NULL, ctx->Texture.Proxy1D);
       _mesa_free_texture_object(NULL, ctx->Texture.Proxy2D);
       _mesa_free_texture_object(NULL, ctx->Texture.Proxy3D);
+      _mesa_free_texture_object(NULL, ctx->Texture.ProxyCubeMap);
       return GL_FALSE;
    }
    else {
@@ -1606,6 +1596,13 @@ _mesa_free_context_data( GLcontext *ctx )
       }
    }
 
+   /* These matrices are initialized with the other attribute groups. */
+   _math_matrix_dtr( &ctx->_ModelProjectMatrix );
+   _math_matrix_dtr( &ctx->ColorMatrix );
+   for (i = 0; i < MAX_COLOR_STACK_DEPTH - 1; i++)
+      _math_matrix_dtr( &ctx->ColorStack[i] );
+   _math_matrix_dtr( &ctx->Viewport._WindowMap );
+
    _glthread_LOCK_MUTEX(ctx->Shared->Mutex);
    ctx->Shared->RefCount--;
    assert(ctx->Shared->RefCount >= 0);
@@ -1624,6 +1621,7 @@ _mesa_free_context_data( GLcontext *ctx )
    _mesa_free_texture_object( NULL, ctx->Texture.Proxy1D );
    _mesa_free_texture_object( NULL, ctx->Texture.Proxy2D );
    _mesa_free_texture_object( NULL, ctx->Texture.Proxy3D );
+   _mesa_free_texture_object( NULL, ctx->Texture.ProxyCubeMap );
 
    /* Free evaluator data */
    if (ctx->EvalMap.Map1Vertex3.Points)

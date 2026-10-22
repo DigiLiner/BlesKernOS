@@ -4,6 +4,7 @@
 #include "../kernel/include/gfx3d.h"
 #include "../kernel/include/memory.h"
 #include "../kernel/include/vga.h"
+#include "../kernel/include/vision_ipc.h"
 
 #define GPU_COMP_MAX_WINDOWS 12U
 #define GPU_GLYPH_ATLAS_W 128U
@@ -358,6 +359,30 @@ bool gui_gpu_compositor_publish_viewport(gui_window_t *window,
            gfx3d_end(slot->viewport, NULL);
 }
 
+uint32_t gui_gpu_compositor_native_viewport(gui_window_t *window,uint16_t *width,uint16_t *height) {
+    uint32_t w=0,h=0;
+    if(!window || bk_vision_native_frame(window,0,&w,&h)<=0)return 0;
+    gui_desktop_t *desktop=gui_get_desktop();
+    if(!desktop || !gpu_prepare(desktop->surface.width,desktop->surface.height))return 0;
+    gpu_window_surface_t *slot=gpu_find_window_slot(window);
+    if(!slot)return 0;
+    if(!slot->viewport || slot->viewport_width!=w || slot->viewport_height!=h) {
+        gpu_destroy_handle(&slot->viewport);
+        if(!gpu_create_surface(w,h,GFX3D_FORMAT_ARGB8888,
+            GFX3D_SURFACE_TEXTURE|GFX3D_SURFACE_RENDER_TARGET|GFX3D_SURFACE_WINDOW,&slot->viewport))return 0;
+        slot->viewport_width=w;slot->viewport_height=h;
+    }
+    /* Bind ownership even if the producer closes between query and copy;
+     * its queued clear can then reclaim this newly allocated cache. */
+    slot->window=window;
+    if(bk_vision_native_frame(window,slot->viewport,&w,&h)<=0)return 0;
+    *width=(uint16_t)w;*height=(uint16_t)h;
+    static uint32_t consumed;
+    if(++consumed==1U || consumed%600U==0U)
+        kprintf("[VISION:GALLIUM] consumed_frames=%u size=%ux%u\n",consumed,w,h);
+    return slot->viewport;
+}
+
 void gui_gpu_compositor_capture_window(gui_window_t *window,
                                        const gui_surface_t *surface) {
     gpu_window_surface_t *slot;
@@ -541,6 +566,69 @@ static bool gpu_build_overlay(const gui_surface_t *surface) {
                            surface->width, surface->height) && pixels != 0U;
 }
 
+/* A native Gallium screensaver owns the *final* scanout.  The general
+ * desktop compositor intentionally puts its shell overlay (including the
+ * Deskbar) above ordinary application windows.  Reusing that route for
+ * fullscreen Jelly makes an opaque CPU placeholder or the Deskbar hide the
+ * GPU frame, leaving only intermittent flashes.  Render the already captured
+ * GPU viewport as the final layer, without a CPU readback or GUI overlay.
+ * Other GL applications continue through the normal layered compositor. */
+static gui_window_t *gpu_native_saver_window(gui_desktop_t *desktop) {
+    if (!desktop) return NULL;
+    for (gui_window_t *w=desktop->first_window; w; w=w->next)
+        if (w->native_gpu_saver && w->visible && w->gpu_view_visible &&
+            w->gpu_view_surface) return w;
+    return NULL;
+}
+
+static bool gpu_present_native_saver(gui_desktop_t *desktop) {
+    gui_window_t *window=gpu_native_saver_window(desktop);
+    gpu_window_surface_t *slot=window?gpu_find_window_slot(window):NULL;
+    if (!window || !slot || slot->window!=window || !slot->viewport ||
+        !window->gpu_view_width || !window->gpu_view_height) return false;
+    gfx_rect_t full={0,0,g_gpu.width,g_gpu.height};
+    gfx_rect_t source={0,0,window->gpu_view_width,window->gpu_view_height};
+    gfx3d_transform2d_t transform={
+        (float)g_gpu.width/window->gpu_view_width,0.0f,0.0f,
+        0.0f,(float)g_gpu.height/window->gpu_view_height,0.0f};
+    uint32_t fence=0U;
+    if (!gfx3d_begin(g_gpu.target,0xFF000000U,0.0f,GFX3D_DRAW_CLEAR_COLOR) ||
+        !gpu_composite(slot->viewport,g_gpu.target,source,transform,full,
+                       255U,0xFFFFFFFFU,GFX3D_FILTER_LINEAR,NULL) ||
+        !gfx3d_end(g_gpu.target,&fence) ||
+        !gfx3d_surface_present(g_gpu.target,&full,&fence)) return false;
+    g_gpu.scene_valid=true;
+    g_gpu.frame_active=false;
+    static bool reported;
+    if (!reported) {
+        kprintf("[VISION:SAVER:GPU] exclusive viewport %ux%u -> %ux%u\n",
+            window->gpu_view_width,window->gpu_view_height,g_gpu.width,g_gpu.height);
+        reported=true;
+    }
+    return true;
+}
+
+/* Unlike an ordinary GPU window, a screensaver is the only visible scene.
+ * Called before the CPU compositor can schedule a conflicting 2D present.
+ * Keep the old scanout when a GPU copy is not yet available: uploading a grey
+ * placeholder would permanently replace the active VirGL scanout resource. */
+bool gui_gpu_compositor_saver_active(const gui_desktop_t *desktop) {
+    return gpu_native_saver_window((gui_desktop_t *)desktop) != NULL;
+}
+
+bool gui_gpu_compositor_present_saver(gui_desktop_t *desktop) {
+    static uint32_t failed,delivered;
+    if (!desktop || !gui_gpu_compositor_saver_active(desktop)) return false;
+    bool ok=g_gpu.ready && gpu_present_native_saver(desktop);
+    if(ok) {
+        if(++delivered==1U || delivered%600U==0U)
+            kprintf("[VISION:SAVER:GPU] v4 presented=%u exclusive=1\n",delivered);
+    } else if(++failed==1U || failed%120U==0U)
+        kprintf("[VISION:SAVER:GPU] present unavailable ready=%u active=%u scene=%u count=%u\n",
+            g_gpu.ready,g_gpu.frame_active,g_gpu.scene_valid,failed);
+    return ok;
+}
+
 bool gui_gpu_compositor_present(gui_desktop_t *desktop,
                                 const gui_surface_t *final_surface,
                                 bool draw_cursor) {
@@ -549,8 +637,10 @@ bool gui_gpu_compositor_present(gui_desktop_t *desktop,
                                   0.0f, 1.0f, 0.0f};
     uint32_t fence = 0U;
     if (!g_gpu.frame_active || !desktop || !final_surface ||
-        !gui_gpu_compositor_needed(desktop) ||
-        !gpu_build_overlay(final_surface)) return false;
+        !gui_gpu_compositor_needed(desktop)) return false;
+    if (gpu_native_saver_window(desktop))
+        return gpu_present_native_saver(desktop);
+    if (!gpu_build_overlay(final_surface)) return false;
     full = (gfx_rect_t){0, 0, g_gpu.width, g_gpu.height};
     if (!gfx3d_begin(g_gpu.target, 0xFF000000U, 0.0f,
                      GFX3D_DRAW_CLEAR_COLOR) ||
@@ -641,6 +731,8 @@ bool gui_gpu_compositor_present_cached(gui_desktop_t *desktop,
      * for every game frame. */
     if (!desktop || !gui_gpu_compositor_needed(desktop) ||
         !g_gpu.ready || !g_gpu.scene_valid || g_gpu.frame_active) return false;
+    if (gpu_native_saver_window(desktop))
+        return gpu_present_native_saver(desktop);
 
     full = (gfx_rect_t){0, 0, g_gpu.width, g_gpu.height};
     if (!gfx3d_begin(g_gpu.target, 0xFF000000U, 0.0f,

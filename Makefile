@@ -233,6 +233,7 @@ MESA35_OBJS := $(MESA35_C_OBJS) $(MESA35_ASM_OBJS)
 LIBC_A := build/system/libs/libc/libc.a
 TINYGL_A := build/system/libs/tinygl/tinygl.a
 MESA35_A := build/system/libs/mesa35/mesa35.a
+SS_LOCAL_RUNTIME := build/system/screensavers/ss_runtime.o build/kernel/libc/math.o
 SDK_CFLAGS := -m32 -march=pentium3 -mtune=pentium3 -mfpmath=387 -mno-sse -mno-sse2 -ffreestanding -fno-builtin -nostdlib -nostdinc -Os -Wall -MMD -MP -fno-pic -fno-pie -fno-stack-protector -Isdk/include
 MESA35_CPU_FLAGS := -march=pentium3 -mtune=pentium3 -msse -mno-sse2 -mfpmath=sse,387
 MESA35_CFLAGS := $(filter-out -Os -march=pentium3 -mtune=pentium3 -mfpmath=387 -mno-sse -mno-sse2,$(CC_FLAGS)) \
@@ -326,6 +327,7 @@ ATA_IMG    := build/bleskernos-ata-$(EDITION).img
 USB_IMG    := build/bleskernos-usb-$(EDITION).img
 VMWARE_IMG := build/bleskernos-vmware-$(EDITION).vmdk
 VMWARE_VMX := build/bleskernos-vmware-$(EDITION).vmx
+VMWARE_SIZE_MIB ?= 4096
 # Reserva máxima para el kernel crudo desde LBA 9 y para la FAT32.
 # reservado al inicio de la imagen FAT32 para el kernel crudo.
 # Reserva máxima de 1280 KiB; Stage 2 carga solamente los sectores reales.
@@ -364,7 +366,7 @@ endif
 # Los proyectos de "extras" son repositorios independientes. No
 # deben bloquear la compilación normal del SO; su imagen se genera sólo con
 # `make extra-programs-image` cuando se necesita para una prueba concreta.
-all: $(ATA_IMG) $(USB_IMG) $(VMWARE_IMG)
+all: $(ATA_IMG) $(USB_IMG) $(VMWARE_IMG) $(VMWARE_VMX)
 
 user:
 	$(MAKE) EDITION=user all
@@ -448,17 +450,12 @@ assets/cursors/INDEX.JSON: tools/build_retrosmart_cursors.py $(shell find third_
 graphics-pak:
 	$(PYTHON) tools/build_graphics_pak.py
 
-assets/graphics/GRAPHICS.PAK assets/graphics/GRAPHICS.CSV assets/graphics/KDE1SRC.TGZ &: tools/build_graphics_pak.py tools/kde1_graphics.py tools/import_kde1_icons.py $(shell find third_party/kde1 -type f)
+assets/graphics/GRAPHICS.PAK assets/graphics/GRAPHICS.CSV assets/graphics/KDE1SRC.TGZ &: tools/build_graphics_pak.py tools/kde1_graphics.py tools/import_kde1_icons.py $(shell find third_party/kde1 third_party/react95/selected -type f)
 	$(PYTHON) tools/build_graphics_pak.py
 
 $(EXTRA_PROGRAMS_IMG): FORCE tools/build_extra_programs_image.py
-	@$(MAKE) -C "extras/Bles-Codex32-standalone" BLESKERNOS_SDK=../../sdk
-	@$(MAKE) -C "extras/HyperZip-BlesKernOS-Standalone" SDK_INCLUDE=../../sdk/include
-	@$(MAKE) -C "extras/LexiNet" ROOT=../..
-	@$(MAKE) -C "extras/Civ2-BlesKernOS-Standalone" ROOT=../..
-	@echo "[IMG]  Empaquetando programas extra en $@..."
-	@$(PYTHON) tools/build_extra_programs_image.py "$@" "$(EXTRA_CODEX_OBJ)" "$(EXTRA_HYPERZIP_OBJ)" "$(EXTRA_LEXINET_OBJ)" "$(EXTRA_CIV2_OBJ)"
-	@echo "[OK]   Imagen de programas extra: $@"
+	$(MAKE) lbs-extras
+	$(PYTHON) tools/build_extra_programs_image.py "$@"
 
 FORCE:
 
@@ -709,7 +706,7 @@ $(SDK_POSIX_A): $(SDK_POSIX_OBJ) $(SDK_POSIX_STRING_OBJ) $(SDK_POSIX_STDLIB_OBJ)
 	@rm -f $@
 	$(AR) rcs $@ $^
 
-$(SDK_SDL2_OBJ): sdk/lib/sdl2.c sdk/include/SDL2/SDL.h | build
+$(SDK_SDL2_OBJ): sdk/lib/sdl2.c sdk/include/SDL2/SDL.h sdk/include/SDL2/SDL_blesk.h | build
 	@mkdir -p $(dir $@)
 	@echo "[GCC]  Compilando compatibilidad SDL2 Ring 3..."
 	$(CC) $(SDK_CFLAGS) -c $< -o $@
@@ -1036,6 +1033,7 @@ SSPIPES_OBJ := build/system/screensavers/ss_pipes.o
 SSPIPES_RAW_OBJ := build/system/screensavers/ss_pipes.raw.o
 SSBALLS_OBJ := build/system/screensavers/ss_balls.o
 SSBALLS_RAW_OBJ := build/system/screensavers/ss_balls.raw.o
+SSJELLY_OBJ := build/system/screensavers/ss_jelly.o
 
 USER_EXTERNAL_APP_OBJS := \
 	$(SHELL_OBJ) \
@@ -1062,7 +1060,7 @@ USER_EXTERNAL_APP_OBJS := \
 	$(PRINTSPOOL_OBJ) \
 	$(SSLOGO_OBJ) \
 	$(SSPIPES_OBJ) \
-	$(SSBALLS_OBJ)
+	$(SSBALLS_OBJ) $(SSJELLY_OBJ)
 
 DEVELOPER_EXTERNAL_APP_OBJS := \
 	$(APITEST_OBJ) \
@@ -1086,7 +1084,7 @@ endif
 
 
 
-$(SYSTEM_TOOL_OBJS): build/programs/%.o: programs/%.c programs/system_tools_common.h sdk/include/bleskernos_api.h | build
+$(filter-out build/programs/network_status.o,$(SYSTEM_TOOL_OBJS)): build/programs/%.o: programs/%.c programs/system_tools_common.h sdk/include/bleskernos_api.h | build
 	@mkdir -p $(dir $@)
 	@echo "[GCC]  Compilando utilidad $*..."
 	$(CC) $(SDK_CFLAGS) -c $< -o $@
@@ -1267,13 +1265,13 @@ $(COMMAND_COMMON_OBJ): system/commands/common.c system/commands/common.h \
 		sdk/include/bleskernos_api.h | build
 	@mkdir -p $(dir $@)
 	@echo "[GCC]  Compilando biblioteca comun de comandos Ring 3..."
-	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
+	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) -Isdk/include -c $< -o $@
 
 $(COMMAND_RAW_OBJS): build/system/commands/raw/%.o: system/commands/%.c \
 		system/commands/common.h sdk/include/bleskernos_api.h | build
 	@mkdir -p $(dir $@)
 	@echo "[GCC]  Compilando comando $*..."
-	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
+	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) -Isdk/include -c $< -o $@
 
 $(COMMAND_OBJS): build/system/commands/%.o: build/system/commands/raw/%.o $(COMMAND_COMMON_OBJ)
 	@mkdir -p $(dir $@)
@@ -1353,13 +1351,19 @@ $(VMWARESVGA3D_DVR): kernel/drivers/graphics/vmware_svga3d.c kernel/include/driv
 	@echo "[GCC]  Compilando VMWARESVGA3D.DVR (extension 3D)..."
 	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
 
-$(VIRTIOGPU_DVR): kernel/drivers/graphics/virtio_gpu_dvr.c kernel/drivers/graphics/virtio_gpu_gallium.inc \
+build/system/drivers/.virtio-pacing-config: FORCE
+	@mkdir -p $(dir $@)
+	@printf '%s\n' '$(VIRTIO_GPU_PACING_TRACE)' > $@.tmp
+	@cmp -s $@.tmp $@ || cp $@.tmp $@
+	@rm -f $@.tmp
+
+$(VIRTIOGPU_DVR): kernel/drivers/graphics/virtio_gpu_dvr.c kernel/drivers/graphics/virtio_gpu_gallium.inc build/system/drivers/.virtio-pacing-config \
         kernel/include/gfx3d.h kernel/include/gfx3d_driver.h \
         ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesvirgl.h kernel/include/driver.h \
 		kernel/include/gfx.h kernel/include/gfx_driver.h kernel/include/pci.h | build
 	@mkdir -p $(dir $@)
 	@echo "[GCC]  Compilando VIRTIOGPU.DVR (VirtIO GPU moderno)..."
-	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
+	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) $(if $(VIRTIO_GPU_PACING_TRACE),-DVIRTIO_GPU_PACING_TRACE=1) -c $< -o $@
 
 $(INTELGMA_DVR): kernel/drivers/graphics/intel_gma9xx_dvr.c \
 		kernel/drivers/graphics/intel_i830_3d.inc \
@@ -1455,7 +1459,7 @@ $(WINE_TINYX_BINARY): ports/tinyx/scripts/build-i386.sh $(WINE_TINYX_SOURCES)
 	TINYX_OUTPUT="$(abspath $@)" bash ports/tinyx/scripts/build-i386.sh
 
 # One build produces the backend, dependency closure and redistribution notices.
-$(WINE_GALLIUM_FILES) &: ports/wine/graphics/build-gallium.py ports/wine/graphics/virgl-winsys.c ports/wine/graphics/mesa-blesk-frontend.patch ports/wine/graphics/mesa-blesk-staging.patch ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesvirgl.h
+$(WINE_GALLIUM_FILES) &: ports/wine/graphics/build-gallium.py ports/wine/graphics/virgl-winsys.c ports/gallium/virgl-winsys.c ports/wine/graphics/mesa-blesk-frontend.patch ports/wine/graphics/mesa-blesk-staging.patch ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesvirgl.h ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesgfx.h ports/gallium/osmesa-native.inc
 	$(PYTHON) ports/wine/graphics/build-gallium.py --package $(if $(WINE_GALLIUM_CACHE),--cache "$(WINE_GALLIUM_CACHE)",)
 
 $(WINE_MESA_LIB): ports/wine/graphics/build-mesa.py ports/wine/graphics/gfx3d-linux.c $(MESA35_SOURCES) ports/tinyx/upstream/tinycorelinux-tinyx/kdrive/fbdev/blesgfx.h
@@ -1503,9 +1507,9 @@ $(APPEAR_CPL_RAW_OBJ): system/control/appearance.c | build
 	@echo "[GCC]  Compilando appearance..."
 	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) $(SCREENSAVER_MESA_INCLUDES) -c $< -o $@
 
-$(APPEAR_CPL_OBJ): $(APPEAR_CPL_RAW_OBJ) $(MESA35_A)
+$(APPEAR_CPL_OBJ): $(APPEAR_CPL_RAW_OBJ) $(MESA35_A) $(SS_LOCAL_RUNTIME)
 	@echo "[LD]   Asociando appearance con Mesa 3.5..."
-	$(LD) -m elf_i386 -r $< $(MESA35_A) -o $@
+	$(LD) -m elf_i386 -r $< $(MESA35_A) $(SS_LOCAL_RUNTIME) -o $@
 	@echo "[OK]   Appearance CPL object: $@"
 
 $(DISPLAY_CPL_RAW_OBJ): system/control/display.c | build
@@ -1513,9 +1517,9 @@ $(DISPLAY_CPL_RAW_OBJ): system/control/display.c | build
 	@echo "[GCC]  Compilando display..."
 	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) $(SCREENSAVER_MESA_INCLUDES) -c $< -o $@
 
-$(DISPLAY_CPL_OBJ): $(DISPLAY_CPL_RAW_OBJ) $(MESA35_A)
+$(DISPLAY_CPL_OBJ): $(DISPLAY_CPL_RAW_OBJ) $(MESA35_A) $(SS_LOCAL_RUNTIME)
 	@echo "[LD]   Asociando display con Mesa 3.5..."
-	$(LD) -m elf_i386 -r $< $(MESA35_A) -o $@
+	$(LD) -m elf_i386 -r $< $(MESA35_A) $(SS_LOCAL_RUNTIME) -o $@
 	@echo "[OK]   Display CPL object: $@"
 
 $(GEARS_RAW_OBJ): programs/gears.c sdk/include/bleskernos_tinygl.h | build
@@ -1549,7 +1553,7 @@ $(VISION_DESKMANAGER_OBJ): system/desktop/deskmanager.c | build
 	@echo "[GCC]  Moviendo DeskManager a Vision..."
 	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) $(VISION_DESKTOP_RENAMES) -DBLES_VISION_SERVICE=1 -c $< -o $@
 
-$(VISION_DESKBAR_OBJ): system/desktop/deskbar.c | build
+$(VISION_DESKBAR_OBJ): system/desktop/deskbar.c system/desktop/deskbar_switcher.h | build
 	@mkdir -p $(dir $@)
 	@echo "[GCC]  Moviendo Deskbar a Vision..."
 	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) $(VISION_DESKTOP_RENAMES) -DBLES_VISION_SERVICE=1 -c $< -o $@
@@ -1586,14 +1590,18 @@ $(SSLOGO_OBJ): system/screensavers/ss_logo.c | build
 	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
 	@echo "[OK]   SSLogo object: $@"
 
+$(SSJELLY_OBJ): system/screensavers/ss_jelly.c | build
+	@mkdir -p $(dir $@)
+	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) -c $< -o $@
+
 $(SSPIPES_RAW_OBJ): system/screensavers/ss_pipes.c system/screensavers/ss_mesa.h system/screensavers/ss_scale.h kernel/include/api.h gui/gui.h sdk/include/bleskernos_api.h | build
 	@mkdir -p $(dir $@)
 	@echo "[GCC]  Compilando ss_pipes..."
 	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) $(SCREENSAVER_MESA_INCLUDES) -DSS_PIPES_EXTERNAL_ENTRY -c $< -o $@
 
-$(SSPIPES_OBJ): $(SSPIPES_RAW_OBJ) $(MESA35_A)
+$(SSPIPES_OBJ): $(SSPIPES_RAW_OBJ) $(MESA35_A) $(SS_LOCAL_RUNTIME)
 	@echo "[LD]   Asociando ss_pipes con Mesa 3.5..."
-	$(LD) -m elf_i386 -r $< $(MESA35_A) -o $@
+	$(LD) -m elf_i386 -r $< $(MESA35_A) $(SS_LOCAL_RUNTIME) -o $@
 	@echo "[OK]   SSPipes object: $@"
 
 $(SSBALLS_RAW_OBJ): system/screensavers/ss_balls.c system/screensavers/ss_mesa.h system/screensavers/ss_scale.h kernel/include/api.h gui/gui.h sdk/include/bleskernos_api.h | build
@@ -1601,9 +1609,9 @@ $(SSBALLS_RAW_OBJ): system/screensavers/ss_balls.c system/screensavers/ss_mesa.h
 	@echo "[GCC]  Compilando ss_balls..."
 	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) $(SCREENSAVER_MESA_INCLUDES) -DSS_BALLS_EXTERNAL_ENTRY -c $< -o $@
 
-$(SSBALLS_OBJ): $(SSBALLS_RAW_OBJ) $(MESA35_A)
+$(SSBALLS_OBJ): $(SSBALLS_RAW_OBJ) $(MESA35_A) $(SS_LOCAL_RUNTIME)
 	@echo "[LD]   Asociando ss_balls con Mesa 3.5..."
-	$(LD) -m elf_i386 -r $< $(MESA35_A) -o $@
+	$(LD) -m elf_i386 -r $< $(MESA35_A) $(SS_LOCAL_RUNTIME) -o $@
 	@echo "[OK]   SSBalls object: $@"
 
 
@@ -1638,19 +1646,14 @@ $(USB_IMG): $(ATA_IMG) $(MBR_BIN) tools/build_usb_image.py
 	$(PYTHON) tools/build_usb_image.py $@ $(ATA_IMG) $(MBR_BIN)
 	@echo "[OK]   USB: $$(wc -c < $@) bytes"
 
-# Disco VMware con MBR/particion activa. monolithicSparse evita inflar el
-# build a 65 MiB y compat6 funciona tanto en VMware Player como Workstation.
-$(VMWARE_IMG): $(USB_IMG)
+# Disco VMware normal: 4 GiB con particion BFS4 ampliada y espacio utilizable.
+$(VMWARE_IMG): $(ATA_IMG) $(MBR_BIN) tools/build_vmware_image.py tools/build_usb_image.py tools/bfs4.py tools/bfs4_update.py Makefile
 	@command -v $(QEMU_IMG) >/dev/null 2>&1 || { \
 		echo "[ERROR] qemu-img es necesario para crear el disco VMware"; exit 1; \
 	}
-	@echo "[VMDK] Creando disco VMware IDE..."
-	$(QEMU_IMG) convert -f raw -O vmdk \
-		-o subformat=monolithicSparse,compat6=on,adapter_type=ide \
-		$(USB_IMG) $@
-	@echo "[OK]   VMware: $@ ($$(wc -c < $@) bytes)"
+	$(PYTHON) tools/build_vmware_image.py $(ATA_IMG) $(MBR_BIN) $@ --size-mib $(VMWARE_SIZE_MIB) --qemu-img "$(QEMU_IMG)"
 
-$(VMWARE_VMX): tools/build_vmware_config.py | $(VMWARE_IMG)
+$(VMWARE_VMX): tools/build_vmware_config.py $(VMWARE_IMG)
 	$(PYTHON) tools/build_vmware_config.py $(VMWARE_IMG) $@
 
 vmware-image: $(VMWARE_IMG) $(VMWARE_VMX)
@@ -1926,7 +1929,7 @@ extras: $(TUXRACER_OBJ)
 # Incremental offline update preserves the installed Wine prefix and user files.
 .PHONY: user-update
 user-update: $(KERNEL_BIN) $(WINE_GALLIUM_FILES) $(WINE_TINYX_BINARY)
-user-update: $(VIEWER_OBJ) $(FONT_FILES) $(FONT_OBJ) $(BOOT2_BIN) $(VISION_OBJ) $(FILEBROWSER_OBJ) $(CONTROL_OBJS) $(WINE_DESKTOP_LAUNCHER) $(WINE_TOOL_LAUNCHER) $(WINE_OBJ) $(ISO9660_DVR) $(AC97_DVR) $(VIRTIOGPU_DVR) $(VMWARESVGA3D_DVR) $(WINE_GL_LIB) $(WINE_MESA_LIB)
+user-update: $(VIEWER_OBJ) $(IMAGEVIEWER_OBJ) $(FONT_FILES) $(FONT_OBJ) $(BOOT2_BIN) $(VISION_OBJ) $(FILEBROWSER_OBJ) $(TEXTEDITOR_OBJ) $(RUNBOX_OBJ) $(PAINT_OBJ) $(SSLOGO_OBJ) $(SSBALLS_OBJ) $(SSPIPES_OBJ) $(CONTROL_OBJS) $(WINE_DESKTOP_LAUNCHER) $(WINE_TOOL_LAUNCHER) $(WINE_OBJ) $(ISO9660_DVR) $(AC97_DVR) $(VIRTIOGPU_DVR) $(VMWARESVGA3D_DVR) $(WINE_GL_LIB) $(WINE_MESA_LIB)
 	$(PYTHON) tools/update_user_image.py --image build/bleskernos-ata-user.img
 
 .PHONY: fonts-regenerate
@@ -1942,9 +1945,15 @@ $(VIEWER_OBJ): $(VIEWER_SOURCES) programs/viewer/Makefile sdk/include/bleskernos
 build/system/services/engine_%.o: gui/%.c | build
 	@mkdir -p $(dir $@)
 	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) $(VISION_DESKTOP_RENAMES) -DBLES_VISION_SERVICE=1 -c $< -o $@
-build/system/services/vision_engine.o: system/services/vision_engine.c | build
+build/system/services/.vision-pacing-config: FORCE
 	@mkdir -p $(dir $@)
-	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) $(VISION_DESKTOP_RENAMES) -DBLES_VISION_SERVICE=1 -c $< -o $@
+	@printf '%s\n' '$(VISION_PACING_TRACE)' > $@.tmp
+	@cmp -s $@.tmp $@ || cp $@.tmp $@
+	@rm -f $@.tmp
+
+build/system/services/vision_engine.o: system/services/vision_engine.c system/services/vision_pacing_trace.h build/system/services/.vision-pacing-config | build
+	@mkdir -p $(dir $@)
+	$(CC) $(CC_FLAGS) $(INCLUDE_FLAGS) $(VISION_DESKTOP_RENAMES) -DBLES_VISION_SERVICE=1 $(if $(VISION_PACING_TRACE),-DVISION_PACING_TRACE=1) -c $< -o $@
 
 # Fault-injected service is installed only by the isolated guest test runner.
 build/tests/vision_fault_engine.o: tests/userland/vision_fault_engine.c system/services/vision_engine.c | build
@@ -2043,3 +2052,10 @@ $(ATA_IMG): tools/build_family_sources.py docs/platform/family-drivers.md docs/f
 test-family-drivers: test-legacy-drivers
 framebuffer-catalog:
 	python3 tools/generate_framebuffer_families.py
+
+$(IMAGEVIEWER_OBJ): programs/imageviewer_render.h
+
+# Optional game CD, kept separate from the standard OS disks.
+.PHONY: quake2-iso
+quake2-iso:
+	$(MAKE) -C extras/quake2 iso

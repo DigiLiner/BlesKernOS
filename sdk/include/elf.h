@@ -16,6 +16,7 @@
 #define PT_NULL 0
 #define PT_LOAD 1
 #define PT_DYNAMIC 2
+#define PT_TLS 7
 #define PF_X 1
 #define PF_W 2
 #define PF_R 4
@@ -59,7 +60,13 @@ typedef struct { Elf32_Sword d_tag; union { Elf32_Word d_val; Elf32_Addr d_ptr; 
 #define DT_HASH 4
 #define DT_STRTAB 5
 #define DT_SYMTAB 6
+#define DT_RELA 7
+#define DT_RELASZ 8
+#define DT_RELAENT 9
 #define DT_STRSZ 10
+#define DT_SYMENT 11
+#define DT_INIT 12
+#define DT_FINI 13
 #define DT_REL 17
 #define DT_RELSZ 18
 #define DT_RELENT 19
