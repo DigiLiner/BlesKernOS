@@ -1,8 +1,8 @@
-# BlesKernOS 0.9
+# BlesKernOS 0.10 
 
 **A hobby operating system for 32-bit x86 computers, built with C, Assembly.**
 
-BlesKernOS is an experimental operating system featuring its own bootloader, kernel, graphical desktop, native applications, device drivers, and compatibility layers.
+BlesKernOS is an  operating system featuring its own bootloader, kernel, graphical desktop, native applications, device drivers, and compatibility layers.
 
 Inspired by the desktop operating systems of the 1990s, the project aims to combine a classic computing experience with more advanced operating-system features.
 
@@ -14,23 +14,24 @@ Inspired by the desktop operating systems of the 1990s, the project aims to comb
 
 <img width="1366" alt="BlesKernOS 0.9 Alpha screenshot 2" src="https://github.com/user-attachments/assets/b11d4967-e81b-408b-af15-44dc803e4189" />
 
-<img width="1366" alt="BlesKernOS 0.9 Alpha screenshot 3" src="https://github.com/user-attachments/assets/954edec1-6253-4305-9c9e-a2f226ad251d" />
+<img width="800" height="601" alt="imagen" src="https://github.com/user-attachments/assets/2df3826f-165a-4356-bb1e-f134f7384d7e" />
 
 <img width="1366" alt="BlesKernOS 0.9 Alpha screenshot 4" src="https://github.com/user-attachments/assets/0966cb7a-3698-4d9f-8c7a-e385f7ca6980" />
 
-## What's new in 0.9?
+## What's new in 0.10?
 
-Version 0.9 represents a major architectural update over previous releases.
+Version 0.10 is currently under development, introducing major improvements to graphics acceleration, native libraries, and the desktop environment.
 
-- **Kernel improvements:** SMP support for up to 16 logical processors, preemptive multitasking, paging, Ring 3 applications, and improved memory management.
-- **Windows compatibility:** Experimental Wine 11 integration for running Windows applications.
-- **Graphics:** VMware SVGA-II, VirtIO GPU, ATI Rage 128, TinyGL, and Mesa 3.5/OpenGL support, with experimental acceleration paths.
-- **Desktop:** Improved graphical interface, window management, system utilities, and native applications.
-- **Networking:** IPv4, TCP, DNS, DHCP, HTTP, HTTPS/TLS 1.2, and a NetSurf browser port.
-- **Hardware support:** Modular drivers, USB, audio, storage, and experimental printing support.
-- **Installation:** Bootable installation media, User and Developer editions, and expanded development tools.
+- **3D acceleration:** Expanded Gallium integration, VirtIO/VirGL GPU acceleration, and improvements to Mesa 3.5.
+- **LBS shared libraries:** New native shared-library infrastructure, SDK interfaces, and reusable components for applications.
+- **Desktop:** Improvements to the Vision compositor, window management, rendering, and screensavers.
+- **Jelly Aquarium:** New experimental 3D screensaver featuring animated jellyfish.
+- **Multimedia:** Reorganized native multimedia libraries and improvements to video and image rendering.
+- **Kernel:** Continued improvements to memory handling, IPC, system interfaces, and graphics drivers.
+- **Wine:** Further development of Wine 11 and TinyX graphics integration.
+- **Testing:** Expanded automated tests, graphics diagnostics, and development tools.
 
-Many subsystems have also been reorganized and optimized as part of the transition to 0.9.
+This is the first development build of 0.10. Additional features, optimizations, and stability improvements are planned before the final release.
 
 ## Features
 
@@ -56,7 +57,7 @@ Ports and compatibility projects include NetSurf, Doom-related support, and Wine
 
 ### Windows applications
 
-BlesKernOS 0.9 includes an experimental port of **Wine 11**, running on an i386 Linux-compatible ABI implemented within the operating system.
+BlesKernOS 0.10 includes an experimental port of **Wine 11**, running on an i386 Linux-compatible ABI implemented within the operating system.
 
 This allows selected Windows applications to run without Windows itself.
 
@@ -142,5 +143,3 @@ See [NOTICE.md](NOTICE.md), [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md), 
 The project incorporates or draws upon work from Wine, TinyGL, Mesa, BearSSL, DoomGeneric, NetSurf, and other open-source projects and technical references.
 
 ---
-
-**BlesKernOS 0.9 Alpha — an experimental operating system, still evolving.**
